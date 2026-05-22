@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISALY — Trouve ta coloc parfaite</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --mint:#4ECBA0;--mint-l:#E8F9F3;--mint-d:#2AA87C;
+  --ch:#1A1A1A;--gray:#6B7280;--gl:#F5F5F5;--gb:#E5E7EB;
+  --danger:#EF4444;--warn:#F59E0B;
+  --sb:#111827;--sbw:232px;
+  --r:14px;--rs:9px;
+  --sh:0 2px 12px rgba(0,0,0,.07);--shl:0 8px 36px rgba(0,0,0,.13);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:#F7F8FA;color:var(--ch);min-height:100vh;}
+h1,h2,h3{font-family:'DM Serif Display',serif;}
+button,input,select,textarea{font-family:inherit;}
+
+/* VIEWS */
+.view{display:none;min-height:100vh;}
+.view.v-flex{display:none;align-items:center;justify-content:center;}
+.view.active{display:block;}
+.view.v-flex.active{display:flex;}
+#view-app{display:none;}
+#view-app.active{display:flex;min-height:100vh;}
+
+/* ── BTNS ── */
+.btn{padding:10px 22px;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+.btn-p{background:var(--mint);color:#fff;}
+.btn-p:hover{background:var(--mint-d);transform:translateY(-1px);}
+.btn-g{background:transparent;color:var(--ch);border:1.5px solid var(--gb);}
+.btn-g:hover{border-color:var(--mint);color:var(--mint-d);}
+
+/* ════════════════ LANDING ════════════════ */
+#view-landing{background:#fff;}
+.lnav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--gb);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:64px;}
+.lnav-logo{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ch);}
+.lnav-logo span{color:var(--mint);}
+.hero{max-width:1100px;margin:0 auto;padding:88px 40px 72px;display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;}
+.hero-kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:var(--mint-d);margin-bottom:14px;}
+.hero-title{font-size:56px;line-height:1.08;margin-bottom:20px;}
+.hero-title em{color:var(--mint);font-style:italic;}
+.hero-sub{font-size:17px;color:var(--gray);line-height:1.75;margin-bottom:36px;}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;}
+.hero-visual{display:flex;flex-direction:column;gap:14px;}
+.hcard{background:#fff;border-radius:var(--r);padding:20px 22px;border:1px solid var(--gb);box-shadow:var(--sh);transition:transform .3s;}
+.hcard:hover{transform:translateY(-5px);}
+.hcard:nth-child(2){margin-left:28px;}
+.l-stats{background:var(--ch);padding:64px 40px;display:flex;justify-content:center;gap:80px;flex-wrap:wrap;}
+.sn{font-family:'DM Serif Display',serif;font-size:52px;color:var(--mint);}
+.sl{font-size:14px;color:#9CA3AF;margin-top:4px;}
+.feats{max-width:1100px;margin:0 auto;padding:88px 40px;}
+.sec-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:var(--mint-d);margin-bottom:12px;}
+.sec-t{font-size:42px;margin-bottom:14px;}
+.sec-s{font-size:16px;color:var(--gray);max-width:500px;line-height:1.75;margin-bottom:52px;}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+.fcard{background:#fff;border-radius:var(--r);padding:28px;border:1px solid var(--gb);transition:all .3s;}
+.fcard:hover{transform:translateY(-5px);box-shadow:var(--shl);}
+.fi-icon{width:46px;height:46px;border-radius:11px;background:var(--mint-l);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px;}
+.l-pricing{background:#111827;padding:88px 40px;}
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:780px;margin:40px auto 0;}
+.pcard{background:#1F2937;border-radius:var(--r);padding:34px;border:1px solid #374151;}
+.pcard.fp{background:#fff;border:2px solid var(--mint);position:relative;}
+.pbadge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--mint);color:#fff;font-size:10px;font-weight:800;padding:4px 14px;border-radius:50px;letter-spacing:.5px;}
+.pill{display:inline-flex;align-items:center;background:var(--gl);color:var(--gray);font-size:11px;font-weight:500;padding:4px 10px;border-radius:50px;}
+.pill-m{background:var(--mint-l);color:var(--mint-d);}
+
+/* ════════════════ AUTH ════════════════ */
+.auth-box{background:#fff;border-radius:24px;padding:52px 44px;box-shadow:var(--shl);width:100%;max-width:420px;text-align:center;}
+.a-logo{font-family:'DM Serif Display',serif;font-size:36px;margin-bottom:6px;}
+.gbtn{width:100%;padding:13px;border:1.5px solid var(--gb);border-radius:50px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;transition:all .2s;}
+.gbtn:hover{border-color:#4285F4;background:#f8f9ff;}
+.gdot{width:18px;height:18px;border-radius:50%;background:conic-gradient(#4285F4 0 90deg,#EA4335 0 180deg,#FBBC05 0 270deg,#34A853 0 360deg);flex-shrink:0;}
+.divr{display:flex;align-items:center;gap:14px;margin:20px 0;}
+.divr-l{flex:1;height:1px;background:var(--gb);}
+.ainput{width:100%;padding:12px 15px;border:1.5px solid var(--gb);border-radius:var(--rs);font-size:14px;margin-bottom:11px;outline:none;transition:border-color .2s;}
+.ainput:focus{border-color:var(--mint);}
+
+/* ════════════════ APP SHELL ════════════════ */
+.sidebar{
+  width:var(--sbw);flex-shrink:0;
+  background:var(--sb);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;z-index:200;
+  overflow-y:auto;
+}
+.sb-logo{padding:26px 22px 16px;font-family:'DM Serif Display',serif;font-size:26px;color:#fff;}
+.sb-logo span{color:var(--mint);}
+.sb-sec{padding:10px 14px 4px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#4B5563;margin-top:6px;}
+.si{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 14px;margin:1px 8px;border-radius:9px;
+  cursor:pointer;transition:all .18s;
+  color:#9CA3AF;font-size:13.5px;font-weight:500;
+  border:none;background:none;width:calc(100% - 16px);text-align:left;
+}
+.si:hover{background:#1F2937;color:#E5E7EB;}
+.si.on{background:#16302a;color:var(--mint);}
+.si-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.si-badge{margin-left:auto;background:var(--mint);color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:50px;}
+.sb-bot{margin-top:auto;padding:14px 8px;border-top:1px solid #1F2937;}
+.sb-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;cursor:pointer;transition:background .2s;}
+.sb-user:hover{background:#1F2937;}
+.sb-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--mint),var(--mint-d));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;}
+.sb-uname{font-size:13px;font-weight:600;color:#E5E7EB;}
+.sb-urole{font-size:11px;color:#6B7280;}
+
+.app-main{margin-left:var(--sbw);flex:1;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:54px;background:#fff;border-bottom:1px solid var(--gb);display:flex;align-items:center;padding:0 26px;gap:14px;position:sticky;top:0;z-index:100;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:700;flex:1;}
+.ib{width:34px;height:34px;border-radius:9px;background:var(--gl);border:none;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.ib:hover{background:var(--gb);}
+.ib.notif{position:relative;}
+.ib.notif::after{content:'';position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--mint);border-radius:50%;border:2px solid #fff;}
+
+/* panels */
+.panel{display:none;flex:1;overflow:hidden;}
+.panel.on{display:flex;flex-direction:column;}
+
+/* ════════════════ SWIPE PANEL ════════════════ */
+.filter-bar{display:flex;gap:7px;padding:14px 22px;border-bottom:1px solid var(--gb);background:#fff;flex-wrap:wrap;flex-shrink:0;}
+.fc{padding:6px 14px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--gb);background:#fff;color:var(--gray);transition:all .2s;}
+.fc.on{background:var(--ch);color:#fff;border-color:var(--ch);}
+.swipe-body{flex:1;display:grid;grid-template-columns:1fr 380px;overflow:hidden;}
+.swipe-main{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 28px 24px;gap:18px;background:#F7F8FA;overflow-y:auto;}
+.sc{
+  width:100%;max-width:340px;
+  background:#fff;border-radius:20px;
+  overflow:hidden;box-shadow:var(--shl);
+  transition:transform .36s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+}
+.sc.fly-l{transform:translateX(-130%) rotate(-18deg)!important;opacity:0;}
+.sc.fly-r{transform:translateX(130%) rotate(18deg)!important;opacity:0;}
+.sc-img{width:100%;height:210px;display:flex;align-items:center;justify-content:center;font-size:84px;}
+.sc-body{padding:18px 20px;}
+.sc-name{font-size:21px;font-weight:700;}
+.sc-meta{font-size:12.5px;color:var(--gray);margin-top:3px;}
+.mc{display:inline-flex;align-items:center;gap:5px;background:var(--mint-l);color:var(--mint-d);font-size:12px;font-weight:700;padding:5px 12px;border-radius:50px;margin:9px 0 5px;}
+.sc-bio{font-size:13px;color:#4B5563;line-height:1.6;}
+.sc-tags{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0;}
+.sc-msg{
+  width:100%;margin-top:12px;padding:10px;
+  background:var(--mint);color:#fff;border:none;border-radius:50px;
+  font-size:13px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:background .2s;
+}
+.sc-msg:hover{background:var(--mint-d);}
+.swipe-btns{display:flex;align-items:center;justify-content:center;gap:14px;flex-shrink:0;}
+.sa{border:none;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh);transition:all .2s;}
+.sa.pass{width:52px;height:52px;background:#fff;color:var(--danger);font-size:21px;}
+.sa.pass:hover{background:var(--danger);color:#fff;transform:scale(1.1);}
+.sa.like{width:62px;height:62px;background:var(--mint);color:#fff;font-size:26px;}
+.sa.like:hover{background:var(--mint-d);transform:scale(1.1);}
+.sa.star{width:52px;height:52px;background:#fff;color:#6366F1;font-size:21px;}
+.sa.star:hover{background:#6366F1;color:#fff;transform:scale(1.1);}
+.swipe-sidebar{background:#fff;border-left:1px solid var(--gb);display:flex;flex-direction:column;overflow:hidden;}
+.ss-head{padding:18px 20px;border-bottom:1px solid var(--gb);}
+.ss-title{font-size:15px;font-weight:700;margin-bottom:3px;}
+.ss-sub{font-size:12px;color:var(--gray);}
+.mlist{flex:1;overflow-y:auto;padding:10px;}
+.mi{display:flex;align-items:center;gap:11px;padding:11px;border-radius:9px;cursor:pointer;transition:background .2s;margin-bottom:3px;}
+.mi:hover{background:var(--gl);}
+.mi-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;}
+.mi-name{font-size:13px;font-weight:600;}
+.mi-meta{font-size:12px;color:var(--gray);}
+.mi-score{margin-left:auto;font-size:12px;font-weight:800;color:var(--mint-d);}
+
+/* ════════════════ MESSAGES PANEL ════════════════ */
+.msg-layout{flex:1;display:grid;grid-template-columns:280px 1fr;overflow:hidden;height:calc(100vh - 54px);}
+.conv-sb{background:#fff;border-right:1px solid var(--gb);display:flex;flex-direction:column;overflow:hidden;}
+.conv-head{padding:18px 16px 12px;border-bottom:1px solid var(--gb);}
+.cs{width:100%;padding:8px 13px;border:1.5px solid var(--gb);border-radius:50px;font-size:13px;outline:none;background:var(--gl);}
+.cs:focus{border-color:var(--mint);background:#fff;}
+.clist{flex:1;overflow-y:auto;padding:7px;}
+.ci{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:9px;cursor:pointer;transition:background .2s;margin-bottom:2px;}
+.ci:hover{background:var(--gl);}
+.ci.on{background:var(--mint-l);}
+.ci-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;}
+.ci-name{font-size:13px;font-weight:600;}
+.ci-prev{font-size:11.5px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+.ci-time{font-size:11px;color:#9CA3AF;margin-left:auto;flex-shrink:0;}
+.chat-area{display:flex;flex-direction:column;background:#F7F8FA;overflow:hidden;}
+.chat-top{background:#fff;border-bottom:1px solid var(--gb);padding:13px 20px;display:flex;align-items:center;gap:11px;flex-shrink:0;}
+.chat-top-name{font-weight:700;font-size:14px;}
+.chat-top-s{font-size:12px;color:var(--mint-d);font-weight:600;}
+.chat-msgs{flex:1;overflow-y:auto;padding:22px 22px 10px;display:flex;flex-direction:column;gap:9px;}
+.mr{display:flex;}
+.mr.me{justify-content:flex-end;}
+.bub{max-width:66%;padding:10px 14px;border-radius:17px;font-size:13.5px;line-height:1.55;}
+.mr.them .bub{background:#fff;border-bottom-left-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.mr.me .bub{background:var(--mint);color:#fff;border-bottom-right-radius:3px;}
+.mt{font-size:11px;color:#9CA3AF;margin-top:3px;padding:0 4px;}
+.mr.me .mt{text-align:right;}
+.cin-row{background:#fff;border-top:1px solid var(--gb);padding:12px 18px;display:flex;gap:9px;align-items:center;flex-shrink:0;}
+.cin{flex:1;padding:10px 15px;border:1.5px solid var(--gb);border-radius:50px;font-size:13.5px;outline:none;transition:border-color .2s;background:#fff;}
+.cin:focus{border-color:var(--mint);}
+.csend{width:40px;height:40px;background:var(--mint);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:16px;flex-shrink:0;transition:background .2s;}
+.csend:hover{background:var(--mint-d);}
+
+/* ════════════════ DOSSIER PANEL ════════════════ */
+.pb{flex:1;overflow-y:auto;padding:28px 32px;}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;}
+.pt{font-size:28px;margin-bottom:5px;}
+.ps{font-size:13.5px;color:var(--gray);}
+.prog{height:5px;background:var(--gl);border-radius:3px;margin-bottom:26px;overflow:hidden;}
+.prog-f{height:100%;background:var(--mint);border-radius:3px;transition:width .6s;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.dc{background:#fff;border-radius:var(--r);padding:20px;border:1px solid var(--gb);}
+.dch{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.dct{font-size:13.5px;font-weight:700;}
+.sb2{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:50px;}
+.ok2{background:#D1FAE5;color:#065F46;}
+.pend2{background:#FEF3C7;color:#92400E;}
+.miss2{background:#FEE2E2;color:#991B1B;}
+.dr{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:13px;}
+.dr:last-child{border:none;}
+.udrop{border:2px dashed var(--gb);border-radius:9px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;margin-top:9px;}
+.udrop:hover{border-color:var(--mint);background:var(--mint-l);}
+.bail{background:#fff;border-radius:var(--r);padding:22px;border:1px solid var(--gb);margin-top:18px;}
+.bail-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:16px 0;}
+.bstat{background:var(--gl);border-radius:9px;padding:13px;text-align:center;}
+.bsv{font-size:19px;font-weight:700;}
+.bsl{font-size:11px;color:var(--gray);margin-top:3px;}
+.bstat.hl{background:var(--mint-l);}
+.bstat.hl .bsv{color:var(--mint-d);}
+.bstat.hl .bsl{color:var(--mint-d);}
+
+/* ════════════════ PROFIL PANEL ════════════════ */
+.profil-pb{flex:1;overflow-y:auto;padding:28px 32px;}
+.prof-hero{background:#fff;border-radius:var(--r);padding:26px;border:1px solid var(--gb);display:flex;align-items:center;gap:22px;margin-bottom:22px;}
+.pav{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--mint),var(--mint-d));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;flex-shrink:0;}
+.pname{font-size:22px;margin-bottom:4px;}
+.pmeta{font-size:13px;color:var(--gray);}
+.pcomp{font-size:12px;font-weight:700;color:var(--mint-d);margin-top:6px;}
+.psl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--gray);margin-bottom:9px;}
+.pcard{background:#fff;border-radius:var(--r);padding:20px;border:1px solid var(--gb);margin-bottom:14px;}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:13.5px;}
+.prow:last-child{border:none;}
+
+/* ════════════════ ANNONCE PANEL ════════════════ */
+.form-pb{flex:1;overflow-y:auto;padding:28px 32px;}
+.fg{margin-bottom:16px;}
+.fl{font-size:12px;font-weight:700;color:var(--ch);margin-bottom:5px;display:block;}
+.fi{width:100%;padding:10px 13px;border:1.5px solid var(--gb);border-radius:var(--rs);font-size:13.5px;outline:none;transition:border-color .2s;background:#fff;}
+.fi:focus{border-color:var(--mint);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:7px;}
+.pslot{aspect-ratio:1;border:2px dashed var(--gb);border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--gray);transition:all .2s;}
+.pslot:hover{border-color:var(--mint);color:var(--mint);}
+.pslot.f{background:var(--mint-l);border-color:var(--mint);color:var(--mint-d);}
+.boost-box{background:var(--mint-l);border-radius:9px;padding:16px;margin:16px 0;}
+
+/* ════════════════ PAY PANEL ════════════════ */
+.pay-pb{flex:1;overflow-y:auto;padding:28px 32px;}
+.pplan{display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--gb);border-radius:var(--rs);cursor:pointer;transition:all .2s;margin-bottom:10px;background:#fff;}
+.pplan.sel{border-color:var(--mint);background:var(--mint-l);}
+.pplan-info{flex:1;}
+.pplan-name{font-weight:700;font-size:13.5px;}
+.pplan-desc{font-size:12px;color:var(--gray);margin-top:2px;}
+.pplan-price{font-size:17px;font-weight:700;}
+.stripe-n{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gray);background:var(--gl);padding:10px 13px;border-radius:8px;margin-top:12px;}
+
+/* ════════════════ CHATBOT ════════════════ */
+.botfab{position:fixed;bottom:26px;right:26px;z-index:500;width:50px;height:50px;background:var(--mint);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 18px rgba(78,203,160,.45);font-size:21px;border:none;color:#fff;transition:all .3s;}
+.botfab:hover{transform:scale(1.1);background:var(--mint-d);}
+.botpanel{position:fixed;bottom:88px;right:26px;z-index:500;width:330px;background:#fff;border-radius:18px;box-shadow:var(--shl);border:1px solid var(--gb);display:none;flex-direction:column;overflow:hidden;max-height:460px;}
+.botpanel.open{display:flex;}
+.bh{padding:13px 17px;background:var(--ch);color:#fff;display:flex;justify-content:space-between;align-items:center;}
+.bht{font-weight:700;font-size:13.5px;}
+.bhs{font-size:11px;opacity:.55;margin-top:1px;}
+.bc{background:none;border:none;color:#fff;font-size:17px;cursor:pointer;}
+.bmsgs{flex:1;padding:13px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.bmsg,.umsg{max-width:82%;padding:8px 12px;border-radius:13px;font-size:13px;line-height:1.5;}
+.bmsg{background:var(--gl);border-bottom-left-radius:3px;align-self:flex-start;}
+.umsg{background:var(--mint);color:#fff;border-bottom-right-radius:3px;align-self:flex-end;}
+.bload{display:flex;gap:4px;padding:8px 12px;background:var(--gl);border-radius:13px;align-self:flex-start;}
+.bload span{width:6px;height:6px;background:#9CA3AF;border-radius:50%;animation:bop .7s infinite;}
+.bload span:nth-child(2){animation-delay:.13s;}
+.bload span:nth-child(3){animation-delay:.26s;}
+@keyframes bop{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.bin-row{padding:10px 13px;border-top:1px solid var(--gb);display:flex;gap:7px;}
+.bin{flex:1;padding:8px 12px;border:1.5px solid var(--gb);border-radius:50px;font-size:13px;outline:none;}
+.bin:focus{border-color:var(--mint);}
+.bsend{width:32px;height:32px;background:var(--mint);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:14px;}
+
+/* ════════════════ ONBOARD ════════════════ */
+.ob-box{background:#fff;border-radius:24px;padding:48px 42px;box-shadow:var(--shl);width:100%;max-width:520px;}
+.ob-dots{display:flex;gap:5px;margin-bottom:20px;}
+.ob-dot{width:7px;height:7px;border-radius:50%;background:var(--gb);}
+.ob-dot.done{background:var(--mint);}
+.ob-dot.cur{background:var(--mint-d);width:20px;border-radius:4px;}
+.ob-step{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--mint-d);margin-bottom:7px;}
+.ob-title{font-size:27px;margin-bottom:5px;}
+.ob-sub{font-size:14px;color:var(--gray);margin-bottom:26px;}
+.ob-opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.ob-opt{padding:15px;border:2px solid var(--gb);border-radius:11px;cursor:pointer;transition:all .2s;text-align:center;}
+.ob-opt:hover,.ob-opt.sel{border-color:var(--mint);background:var(--mint-l);}
+.ob-em{font-size:25px;margin-bottom:6px;}
+.ob-lbl{font-size:12.5px;font-weight:700;}
+.ob-sl{font-size:11px;color:var(--gray);margin-top:2px;}
+input[type=range]{width:100%;height:4px;appearance:none;background:var(--gl);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:19px;height:19px;border-radius:50%;background:var(--mint);cursor:pointer;}
+
+/* MATCH OVERLAY */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.mbox{background:#fff;border-radius:24px;padding:44px 38px;text-align:center;max-width:340px;width:100%;animation:popIn .38s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.mob{transform:none;}
+  .app-main{margin-left:0;}
+  .swipe-body{grid-template-columns:1fr;}
+  .swipe-sidebar{display:none;}
+  .msg-layout{grid-template-columns:1fr;}
+  .conv-sb{display:none;}
+  .g2{grid-template-columns:1fr;}
+  .frow{grid-template-columns:1fr;}
+  .bail-stats{grid-template-columns:1fr 1fr;}
+  .hero{grid-template-columns:1fr;padding:52px 24px;}
+  .hero-title{font-size:38px;}
+  .hero-visual{display:none;}
+  .feat-grid{grid-template-columns:1fr;}
+  .price-grid{grid-template-columns:1fr;}
+  .l-stats{gap:36px;}
+  .pb,.profil-pb,.form-pb,.pay-pb{padding:18px 16px;}
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.panel.on>*{animation:fadeUp .3s ease both;}
+</style>
+</head>
+<body>
+
+<!-- ████ LANDING ████ -->
+<div class="view active" id="view-landing">
+  <nav class="lnav">
+    <div class="lnav-logo">ISALY<span>.</span></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-g" onclick="showView('view-auth')">Connexion</button>
+      <button class="btn btn-p" onclick="showView('view-onboard')">Commencer</button>
+    </div>
+  </nav>
+  <div class="hero">
+    <div>
+      <div class="hero-kicker">Colocation intelligente</div>
+      <h1 class="hero-title">Trouve ta coloc <em>parfaite.</em></h1>
+      <p class="hero-sub">ISALY combine le matching intelligent façon Tinder avec une gestion complète de ton bail. Fini les mauvaises surprises.</p>
+      <div class="hero-btns">
+        <button class="btn btn-p" style="padding:14px 28px;font-size:15px" onclick="showView('view-onboard')">Commencer gratuitement</button>
+        <button class="btn btn-g" style="padding:14px 28px;font-size:15px" onclick="enterApp()">Voir l'application →</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hcard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div><div style="font-weight:700;font-size:15px">Sophie M.</div><div style="font-size:12px;color:#9CA3AF">Paris 11ème · 850€/mois</div></div>
+          <span class="pill pill-m">💚 94% compatible</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill">🌙 Couche-tard</span><span class="pill">🎵 Musique</span><span class="pill">🏠 Télétravail</span></div>
+      </div>
+      <div class="hcard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div><div style="font-weight:700;font-size:15px">Appart 3P · 75m²</div><div style="font-size:12px;color:#9CA3AF">Oberkampf · 2 chambres</div></div>
+          <span style="background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;padding:4px 11px;border-radius:50px">✅ Vérifié</span>
+        </div>
+        <div style="font-size:13px;color:var(--gray);display:flex;gap:16px"><span>📄 Bail en cours</span><span>🛋️ 2 dispo</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="l-stats">
+    <div><div class="sn">14k+</div><div class="sl">Colocataires actifs</div></div>
+    <div><div class="sn">94%</div><div class="sl">Taux de satisfaction</div></div>
+    <div><div class="sn">3 min</div><div class="sl">Pour créer ton profil</div></div>
+    <div><div class="sn">0 €</div><div class="sl">Pour commencer</div></div>
+  </div>
+  <div class="feats">
+    <div class="sec-k">Comment ça marche</div>
+    <h2 class="sec-t">Simple. Intelligent. Sécurisé.</h2>
+    <p class="sec-s">ISALY résout les 3 problèmes majeurs de la colocation en France.</p>
+    <div class="feat-grid">
+      <div class="fcard"><div class="fi-icon">❤️</div><h3 style="font-size:17px;margin-bottom:7px">Matching intelligent</h3><p style="font-size:13.5px;color:var(--gray);line-height:1.7">Algorithme basé sur tes habitudes, horaires et passions. Swipe uniquement des profils vraiment compatibles.</p></div>
+      <div class="fcard"><div class="fi-icon">📁</div><h3 style="font-size:17px;margin-bottom:7px">Dossier sécurisé</h3><p style="font-size:13.5px;color:var(--gray);line-height:1.7">Centralise tous tes documents en un clic. Dossier certifié et partageable instantanément.</p></div>
+      <div class="fcard"><div class="fi-icon">🏠</div><h3 style="font-size:17px;margin-bottom:7px">Gestion du bail</h3><p style="font-size:13.5px;color:var(--gray);line-height:1.7">Suivi loyers, charges, états des lieux et renouvellements. Tout depuis ISALY.</p></div>
+      <div class="fcard"><div class="fi-icon">💬</div><h3 style="font-size:17px;margin-bottom:7px">Messagerie intégrée</h3><p style="font-size:13.5px;color:var(--gray);line-height:1.7">Discute directement avec tes matchs sans partager ton numéro.</p></div>
+      <div class="fcard"><div class="fi-icon">🛡️</div><h3 style="font-size:17px;margin-bottom:7px">Assurance dossier</h3><p style="font-size:13.5px;color:var(--gray);line-height:1.7">Protège ton bail. Sécurité pour le locataire et le propriétaire.</p></div>
+      <div class="fcard"><div class="fi-icon">🚀</div><h3 style="font-size:17px;margin-bottom:7px">Mise en avant</h3><p style="font-size:13.5px;color:var(--gray);line-height:1.7">Loueurs : boostez la visibilité de vos annonces auprès des locataires les plus compatibles.</p></div>
+    </div>
+  </div>
+  <div class="l-pricing">
+    <div style="max-width:780px;margin:0 auto;text-align:center">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:var(--mint);margin-bottom:10px">Tarifs</div>
+      <h2 style="font-size:38px;color:#fff;margin-bottom:9px">Transparent & juste</h2>
+      <p style="font-size:15px;color:#9CA3AF">Commencer est gratuit. On ne gagne que quand tu trouves ta coloc.</p>
+      <div class="price-grid">
+        <div class="pcard">
+          <div style="font-size:11px;color:#9CA3AF;font-weight:700;margin-bottom:5px">Pour les locataires</div>
+          <h3 style="font-size:20px;color:#fff;margin-bottom:12px">Essentiel</h3>
+          <div style="font-size:34px;font-weight:800;color:#fff">Gratuit<span style="font-size:14px;font-weight:400;color:#6B7280"> pour matcher</span></div>
+          <ul style="margin:18px 0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:#D1D5DB">
+            <li>✓ Swipe illimité</li><li>✓ Messagerie avec matchs</li><li>✓ Dossier de base</li>
+            <li style="color:#4B5563;text-decoration:line-through">✗ Assurance dossier</li>
+          </ul>
+          <button class="btn btn-p" style="width:100%;padding:12px" onclick="enterApp()">Commencer</button>
+        </div>
+        <div class="pcard fp">
+          <div class="pbadge">POPULAIRE</div>
+          <div style="font-size:11px;color:var(--gray);font-weight:700;margin-bottom:5px">Pour les locataires</div>
+          <h3 style="font-size:20px;margin-bottom:12px">Sécurisé</h3>
+          <div style="font-size:34px;font-weight:800">3%<span style="font-size:14px;font-weight:400;color:var(--gray)"> du loyer/mois</span></div>
+          <ul style="margin:18px 0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13.5px">
+            <li>✓ Tout Essentiel inclus</li><li>✓ Assurance dossier certifié</li><li>✓ Gestion bail complète</li><li>✓ Support prioritaire</li>
+          </ul>
+          <button class="btn btn-p" style="width:100%;padding:12px" onclick="showPanel('pay')">S'assurer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████ AUTH ████ -->
+<div class="view v-flex" id="view-auth" style="background:linear-gradient(135deg,#edfaf4,#f7f8fa)">
+  <div class="auth-box">
+    <div class="a-logo">ISALY<span style="color:var(--mint)">.</span></div>
+    <p style="font-size:14px;color:var(--gray);margin-bottom:30px">Connexion à ton espace</p>
+    <button class="gbtn" onclick="enterApp()"><span class="gdot"></span>Continuer avec Google</button>
+    <div class="divr"><div class="divr-l"></div><span style="font-size:12.5px;color:var(--gray)">ou par email</span><div class="divr-l"></div></div>
+    <input class="ainput" type="email" placeholder="ton@email.com">
+    <input class="ainput" type="password" placeholder="Mot de passe">
+    <button class="btn btn-p" style="width:100%;padding:13px;font-size:14.5px" onclick="enterApp()">Se connecter</button>
+    <p style="font-size:13px;color:var(--gray);margin-top:14px">Pas de compte ? <a style="color:var(--mint-d);cursor:pointer;font-weight:700" onclick="showView('view-onboard')">Créer un compte</a></p>
+  </div>
+</div>
+
+<!-- ████ ONBOARD ████ -->
+<div class="view v-flex" id="view-onboard" style="background:linear-gradient(135deg,#edfaf4,#f7f8fa);padding:20px">
+  <div class="ob-box" id="ob-box"></div>
+</div>
+
+<!-- ████ APP SHELL ████ -->
+<div class="view" id="view-app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">ISALY<span>.</span></div>
+    <div class="sb-sec">Principal</div>
+    <button class="si on" id="si-swipe" onclick="showPanel('swipe')"><span class="si-icon">🔥</span>Trouver</button>
+    <button class="si" id="si-messages" onclick="showPanel('messages')"><span class="si-icon">💬</span>Messages<span class="si-badge">3</span></button>
+    <div class="sb-sec">Mon espace</div>
+    <button class="si" id="si-dossier" onclick="showPanel('dossier')"><span class="si-icon">📁</span>Mon dossier</button>
+    <button class="si" id="si-profil" onclick="showPanel('profil')"><span class="si-icon">👤</span>Mon profil</button>
+    <button class="si" id="si-annonce" onclick="showPanel('annonce')"><span class="si-icon">📢</span>Mon annonce</button>
+    <div class="sb-sec">Compte</div>
+    <button class="si" id="si-pay" onclick="showPanel('pay')"><span class="si-icon">💳</span>Paiement</button>
+    <button class="si" onclick="showView('view-landing')"><span class="si-icon">🚪</span>Déconnexion</button>
+    <div class="sb-bot">
+      <div class="sb-user">
+        <div class="sb-av">AM</div>
+        <div><div class="sb-uname">Alex Martin</div><div class="sb-urole">Locataire · Paris</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Trouver</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="ib notif" title="Notifications">🔔</button>
+        <button class="ib" title="Assistant IA" onclick="toggleBot()">🤖</button>
+        <div class="sb-av" style="cursor:pointer;width:32px;height:32px" onclick="showPanel('profil')">AM</div>
+      </div>
+    </div>
+
+    <!-- ── SWIPE ── -->
+    <div class="panel on" id="panel-swipe">
+      <div class="filter-bar">
+        <button class="fc on" onclick="toggleFc(this)">Tous</button>
+        <button class="fc" onclick="toggleFc(this)">🌙 Couche-tard</button>
+        <button class="fc" onclick="toggleFc(this)">🌅 Lève-tôt</button>
+        <button class="fc" onclick="toggleFc(this)">🐱 Animaux ok</button>
+        <button class="fc" onclick="toggleFc(this)">🚭 Non-fumeur</button>
+        <button class="fc" onclick="toggleFc(this)">💼 CDI</button>
+      </div>
+      <div class="swipe-body">
+        <div class="swipe-main">
+          <div id="swipe-stack"></div>
+          <div class="swipe-btns">
+            <button class="sa pass" onclick="doSwipe('left')" title="Passer">✕</button>
+            <button class="sa star" onclick="doSwipe('super')" title="Super like">⭐</button>
+            <button class="sa like" onclick="doSwipe('right')" title="J'adore">♥</button>
+          </div>
+        </div>
+        <div class="swipe-sidebar">
+          <div class="ss-head"><div class="ss-title">Matchs récents</div><div class="ss-sub">Profils compatibles avec toi</div></div>
+          <div class="mlist" id="mlist"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MESSAGES ── -->
+    <div class="panel" id="panel-messages">
+      <div class="msg-layout">
+        <div class="conv-sb">
+          <div class="conv-head">
+            <div style="font-weight:800;font-size:15px;margin-bottom:11px">Messages</div>
+            <input class="cs" placeholder="Rechercher…">
+          </div>
+          <div class="clist" id="clist"></div>
+        </div>
+        <div class="chat-area">
+          <div class="chat-top" id="chat-top">
+            <div class="ci-av" style="background:#9CA3AF">?</div>
+            <div><div class="chat-top-name">Sélectionne une conversation</div><div class="chat-top-s">← à gauche</div></div>
+          </div>
+          <div class="chat-msgs" id="chat-msgs"></div>
+          <div class="cin-row">
+            <input class="cin" id="cin" placeholder="Écris un message…" onkeydown="if(event.key==='Enter')sendMsg()">
+            <button class="csend" onclick="sendMsg()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DOSSIER ── -->
+    <div class="panel" id="panel-dossier">
+      <div class="pb">
+        <div class="ph">
+          <div><h1 class="pt">Mon dossier</h1><p class="ps">Gérez vos documents et votre bail actuel</p></div>
+          <button class="btn btn-p" style="font-size:13px">📤 Partager</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="font-weight:700">Complétude</span><span style="color:var(--mint-d);font-weight:800">75%</span></div>
+        <div class="prog"><div class="prog-f" style="width:75%"></div></div>
+        <div class="g2">
+          <div class="dc"><div class="dch"><div class="dct">📋 Identité</div><span class="sb2 ok2">✓ Complet</span></div>
+            <div class="dr"><span style="color:var(--gray)">Nom complet</span><span style="font-weight:600">Alex Martin</span></div>
+            <div class="dr"><span style="color:var(--gray)">Date de naissance</span><span>15/06/1998</span></div>
+            <div class="dr"><span style="color:var(--gray)">Pièce d'identité</span><span style="color:var(--mint-d);font-weight:700">✓ Validée</span></div>
+          </div>
+          <div class="dc"><div class="dch"><div class="dct">💰 Revenus</div><span class="sb2 ok2">✓ Complet</span></div>
+            <div class="dr"><span style="color:var(--gray)">Revenus mensuels</span><span style="font-weight:700">2 400 €</span></div>
+            <div class="dr"><span style="color:var(--gray)">Type de contrat</span><span>CDI</span></div>
+            <div class="dr"><span style="color:var(--gray)">Fiches de paie</span><span style="color:var(--mint-d);font-weight:700">✓ 3 uploadées</span></div>
+          </div>
+          <div class="dc"><div class="dch"><div class="dct">🏠 Logement actuel</div><span class="sb2 pend2">⏳ En cours</span></div>
+            <div class="dr"><span style="color:var(--gray)">Quittances loyer</span><span style="color:var(--warn);font-weight:700">2/3 docs</span></div>
+            <div class="dr"><span style="color:var(--gray)">Attestation assurance</span><span style="color:var(--danger)">✗ Manquant</span></div>
+            <div class="udrop" onclick="alert('Uploadez vos documents')"><div style="font-size:22px">📎</div><p style="font-size:12px;color:var(--gray);margin-top:5px">Glisser-déposer ou cliquer</p></div>
+          </div>
+          <div class="dc"><div class="dch"><div class="dct">🏦 Garant</div><span class="sb2 miss2">✗ Absent</span></div>
+            <div style="text-align:center;padding:18px 0"><div style="font-size:38px;margin-bottom:9px">👨‍👩‍👧</div><p style="font-size:13px;color:var(--gray);margin-bottom:12px">Un garant renforce votre dossier</p><button class="btn btn-g" style="font-size:13px">+ Ajouter</button></div>
+          </div>
+        </div>
+        <div class="bail">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <h3 style="font-size:17px">🏠 Bail en cours</h3><span class="sb2 ok2">🟢 Actif</span>
+          </div>
+          <p style="font-size:13px;color:var(--gray);margin-bottom:0">12 Rue de la Roquette, Paris 11e · Depuis le 01/03/2024</p>
+          <div class="bail-stats">
+            <div class="bstat"><div class="bsv">850€</div><div class="bsl">Loyer/mois</div></div>
+            <div class="bstat"><div class="bsv">14 mois</div><div class="bsl">Durée bail</div></div>
+            <div class="bstat hl"><div class="bsv">5 jan.</div><div class="bsl">Prochain loyer</div></div>
+            <div class="bstat"><div class="bsv">2</div><div class="bsl">Colocataires</div></div>
+          </div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap">
+            <button class="btn btn-g" style="font-size:12.5px">📄 Voir le bail</button>
+            <button class="btn btn-g" style="font-size:12.5px">💳 Paiements</button>
+            <button class="btn btn-g" style="font-size:12.5px">🔑 État des lieux</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROFIL ── -->
+    <div class="panel" id="panel-profil">
+      <div class="profil-pb">
+        <div class="prof-hero">
+          <div class="pav">AM</div>
+          <div style="flex:1">
+            <h2 class="pname">Alex Martin</h2>
+            <p class="pmeta">Paris · Développeur · 26 ans</p>
+            <div class="pcomp">💚 Profil complété à 85%</div>
+          </div>
+          <button class="btn btn-g" style="font-size:13px">✏️ Modifier</button>
+        </div>
+        <div class="psl">Informations</div>
+        <div class="pcard">
+          <div class="prow"><span style="color:var(--gray)">Prénom & Nom</span><span style="font-weight:600">Alex Martin</span></div>
+          <div class="prow"><span style="color:var(--gray)">Email</span><span>alex.martin@gmail.com</span></div>
+          <div class="prow"><span style="color:var(--gray)">Téléphone</span><span>+33 6 12 34 56 78</span></div>
+          <div class="prow"><span style="color:var(--gray)">Budget max</span><span style="font-weight:700;color:var(--mint-d)">900 €/mois</span></div>
+          <div class="prow"><span style="color:var(--gray)">Zone de recherche</span><span>Paris intra-muros</span></div>
+        </div>
+        <div class="psl">Style de vie</div>
+        <div class="pcard">
+          <p style="font-size:13px;color:var(--gray);margin-bottom:11px">Ces informations alimentent notre algorithme de matching.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px">
+            <span class="pill pill-m">🌙 Couche-tard</span><span class="pill pill-m">🎵 Musique</span><span class="pill pill-m">🏠 Télétravail</span><span class="pill pill-m">🐱 Animaux ok</span><span class="pill pill-m">🚭 Non-fumeur</span>
+          </div>
+          <button class="btn btn-g" style="font-size:12.5px" onclick="showView('view-onboard')">Modifier mes préférences</button>
+        </div>
+        <div class="psl">Paramètres</div>
+        <div class="pcard">
+          <div class="prow"><span style="color:var(--gray)">Notifications</span><input type="checkbox" checked style="accent-color:var(--mint);width:17px;height:17px;cursor:pointer"></div>
+          <div class="prow"><span style="color:var(--gray)">Profil visible</span><input type="checkbox" checked style="accent-color:var(--mint);width:17px;height:17px;cursor:pointer"></div>
+          <div class="prow" style="border:none"><span style="color:var(--danger);cursor:pointer" onclick="showView('view-landing')">Déconnexion</span><span style="color:var(--gray)">›</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ANNONCE ── -->
+    <div class="panel" id="panel-annonce">
+      <div class="form-pb">
+        <div style="max-width:620px">
+          <h1 class="pt" style="margin-bottom:5px">Déposer une annonce</h1>
+          <p class="ps" style="margin-bottom:24px">Publiez votre annonce et trouvez des colocataires compatibles.</p>
+          <div style="background:#fff;border-radius:var(--r);padding:26px;border:1px solid var(--gb)">
+            <div class="fg"><label class="fl">Titre de l'annonce</label><input class="fi" placeholder="Ex: Chambre dans appart 3P Oberkampf"></div>
+            <div class="frow"><div class="fg"><label class="fl">Loyer mensuel (CC)</label><input class="fi" type="number" placeholder="850"></div><div class="fg"><label class="fl">Charges</label><input class="fi" type="number" placeholder="80"></div></div>
+            <div class="frow"><div class="fg"><label class="fl">Ville</label><input class="fi" placeholder="Paris"></div><div class="fg"><label class="fl">Quartier</label><input class="fi" placeholder="Oberkampf"></div></div>
+            <div class="frow"><div class="fg"><label class="fl">Surface (m²)</label><input class="fi" type="number" placeholder="75"></div><div class="fg"><label class="fl">Chambres disponibles</label><select class="fi"><option>1</option><option>2</option><option>3</option></select></div></div>
+            <div class="fg"><label class="fl">Description</label><textarea class="fi" rows="4" placeholder="Décris l'appartement, l'ambiance…"></textarea></div>
+            <div class="fg"><label class="fl">Photos (max 8)</label><div class="pgrid"><div class="pslot f">📷</div><div class="pslot">+</div><div class="pslot">+</div><div class="pslot">+</div></div></div>
+            <div class="boost-box">
+              <div style="font-weight:800;font-size:13.5px;color:var(--mint-d);margin-bottom:5px">🚀 Booster l'annonce</div>
+              <div style="display:flex;flex-direction:column;gap:7px;margin-top:7px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="radio" name="boost" style="accent-color:var(--mint)"> Standard — Gratuit</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="radio" name="boost" checked style="accent-color:var(--mint)"> Mis en avant — 9,99€/mois</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="radio" name="boost" style="accent-color:var(--mint)"> Prioritaire — 24,99€/mois</label>
+              </div>
+            </div>
+            <button class="btn btn-p" style="width:100%;padding:13px;font-size:14.5px" onclick="showPanel('pay')">Publier l'annonce →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAYMENT ── -->
+    <div class="panel" id="panel-pay">
+      <div class="pay-pb">
+        <div style="max-width:580px">
+          <h1 class="pt" style="margin-bottom:5px">Paiement</h1>
+          <p class="ps" style="margin-bottom:24px">Choisissez votre formule</p>
+          <div style="background:#fff;border-radius:var(--r);padding:22px;border:1px solid var(--gb);margin-bottom:14px">
+            <div style="font-weight:800;font-size:13.5px;margin-bottom:13px">Choisir une formule</div>
+            <div class="pplan" onclick="selPlan(this)"><div class="pplan-info"><div class="pplan-name">🛡️ Assurance dossier</div><div class="pplan-desc">Dossier certifié + gestion bail</div></div><div class="pplan-price">3%<span style="font-size:11px;font-weight:400;color:var(--gray)"> loyer/mois</span></div></div>
+            <div class="pplan sel" onclick="selPlan(this)"><div class="pplan-info"><div class="pplan-name">🚀 Annonce mise en avant</div><div class="pplan-desc">2× plus de contacts · Badge</div></div><div class="pplan-price">9,99€<span style="font-size:11px;font-weight:400;color:var(--gray)">/mois</span></div></div>
+            <div class="pplan" onclick="selPlan(this)"><div class="pplan-info"><div class="pplan-name">⭐ Annonce prioritaire</div><div class="pplan-desc">Top du fil · Analytics</div></div><div class="pplan-price">24,99€<span style="font-size:11px;font-weight:400;color:var(--gray)">/mois</span></div></div>
+          </div>
+          <div style="background:#fff;border-radius:var(--r);padding:22px;border:1px solid var(--gb)">
+            <div style="font-weight:800;font-size:13.5px;margin-bottom:14px">Informations de paiement</div>
+            <div class="fg"><label class="fl">Titulaire</label><input class="fi" placeholder="Alex Martin"></div>
+            <div class="fg"><label class="fl">Numéro de carte</label><input class="fi" placeholder="1234 5678 9012 3456"></div>
+            <div class="frow"><div class="fg"><label class="fl">Expiration</label><input class="fi" placeholder="MM/AA"></div><div class="fg"><label class="fl">CVV</label><input class="fi" type="password" placeholder="123"></div></div>
+            <div class="stripe-n"><span style="font-weight:900;font-size:13px;color:#635BFF">stripe</span> Paiement sécurisé — données chiffrées</div>
+            <button class="btn btn-p" style="width:100%;padding:13px;font-size:14.5px;margin-top:14px" onclick="payOk()">Payer maintenant 🔒</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ████ CHATBOT ████ -->
+<button class="botfab" id="botfab" onclick="toggleBot()">🤖</button>
+<div class="botpanel" id="botpanel">
+  <div class="bh"><div><div class="bht">Assistant ISALY</div><div class="bhs">IA · répond en quelques secondes</div></div><button class="bc" onclick="toggleBot()">✕</button></div>
+  <div class="bmsgs" id="bmsgs"><div class="bmsg">👋 Bonjour ! Je suis l'assistant ISALY. Comment puis-je vous aider ?</div></div>
+  <div class="bin-row"><input class="bin" id="bin" placeholder="Votre question…" onkeydown="if(event.key==='Enter')sendBot()"><button class="bsend" onclick="sendBot()">➤</button></div>
+</div>
+
+<script>
+/* ── ROUTING ── */
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>{v.classList.remove('active');v.style.display='none';});
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(id==='view-auth'||id==='view-onboard'){el.style.display='flex';el.classList.add('active');}
+  else if(id==='view-app'){el.style.display='flex';el.classList.add('active');}
+  else{el.style.display='block';el.classList.add('active');}
+  window.scrollTo(0,0);
+  if(id==='view-onboard')initOnboard();
+}
+function enterApp(){showView('view-app');showPanel('swipe');}
+
+/* ── PANELS ── */
+const pMeta={
+  swipe:{lbl:'Trouver',init:initSwipe},
+  messages:{lbl:'Messages',init:initMessages},
+  dossier:{lbl:'Mon dossier',init:null},
+  profil:{lbl:'Mon profil',init:null},
+  annonce:{lbl:'Mon annonce',init:null},
+  pay:{lbl:'Paiement',init:null},
+};
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.si').forEach(s=>s.classList.remove('on'));
+  const p=document.getElementById('panel-'+name);
+  if(p)p.classList.add('on');
+  const s=document.getElementById('si-'+name);
+  if(s)s.classList.add('on');
+  const m=pMeta[name];
+  if(m){document.getElementById('topbar-title').textContent=m.lbl;if(m.init)m.init();}
+}
+
+/* ── SWIPE ── */
+const profiles=[
+  {name:'Sophie M.',age:24,job:'Designer UX',loc:'Paris 11ème',rent:850,match:94,em:'👩‍🎨',color:'#4ECBA0',tags:['🌙 Couche-tard','🎵 Musique','🏠 Télétravail','🐱 Animaux ok'],bio:'Passionnée de design et de musique indie. Coloc calme en semaine, festive le weekend !'},
+  {name:'Thomas R.',age:27,job:'Ingénieur',loc:'Paris 10ème',rent:780,match:87,em:'👨‍💻',color:'#6366F1',tags:['🌅 Lève-tôt','🏃 Sport','🍳 Cuisinier','🚭 Non-fumeur'],bio:'Dev backend, j\'adore cuisiner pour tout le monde. Cherche ambiance détendue et calme.'},
+  {name:'Camille B.',age:23,job:'Étudiante en droit',loc:'Paris 5ème',rent:700,match:82,em:'👩‍⚖️',color:'#F59E0B',tags:['📚 Studieuse','🎬 Ciné','🌿 Végé','🐕 Chien'],bio:'M2 droit des affaires. J\'ai un labrador adorable. Cherche grand appart lumineux.'},
+  {name:'Lucas A.',age:29,job:'Photographe',loc:'Paris 18ème',rent:900,match:78,em:'📸',color:'#EF4444',tags:['🎨 Créatif','🌍 Voyageur','🎸 Guitare','🌙 Nocturne'],bio:'Photographe freelance, souvent en déplacement. Coloc flexible et cool.'},
+];
+const recentM=[
+  {name:'Sophie M.',init:'SM',color:'#4ECBA0',job:'Designer UX',match:94},
+  {name:'Thomas R.',init:'TR',color:'#6366F1',job:'Ingénieur',match:87},
+  {name:'Camille B.',init:'CB',color:'#F59E0B',job:'Étudiante',match:82},
+];
+let swIdx=0;
+
+function initSwipe(){renderCard();renderMList();}
+
+function renderCard(){
+  const p=profiles[swIdx%profiles.length];
+  const stack=document.getElementById('swipe-stack');
+  stack.innerHTML='';
+  const card=document.createElement('div');
+  card.className='sc';card.id='sc';
+  card.innerHTML=`
+    <div class="sc-img" style="background:linear-gradient(135deg,${p.color}44,${p.color}22)"><span>${p.em}</span></div>
+    <div class="sc-body">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="sc-name">${p.name}, ${p.age}</div><div class="sc-meta">${p.job} · ${p.loc} · ${p.rent}€/mois</div></div>
+        <div class="mc">💚 ${p.match}%</div>
+      </div>
+      <div class="sc-tags">${p.tags.map(t=>`<span class="pill">${t}</span>`).join('')}</div>
+      <p class="sc-bio">${p.bio}</p>
+      <button class="sc-msg" onclick="openMsgTo('${p.name}')">💬 Écrire à ${p.name.split(' ')[0]}</button>
+    </div>`;
+  stack.appendChild(card);
+}
+
+function renderMList(){
+  document.getElementById('mlist').innerHTML=recentM.map(m=>`
+    <div class="mi" onclick="openMsgTo('${m.name}')">
+      <div class="mi-av" style="background:${m.color}">${m.init}</div>
+      <div><div class="mi-name">${m.name}</div><div class="mi-meta">${m.job}</div></div>
+      <div class="mi-score">${m.match}%</div>
+    </div>`).join('');
+}
+
+function doSwipe(dir){
+  const card=document.getElementById('sc');
+  if(!card)return;
+  card.classList.add(dir==='right'?'fly-r':dir==='left'?'fly-l':'fly-r');
+  if(dir==='right'&&Math.random()>.4)setTimeout(showMatch,380);
+  swIdx++;
+  setTimeout(renderCard,430);
+}
+
+function showMatch(){
+  const p=profiles[(swIdx-1)%profiles.length];
+  const ov=document.createElement('div');
+  ov.className='mov';
+  ov.innerHTML=`<div class="mbox">
+    <div style="font-size:54px;margin-bottom:13px">🎉</div>
+    <h2 style="font-size:28px;color:var(--mint-d);margin-bottom:8px">C'est un match !</h2>
+    <p style="font-size:14px;color:var(--gray);margin-bottom:20px">Toi & ${p.name} — envoyez un premier message !</p>
+    <div style="display:flex;gap:9px">
+      <button onclick="this.closest('.mov').remove();openMsgTo('${p.name}')" style="flex:1;padding:12px;background:var(--mint);color:#fff;border:none;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer">Message</button>
+      <button onclick="this.closest('.mov').remove()" style="flex:1;padding:12px;background:#F3F4F6;border:none;border-radius:50px;font-size:14px;cursor:pointer">Continuer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function toggleFc(el){document.querySelectorAll('.fc').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+
+/* ── MESSAGES ── */
+const convs=[
+  {id:1,name:'Sophie M.',init:'SM',color:'#4ECBA0',preview:'Oui le quartier est super sympa !',time:'11:32',msgs:[
+    {from:'them',text:'Salut ! J\'ai vu qu\'on matchait à 94%, ça m\'intéresse vraiment 😊',time:'11:15'},
+    {from:'me',text:'Coucou Sophie ! Ton profil correspond vraiment à ce que je cherche',time:'11:18'},
+    {from:'them',text:'Tu connais le quartier Oberkampf ? L\'appart est vraiment bien placé',time:'11:25'},
+    {from:'me',text:'Oui le quartier est super sympa !',time:'11:32'},
+  ]},
+  {id:2,name:'Thomas R.',init:'TR',color:'#6366F1',preview:'Je suis dispo ce weekend',time:'Hier',msgs:[
+    {from:'them',text:'Hello ! On pourrait visiter l\'appartement ?',time:'Hier'},
+    {from:'me',text:'Je suis dispo ce weekend',time:'Hier'},
+  ]},
+  {id:3,name:'Camille B.',init:'CB',color:'#F59E0B',preview:'Super, à bientôt 🙂',time:'Lun.',msgs:[
+    {from:'them',text:'Mon chien est adorable, il ne dérange personne !',time:'Lun.'},
+    {from:'me',text:'Super, à bientôt 🙂',time:'Lun.'},
+  ]},
+];
+let activeConv=null;
+
+function initMessages(){
+  document.getElementById('clist').innerHTML=convs.map(c=>`
+    <div class="ci${activeConv===c.id?' on':''}" onclick="openConv(${c.id})">
+      <div class="ci-av" style="background:${c.color}">${c.init}</div>
+      <div style="flex:1;min-width:0"><div class="ci-name">${c.name}</div><div class="ci-prev">${c.preview}</div></div>
+      <div class="ci-time">${c.time}</div>
+    </div>`).join('');
+}
+
+function openConv(id){
+  activeConv=id;
+  const c=convs.find(x=>x.id===id);if(!c)return;
+  document.getElementById('chat-top').innerHTML=`
+    <div class="ci-av" style="background:${c.color}">${c.init}</div>
+    <div><div class="chat-top-name">${c.name}</div><div class="chat-top-s">● En ligne</div></div>`;
+  const msgs=document.getElementById('chat-msgs');
+  msgs.innerHTML=c.msgs.map(m=>`
+    <div class="mr ${m.from}"><div><div class="bub">${m.text}</div><div class="mt">${m.time}</div></div></div>`).join('');
+  msgs.scrollTop=msgs.scrollHeight;
+  initMessages();
+}
+
+function openMsgTo(name){
+  let c=convs.find(x=>x.name===name);
+  if(!c){
+    const col=['#4ECBA0','#6366F1','#F59E0B','#EF4444'];
+    c={id:Date.now(),name,init:name.split(' ').map(n=>n[0]).join(''),color:col[convs.length%4],preview:'Nouvelle conversation',time:'maintenant',msgs:[]};
+    convs.unshift(c);
+  }
+  showPanel('messages');
+  setTimeout(()=>openConv(c.id),80);
+}
+
+function sendMsg(){
+  const inp=document.getElementById('cin');
+  if(!inp.value.trim()||!activeConv)return;
+  const c=convs.find(x=>x.id===activeConv);
+  if(c){c.msgs.push({from:'me',text:inp.value,time:'maintenant'});c.preview=inp.value;}
+  const msgs=document.getElementById('chat-msgs');
+  const d=document.createElement('div');
+  d.className='mr me';d.innerHTML=`<div><div class="bub">${inp.value}</div><div class="mt">maintenant</div></div>`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+  inp.value='';initMessages();
+}
+
+/* ── ONBOARD ── */
+const obSteps=[
+  {step:'ÉTAPE 1 / 5',title:'Tu es…',sub:'Comment tu utilises ISALY ?',type:'choice',key:'role',opts:[{em:'🔍',lbl:'Locataire',sub:'Je cherche une coloc'},{em:'🏠',lbl:'Loueur',sub:'Je loue mon bien'}]},
+  {step:'ÉTAPE 2 / 5',title:'Tes horaires',sub:'Ton rythme de vie quotidien ?',type:'choice',key:'sched',opts:[{em:'🌅',lbl:'Lève-tôt',sub:'Avant 8h'},{em:'🌙',lbl:'Couche-tard',sub:'Après 23h'},{em:'🔄',lbl:'Variable',sub:'Ça dépend'},{em:'💤',lbl:'Flexible',sub:'Sans contrainte'}]},
+  {step:'ÉTAPE 3 / 5',title:'Ton ambiance',sub:'L\'atmosphère idéale ?',type:'choice',key:'vibe',opts:[{em:'🤫',lbl:'Calme',sub:'Sérénité'},{em:'🎉',lbl:'Festif',sub:'Soirées'},{em:'🎯',lbl:'Studieux',sub:'Concentration'},{em:'😎',lbl:'Détendu',sub:'Zen & cool'}]},
+  {step:'ÉTAPE 4 / 5',title:'Tes passions',sub:'Sélectionne tes centres d\'intérêt',type:'multi',key:'pass',opts:[{em:'🎵',lbl:'Musique'},{em:'🎬',lbl:'Cinéma'},{em:'🏃',lbl:'Sport'},{em:'🍳',lbl:'Cuisine'},{em:'🎨',lbl:'Art'},{em:'📚',lbl:'Lecture'},{em:'🌍',lbl:'Voyages'},{em:'🎮',lbl:'Gaming'}]},
+  {step:'ÉTAPE 5 / 5',title:'Ton budget',sub:'Loyer max que tu peux assumer ?',type:'slider',key:'budget',min:300,max:1500,def:800},
+];
+let obIdx=0,obAns={};
+function initOnboard(){obIdx=0;obAns={};renderOb();}
+function renderOb(){
+  const s=obSteps[obIdx];
+  const dots=obSteps.map((_,i)=>`<div class="ob-dot${i<obIdx?' done':i===obIdx?' cur':''}"></div>`).join('');
+  let content='';
+  if(s.type==='slider'){
+    content=`<div style="margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:10px"><span>Budget max</span><span style="color:var(--mint-d)" id="sv">${s.def}€/mois</span></div>
+      <input type="range" min="${s.min}" max="${s.max}" value="${s.def}" step="50" oninput="document.getElementById('sv').textContent=this.value+'€/mois'">
+    </div>`;
+  } else {
+    const multi=s.type==='multi';
+    content=`<div class="ob-opts" ${multi?'style="grid-template-columns:repeat(4,1fr)"':''}>
+      ${s.opts.map(o=>`<div class="ob-opt" onclick="pickOb(this,'${s.key}','${o.lbl}',${multi})">
+        <div class="ob-em">${o.em}</div><div class="ob-lbl">${o.lbl}</div>${o.sub?`<div class="ob-sl">${o.sub}</div>`:''}
+      </div>`).join('')}
+    </div>`;
+  }
+  document.getElementById('ob-box').innerHTML=`
+    <div class="ob-dots">${dots}</div>
+    <div class="ob-step">${s.step}</div>
+    <h2 class="ob-title">${s.title}</h2>
+    <p class="ob-sub">${s.sub}</p>
+    ${content}
+    <div style="display:flex;gap:10px;margin-top:24px">
+      ${obIdx>0?'<button class="btn btn-g" onclick="obPrev()" style="flex:1;padding:12px">← Retour</button>':''}
+      <button class="btn btn-p" onclick="obNext()" style="flex:2;padding:12px;font-size:14px">
+        ${obIdx<obSteps.length-1?'Continuer →':'Créer mon profil 🚀'}
+      </button>
+    </div>`;
+}
+function pickOb(el,key,val,multi){
+  if(!multi){el.parentElement.querySelectorAll('.ob-opt').forEach(o=>o.classList.remove('sel'));obAns[key]=val;el.classList.add('sel');}
+  else{el.classList.toggle('sel');if(!obAns[key])obAns[key]=[];const i=obAns[key].indexOf(val);i===-1?obAns[key].push(val):obAns[key].splice(i,1);}
+}
+function obNext(){if(obIdx<obSteps.length-1){obIdx++;renderOb();}else{enterApp();}}
+function obPrev(){if(obIdx>0){obIdx--;renderOb();}}
+
+/* ── PAYMENT ── */
+function selPlan(el){document.querySelectorAll('.pplan').forEach(p=>p.classList.remove('sel'));el.classList.add('sel');}
+function payOk(){alert('✅ Paiement simulé — branchez votre clé Stripe API pour activer les paiements réels.');showPanel('dossier');}
+
+/* ── CHATBOT ── */
+function toggleBot(){document.getElementById('botpanel').classList.toggle('open');}
+async function sendBot(){
+  const inp=document.getElementById('bin');
+  if(!inp.value.trim())return;
+  const txt=inp.value.trim();inp.value='';
+  const msgs=document.getElementById('bmsgs');
+  const ud=document.createElement('div');ud.className='umsg';ud.textContent=txt;msgs.appendChild(ud);
+  const ld=document.createElement('div');ld.className='bload';ld.innerHTML='<span></span><span></span><span></span>';msgs.appendChild(ld);
+  msgs.scrollTop=msgs.scrollHeight;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:`Tu es l'assistant virtuel d'ISALY, plateforme française de colocation. Tu aides à : trouver une colocation (matching Tinder), gérer le dossier et le bail, comprendre les offres (assurance dossier 3% du loyer, mise en avant 9,99€/mois ou 24,99€/mois), répondre aux questions sur la législation du bail. Réponds en français, concis et chaleureux. Maximum 3 phrases.`,
+        messages:[{role:'user',content:txt}]})
+    });
+    const d=await res.json();ld.remove();
+    const bd=document.createElement('div');bd.className='bmsg';
+    bd.textContent=d.content?.[0]?.text||'Je suis là pour vous aider !';
+    msgs.appendChild(bd);msgs.scrollTop=msgs.scrollHeight;
+  }catch(e){
+    ld.remove();const bd=document.createElement('div');bd.className='bmsg';
+    bd.textContent='⚠️ Connexion indisponible. Consultez notre FAQ.';msgs.appendChild(bd);
+  }
+}
+
+/* ── INIT ── */
+initSwipe();initMessages();
+</script>
+</body>
+</html>
