@@ -25,36 +25,35 @@ interface SwipeCardProps {
   hint?: 'like' | 'nope' | 'super' | null
 }
 
-// ── Tag colour system ─────────────────────────────────────────
-function tagStyle(tag: string): { bg: string; color: string } {
+function getPillStyle(tag: string): string {
   const t = tag.toLowerCase()
-  if (t.includes('couche') || t.includes('lève') || t.includes('tôt') || t.includes('horaire'))
-    return { bg: '#EFF6FF', color: '#3B82F6' }
-  if (t.includes('sport') || t.includes('gym') || t.includes('course') || t.includes('yoga') || t.includes('vélo') || t.includes('fitness'))
-    return { bg: '#FFF7ED', color: '#F97316' }
-  if (t.includes('musique') || t.includes('art') || t.includes('créatif') || t.includes('guitare') || t.includes('nocturne'))
-    return { bg: '#F5F3FF', color: '#8B5CF6' }
-  if (t.includes('cuisinier') || t.includes('cuisine') || t.includes('festif'))
-    return { bg: '#FFFBEB', color: '#F59E0B' }
-  if (t.includes('gaming') || t.includes('jeux'))
-    return { bg: '#EEF2FF', color: '#6366F1' }
+  if (t.includes('tard') || t.includes('tôt') || t.includes('lève') || t.includes('couche') || t.includes('horaire'))
+    return 'bg-blue-50 text-blue-600'
+  if (t.includes('animal') || t.includes('chat') || t.includes('chien') || t.includes('nature') || t.includes('végé'))
+    return 'bg-emerald-50 text-emerald-600'
   if (t.includes('fumeur'))
-    return { bg: '#FEF2F2', color: '#EF4444' }
+    return 'bg-red-50 text-red-500'
+  if (t.includes('travail') || t.includes('télétravail') || t.includes('studieux') || t.includes('calme'))
+    return 'bg-purple-50 text-purple-600'
+  if (t.includes('musique') || t.includes('art') || t.includes('créatif') || t.includes('guitare') || t.includes('nocturne'))
+    return 'bg-violet-50 text-violet-600'
+  if (t.includes('sport') || t.includes('gym') || t.includes('course') || t.includes('yoga') || t.includes('vélo') || t.includes('fitness'))
+    return 'bg-orange-50 text-orange-500'
+  if (t.includes('cuisine') || t.includes('cuisinier') || t.includes('festif'))
+    return 'bg-yellow-50 text-yellow-600'
+  if (t.includes('gaming') || t.includes('jeux'))
+    return 'bg-indigo-50 text-indigo-600'
   if (t.includes('voyage') || t.includes('travel') || t.includes('backpack'))
-    return { bg: '#FFF1F2', color: '#F43F5E' }
-  if (t.includes('tech') || t.includes('code') || t.includes('développ') || t.includes('ia') || t.includes('informatiq'))
-    return { bg: '#F0F9FF', color: '#0EA5E9' }
-  if (t.includes('animal') || t.includes('chat') || t.includes('chien') || t.includes('végé') || t.includes('nature'))
-    return { bg: '#ECFDF5', color: '#10B981' }
-  if (t.includes('télétravail') || t.includes('studieux') || t.includes('calme'))
-    return { bg: '#ECFDF5', color: '#059669' }
-  return { bg: '#F0FDF4', color: '#16A34A' }
+    return 'bg-pink-50 text-pink-500'
+  if (t.includes('tech') || t.includes('code') || t.includes('développ') || t.includes('informatiq'))
+    return 'bg-sky-50 text-sky-600'
+  return 'bg-gray-100 text-gray-600'
 }
 
 export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCardProps) {
-  const cardRef   = useRef<HTMLDivElement>(null)
+  const cardRef    = useRef<HTMLDivElement>(null)
   const [flying, setFlying] = useState<'left' | 'right' | null>(null)
-  const startX    = useRef(0)
+  const startX     = useRef(0)
   const isDragging = useRef(false)
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -77,145 +76,139 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
   const firstName = profile.name.split(' ')[0]
 
   const hintRotate = hint === 'like' ? 'rotate(2deg)' : hint === 'nope' ? 'rotate(-2deg)' : undefined
+  const cardTransform = flying === 'left'
+    ? 'translateX(-130%) rotate(-18deg)'
+    : flying === 'right'
+    ? 'translateX(130%) rotate(18deg)'
+    : hintRotate
 
   return (
     <div
       ref={cardRef}
-      className="card-entrance select-none"
+      className="card-entrance select-none rounded-2xl shadow-xl overflow-hidden bg-white cursor-grab"
       style={{
         width: '380px',
         minHeight: '520px',
-        borderRadius: '24px',
-        overflow: 'hidden',
-        background: '#FFFFFF',
-        boxShadow: '0 16px 56px rgba(0,0,0,.16)',
-        transform: flying === 'left'
-          ? 'translateX(-130%) rotate(-18deg)'
-          : flying === 'right'
-          ? 'translateX(130%) rotate(18deg)'
-          : hintRotate,
+        transform: cardTransform,
         opacity: flying ? 0 : 1,
         transition: 'transform 0.36s cubic-bezier(.34,1.56,.64,1), opacity 0.3s',
-        cursor: 'grab',
       }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* ── PHOTO ZONE ────────────────────────────────────── */}
-      <div className="relative" style={{ height: '286px', overflow: 'hidden' }}>
-        {/* Gradient background */}
+      <div className="relative overflow-hidden" style={{ height: '280px' }}>
+
+        {/* Dynamic gradient */}
         <div
           className="absolute inset-0"
-          style={{ background: `linear-gradient(160deg, ${profile.color}DD 0%, ${profile.color}66 100%)` }}
+          style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}88 100%)` }}
         />
 
-        {/* Large semi-transparent initial */}
+        {/* Large initial watermark */}
         <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-          style={{ fontSize: '140px', fontFamily: "'DM Serif Display', serif", color: 'white', opacity: 0.16, lineHeight: 1 }}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none font-serif"
+          style={{ fontSize: '120px', color: 'white', opacity: 0.14, lineHeight: 1 }}
         >
           {profile.name[0]}
         </div>
 
-        {/* Emoji (decorative) */}
+        {/* Emoji */}
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ fontSize: '76px', opacity: 0.75, marginTop: '-8px' }}
+          style={{ fontSize: '72px', opacity: 0.82 }}
         >
           {profile.emoji}
         </div>
 
-        {/* Bottom gradient overlay for text readability */}
+        {/* Bottom black overlay gradient for text legibility */}
         <div
           className="absolute bottom-0 inset-x-0"
-          style={{ height: '110px', background: 'linear-gradient(to top, rgba(0,0,0,.72) 0%, transparent 100%)' }}
+          style={{ height: '120px', background: 'linear-gradient(to top, rgba(0,0,0,.76) 0%, transparent 100%)' }}
         />
 
-        {/* Name + age over gradient */}
-        <div className="absolute bottom-0 inset-x-0 px-5 pb-5">
-          <div className="text-[24px] font-bold leading-tight" style={{ color: '#FFFFFF', fontFamily: "'DM Serif Display', serif" }}>
+        {/* Name + age + job/city */}
+        <div className="absolute bottom-0 inset-x-0 px-5 pb-4">
+          <div className="text-[22px] font-bold leading-tight text-white font-serif">
             {profile.name}{profile.age > 0 ? `, ${profile.age}` : ''}
           </div>
-          <div className="text-[13px] mt-1 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,.82)' }}>
-            {profile.job && <><span>💼</span><span>{profile.job}</span><span style={{ opacity: 0.4 }}>·</span></>}
+          <div className="text-[13px] mt-0.5 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,.82)' }}>
+            {profile.job && (
+              <><span>💼</span><span>{profile.job}</span><span className="opacity-40">·</span></>
+            )}
             <span>📍</span>{profile.city}
           </div>
         </div>
 
         {/* Match score badge — top right */}
-        <div
-          className="absolute top-3.5 right-3.5 flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-extrabold"
-          style={{ background: 'rgba(255,255,255,.95)', color: '#2AA87C', boxShadow: '0 2px 14px rgba(0,0,0,.25)' }}
-        >
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-white rounded-full px-3 py-1 text-xs font-extrabold shadow-md" style={{ color: '#2AA87C' }}>
           ♥ {profile.match}%
         </div>
 
         {/* Cert badge — top left */}
         {(profile.certLevel ?? 0) > 0 && (
-          <div className="absolute top-3.5 left-3.5">
+          <div className="absolute top-3 left-3">
             <CertificationBadge level={profile.certLevel!} size="sm" />
           </div>
         )}
 
-        {/* LIKE / NOPE / SUPER stamp */}
+        {/* LIKE / NOPE / SUPER stamps */}
         {hint === 'like' && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(34,197,94,.15)', pointerEvents: 'none' }}>
-            <div className="stamp-like px-5 py-2 rounded-[8px] text-[36px] font-black tracking-wider">LIKE ✓</div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ background: 'rgba(34,197,94,.15)' }}>
+            <div className="stamp-like px-5 py-2 rounded-lg text-4xl font-black tracking-wider">LIKE ✓</div>
           </div>
         )}
         {hint === 'nope' && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(239,68,68,.15)', pointerEvents: 'none' }}>
-            <div className="stamp-nope px-5 py-2 rounded-[8px] text-[36px] font-black tracking-wider">NOPE ✕</div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ background: 'rgba(239,68,68,.15)' }}>
+            <div className="stamp-nope px-5 py-2 rounded-lg text-4xl font-black tracking-wider">NOPE ✕</div>
           </div>
         )}
         {hint === 'super' && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(99,102,241,.15)', pointerEvents: 'none' }}>
-            <div className="stamp-super px-5 py-2 rounded-[8px] text-[36px] font-black tracking-wider">SUPER ⭐</div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ background: 'rgba(99,102,241,.15)' }}>
+            <div className="stamp-super px-5 py-2 rounded-lg text-4xl font-black tracking-wider">SUPER ⭐</div>
           </div>
         )}
       </div>
 
       {/* ── INFO ZONE ─────────────────────────────────────── */}
-      <div className="px-5 pt-4 pb-5" style={{ background: '#FFFFFF' }}>
+      <div className="bg-white px-5 pt-4 pb-5">
+
         {/* Budget */}
-        <div className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>
-          {profile.rent > 0
-            ? <>{profile.rent}<span className="text-[12px] font-normal ml-0.5" style={{ color: '#9CA3AF' }}>€/mois</span></>
-            : <span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: '13px' }}>Budget non renseigné</span>
-          }
+        <div className="text-base font-bold text-gray-900 mb-3">
+          {profile.rent > 0 ? (
+            <>{profile.rent} <span className="text-xs font-normal text-gray-400">€/mois</span></>
+          ) : (
+            <span className="text-sm font-normal text-gray-400">Budget non renseigné</span>
+          )}
         </div>
 
-        {/* Tags */}
+        {/* Pills */}
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {profile.tags.slice(0, 5).map(tag => {
-            const s = tagStyle(tag)
-            return (
-              <span
-                key={tag}
-                className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: s.bg, color: s.color }}
-              >
-                {tag}
-              </span>
-            )
-          })}
+          {profile.tags.slice(0, 5).map(tag => (
+            <span
+              key={tag}
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${getPillStyle(tag)}`}
+            >
+              {tag}
+            </span>
+          ))}
         </div>
 
         {/* Bio */}
         <p
-          className="text-[13px] leading-relaxed mb-4"
-          style={{ color: '#6B7280', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          className="text-sm text-gray-500 leading-relaxed mb-4"
+          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
         >
-          {profile.bio || 'Aucune description pour l\'instant.'}
+          {profile.bio || "Aucune description pour l'instant."}
         </p>
 
-        {/* CTA button */}
+        {/* CTA */}
         <button
           onClick={() => onMessage(profile.name)}
-          className="w-full py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer flex items-center justify-center gap-2 transition-all"
+          className="w-full py-3 mt-1 rounded-full text-sm font-semibold text-white border-none cursor-pointer flex items-center justify-center gap-2 transition-all"
           style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.32)' }}
           onMouseEnter={e => {
-            e.currentTarget.style.boxShadow = '0 8px 28px rgba(78,203,160,.58)'
+            e.currentTarget.style.boxShadow = '0 8px 28px rgba(78,203,160,.55)'
             e.currentTarget.style.transform = 'translateY(-1px)'
           }}
           onMouseLeave={e => {

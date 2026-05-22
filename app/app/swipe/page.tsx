@@ -142,25 +142,19 @@ export default function SwipePage() {
   return (
     <>
       <Topbar title="Trouver" />
-      <div className="flex flex-col flex-1 overflow-hidden" style={{ background: '#F7F8FA' }}>
+      <div className="flex flex-col flex-1 overflow-hidden bg-gray-50">
 
         {/* Filters */}
-        <div
-          className="flex gap-2 px-5 py-3 border-b flex-wrap flex-shrink-0"
-          style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}
-        >
+        <div className="flex gap-2 px-5 py-3 border-b border-gray-100 flex-wrap flex-shrink-0 bg-white shadow-sm">
           {FILTERS.map(f => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className="px-4 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border transition-all duration-200"
-              style={
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border transition-all duration-200 ${
                 activeFilter === f
-                  ? { background: '#4ECBA0', color: '#FFFFFF', borderColor: '#4ECBA0', boxShadow: '0 2px 10px rgba(78,203,160,.3)' }
-                  : { background: '#F9FAFB', color: '#6B7280', borderColor: '#E5E7EB' }
-              }
-              onMouseEnter={e => { if (activeFilter !== f) { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#2AA87C' } }}
-              onMouseLeave={e => { if (activeFilter !== f) { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#6B7280' } }}
+                  ? 'bg-mint text-white border-mint shadow-sm'
+                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-mint hover:text-mint-dark'
+              }`}
             >
               {f}
             </button>
@@ -169,37 +163,32 @@ export default function SwipePage() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Main swipe area */}
-          <div className="flex flex-col items-center justify-center gap-6 flex-1 overflow-y-auto p-7" style={{ background: '#F7F8FA' }}>
+          <div className="flex flex-col items-center justify-center gap-6 flex-1 overflow-y-auto p-7 bg-gray-50">
             {loading ? (
               <div className="text-center">
-                <div className="text-[48px] mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
-                <p className="text-[14px] font-semibold" style={{ color: '#6B7280' }}>Recherche de profils compatibles…</p>
-                <p className="text-[12px] mt-1" style={{ color: '#9CA3AF' }}>Ça prend quelques secondes</p>
+                <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
+                <p className="text-sm font-semibold text-gray-500">Recherche de profils compatibles…</p>
+                <p className="text-xs mt-1 text-gray-400">Ça prend quelques secondes</p>
               </div>
             ) : noMoreProfiles ? (
-              <div
-                className="text-center px-8 py-10 rounded-[24px]"
-                style={{ background: '#FFFFFF', boxShadow: '0 4px 24px rgba(0,0,0,.07)', maxWidth: '340px' }}
-              >
-                <div className="text-[60px] mb-4" style={{ animation: 'bop 1.4s ease infinite' }}>🏠</div>
-                <h3 className="text-[22px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+              <div className="flex flex-col items-center justify-center gap-4 text-center bg-white rounded-2xl px-8 py-12 shadow-md" style={{ maxWidth: '340px' }}>
+                <span className="text-6xl" style={{ animation: 'bop 1.4s ease infinite' }}>🏠</span>
+                <h3 className="text-xl font-bold text-gray-900 font-serif">
                   Tous les profils ont été vus !
                 </h3>
-                <p className="text-[13.5px] mb-6" style={{ color: '#6B7280', lineHeight: 1.6 }}>
+                <p className="text-sm text-gray-500 leading-relaxed">
                   Reviens demain, de nouveaux colocataires arrivent chaque jour.
                 </p>
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-2.5 w-full">
                   <button
                     onClick={() => { setIndex(0); setCardKey(k => k + 1) }}
-                    className="px-6 py-2.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer"
-                    style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.3)' }}
+                    className="w-full px-6 py-2.5 rounded-full text-sm font-semibold text-white border-none cursor-pointer bg-mint hover:bg-mint-dark transition-colors"
                   >
                     🔄 Recommencer
                   </button>
                   <button
                     onClick={() => setActiveFilter('Tous')}
-                    className="px-6 py-2.5 rounded-full text-[13px] font-semibold border cursor-pointer"
-                    style={{ background: 'transparent', borderColor: '#E5E7EB', color: '#6B7280' }}
+                    className="w-full px-6 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-500 cursor-pointer hover:border-mint hover:text-mint transition-colors bg-transparent"
                   >
                     Affiner mes filtres
                   </button>

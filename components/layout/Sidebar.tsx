@@ -228,11 +228,27 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       className="flex items-center gap-3 py-2.5 mx-2 my-px rounded-[10px] text-[13.5px] font-medium transition-all duration-200 no-underline relative"
       style={
         active
-          ? { background: '#0E2B1E', color: '#4ECBA0', paddingLeft: 'calc(0.875rem - 3px)', paddingRight: '0.875rem', borderLeft: '3px solid #4ECBA0' }
+          ? {
+              background: '#16302a',
+              color: '#4ECBA0',
+              paddingLeft: 'calc(0.875rem - 3px)',
+              paddingRight: '0.875rem',
+              borderLeft: '3px solid #4ECBA0',
+            }
           : { color: '#9CA3AF', paddingLeft: '0.875rem', paddingRight: '0.875rem' }
       }
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' } }}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#9CA3AF' } }}
+      onMouseEnter={e => {
+        if (!active) {
+          e.currentTarget.style.background = '#1F2937'
+          e.currentTarget.style.color = '#E5E7EB'
+        }
+      }}
+      onMouseLeave={e => {
+        if (!active) {
+          e.currentTarget.style.background = 'none'
+          e.currentTarget.style.color = '#9CA3AF'
+        }
+      }}
     >
       <span className="text-[18px] w-5 text-center flex-shrink-0">{item.icon}</span>
       {item.label}
