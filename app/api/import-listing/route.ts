@@ -196,7 +196,7 @@ function parseOG($: CheerioAPI) {
   const description = $('meta[property="og:description"]').attr('content') || ''
   const rent = toNumber($('meta[property="og:price:amount"]').attr('content'))
   const photos = ogImages($)
-  return { title, description, city: '', neighborhood: '', rent, surface: null, photos }
+  return { title, description, city: '', neighborhood: '', rent, surface: null as number | null, photos }
 }
 
 // ─── Route handler ─────────────────────────────────────────────────────────────
