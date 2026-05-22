@@ -177,7 +177,7 @@ input[type='range'].dark-thumb::-webkit-slider-thumb {
   0%, 100% { box-shadow: 0 4px 20px rgba(78,203,160,.4); }
   50%       { box-shadow: 0 4px 32px rgba(78,203,160,.7); }
 }
-.pulse-like { animation: pulse-mint 2s ease infinite; }
+.pulse-like { animation: pulse-mint 3s ease infinite; }
 
 /* ── Swipe card fly animations ───────────────────────────────── */
 @keyframes popIn {

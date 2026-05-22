@@ -70,32 +70,33 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
 
   const firstName = profile.name.split(' ')[0]
 
+  const hintRotate = hint === 'like' ? 'rotate(2deg)' : hint === 'nope' ? 'rotate(-2deg)' : undefined
+
   return (
     <div
       ref={cardRef}
       className="card-entrance select-none"
       style={{
-        width: '340px',
-        borderRadius: '22px',
+        width: '380px',
+        minHeight: '520px',
+        borderRadius: '24px',
         overflow: 'hidden',
         background: '#FFFFFF',
-        boxShadow: '0 12px 48px rgba(0,0,0,.14)',
+        boxShadow: '0 16px 56px rgba(0,0,0,.16)',
         transform: flying === 'left'
           ? 'translateX(-130%) rotate(-18deg)'
           : flying === 'right'
           ? 'translateX(130%) rotate(18deg)'
-          : undefined,
+          : hintRotate,
         opacity: flying ? 0 : 1,
         transition: 'transform 0.36s cubic-bezier(.34,1.56,.64,1), opacity 0.3s',
         cursor: 'grab',
       }}
-      onMouseEnter={e => { if (!flying) e.currentTarget.style.transform = 'rotate(0.8deg) scale(1.005)' }}
-      onMouseLeave={e => { if (!flying) e.currentTarget.style.transform = '' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* ── PHOTO ZONE ────────────────────────────────────── */}
-      <div className="relative" style={{ height: '252px', overflow: 'hidden' }}>
+      <div className="relative" style={{ height: '286px', overflow: 'hidden' }}>
         {/* Gradient background */}
         <div
           className="absolute inset-0"
@@ -105,15 +106,15 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         {/* Large semi-transparent initial */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-          style={{ fontSize: '120px', fontFamily: "'DM Serif Display', serif", color: 'white', opacity: 0.18, lineHeight: 1 }}
+          style={{ fontSize: '140px', fontFamily: "'DM Serif Display', serif", color: 'white', opacity: 0.16, lineHeight: 1 }}
         >
           {profile.name[0]}
         </div>
 
-        {/* Emoji (smaller, decorative) */}
+        {/* Emoji (decorative) */}
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ fontSize: '64px', opacity: 0.7, marginTop: '-10px' }}
+          style={{ fontSize: '76px', opacity: 0.75, marginTop: '-8px' }}
         >
           {profile.emoji}
         </div>
@@ -125,25 +126,15 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         />
 
         {/* Name + age over gradient */}
-        <div className="absolute bottom-0 inset-x-0 px-5 pb-4">
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-[22px] font-bold leading-tight" style={{ color: '#FFFFFF' }}>
-                {profile.name}, {profile.age}
-              </div>
-              <div className="text-[12.5px] mt-0.5" style={{ color: 'rgba(255,255,255,.75)' }}>
-                {profile.job} · {profile.city}
-              </div>
-            </div>
+        <div className="absolute bottom-0 inset-x-0 px-5 pb-5">
+          <div className="text-[24px] font-bold leading-tight" style={{ color: '#FFFFFF' }}>
+            {profile.name}, {profile.age}
           </div>
-        </div>
-
-        {/* Compatibility badge — top right */}
-        <div
-          className="absolute top-3.5 right-3.5 flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-extrabold"
-          style={{ background: '#FFFFFF', color: '#2AA87C', boxShadow: '0 2px 12px rgba(0,0,0,.2)' }}
-        >
-          💚 {profile.match}%
+          <div className="text-[13px] mt-1 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,.8)' }}>
+            <span>💼</span>{profile.job}
+            <span style={{ opacity: 0.5 }}>·</span>
+            <span>📍</span>{profile.city}
+          </div>
         </div>
 
         {/* Cert badge — top left */}
@@ -173,14 +164,22 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
 
       {/* ── INFO ZONE ─────────────────────────────────────── */}
       <div className="px-5 pt-4 pb-5" style={{ background: '#FFFFFF' }}>
-        {/* Rent */}
-        <div className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>
-          {profile.rent}<span className="text-[12px] font-normal" style={{ color: '#9CA3AF' }}>€/mois</span>
+        {/* Rent + match score row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[16px] font-bold" style={{ color: '#111827' }}>
+            {profile.rent}<span className="text-[12px] font-normal ml-0.5" style={{ color: '#9CA3AF' }}>€/mois</span>
+          </div>
+          <div
+            className="flex items-center gap-1 text-[12px] font-extrabold px-2.5 py-1 rounded-full"
+            style={{ background: '#ECFDF5', color: '#2AA87C' }}
+          >
+            ✨ {profile.match}% compatible
+          </div>
         </div>
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {profile.tags.slice(0, 4).map(tag => {
+          {profile.tags.slice(0, 5).map(tag => {
             const s = tagStyle(tag)
             return (
               <span
@@ -197,7 +196,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         {/* Bio */}
         <p
           className="text-[13px] leading-relaxed mb-4"
-          style={{ color: '#6B7280', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          style={{ color: '#6B7280', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
         >
           {profile.bio}
         </p>
@@ -207,7 +206,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           onClick={() => onMessage(profile.name)}
           className="w-full py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer flex items-center justify-center gap-2 transition-all"
           style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.3)' }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 6px 24px rgba(78,203,160,.5)')}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 8px 28px rgba(78,203,160,.55)')}
           onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(78,203,160,.3)')}
         >
           💬 Écrire à {firstName}

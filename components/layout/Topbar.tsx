@@ -8,14 +8,29 @@ import { useRouter } from 'next/navigation'
 
 interface TopbarProps {
   title: string
-  userInitials?: string
 }
 
-export default function Topbar({ title, userInitials = 'AM' }: TopbarProps) {
-  const [chatOpen, setChatOpen]       = useState(false)
+export default function Topbar({ title }: TopbarProps) {
+  const [chatOpen, setChatOpen]         = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [avatarUrl, setAvatarUrl]       = useState<string | null>(null)
+  const [initials, setInitials]         = useState('…')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    async function loadUser() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).single()
+      if (data) {
+        setAvatarUrl(data.avatar_url ?? null)
+        setInitials((`${data.first_name?.[0] ?? ''}${data.last_name?.[0] ?? ''}`).toUpperCase() || '?')
+      }
+    }
+    loadUser()
+  }, [])
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -68,13 +83,18 @@ export default function Topbar({ title, userInitials = 'AM' }: TopbarProps) {
           <div ref={dropdownRef} className="relative">
             <button
               onClick={() => setShowDropdown(o => !o)}
-              className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs text-white cursor-pointer border-none transition-all"
+              className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs text-white cursor-pointer border-none transition-all overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)',
                 boxShadow: showDropdown ? '0 0 0 3px rgba(78,203,160,.3)' : undefined,
+                padding: 0,
               }}
             >
-              {userInitials}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={initials} className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </button>
 
             {showDropdown && (

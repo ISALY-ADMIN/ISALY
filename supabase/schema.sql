@@ -303,3 +303,92 @@ CREATE POLICY "stats_upsert" ON user_stats FOR ALL USING (auth.uid() = user_id) 
 
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE matches;
+
+-- ═══════════════════════════════════════════════════════════════
+-- MODE BAIL ACTIF — Nouvelles tables
+-- À exécuter dans le Supabase SQL Editor
+-- ═══════════════════════════════════════════════════════════════
+
+-- Paiements de loyer mensuels
+CREATE TABLE IF NOT EXISTS rent_payments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  lease_id UUID REFERENCES leases(id) ON DELETE CASCADE,
+  tenant_id UUID REFERENCES profiles(id),
+  amount INTEGER NOT NULL,
+  month DATE NOT NULL,
+  status TEXT CHECK (status IN ('pending', 'paid', 'late')) DEFAULT 'pending',
+  paid_at TIMESTAMPTZ,
+  receipt_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(lease_id, month)
+);
+
+-- Signalements de maintenance
+CREATE TABLE IF NOT EXISTS maintenance_requests (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  lease_id UUID REFERENCES leases(id) ON DELETE CASCADE,
+  tenant_id UUID REFERENCES profiles(id),
+  category TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  photos TEXT[],
+  urgency TEXT CHECK (urgency IN ('low', 'normal', 'urgent')) DEFAULT 'normal',
+  status TEXT CHECK (status IN ('sent', 'received', 'in_progress', 'resolved')) DEFAULT 'sent',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ
+);
+
+-- Colocataires d'un bail (membres additionnels)
+CREATE TABLE IF NOT EXISTS lease_roommates (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  lease_id UUID REFERENCES leases(id) ON DELETE CASCADE,
+  profile_id UUID REFERENCES profiles(id),
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(lease_id, profile_id)
+);
+
+-- ── RLS ──────────────────────────────────────────────────────
+
+ALTER TABLE rent_payments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "rent_payments_select" ON rent_payments FOR SELECT USING (
+  auth.uid() = tenant_id OR
+  EXISTS (SELECT 1 FROM leases WHERE leases.id = lease_id AND leases.owner_id = auth.uid())
+);
+CREATE POLICY "rent_payments_insert" ON rent_payments FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM leases WHERE leases.id = lease_id AND (leases.owner_id = auth.uid() OR leases.tenant_id = auth.uid()))
+);
+CREATE POLICY "rent_payments_update" ON rent_payments FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM leases WHERE leases.id = lease_id AND (leases.owner_id = auth.uid() OR leases.tenant_id = auth.uid()))
+);
+
+ALTER TABLE maintenance_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "maintenance_select" ON maintenance_requests FOR SELECT USING (
+  auth.uid() = tenant_id OR
+  EXISTS (SELECT 1 FROM leases WHERE leases.id = lease_id AND leases.owner_id = auth.uid())
+);
+CREATE POLICY "maintenance_insert" ON maintenance_requests FOR INSERT WITH CHECK (auth.uid() = tenant_id);
+CREATE POLICY "maintenance_update" ON maintenance_requests FOR UPDATE USING (
+  auth.uid() = tenant_id OR
+  EXISTS (SELECT 1 FROM leases WHERE leases.id = lease_id AND leases.owner_id = auth.uid())
+);
+
+ALTER TABLE lease_roommates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "lease_roommates_select" ON lease_roommates FOR SELECT USING (
+  auth.uid() = profile_id OR
+  EXISTS (SELECT 1 FROM leases WHERE leases.id = lease_id AND (leases.owner_id = auth.uid() OR leases.tenant_id = auth.uid()))
+);
+CREATE POLICY "lease_roommates_insert" ON lease_roommates FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM leases WHERE leases.id = lease_id AND leases.owner_id = auth.uid())
+);
+
+-- Permettre aux locataires de créer leur propre bail (auto-enregistrement)
+DROP POLICY IF EXISTS "leases_insert" ON leases;
+CREATE POLICY "leases_insert" ON leases FOR INSERT WITH CHECK (
+  auth.uid() = owner_id OR auth.uid() = tenant_id
+);
+
+-- Activer Realtime pour les signalements
+ALTER PUBLICATION supabase_realtime ADD TABLE maintenance_requests;

@@ -143,21 +143,21 @@ export default function SwipePage() {
 
         {/* Filters */}
         <div
-          className="flex gap-2 px-5 py-3.5 border-b flex-wrap flex-shrink-0"
-          style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 1px 0 #F3F4F6' }}
+          className="flex gap-2 px-5 py-3 border-b flex-wrap flex-shrink-0"
+          style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}
         >
           {FILTERS.map(f => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className="px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer border transition-all duration-200"
+              className="px-4 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border transition-all duration-200"
               style={
                 activeFilter === f
-                  ? { background: '#4ECBA0', color: '#FFFFFF', borderColor: '#4ECBA0' }
-                  : { background: '#FFFFFF', color: '#6B7280', borderColor: '#E5E7EB' }
+                  ? { background: '#4ECBA0', color: '#FFFFFF', borderColor: '#4ECBA0', boxShadow: '0 2px 10px rgba(78,203,160,.3)' }
+                  : { background: '#F9FAFB', color: '#6B7280', borderColor: '#E5E7EB' }
               }
-              onMouseEnter={e => { if (activeFilter !== f) e.currentTarget.style.borderColor = '#4ECBA0' }}
-              onMouseLeave={e => { if (activeFilter !== f) e.currentTarget.style.borderColor = '#E5E7EB' }}
+              onMouseEnter={e => { if (activeFilter !== f) { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#2AA87C' } }}
+              onMouseLeave={e => { if (activeFilter !== f) { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#6B7280' } }}
             >
               {f}
             </button>
@@ -169,18 +169,29 @@ export default function SwipePage() {
           <div className="flex flex-col items-center justify-center gap-6 flex-1 overflow-y-auto p-7" style={{ background: '#F7F8FA' }}>
             {loading ? (
               <div className="text-center">
-                <div className="text-[44px] mb-3 animate-pulse">⏳</div>
-                <p className="text-[14px] font-semibold" style={{ color: '#6B7280' }}>Chargement des profils…</p>
+                <div className="text-[48px] mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
+                <p className="text-[14px] font-semibold" style={{ color: '#6B7280' }}>Recherche de profils compatibles…</p>
+                <p className="text-[12px] mt-1" style={{ color: '#9CA3AF' }}>Ça prend quelques secondes</p>
               </div>
             ) : noMoreProfiles ? (
-              <div className="text-center px-8">
-                <div className="text-[56px] mb-4">🏠</div>
+              <div
+                className="text-center px-8 py-10 rounded-[24px]"
+                style={{ background: '#FFFFFF', boxShadow: '0 4px 24px rgba(0,0,0,.07)', maxWidth: '340px' }}
+              >
+                <div className="text-[60px] mb-4">🌟</div>
                 <h3 className="text-[20px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
-                  Aucun profil disponible
+                  Tu as tout vu !
                 </h3>
-                <p className="text-[13.5px]" style={{ color: '#6B7280' }}>
-                  Reviens plus tard, de nouveaux colocataires arrivent chaque jour !
+                <p className="text-[13.5px] mb-5" style={{ color: '#6B7280' }}>
+                  De nouveaux colocataires arrivent chaque jour. Reviens bientôt !
                 </p>
+                <button
+                  onClick={() => { setIndex(0); setCardKey(k => k + 1) }}
+                  className="px-6 py-2.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer"
+                  style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
+                >
+                  🔄 Recommencer
+                </button>
               </div>
             ) : (
               <>

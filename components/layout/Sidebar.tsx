@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useLease } from '@/contexts/LeaseContext'
 
 interface NavItem {
   icon: string
@@ -14,20 +15,31 @@ interface NavItem {
   id: string
 }
 
+// ── Mode Recherche nav ───────────────────────────────────────
 const mainItems: NavItem[] = [
   { icon: '🔥', label: 'Trouver',     href: '/app/swipe',     id: 'swipe' },
   { icon: '🔍', label: 'Rechercher',  href: '/app/recherche', id: 'recherche' },
   { icon: '💬', label: 'Messages',    href: '/app/messages',  id: 'messages', badge: 3 },
 ]
-
 const spaceItems: NavItem[] = [
   { icon: '📁', label: 'Mon dossier', href: '/app/dossier', id: 'dossier' },
   { icon: '👤', label: 'Mon profil',  href: '/app/profil',  id: 'profil' },
   { icon: '📢', label: 'Mon annonce', href: '/app/annonce', id: 'annonce' },
 ]
-
 const accountItems: NavItem[] = [
   { icon: '💳', label: 'Paiement', href: '/app/paiement', id: 'paiement' },
+]
+
+// ── Mode Gestion nav ─────────────────────────────────────────
+const gestionItems: NavItem[] = [
+  { icon: '🏡', label: 'Tableau de bord',   href: '/app/dashboard',     id: 'dashboard' },
+  { icon: '💳', label: 'Mes loyers',         href: '/app/loyers',        id: 'loyers' },
+  { icon: '📁', label: 'Mon dossier',        href: '/app/dossier',       id: 'dossier' },
+  { icon: '👥', label: 'Mes colocataires',   href: '/app/colocataires',  id: 'colocataires' },
+  { icon: '🔧', label: 'Maintenance',        href: '/app/maintenance',   id: 'maintenance' },
+  { icon: '📄', label: 'Mon bail',           href: '/app/bail',          id: 'bail' },
+  { icon: '💬', label: 'Messages',           href: '/app/messages',      id: 'messages' },
+  { icon: '👤', label: 'Mon profil',         href: '/app/profil',        id: 'profil' },
 ]
 
 interface UserData {
@@ -41,6 +53,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
+  const { mode } = useLease()
   const [userData, setUserData] = useState<UserData>({ firstName: '', lastName: '', role: '', avatarUrl: null })
 
   useEffect(() => {
@@ -89,41 +102,76 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* Principal */}
-      <NavSection label="Principal" />
-      {mainItems.map(item => (
-        <NavLink key={item.id} item={item} active={pathname === item.href} />
-      ))}
+      {mode === 'gestion' ? (
+        // ── MODE GESTION ─────────────────────────────────────
+        <>
+          {/* Mode badge */}
+          <div className="mx-3 mb-3 px-3 py-2 rounded-[8px] text-center" style={{ background: '#0E2B1E', border: '1px solid #2AA87C' }}>
+            <span className="text-[11.5px] font-extrabold" style={{ color: '#4ECBA0' }}>🏠 Mode Locataire</span>
+          </div>
 
-      {/* Mon espace */}
-      <NavSection label="Mon espace" />
-      {spaceItems.map(item => (
-        <NavLink key={item.id} item={item} active={pathname === item.href} />
-      ))}
+          {/* Nav items */}
+          <div className="flex-1">
+            {gestionItems.map(item => (
+              <NavLink key={item.id} item={item} active={pathname === item.href} />
+            ))}
+          </div>
 
-      {/* Compte */}
-      <NavSection label="Compte" />
-      {accountItems.map(item => (
-        <NavLink key={item.id} item={item} active={pathname === item.href} />
-      ))}
+          {/* Sign out */}
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3.5 py-2.5 mx-2 my-px rounded-[10px] text-[13.5px] font-medium transition-all duration-200 border-none text-left w-[calc(100%-16px)] cursor-pointer"
+            style={{ color: '#6B7280', background: 'none' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6B7280' }}
+          >
+            <span className="text-[18px] w-5 text-center flex-shrink-0">🚪</span>
+            Déconnexion
+          </button>
 
-      {/* Sign out */}
-      <button
-        onClick={handleSignOut}
-        className="flex items-center gap-3 px-3.5 py-2.5 mx-2 my-px rounded-[10px] text-[13.5px] font-medium transition-all duration-200 border-none text-left w-[calc(100%-16px)] cursor-pointer"
-        style={{ color: '#6B7280', background: 'none' }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = '#1F2937'
-          e.currentTarget.style.color = '#E5E7EB'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = 'none'
-          e.currentTarget.style.color = '#6B7280'
-        }}
-      >
-        <span className="text-[18px] w-5 text-center flex-shrink-0">🚪</span>
-        Déconnexion
-      </button>
+          {/* Switch to recherche */}
+          <div className="mx-3 mb-2">
+            <Link
+              href="/app/swipe"
+              className="flex items-center justify-center gap-2 py-2 rounded-[8px] text-[12px] font-semibold no-underline transition-all"
+              style={{ color: '#6B7280', border: '1px solid #1F2937' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#4ECBA0' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F2937'; e.currentTarget.style.color = '#6B7280' }}
+            >
+              🔍 Chercher une coloc
+            </Link>
+          </div>
+        </>
+      ) : (
+        // ── MODE RECHERCHE ────────────────────────────────────
+        <>
+          <NavSection label="Principal" />
+          {mainItems.map(item => (
+            <NavLink key={item.id} item={item} active={pathname === item.href} />
+          ))}
+
+          <NavSection label="Mon espace" />
+          {spaceItems.map(item => (
+            <NavLink key={item.id} item={item} active={pathname === item.href} />
+          ))}
+
+          <NavSection label="Compte" />
+          {accountItems.map(item => (
+            <NavLink key={item.id} item={item} active={pathname === item.href} />
+          ))}
+
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3.5 py-2.5 mx-2 my-px rounded-[10px] text-[13.5px] font-medium transition-all duration-200 border-none text-left w-[calc(100%-16px)] cursor-pointer"
+            style={{ color: '#6B7280', background: 'none' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6B7280' }}
+          >
+            <span className="text-[18px] w-5 text-center flex-shrink-0">🚪</span>
+            Déconnexion
+          </button>
+        </>
+      )}
 
       {/* Bottom user card */}
       <div className="mt-auto px-3 py-4 border-t" style={{ borderColor: '#1F2937' }}>
@@ -134,14 +182,9 @@ export default function Sidebar() {
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           style={{ background: 'transparent' }}
         >
-          {/* Avatar */}
           <div className="relative flex-shrink-0">
             {userData.avatarUrl ? (
-              <img
-                src={userData.avatarUrl}
-                alt={initials}
-                className="w-10 h-10 rounded-full object-cover"
-              />
+              <img src={userData.avatarUrl} alt={initials} className="w-10 h-10 rounded-full object-cover" />
             ) : (
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white"
@@ -161,7 +204,7 @@ export default function Sidebar() {
               {displayName}
             </div>
             <div className="text-[11px]" style={{ color: '#6B7280' }}>
-              {userData.role === 'loueur' ? 'Loueur' : 'Locataire'}
+              {userData.role === 'loueur' ? 'Loueur' : userData.role === 'locataire' ? 'Locataire' : '—'}
             </div>
           </div>
         </Link>
@@ -172,10 +215,7 @@ export default function Sidebar() {
 
 function NavSection({ label }: { label: string }) {
   return (
-    <div
-      className="px-3.5 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-[2px]"
-      style={{ color: '#4B5563' }}
-    >
+    <div className="px-3.5 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-[2px]" style={{ color: '#4B5563' }}>
       {label}
     </div>
   )
@@ -188,35 +228,16 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       className="flex items-center gap-3 py-2.5 mx-2 my-px rounded-[10px] text-[13.5px] font-medium transition-all duration-200 no-underline relative"
       style={
         active
-          ? {
-              background: '#0E2B1E',
-              color: '#4ECBA0',
-              paddingLeft: 'calc(0.875rem - 3px)',
-              paddingRight: '0.875rem',
-              borderLeft: '3px solid #4ECBA0',
-            }
+          ? { background: '#0E2B1E', color: '#4ECBA0', paddingLeft: 'calc(0.875rem - 3px)', paddingRight: '0.875rem', borderLeft: '3px solid #4ECBA0' }
           : { color: '#9CA3AF', paddingLeft: '0.875rem', paddingRight: '0.875rem' }
       }
-      onMouseEnter={e => {
-        if (!active) {
-          e.currentTarget.style.background = '#1F2937'
-          e.currentTarget.style.color = '#E5E7EB'
-        }
-      }}
-      onMouseLeave={e => {
-        if (!active) {
-          e.currentTarget.style.background = 'none'
-          e.currentTarget.style.color = '#9CA3AF'
-        }
-      }}
+      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' } }}
+      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#9CA3AF' } }}
     >
       <span className="text-[18px] w-5 text-center flex-shrink-0">{item.icon}</span>
       {item.label}
       {item.badge ? (
-        <span
-          className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded-full text-white flex-shrink-0"
-          style={{ background: '#4ECBA0' }}
-        >
+        <span className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded-full text-white flex-shrink-0" style={{ background: '#4ECBA0' }}>
           {item.badge}
         </span>
       ) : null}

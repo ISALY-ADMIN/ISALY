@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import CertificationBadge from '@/components/ui/CertificationBadge'
 import { createClient } from '@/lib/supabase/client'
+import { useLease } from '@/contexts/LeaseContext'
 
 // ── Helpers ───────────────────────────────────────────────────
 function scheduleToTag(s: string | null): string | null {
@@ -162,13 +163,106 @@ function PhoneModal({ onClose, onVerified }: { onClose: () => void; onVerified: 
   )
 }
 
+// ── Bail modal ───────────────────────────────────────────────
+function BailModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [form, setForm] = useState({ address: '', city: '', monthly_rent: '', start_date: '', end_date: '', nb_roommates: '1' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleCreate() {
+    if (!form.address || !form.monthly_rent || !form.start_date) {
+      setError('Adresse, loyer et date de début sont obligatoires.')
+      return
+    }
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error: err } = await supabase.from('leases').insert({
+        tenant_id: user.id,
+        owner_id: user.id,
+        address: form.address,
+        city: form.city,
+        monthly_rent: parseInt(form.monthly_rent),
+        start_date: form.start_date,
+        end_date: form.end_date || null,
+        nb_roommates: parseInt(form.nb_roommates) || 1,
+        status: 'active',
+      })
+
+      if (err) { setError(err.message); setSaving(false); return }
+      onCreated()
+    } catch { setError('Erreur inattendue.') }
+    setSaving(false)
+  }
+
+  const fieldStyle = {
+    background: '#F9FAFB',
+    borderColor: '#E5E7EB',
+    color: '#111827',
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-5" style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
+      <div
+        className="rounded-[20px] p-6 w-full"
+        style={{ background: '#FFFFFF', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,.2)', maxHeight: '90vh', overflowY: 'auto' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-[18px]" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Entrer les infos de mon bail</h3>
+          <button onClick={onClose} className="border-none bg-transparent cursor-pointer text-lg" style={{ color: '#9CA3AF' }}>✕</button>
+        </div>
+
+        {error && <p className="text-[12.5px] mb-4 px-3 py-2 rounded-[8px]" style={{ background: '#FEF2F2', color: '#DC2626' }}>{error}</p>}
+
+        {[
+          { key: 'address', label: 'Adresse *', placeholder: '12 Rue de la Roquette' },
+          { key: 'city', label: 'Ville', placeholder: 'Paris 11e' },
+          { key: 'monthly_rent', label: 'Loyer mensuel (€) *', placeholder: '850', type: 'number' },
+          { key: 'start_date', label: 'Date de début *', placeholder: '', type: 'date' },
+          { key: 'end_date', label: 'Date de fin (optionnel)', placeholder: '', type: 'date' },
+          { key: 'nb_roommates', label: 'Nombre de colocataires', placeholder: '1', type: 'number' },
+        ].map(f => (
+          <div key={f.key} className="mb-3.5">
+            <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: '#6B7280' }}>{f.label}</label>
+            <input
+              type={f.type ?? 'text'}
+              value={form[f.key as keyof typeof form]}
+              onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+              placeholder={f.placeholder}
+              className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] border outline-none"
+              style={fieldStyle}
+              onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
+              onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+            />
+          </div>
+        ))}
+
+        <button
+          onClick={handleCreate}
+          disabled={saving}
+          className="w-full py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer mt-2 disabled:opacity-60"
+          style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
+        >
+          {saving ? 'Création…' : '🏠 Activer le mode locataire'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ────────────────────────────────────────────────
 export default function ProfilPage() {
   const router = useRouter()
+  const { lease, mode, refresh: refreshLease } = useLease()
 
   // Settings
   const [notifs, setNotifs] = useState(true)
   const [visible, setVisible] = useState(true)
+  const [showBailModal, setShowBailModal] = useState(false)
 
   // Profile data from Supabase
   const [email, setEmail] = useState('')
@@ -548,6 +642,45 @@ export default function ProfilPage() {
           </Link>
         </div>
 
+        {/* ── Ma situation ─────────────────────────────────── */}
+        <SectionLabel>Ma situation</SectionLabel>
+        <div className="rounded-[14px] p-5 border mb-3.5" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
+          <p className="text-[13px] mb-4" style={{ color: '#6B7280' }}>
+            Dis-nous où tu en es pour adapter l&apos;interface à ta situation.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { if (mode === 'gestion') { /* already in recherche when no active lease */ } }}
+              className="flex-1 py-3 rounded-[12px] border-[2px] cursor-pointer transition-all text-[13px] font-semibold"
+              style={
+                mode === 'recherche'
+                  ? { background: '#ECFDF5', borderColor: '#4ECBA0', color: '#2AA87C' }
+                  : { background: '#F9FAFB', borderColor: '#E5E7EB', color: '#6B7280' }
+              }
+            >
+              🔍 Je cherche une coloc
+              {mode === 'recherche' && <div className="text-[10px] mt-0.5" style={{ color: '#4ECBA0' }}>Mode actuel</div>}
+            </button>
+            <button
+              onClick={() => { if (mode === 'recherche') setShowBailModal(true) }}
+              className="flex-1 py-3 rounded-[12px] border-[2px] cursor-pointer transition-all text-[13px] font-semibold"
+              style={
+                mode === 'gestion'
+                  ? { background: '#ECFDF5', borderColor: '#4ECBA0', color: '#2AA87C' }
+                  : { background: '#F9FAFB', borderColor: '#E5E7EB', color: '#6B7280' }
+              }
+            >
+              🏠 Je suis dans un bail
+              {mode === 'gestion' && <div className="text-[10px] mt-0.5" style={{ color: '#4ECBA0' }}>Mode actuel</div>}
+            </button>
+          </div>
+          {mode === 'gestion' && lease && (
+            <div className="mt-3 px-3 py-2.5 rounded-[10px] text-[12.5px]" style={{ background: '#F0FDF4', color: '#2AA87C' }}>
+              📍 {lease.address}{lease.city ? `, ${lease.city}` : ''} · {lease.monthly_rent} €/mois
+            </div>
+          )}
+        </div>
+
         {/* ── Paramètres ───────────────────────────────────── */}
         <SectionLabel>Paramètres</SectionLabel>
         <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
@@ -573,6 +706,13 @@ export default function ProfilPage() {
         <PhoneModal
           onClose={() => setShowPhoneModal(false)}
           onVerified={() => { setPhoneVerified(true); setShowPhoneModal(false) }}
+        />
+      )}
+
+      {showBailModal && (
+        <BailModal
+          onClose={() => setShowBailModal(false)}
+          onCreated={() => { setShowBailModal(false); refreshLease(); router.push('/app/dashboard') }}
         />
       )}
     </>
