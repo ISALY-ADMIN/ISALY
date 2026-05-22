@@ -79,6 +79,7 @@ export default function DashboardPage() {
     const supabase = createClient()
 
     async function load() {
+      if (!lease) return
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 

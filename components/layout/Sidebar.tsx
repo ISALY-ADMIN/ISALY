@@ -92,14 +92,17 @@ export default function Sidebar() {
       style={{ width: '232px', background: '#111827' }}
     >
       {/* Logo */}
-      <div className="px-5 py-5 pb-3">
+      <div className="px-5 py-5 pb-4 flex items-center gap-2.5 border-b" style={{ borderColor: '#1F2937' }}>
         <Image
-          src="/LOGO_ISALY.png"
+          src="/LOGO_SANS_NOM_-_ISALY.png"
           alt="ISALY"
-          height={38}
-          width={120}
-          style={{ width: 'auto', height: '38px', objectFit: 'contain' }}
+          height={32}
+          width={32}
+          style={{ width: '32px', height: '32px', objectFit: 'contain' }}
         />
+        <span style={{ fontFamily: "'DM Serif Display', serif", color: '#ffffff', fontSize: '20px', letterSpacing: '0.3px' }}>
+          Isaly
+        </span>
       </div>
 
       {mode === 'gestion' ? (
@@ -204,7 +207,7 @@ export default function Sidebar() {
               {displayName}
             </div>
             <div className="text-[11px]" style={{ color: '#6B7280' }}>
-              {userData.role === 'loueur' ? 'Loueur' : userData.role === 'locataire' ? 'Locataire' : '—'}
+              {userData.role === 'loueur' ? 'Loueur' : userData.role === 'locataire' ? 'Locataire' : 'Membre'}
             </div>
           </div>
         </Link>
@@ -215,7 +218,7 @@ export default function Sidebar() {
 
 function NavSection({ label }: { label: string }) {
   return (
-    <div className="px-3.5 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-[2px]" style={{ color: '#4B5563' }}>
+    <div className="px-4 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-[2px]" style={{ color: '#4B5563' }}>
       {label}
     </div>
   )
@@ -229,11 +232,12 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       style={
         active
           ? {
-              background: '#16302a',
-              color: '#4ECBA0',
+              background: 'rgba(16,185,129,0.13)',
+              color: '#ffffff',
+              fontWeight: 600,
               paddingLeft: 'calc(0.875rem - 3px)',
               paddingRight: '0.875rem',
-              borderLeft: '3px solid #4ECBA0',
+              borderLeft: '3px solid #10B981',
             }
           : { color: '#9CA3AF', paddingLeft: '0.875rem', paddingRight: '0.875rem' }
       }
@@ -250,10 +254,13 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         }
       }}
     >
-      <span className="text-[18px] w-5 text-center flex-shrink-0">{item.icon}</span>
-      {item.label}
+      <span className="text-[18px] w-5 text-center flex-shrink-0 leading-none">{item.icon}</span>
+      <span className="flex-1">{item.label}</span>
       {item.badge ? (
-        <span className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded-full text-white flex-shrink-0" style={{ background: '#4ECBA0' }}>
+        <span
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white flex-shrink-0"
+          style={{ background: '#10B981' }}
+        >
           {item.badge}
         </span>
       ) : null}

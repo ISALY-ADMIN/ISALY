@@ -314,3 +314,21 @@ button, a[role="button"] {
   color: #9CA3AF;
   margin-bottom: 10px;
 }
+
+@keyframes pulse-like {
+  0%, 100% { box-shadow: 0 4px 20px rgba(16,185,129,0.50); }
+  50%       { box-shadow: 0 4px 28px rgba(16,185,129,0.72); }
+}
+
+.pulse-like {
+  animation: pulse-like 3s ease-in-out infinite;
+}
+
+@keyframes card-entrance {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card-entrance {
+  animation: card-entrance 0.45s cubic-bezier(.34,1.56,.64,1);
+}

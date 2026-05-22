@@ -27,27 +27,42 @@ export default function MatchList({ matches }: MatchListProps) {
       style={{ background: '#FFFFFF', borderColor: '#E5E7EB', width: '300px' }}
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b flex-shrink-0" style={{ borderColor: '#F3F4F6' }}>
-        <div className="flex items-center justify-between mb-0.5">
-          <div className="text-[15px] font-bold" style={{ color: '#111827' }}>Matchs récents</div>
-          {matches.length > 0 && (
-            <span
-              className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full"
-              style={{ background: '#ECFDF5', color: '#2AA87C' }}
-            >
-              {matches.length}
-            </span>
-          )}
+      <div className="px-5 py-5 border-b flex-shrink-0" style={{ borderColor: '#F3F4F6' }}>
+        <div
+          style={{
+            fontFamily: "'DM Serif Display', serif",
+            fontSize: '18px',
+            color: '#111827',
+            marginBottom: '3px',
+          }}
+        >
+          Matchs récents
         </div>
-        <div className="text-[12px]" style={{ color: '#9CA3AF' }}>Profils compatibles avec toi</div>
+        <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Profils compatibles avec toi</div>
+        {matches.length > 0 && (
+          <span
+            style={{
+              display: 'inline-block',
+              marginTop: '6px',
+              fontSize: '10.5px',
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: '20px',
+              background: '#ECFDF5',
+              color: '#059669',
+            }}
+          >
+            {matches.length} match{matches.length > 1 ? 's' : ''}
+          </span>
+        )}
       </div>
 
       {matches.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
           <div className="text-[52px] mb-4" style={{ animation: 'bop 1.6s ease infinite' }}>❤️</div>
           <div
-            className="text-[15px] font-bold mb-2"
-            style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}
+            className="font-bold mb-2"
+            style={{ fontFamily: "'DM Serif Display', serif", fontSize: '16px', color: '#111827' }}
           >
             Tes matchs apparaîtront ici
           </div>
