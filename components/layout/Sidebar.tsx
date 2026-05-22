@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -29,20 +30,48 @@ const accountItems: NavItem[] = [
   { icon: '💳', label: 'Paiement', href: '/app/paiement', id: 'paiement' },
 ]
 
-interface SidebarProps {
-  user?: { firstName?: string; lastName?: string; role?: string; initials?: string }
+interface UserData {
+  firstName: string
+  lastName: string
+  role: string
+  avatarUrl: string | null
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
+  const [userData, setUserData] = useState<UserData>({ firstName: '', lastName: '', role: '', avatarUrl: null })
+
+  useEffect(() => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, role, avatar_url')
+        .eq('id', user.id)
+        .single()
+      if (data) {
+        setUserData({
+          firstName: data.first_name ?? '',
+          lastName: data.last_name ?? '',
+          role: data.role ?? '',
+          avatarUrl: data.avatar_url ?? null,
+        })
+      }
+    }
+    loadProfile()
+  }, [supabase])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
     router.push('/')
     router.refresh()
   }
+
+  const initials = ((userData.firstName[0] ?? '') + (userData.lastName[0] ?? '')).toUpperCase() || '?'
+  const displayName = `${userData.firstName} ${userData.lastName}`.trim() || 'Mon profil'
 
   return (
     <aside
@@ -105,25 +134,34 @@ export default function Sidebar({ user }: SidebarProps) {
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           style={{ background: 'transparent' }}
         >
-          {/* Avatar with online dot */}
+          {/* Avatar */}
           <div className="relative flex-shrink-0">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white"
-              style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
-            >
-              {user?.initials ?? 'AM'}
-            </div>
+            {userData.avatarUrl ? (
+              <img
+                src={userData.avatarUrl}
+                alt={initials}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white"
+                style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
+              >
+                {initials}
+              </div>
+            )}
             <div
               className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
               style={{ background: '#4ECBA0', borderColor: '#111827' }}
             />
           </div>
+
           <div className="min-w-0">
             <div className="text-[13px] font-semibold truncate" style={{ color: '#E5E7EB' }}>
-              {user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : 'Alex Martin'}
+              {displayName}
             </div>
             <div className="text-[11px]" style={{ color: '#6B7280' }}>
-              {user?.role === 'loueur' ? 'Loueur' : 'Locataire'} · Paris
+              {userData.role === 'loueur' ? 'Loueur' : 'Locataire'}
             </div>
           </div>
         </Link>

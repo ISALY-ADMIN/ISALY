@@ -5,23 +5,6 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
-const SCHEDULE_MAP: Record<string, string> = {
-  'Lève-tôt': 'leve-tot',
-  'Couche-tard': 'couche-tard',
-  'Variable': 'variable',
-  'Flexible': 'flexible',
-}
-const VIBE_MAP: Record<string, string> = {
-  'Calme': 'calme',
-  'Festif': 'festif',
-  'Studieux': 'studieux',
-  'Détendu': 'detendu',
-}
-const ROLE_MAP: Record<string, string> = {
-  'Locataire': 'locataire',
-  'Loueur': 'loueur',
-}
-
 export default function FinalizePage() {
   const router = useRouter()
   const [errorMsg, setErrorMsg] = useState('')
@@ -36,34 +19,47 @@ export default function FinalizePage() {
         return
       }
 
-      // Read questionnaire answers saved before registration
+      let raw: string | null = null
+      try { raw = localStorage.getItem('isaly_onboarding_data') } catch {}
+
+      // No onboarding data — user went straight to register without onboarding
+      if (!raw) {
+        router.push('/onboarding')
+        return
+      }
+
       let onboardingData: Record<string, unknown> = {}
-      try {
-        const raw = localStorage.getItem('isaly_onboarding_data')
-        if (raw) onboardingData = JSON.parse(raw)
-      } catch {}
+      try { onboardingData = JSON.parse(raw) } catch {}
 
-      const budgetVal = typeof onboardingData.budget === 'number' ? onboardingData.budget : 800
+      const meta = user.user_metadata ?? {}
+      const fullName: string = (meta.full_name as string) ?? (meta.name as string) ?? ''
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          role: ROLE_MAP[onboardingData.role as string] ?? null,
-          schedule: SCHEDULE_MAP[onboardingData.schedule as string] ?? null,
-          vibe: VIBE_MAP[onboardingData.vibe as string] ?? null,
-          passions: (onboardingData.passions as string[]) ?? [],
-          budget_max: budgetVal,
-          onboarding_completed: true,
-        })
-        .eq('id', user.id)
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        first_name:
+          (onboardingData.first_name as string) ||
+          (meta.first_name as string) ||
+          (fullName ? fullName.split(' ')[0] : null),
+        last_name:
+          (onboardingData.last_name as string) ||
+          (meta.last_name as string) ||
+          (fullName ? fullName.split(' ').slice(1).join(' ') || null : null),
+        avatar_url: (meta.avatar_url as string) ?? (meta.picture as string) ?? null,
+        role: (onboardingData.role as string) ?? null,
+        city: (onboardingData.city as string) ?? null,
+        budget_max: typeof onboardingData.budget_max === 'number' ? onboardingData.budget_max : null,
+        onboarding_completed: true,
+        matching_data: onboardingData.matching_data ?? null,
+      })
 
       if (error) {
-        console.error('[finalize] profile update failed:', error.message, error.details)
+        console.error('[finalize] upsert failed:', error.message)
         setErrorMsg(`Erreur de sauvegarde : ${error.message}`)
         return
       }
 
-      localStorage.removeItem('isaly_onboarding_data')
+      try { localStorage.removeItem('isaly_onboarding_data') } catch {}
       router.push('/app/swipe')
     }
 
