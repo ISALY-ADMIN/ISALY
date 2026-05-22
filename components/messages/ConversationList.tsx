@@ -38,10 +38,24 @@ export default function ConversationList({ convs, activeId, onSelect }: Conversa
 
       <div className="flex-1 overflow-y-auto p-1.5">
         {convs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center mt-8">
-            <div className="text-[40px] mb-3">💬</div>
-            <div className="text-[13px] font-semibold mb-1" style={{ color: '#111827' }}>Pas encore de messages</div>
-            <div className="text-[12px]" style={{ color: '#9CA3AF' }}>Swipe pour matcher !</div>
+          <div className="flex flex-col items-center justify-center p-8 text-center mt-6">
+            <div className="text-[48px] mb-3" style={{ animation: 'bop 1.6s ease infinite' }}>💬</div>
+            <div
+              className="text-[14px] font-bold mb-1.5"
+              style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}
+            >
+              Pas encore de conversations
+            </div>
+            <div className="text-[12px] mb-5" style={{ color: '#9CA3AF', lineHeight: 1.6 }}>
+              Commence à swiper pour décrocher ton premier match !
+            </div>
+            <a
+              href="/app/swipe"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-bold text-white no-underline transition-all"
+              style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 14px rgba(78,203,160,.35)' }}
+            >
+              🔥 Aller swiper
+            </a>
           </div>
         ) : (
           convs.map(c => {

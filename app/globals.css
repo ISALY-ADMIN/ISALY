@@ -207,6 +207,13 @@ input[type='range'].dark-thumb::-webkit-slider-thumb {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30%            { transform: translateY(-4px); opacity: 1; }
 }
+.typing-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9CA3AF;
+}
 .typing-dot:nth-child(1) { animation: typingDot 1.2s ease infinite 0s; }
 .typing-dot:nth-child(2) { animation: typingDot 1.2s ease infinite 0.2s; }
 .typing-dot:nth-child(3) { animation: typingDot 1.2s ease infinite 0.4s; }
@@ -252,3 +259,58 @@ input[type='range'].light-range::-moz-range-thumb {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+
+/* ── Toast notifications ─────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: #111827;
+  color: #F9FAFB;
+  border-radius: 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 8px 32px rgba(0,0,0,.22);
+  animation: slideUp 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  pointer-events: all;
+}
+
+.toast-item.toast-success { border-left: 3px solid #4ECBA0; }
+.toast-item.toast-error   { border-left: 3px solid #EF4444; }
+.toast-item.toast-info    { border-left: 3px solid #6366F1; }
+
+/* ── Button micro-interactions ───────────────────────────────── */
+button, a[role="button"] {
+  transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* ── Card hover lift ─────────────────────────────────────────── */
+.card-hover {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+
+/* ── Section label ───────────────────────────────────────────── */
+.section-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #9CA3AF;
+  margin-bottom: 10px;
+}

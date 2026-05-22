@@ -29,6 +29,7 @@ export default function SwipePage() {
   const [cardKey, setCardKey] = useState(0)
   const [swipeHint, setSwipeHint] = useState<'like' | 'nope' | 'super' | null>(null)
   const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProfiles()
@@ -120,6 +121,8 @@ export default function SwipePage() {
           setTimeout(() => {
             setMatchPopup(profile)
             fetchMatches()
+            setToast(`🎉 Match avec ${profile.name.split(' ')[0]} !`)
+            setTimeout(() => setToast(null), 3000)
           }, 380)
         }
       } catch {}
@@ -178,20 +181,29 @@ export default function SwipePage() {
                 className="text-center px-8 py-10 rounded-[24px]"
                 style={{ background: '#FFFFFF', boxShadow: '0 4px 24px rgba(0,0,0,.07)', maxWidth: '340px' }}
               >
-                <div className="text-[60px] mb-4">🌟</div>
-                <h3 className="text-[20px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
-                  Tu as tout vu !
+                <div className="text-[60px] mb-4" style={{ animation: 'bop 1.4s ease infinite' }}>🏠</div>
+                <h3 className="text-[22px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+                  Tous les profils ont été vus !
                 </h3>
-                <p className="text-[13.5px] mb-5" style={{ color: '#6B7280' }}>
-                  De nouveaux colocataires arrivent chaque jour. Reviens bientôt !
+                <p className="text-[13.5px] mb-6" style={{ color: '#6B7280', lineHeight: 1.6 }}>
+                  Reviens demain, de nouveaux colocataires arrivent chaque jour.
                 </p>
-                <button
-                  onClick={() => { setIndex(0); setCardKey(k => k + 1) }}
-                  className="px-6 py-2.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer"
-                  style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
-                >
-                  🔄 Recommencer
-                </button>
+                <div className="flex flex-col gap-2.5">
+                  <button
+                    onClick={() => { setIndex(0); setCardKey(k => k + 1) }}
+                    className="px-6 py-2.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer"
+                    style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.3)' }}
+                  >
+                    🔄 Recommencer
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('Tous')}
+                    className="px-6 py-2.5 rounded-full text-[13px] font-semibold border cursor-pointer"
+                    style={{ background: 'transparent', borderColor: '#E5E7EB', color: '#6B7280' }}
+                  >
+                    Affiner mes filtres
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -216,6 +228,13 @@ export default function SwipePage() {
           <MatchList matches={matches} />
         </div>
       </div>
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="toast-container">
+          <div className="toast-item toast-success">{toast}</div>
+        </div>
+      )}
 
       {/* Match popup */}
       {matchPopup && (

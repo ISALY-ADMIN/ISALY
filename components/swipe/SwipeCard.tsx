@@ -28,20 +28,26 @@ interface SwipeCardProps {
 // ── Tag colour system ─────────────────────────────────────────
 function tagStyle(tag: string): { bg: string; color: string } {
   const t = tag.toLowerCase()
-  if (t.includes('couche') || t.includes('lève') || t.includes('tôt'))
+  if (t.includes('couche') || t.includes('lève') || t.includes('tôt') || t.includes('horaire'))
     return { bg: '#EFF6FF', color: '#3B82F6' }
-  if (t.includes('sport') || t.includes('gym') || t.includes('course') || t.includes('yoga') || t.includes('vélo'))
+  if (t.includes('sport') || t.includes('gym') || t.includes('course') || t.includes('yoga') || t.includes('vélo') || t.includes('fitness'))
     return { bg: '#FFF7ED', color: '#F97316' }
-  if (t.includes('animal') || t.includes('chat') || t.includes('chien') || t.includes('télétravail') || t.includes('végé'))
-    return { bg: '#ECFDF5', color: '#059669' }
   if (t.includes('musique') || t.includes('art') || t.includes('créatif') || t.includes('guitare') || t.includes('nocturne'))
     return { bg: '#F5F3FF', color: '#8B5CF6' }
-  if (t.includes('cuisinier') || t.includes('cuisine') || t.includes('studieux') || t.includes('festif'))
+  if (t.includes('cuisinier') || t.includes('cuisine') || t.includes('festif'))
     return { bg: '#FFFBEB', color: '#F59E0B' }
-  if (t.includes('gaming') || t.includes('jeux') || t.includes('indigo'))
+  if (t.includes('gaming') || t.includes('jeux'))
     return { bg: '#EEF2FF', color: '#6366F1' }
   if (t.includes('fumeur'))
     return { bg: '#FEF2F2', color: '#EF4444' }
+  if (t.includes('voyage') || t.includes('travel') || t.includes('backpack'))
+    return { bg: '#FFF1F2', color: '#F43F5E' }
+  if (t.includes('tech') || t.includes('code') || t.includes('développ') || t.includes('ia') || t.includes('informatiq'))
+    return { bg: '#F0F9FF', color: '#0EA5E9' }
+  if (t.includes('animal') || t.includes('chat') || t.includes('chien') || t.includes('végé') || t.includes('nature'))
+    return { bg: '#ECFDF5', color: '#10B981' }
+  if (t.includes('télétravail') || t.includes('studieux') || t.includes('calme'))
+    return { bg: '#ECFDF5', color: '#059669' }
   return { bg: '#F0FDF4', color: '#16A34A' }
 }
 
@@ -127,14 +133,21 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
 
         {/* Name + age over gradient */}
         <div className="absolute bottom-0 inset-x-0 px-5 pb-5">
-          <div className="text-[24px] font-bold leading-tight" style={{ color: '#FFFFFF' }}>
-            {profile.name}, {profile.age}
+          <div className="text-[24px] font-bold leading-tight" style={{ color: '#FFFFFF', fontFamily: "'DM Serif Display', serif" }}>
+            {profile.name}{profile.age > 0 ? `, ${profile.age}` : ''}
           </div>
-          <div className="text-[13px] mt-1 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,.8)' }}>
-            <span>💼</span>{profile.job}
-            <span style={{ opacity: 0.5 }}>·</span>
+          <div className="text-[13px] mt-1 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,.82)' }}>
+            {profile.job && <><span>💼</span><span>{profile.job}</span><span style={{ opacity: 0.4 }}>·</span></>}
             <span>📍</span>{profile.city}
           </div>
+        </div>
+
+        {/* Match score badge — top right */}
+        <div
+          className="absolute top-3.5 right-3.5 flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-extrabold"
+          style={{ background: 'rgba(255,255,255,.95)', color: '#2AA87C', boxShadow: '0 2px 14px rgba(0,0,0,.25)' }}
+        >
+          ♥ {profile.match}%
         </div>
 
         {/* Cert badge — top left */}
@@ -164,17 +177,12 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
 
       {/* ── INFO ZONE ─────────────────────────────────────── */}
       <div className="px-5 pt-4 pb-5" style={{ background: '#FFFFFF' }}>
-        {/* Rent + match score row */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[16px] font-bold" style={{ color: '#111827' }}>
-            {profile.rent}<span className="text-[12px] font-normal ml-0.5" style={{ color: '#9CA3AF' }}>€/mois</span>
-          </div>
-          <div
-            className="flex items-center gap-1 text-[12px] font-extrabold px-2.5 py-1 rounded-full"
-            style={{ background: '#ECFDF5', color: '#2AA87C' }}
-          >
-            ✨ {profile.match}% compatible
-          </div>
+        {/* Budget */}
+        <div className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>
+          {profile.rent > 0
+            ? <>{profile.rent}<span className="text-[12px] font-normal ml-0.5" style={{ color: '#9CA3AF' }}>€/mois</span></>
+            : <span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: '13px' }}>Budget non renseigné</span>
+          }
         </div>
 
         {/* Tags */}
@@ -196,18 +204,24 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         {/* Bio */}
         <p
           className="text-[13px] leading-relaxed mb-4"
-          style={{ color: '#6B7280', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          style={{ color: '#6B7280', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
         >
-          {profile.bio}
+          {profile.bio || 'Aucune description pour l\'instant.'}
         </p>
 
         {/* CTA button */}
         <button
           onClick={() => onMessage(profile.name)}
           className="w-full py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer flex items-center justify-center gap-2 transition-all"
-          style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.3)' }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 8px 28px rgba(78,203,160,.55)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(78,203,160,.3)')}
+          style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.32)' }}
+          onMouseEnter={e => {
+            e.currentTarget.style.boxShadow = '0 8px 28px rgba(78,203,160,.58)'
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(78,203,160,.32)'
+            e.currentTarget.style.transform = ''
+          }}
         >
           💬 Écrire à {firstName}
         </button>

@@ -100,9 +100,23 @@ export default function ChatArea({ conv, onSend }: ChatAreaProps) {
       <div ref={msgsRef} className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1">
         {!conv && (
           <div className="flex flex-col items-center justify-center flex-1 text-center py-20">
-            <div className="text-[48px] mb-3">💬</div>
-            <div className="text-[15px] font-bold mb-1" style={{ color: '#111827' }}>Aucune conversation</div>
-            <div className="text-[13px]" style={{ color: '#9CA3AF' }}>Sélectionne un match à gauche pour commencer</div>
+            <div className="text-[60px] mb-5" style={{ animation: 'bop 1.8s ease infinite' }}>💬</div>
+            <h3
+              className="text-[20px] mb-2"
+              style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}
+            >
+              Tes conversations ici
+            </h3>
+            <p className="text-[13.5px] mb-6" style={{ color: '#9CA3AF', maxWidth: '260px', lineHeight: 1.6 }}>
+              Sélectionne une conversation à gauche ou commence à swiper pour trouver ton coloc !
+            </p>
+            <a
+              href="/app/swipe"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-bold text-white no-underline transition-all"
+              style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.35)' }}
+            >
+              🔥 Aller swiper
+            </a>
           </div>
         )}
 
