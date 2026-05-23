@@ -24,7 +24,8 @@ const mainItems: NavItem[] = [
 const spaceItems: NavItem[] = [
   { icon: '📁', label: 'Mon dossier', href: '/app/dossier', id: 'dossier' },
   { icon: '👤', label: 'Mon profil',  href: '/app/profil',  id: 'profil' },
-  { icon: '📢', label: 'Mon annonce', href: '/app/annonce', id: 'annonce' },
+  { icon: '📢', label: 'Mon annonce',  href: '/app/annonce',       id: 'annonce' },
+  { icon: '📋', label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
 ]
 const accountItems: NavItem[] = [
   { icon: '💳', label: 'Abonnements', href: '/app/paiement', id: 'paiement' },

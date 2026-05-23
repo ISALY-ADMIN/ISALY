@@ -183,11 +183,7 @@ export default function AnnoncePage() {
         return
       }
 
-      if (boost !== 'standard') {
-        router.push('/app/paiement')
-      } else {
-        setPublished(true)
-      }
+      router.push('/app/mes-annonces')
     } catch (err) {
       console.error('Erreur publication:', err)
       alert('Erreur inattendue lors de la publication.')

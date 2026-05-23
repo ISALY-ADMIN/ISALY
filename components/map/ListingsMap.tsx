@@ -7,12 +7,11 @@ interface Listing {
   id: string
   title: string
   city: string
+  neighborhood: string
   rent: number
-  rooms: number
-  lat: number | null
-  lng: number | null
+  rooms_available: number
   photos: string[]
-  user_id: string
+  owner_id: string
 }
 
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -71,7 +70,7 @@ export default function ListingsMap() {
       const supabase = createClient()
       const { data } = await supabase
         .from('listings')
-        .select('id, title, city, rent, rooms, lat, lng, photos, user_id')
+        .select('id, title, city, neighborhood, rent, rooms_available, photos, owner_id')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
       if (data) setListings(data)
@@ -148,8 +147,8 @@ export default function ListingsMap() {
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         <ZoomControl position="bottomright" />
 
@@ -186,9 +185,9 @@ export default function ListingsMap() {
                     <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 700, marginTop: '2px' }}>
                       {item.rent > 0 ? `${item.rent}€/mois` : 'Prix non renseigné'}
                     </div>
-                    {item.rooms > 0 && (
+                    {item.rooms_available > 0 && (
                       <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>
-                        {item.rooms} chambre{item.rooms > 1 ? 's' : ''} disponible{item.rooms > 1 ? 's' : ''}
+                        {item.rooms_available} chambre{item.rooms_available > 1 ? 's' : ''} disponible{item.rooms_available > 1 ? 's' : ''}
                       </div>
                     )}
                   </div>
