@@ -2,7 +2,16 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Topbar from '@/components/layout/Topbar'
-import Badge from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
+
+function StatusBadge({ variant, children }: { variant: 'ok' | 'pending' | 'missing' | 'mint'; children: React.ReactNode }) {
+  const cls =
+    variant === 'ok'      ? 'bg-green-100 text-green-800 hover:bg-green-100 border-0' :
+    variant === 'pending' ? 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-0' :
+    variant === 'missing' ? 'bg-red-100 text-red-800 hover:bg-red-100 border-0' :
+                            'bg-[#ECFDF5] text-[#059669] hover:bg-[#ECFDF5] border-0'
+  return <Badge variant="secondary" className={cls}>{children}</Badge>
+}
 import { createClient } from '@/lib/supabase/client'
 import type { Dossier, Lease } from '@/types/database'
 
@@ -300,9 +309,9 @@ export default function DossierPage() {
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
               <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>📋 Identité</div>
-              <Badge variant={dossier?.identity_verified ? 'ok' : 'pending'}>
+              <StatusBadge variant={dossier?.identity_verified ? 'ok' : 'pending'}>
                 {dossier?.identity_verified ? '✓ Vérifiée' : '⏳ En attente'}
-              </Badge>
+              </StatusBadge>
             </div>
             {[
               { label: 'Nom complet', value: fullName || '—', bold: true },
@@ -319,7 +328,7 @@ export default function DossierPage() {
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
               <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>💰 Revenus</div>
-              <Badge variant={income ? 'ok' : 'missing'}>{income ? '✓ Renseigné' : '✗ Absent'}</Badge>
+              <StatusBadge variant={income ? 'ok' : 'missing'}>{income ? '✓ Renseigné' : '✗ Absent'}</StatusBadge>
             </div>
             {[
               { label: 'Revenus mensuels', value: income ? `${income.toLocaleString('fr-FR')} €` : '—', bold: true },
@@ -337,9 +346,9 @@ export default function DossierPage() {
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
               <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>🏠 Logement actuel</div>
-              <Badge variant={dossier?.rent_receipts_urls?.length ? 'pending' : 'missing'}>
+              <StatusBadge variant={dossier?.rent_receipts_urls?.length ? 'pending' : 'missing'}>
                 {dossier?.rent_receipts_urls?.length ? `${dossier.rent_receipts_urls.length}/3 docs` : '✗ Absent'}
-              </Badge>
+              </StatusBadge>
             </div>
             <div className="flex justify-between items-center py-2 text-[13px]" style={{ borderBottom: '1px solid #F3F4F6' }}>
               <span style={{ color: '#6B7280' }}>Quittances loyer</span>
@@ -363,7 +372,7 @@ export default function DossierPage() {
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
               <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>🏦 Garant</div>
-              <Badge variant={dossier?.guarantor_name ? 'ok' : 'missing'}>{dossier?.guarantor_name ? '✓ Ajouté' : '✗ Absent'}</Badge>
+              <StatusBadge variant={dossier?.guarantor_name ? 'ok' : 'missing'}>{dossier?.guarantor_name ? '✓ Ajouté' : '✗ Absent'}</StatusBadge>
             </div>
             {dossier?.guarantor_name ? (
               <div className="py-2 text-[13px]">
@@ -384,7 +393,7 @@ export default function DossierPage() {
         <div className="rounded-[14px] p-5 border mb-5" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
           <div className="flex justify-between items-center mb-1">
             <h3 className="text-[17px]" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>🏠 Bail en cours</h3>
-            <Badge variant={currentLease ? 'ok' : 'missing'}>{currentLease ? '🟢 Actif' : '✗ Aucun bail'}</Badge>
+            <StatusBadge variant={currentLease ? 'ok' : 'missing'}>{currentLease ? '🟢 Actif' : '✗ Aucun bail'}</StatusBadge>
           </div>
           {currentLease ? (
             <>

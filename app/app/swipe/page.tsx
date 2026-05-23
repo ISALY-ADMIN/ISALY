@@ -7,6 +7,7 @@ import SwipeCard, { SwipeProfile } from '@/components/swipe/SwipeCard'
 import SwipeActions from '@/components/swipe/SwipeActions'
 import MatchList from '@/components/swipe/MatchList'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 
@@ -20,6 +21,7 @@ interface MatchItem {
 
 export default function SwipePage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [profiles, setProfiles] = useState<SwipeProfile[]>([])
   const [matches, setMatches] = useState<MatchItem[]>([])
   const [index, setIndex] = useState(0)
@@ -27,7 +29,6 @@ export default function SwipePage() {
   const [cardKey, setCardKey] = useState(0)
   const [swipeHint, setSwipeHint] = useState<'like' | 'nope' | 'super' | null>(null)
   const [loading, setLoading] = useState(true)
-  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProfiles()
@@ -119,8 +120,7 @@ export default function SwipePage() {
           setTimeout(() => {
             setMatchPopup(profile)
             fetchMatches()
-            setToast(`🎉 Match avec ${profile.name.split(' ')[0]} !`)
-            setTimeout(() => setToast(null), 3000)
+            toast({ title: 'Match ! 🎉', description: `Tu as un nouveau match avec ${profile.name.split(' ')[0]} !`, duration: 3000 })
           }, 380)
         }
       } catch {}
@@ -228,13 +228,6 @@ export default function SwipePage() {
           <MatchList matches={matches} />
         </div>
       </div>
-
-      {/* Toast notification */}
-      {toast && (
-        <div className="toast-container">
-          <div className="toast-item toast-success">{toast}</div>
-        </div>
-      )}
 
       {/* Match popup */}
       {matchPopup && (

@@ -1,24 +1,22 @@
-import { cn } from '@/lib/utils'
-import { InputHTMLAttributes } from 'react'
+import * as React from "react"
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-}
+import { cn } from "@/lib/utils"
 
-export default function Input({ label, className, ...props }: InputProps) {
-  return (
-    <div className="mb-4">
-      {label && (
-        <label className="block text-xs font-bold text-charcoal mb-1.5">{label}</label>
-      )}
+const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+  ({ className, type, ...props }, ref) => {
+    return (
       <input
+        type={type}
         className={cn(
-          'w-full px-3.5 py-2.5 border-[1.5px] border-gray-border rounded-[9px] text-[13.5px] outline-none transition-colors bg-white',
-          'focus:border-mint',
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           className
         )}
+        ref={ref}
         {...props}
       />
-    </div>
-  )
-}
+    )
+  }
+)
+Input.displayName = "Input"
+
+export { Input }

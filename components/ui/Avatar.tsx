@@ -1,46 +1,50 @@
-import { cn, getInitials, getAvatarColor } from '@/lib/utils'
+"use client"
 
-interface AvatarProps {
-  firstName?: string | null
-  lastName?: string | null
-  imageUrl?: string | null
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  className?: string
-  style?: React.CSSProperties
-}
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
-export default function Avatar({ firstName, lastName, imageUrl, size = 'md', className, style }: AvatarProps) {
-  const initials = getInitials(firstName, lastName)
-  const color = getAvatarColor(initials)
+import { cn } from "@/lib/utils"
 
-  const sizeClass = {
-    sm: 'w-8 h-8 text-xs',
-    md: 'w-10 h-10 text-sm',
-    lg: 'w-[68px] h-[68px] text-2xl',
-    xl: 'w-20 h-20 text-3xl',
-  }[size]
+const Avatar = React.forwardRef<
+  React.ElementRef<typeof AvatarPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Root
+    ref={ref}
+    className={cn(
+      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
+      className
+    )}
+    {...props}
+  />
+))
+Avatar.displayName = AvatarPrimitive.Root.displayName
 
-  if (imageUrl) {
-    return (
-      <img
-        src={imageUrl}
-        alt={initials}
-        className={cn('rounded-full object-cover flex-shrink-0', sizeClass, className)}
-        style={style}
-      />
-    )
-  }
+const AvatarImage = React.forwardRef<
+  React.ElementRef<typeof AvatarPrimitive.Image>,
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
+>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Image
+    ref={ref}
+    className={cn("aspect-square h-full w-full", className)}
+    {...props}
+  />
+))
+AvatarImage.displayName = AvatarPrimitive.Image.displayName
 
-  return (
-    <div
-      className={cn(
-        'rounded-full flex items-center justify-center font-extrabold text-white flex-shrink-0',
-        sizeClass,
-        className
-      )}
-      style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, ...style }}
-    >
-      {initials}
-    </div>
-  )
-}
+const AvatarFallback = React.forwardRef<
+  React.ElementRef<typeof AvatarPrimitive.Fallback>,
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
+>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Fallback
+    ref={ref}
+    className={cn(
+      "flex h-full w-full items-center justify-center rounded-full bg-muted",
+      className
+    )}
+    {...props}
+  />
+))
+AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
+
+export { Avatar, AvatarImage, AvatarFallback }

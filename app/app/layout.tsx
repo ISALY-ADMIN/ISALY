@@ -1,5 +1,6 @@
 import Sidebar from '@/components/layout/Sidebar'
 import { LeaseProvider } from '@/contexts/LeaseContext'
+import { Toaster } from '@/components/ui/toaster'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </div>
+      <Toaster />
     </LeaseProvider>
   )
 }

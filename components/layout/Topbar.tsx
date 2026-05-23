@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from 'react'
 import ChatbotWidget from '@/components/chatbot/ChatbotWidget'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/Button'
 
 interface TopbarProps {
   title: string
@@ -62,22 +64,50 @@ export default function Topbar({ title }: TopbarProps) {
         </h1>
 
         <div className="flex gap-2 items-center">
-          {/* Search shortcut */}
-          <Link href="/app/recherche">
-            <LabelBtn title="Recherche avancée" icon="🔍" label="Rechercher" />
-          </Link>
+          <TooltipProvider>
+            {/* Search shortcut */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/app/recherche">
+                  <Button variant="ghost" size="sm" className="gap-2 text-[12px] font-medium text-gray-700 border border-[#E5E7EB] bg-white hover:bg-gray-50 rounded-[10px]">
+                    <span className="text-sm">🔍</span> Rechercher
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>Recherche avancée</TooltipContent>
+            </Tooltip>
 
-          {/* Notifications */}
-          <div className="relative">
-            <LabelBtn title="Notifications" icon="🔔" label="Alertes" />
-            <span
-              className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2"
-              style={{ background: '#4ECBA0', borderColor: '#FFFFFF', animation: 'pulse-mint 2s ease infinite' }}
-            />
-          </div>
+            {/* Notifications */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative">
+                  <Button variant="ghost" size="sm" className="gap-2 text-[12px] font-medium text-gray-700 border border-[#E5E7EB] bg-white hover:bg-gray-50 rounded-[10px]">
+                    <span className="text-sm">🔔</span> Alertes
+                  </Button>
+                  <span
+                    className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2"
+                    style={{ background: '#4ECBA0', borderColor: '#FFFFFF', animation: 'pulse-mint 2s ease infinite' }}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Notifications</TooltipContent>
+            </Tooltip>
 
-          {/* Chatbot */}
-          <LabelBtn onClick={() => setChatOpen(o => !o)} title="Assistant IA" icon="🤖" label="Assistant" />
+            {/* Chatbot */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setChatOpen(o => !o)}
+                  className="gap-2 text-[12px] font-medium text-gray-700 border border-[#E5E7EB] bg-white hover:bg-gray-50 rounded-[10px]"
+                >
+                  <span className="text-sm">🤖</span> Assistant
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Assistant IA</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           {/* Avatar + dropdown */}
           <div ref={dropdownRef} className="relative">
@@ -134,21 +164,6 @@ export default function Topbar({ title }: TopbarProps) {
   )
 }
 
-function LabelBtn({ icon, label, onClick, title }: { icon: string; label: string; onClick?: () => void; title?: string }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className="rounded-[10px] border border-[#E5E7EB] cursor-pointer flex items-center gap-2 transition-colors px-3 py-2 bg-white"
-      style={{ fontSize: '12px', fontWeight: 500, color: '#374151' }}
-      onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')}
-      onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
-    >
-      <span className="text-sm">{icon}</span>
-      <span>{label}</span>
-    </button>
-  )
-}
 
 function DropdownItem({ icon, children, danger }: { icon: string; children: React.ReactNode; danger?: boolean }) {
   return (

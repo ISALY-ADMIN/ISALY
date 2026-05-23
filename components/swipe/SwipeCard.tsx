@@ -2,6 +2,9 @@
 
 import { useRef, useState } from 'react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/card'
 
 export interface SwipeProfile {
   id: string
@@ -83,17 +86,17 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
     : hintRotate
 
   return (
-    <div
+    <Card
       ref={cardRef}
-      className="card-entrance select-none overflow-hidden bg-white cursor-grab"
+      className="card-entrance select-none overflow-hidden cursor-grab"
       style={{
         width: 'min(440px, 88vw)',
         minHeight: '600px',
         borderRadius: '24px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
         transform: cardTransform,
         opacity: flying ? 0 : 1,
         transition: 'transform 0.36s cubic-bezier(.34,1.56,.64,1), opacity 0.3s',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
       }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -160,12 +163,9 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         </div>
         <div className="flex flex-wrap gap-1.5 mb-3">
           {profile.tags.slice(0, 5).map(tag => (
-            <span
-              key={tag}
-              className={`text-[11.5px] font-semibold px-2.5 py-1 rounded-full ${getPillStyle(tag)}`}
-            >
+            <Badge key={tag} variant="secondary" className={`text-[11.5px] ${getPillStyle(tag)}`}>
               {tag}
-            </span>
+            </Badge>
           ))}
         </div>
         {/* Compatibility bars */}
@@ -194,13 +194,10 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         >
           {profile.bio || 'Aucune description pour l\'instant.'}
         </p>
-        <button
-          onClick={() => onMessage(profile.name)}
-          className="w-full py-3 mt-3 rounded-full text-sm font-semibold text-white border-none cursor-pointer flex items-center justify-center gap-2 bg-mint hover:bg-mint-dark transition-all"
-        >
+        <Button className="w-full mt-3" size="lg" onClick={() => onMessage(profile.name)}>
           💬 Écrire à {firstName}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   )
 }

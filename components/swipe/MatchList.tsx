@@ -1,6 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/Badge'
 
 interface MatchItem {
   name: string
@@ -22,10 +24,7 @@ export default function MatchList({ matches }: MatchListProps) {
   }
 
   return (
-    <div
-      className="border-l flex flex-col overflow-hidden flex-shrink-0"
-      style={{ background: '#FFFFFF', borderColor: '#E5E7EB', width: '300px' }}
-    >
+    <Card className="h-full rounded-none border-0 border-l flex flex-col overflow-hidden flex-shrink-0" style={{ width: '300px' }}>
       {/* Header */}
       <div className="px-5 py-5 border-b flex-shrink-0" style={{ borderColor: '#F3F4F6' }}>
         <div
@@ -109,17 +108,14 @@ export default function MatchList({ matches }: MatchListProps) {
 
               {/* Match score */}
               {m.match > 0 && (
-                <div
-                  className="text-[11px] font-extrabold px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: '#ECFDF5', color: '#2AA87C' }}
-                >
+                <Badge variant="secondary" className="bg-[#ECFDF5] text-[#059669] font-bold flex-shrink-0">
                   ♥ {m.match}%
-                </div>
+                </Badge>
               )}
             </button>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
