@@ -1,15 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
+import { createClient } from '@/lib/supabase/client'
 
 type BoostOption = 'standard' | 'featured' | 'priority'
 
 const BOOST_OPTIONS: { id: BoostOption; label: string; price: string }[] = [
-  { id: 'standard', label: 'Standard', price: 'Gratuit' },
-  { id: 'featured', label: 'Mis en avant', price: '9,99€/mois' },
-  { id: 'priority', label: 'Prioritaire', price: '24,99€/mois' },
+  { id: 'standard', label: 'Standard',      price: 'Gratuit' },
+  { id: 'featured', label: 'Mis en avant',  price: '9,99€/mois' },
+  { id: 'priority', label: 'Prioritaire',   price: '24,99€/mois' },
 ]
 
 interface FormData {
@@ -25,19 +26,25 @@ interface FormData {
 
 export default function AnnoncePage() {
   const router = useRouter()
-  const [boost, setBoost] = useState<BoostOption>('featured')
-  // null = empty slot | '' = manually filled | 'https://...' = imported URL
-  const [photos, setPhotos] = useState<(string | null)[]>(
-    Array(8).fill(null).map((_, i) => i === 0 ? '' : null)
-  )
+
+  // ── File upload refs ─────────────────────────────────────────
+  const fileInputRef  = useRef<HTMLInputElement>(null)
+  const activeSlot    = useRef<number>(0)
+
+  // ── State ────────────────────────────────────────────────────
+  const [boost, setBoost]           = useState<BoostOption>('featured')
+  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(Array(8).fill(null))
+  const [previews, setPreviews]     = useState<(string | null)[]>(Array(8).fill(null))
+  const [publishing, setPublishing] = useState(false)
+  const [published, setPublished]   = useState(false)
 
   const [form, setForm] = useState<FormData>({
     title: '', rent: '', charges: '', city: '', neighborhood: '',
     surface: '', rooms: '1', description: '',
   })
 
-  const [importUrl, setImportUrl] = useState('')
-  const [importing, setImporting] = useState(false)
+  const [importUrl, setImportUrl]     = useState('')
+  const [importing, setImporting]     = useState(false)
   const [importError, setImportError] = useState('')
   const [importSource, setImportSource] = useState('')
 
@@ -46,42 +53,71 @@ export default function AnnoncePage() {
       setForm(f => ({ ...f, [field]: e.target.value }))
   }
 
-  async function handleImport() {
-    if (!importUrl.trim()) {
-      setImportError('Colle une URL avant d\'importer')
-      return
+  // ── CAS A+B : gestion des slots photos ──────────────────────
+  function handleSlotClick(i: number) {
+    if (previews[i]) {
+      // Supprimer la photo de ce slot
+      if (previews[i]?.startsWith('blob:')) URL.revokeObjectURL(previews[i]!)
+      setPreviews(p => { const n = [...p]; n[i] = null; return n })
+      setPhotoFiles(p => { const n = [...p]; n[i] = null; return n })
+    } else {
+      // Ouvrir le file picker pour ce slot
+      activeSlot.current = i
+      fileInputRef.current?.click()
     }
-    setImporting(true)
-    setImportError('')
-    setImportSource('')
+  }
 
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    const start = activeSlot.current
+
+    setPhotoFiles(prev => {
+      const next = [...prev]
+      files.forEach((f, i) => { if (start + i < 8) next[start + i] = f })
+      return next
+    })
+    setPreviews(prev => {
+      const next = [...prev]
+      files.forEach((f, i) => {
+        const idx = start + i
+        if (idx < 8) {
+          if (next[idx]?.startsWith('blob:')) URL.revokeObjectURL(next[idx]!)
+          next[idx] = URL.createObjectURL(f)
+        }
+      })
+      return next
+    })
+    e.target.value = '' // permet de re-sélectionner le même fichier
+  }
+
+  // ── Import depuis URL externe ────────────────────────────────
+  async function handleImport() {
+    if (!importUrl.trim()) { setImportError('Colle une URL avant d\'importer'); return }
+    setImporting(true); setImportError(''); setImportSource('')
     try {
-      const res = await fetch('/api/import-listing', {
+      const res  = await fetch('/api/import-listing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: importUrl.trim() }),
       })
       const json = await res.json()
-
-      if (!res.ok) {
-        setImportError(json.error || 'Erreur lors de l\'importation')
-        return
-      }
-
+      if (!res.ok) { setImportError(json.error || 'Erreur lors de l\'importation'); return }
       setForm(f => ({
         ...f,
-        title: json.title || f.title,
-        description: json.description || f.description,
-        city: json.city || f.city,
+        title:        json.title        || f.title,
+        description:  json.description  || f.description,
+        city:         json.city         || f.city,
         neighborhood: json.neighborhood || f.neighborhood,
-        rent: json.rent != null ? String(json.rent) : f.rent,
-        charges: json.charges != null ? String(json.charges) : f.charges,
-        surface: json.surface != null ? String(json.surface) : f.surface,
-        rooms: json.rooms != null ? String(json.rooms) : f.rooms,
+        rent:         json.rent  != null ? String(json.rent)    : f.rent,
+        charges:      json.charges != null ? String(json.charges) : f.charges,
+        surface:      json.surface != null ? String(json.surface) : f.surface,
+        rooms:        json.rooms != null ? String(json.rooms)   : f.rooms,
       }))
-      // Fill photo slots with imported URLs (up to 8)
+      // Remplit les slots de prévisualisation avec les URLs importées (pas des File)
       if (Array.isArray(json.photos) && json.photos.length > 0) {
-        setPhotos(Array(8).fill(null).map((_: null, i: number) => json.photos[i] ?? null))
+        setPreviews(Array(8).fill(null).map((_: null, i: number) => json.photos[i] ?? null))
+        setPhotoFiles(Array(8).fill(null)) // pas de File pour les URLs importées
       }
       setImportSource(json.source_name || 'Web')
     } catch {
@@ -91,21 +127,132 @@ export default function AnnoncePage() {
     }
   }
 
-  function handlePublish() {
-    if (boost !== 'standard') {
-      router.push('/app/paiement')
-    } else {
-      alert('✅ Annonce publiée gratuitement !')
+  // ── CAS C : upload Supabase Storage + insert listing ────────
+  async function handlePublish() {
+    if (!form.title.trim() || !form.rent || !form.city.trim()) {
+      alert('Titre, loyer et ville sont obligatoires.')
+      return
+    }
+    setPublishing(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        alert('Tu dois être connecté pour publier une annonce.')
+        router.push('/auth/login')
+        return
+      }
+
+      // Upload des photos locales vers Supabase Storage
+      // Les URLs importées (https://) sont gardées telles quelles
+      const photoUrls: string[] = []
+      for (let i = 0; i < 8; i++) {
+        if (photoFiles[i]) {
+          const file = photoFiles[i]!
+          const ext  = file.name.split('.').pop() ?? 'jpg'
+          const path = `listings/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+          const { error: uploadError } = await supabase.storage.from('listings').upload(path, file)
+          if (!uploadError) {
+            const { data } = supabase.storage.from('listings').getPublicUrl(path)
+            photoUrls.push(data.publicUrl)
+          }
+        } else if (previews[i]) {
+          photoUrls.push(previews[i]!)
+        }
+      }
+
+      const { error } = await supabase.from('listings').insert({
+        user_id:     user.id,
+        title:       form.title,
+        city:        form.city,
+        district:    form.neighborhood,
+        surface:     form.surface ? Number(form.surface) : null,
+        rooms:       Number(form.rooms),
+        rent:        Number(form.rent),
+        charges:     form.charges ? Number(form.charges) : null,
+        description: form.description,
+        photos:      photoUrls,
+        boost_level: boost,
+        is_active:   true,
+        created_at:  new Date().toISOString(),
+      })
+
+      if (error) {
+        console.error('Erreur insertion listing:', error)
+        alert('Erreur: ' + error.message)
+        return
+      }
+
+      if (boost !== 'standard') {
+        router.push('/app/paiement')
+      } else {
+        setPublished(true)
+      }
+    } catch (err) {
+      console.error('Erreur publication:', err)
+      alert('Erreur inattendue lors de la publication.')
+    } finally {
+      setPublishing(false)
     }
   }
 
   const inputStyle = { background: '#161616', borderColor: '#2D2D2D', color: '#E5E7EB' }
-  const focus = (e: React.FocusEvent<HTMLElement>) => ((e.target as HTMLElement & { style: CSSStyleDeclaration }).style.borderColor = '#4ECBA0')
-  const blur = (e: React.FocusEvent<HTMLElement>) => ((e.target as HTMLElement & { style: CSSStyleDeclaration }).style.borderColor = '#2D2D2D')
+  const focus = (e: React.FocusEvent<HTMLElement>) =>
+    ((e.target as HTMLElement & { style: CSSStyleDeclaration }).style.borderColor = '#4ECBA0')
+  const blur = (e: React.FocusEvent<HTMLElement>) =>
+    ((e.target as HTMLElement & { style: CSSStyleDeclaration }).style.borderColor = '#2D2D2D')
+
+  // ── Écran de succès ──────────────────────────────────────────
+  if (published) {
+    return (
+      <>
+        <Topbar title="Mon annonce" />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center" style={{ maxWidth: '400px' }}>
+            <div className="text-6xl mb-4">✅</div>
+            <h2
+              className="text-[26px] mb-2"
+              style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}
+            >
+              Annonce publiée !
+            </h2>
+            <p className="text-[14px] mb-6" style={{ color: '#6B7280' }}>
+              Elle est maintenant visible par tous les utilisateurs sur ISALY.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => router.push('/app/recherche')}
+                className="w-full py-3 rounded-full text-sm font-semibold text-white border-none cursor-pointer bg-mint hover:bg-mint-dark transition-colors"
+              >
+                Explorer les profils →
+              </button>
+              <button
+                onClick={() => { setPublished(false); setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms: '1', description: '' }); setPreviews(Array(8).fill(null)); setPhotoFiles(Array(8).fill(null)) }}
+                className="w-full py-3 rounded-full text-sm font-semibold border border-gray-200 text-gray-500 cursor-pointer hover:border-mint hover:text-mint transition-colors bg-transparent"
+              >
+                Publier une autre annonce
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
       <Topbar title="Mon annonce" />
+
+      {/* Hidden file input — CAS A */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handlePhotoChange}
+      />
+
       <div className="flex-1 overflow-y-auto p-8">
         <div style={{ maxWidth: '620px' }}>
           <h1 className="text-[28px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#F1F5F9' }}>
@@ -115,11 +262,8 @@ export default function AnnoncePage() {
             Publiez votre annonce et trouvez des colocataires compatibles.
           </p>
 
-          {/* ── Import section ─────────────────────────────────────────── */}
-          <div
-            className="rounded-[14px] p-5 mb-5 border"
-            style={{ background: '#111', borderColor: '#2D2D2D' }}
-          >
+          {/* ── Import section ──────────────────────────────────── */}
+          <div className="rounded-[14px] p-5 mb-5 border" style={{ background: '#111', borderColor: '#2D2D2D' }}>
             <div className="text-[13.5px] font-bold mb-1" style={{ color: '#E5E7EB' }}>
               📎 Importer depuis une annonce existante
             </div>
@@ -162,7 +306,7 @@ export default function AnnoncePage() {
             )}
           </div>
 
-          {/* ── Form ───────────────────────────────────────────────────── */}
+          {/* ── Form ────────────────────────────────────────────── */}
           <div className="rounded-[14px] p-7 border" style={{ background: '#1A1A1A', borderColor: '#2D2D2D' }}>
             {importSource && (
               <div
@@ -173,7 +317,6 @@ export default function AnnoncePage() {
               </div>
             )}
 
-            {/* Titre */}
             <Field label="Titre de l'annonce">
               <input
                 value={form.title}
@@ -186,83 +329,42 @@ export default function AnnoncePage() {
               />
             </Field>
 
-            {/* Loyer + Charges */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Field label="Loyer mensuel (CC)">
-                <input
-                  type="number"
-                  value={form.rent}
-                  onChange={set('rent')}
-                  placeholder="850"
+                <input type="number" value={form.rent} onChange={set('rent')} placeholder="850"
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
-                  style={inputStyle}
-                  onFocus={focus}
-                  onBlur={blur}
-                />
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
               <Field label="Charges">
-                <input
-                  type="number"
-                  value={form.charges}
-                  onChange={set('charges')}
-                  placeholder="80"
+                <input type="number" value={form.charges} onChange={set('charges')} placeholder="80"
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
-                  style={inputStyle}
-                  onFocus={focus}
-                  onBlur={blur}
-                />
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
             </div>
 
-            {/* Ville + Quartier */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Field label="Ville">
-                <input
-                  value={form.city}
-                  onChange={set('city')}
-                  placeholder="Paris"
+                <input value={form.city} onChange={set('city')} placeholder="Paris"
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
-                  style={inputStyle}
-                  onFocus={focus}
-                  onBlur={blur}
-                />
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
               <Field label="Quartier">
-                <input
-                  value={form.neighborhood}
-                  onChange={set('neighborhood')}
-                  placeholder="Oberkampf"
+                <input value={form.neighborhood} onChange={set('neighborhood')} placeholder="Oberkampf"
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
-                  style={inputStyle}
-                  onFocus={focus}
-                  onBlur={blur}
-                />
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
             </div>
 
-            {/* Surface + Chambres */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Field label="Surface (m²)">
-                <input
-                  type="number"
-                  value={form.surface}
-                  onChange={set('surface')}
-                  placeholder="75"
+                <input type="number" value={form.surface} onChange={set('surface')} placeholder="75"
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
-                  style={inputStyle}
-                  onFocus={focus}
-                  onBlur={blur}
-                />
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
               <Field label="Chambres disponibles">
-                <select
-                  value={form.rooms}
-                  onChange={set('rooms')}
+                <select value={form.rooms} onChange={set('rooms')}
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors cursor-pointer"
-                  style={inputStyle}
-                  onFocus={focus}
-                  onBlur={blur}
-                >
+                  style={inputStyle} onFocus={focus} onBlur={blur}>
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -270,64 +372,70 @@ export default function AnnoncePage() {
               </Field>
             </div>
 
-            {/* Description */}
             <Field label="Description">
-              <textarea
-                rows={4}
-                value={form.description}
-                onChange={set('description')}
+              <textarea rows={4} value={form.description} onChange={set('description')}
                 placeholder="Décris l'appartement, l'ambiance…"
                 className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors resize-none"
-                style={inputStyle}
-                onFocus={focus}
-                onBlur={blur}
-              />
+                style={inputStyle} onFocus={focus} onBlur={blur} />
             </Field>
 
-            {/* Photos */}
+            {/* Photos — CAS A : input file caché, CAS B : preview blob URL */}
             <div className="mb-4">
               <label className="block text-xs font-bold mb-1.5" style={{ color: '#9CA3AF' }}>
-                Photos (max 8){photos.filter(Boolean).length > 0 && (
+                Photos (max 8)
+                {previews.filter(Boolean).length > 0 && (
                   <span className="ml-2 font-normal" style={{ color: '#4ECBA0' }}>
-                    {photos.filter(Boolean).length} importée{photos.filter(Boolean).length > 1 ? 's' : ''}
+                    {previews.filter(Boolean).length} ajoutée{previews.filter(Boolean).length > 1 ? 's' : ''}
                   </span>
                 )}
+                <span className="ml-2 font-normal" style={{ color: '#6B7280' }}>
+                  — Clique sur un slot vide pour ajouter
+                </span>
               </label>
               <div className="grid grid-cols-4 gap-1.5">
-                {photos.map((slot, i) => {
-                  const filled = slot !== null
-                  const isUrl = slot?.startsWith('http')
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => setPhotos(p => p.map((v, j) => j === i ? (v !== null ? null : '') : v))}
-                      className="aspect-square border-2 border-dashed rounded-[9px] flex items-center justify-center cursor-pointer text-xl transition-all overflow-hidden relative"
-                      style={{
-                        borderColor: filled ? '#4ECBA0' : '#2D2D2D',
-                        background: filled && !isUrl ? '#0E2B1E' : 'transparent',
-                        color: filled ? '#4ECBA0' : '#4B5563',
-                      }}
-                    >
-                      {isUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
+                {previews.map((preview, i) => (
+                  <div
+                    key={i}
+                    onClick={() => handleSlotClick(i)}
+                    className="aspect-square border-2 border-dashed rounded-[9px] flex items-center justify-center cursor-pointer text-xl transition-all overflow-hidden relative"
+                    style={{
+                      borderColor: preview ? '#4ECBA0' : '#2D2D2D',
+                      background: 'transparent',
+                      color: preview ? '#4ECBA0' : '#4B5563',
+                    }}
+                    title={preview ? 'Cliquer pour supprimer' : 'Cliquer pour ajouter une photo'}
+                  >
+                    {preview ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={slot!}
+                          src={preview}
                           alt=""
                           className="w-full h-full object-cover"
                           onError={e => {
-                            // If image fails to load (hotlink protection), show emoji fallback
                             const parent = (e.target as HTMLImageElement).parentElement
                             if (parent) {
                               parent.style.background = '#0E2B1E'
                               ;(e.target as HTMLImageElement).style.display = 'none'
-                              parent.innerHTML = '<span style="font-size:20px">📷</span>'
+                              const span = document.createElement('span')
+                              span.style.fontSize = '20px'
+                              span.textContent = '📷'
+                              parent.appendChild(span)
                             }
                           }}
                         />
-                      ) : filled ? '📷' : '+'}
-                    </div>
-                  )
-                })}
+                        <div
+                          className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                          style={{ background: 'rgba(0,0,0,0.5)', fontSize: '20px' }}
+                        >
+                          ✕
+                        </div>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: '22px', color: '#4B5563' }}>+</span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -338,18 +446,8 @@ export default function AnnoncePage() {
               </div>
               <div className="flex flex-col gap-2 mt-2">
                 {BOOST_OPTIONS.map(opt => (
-                  <label
-                    key={opt.id}
-                    className="flex items-center gap-2 cursor-pointer text-[13px]"
-                    style={{ color: '#E5E7EB' }}
-                  >
-                    <input
-                      type="radio"
-                      name="boost"
-                      checked={boost === opt.id}
-                      onChange={() => setBoost(opt.id)}
-                      style={{ accentColor: '#4ECBA0' }}
-                    />
+                  <label key={opt.id} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: '#E5E7EB' }}>
+                    <input type="radio" name="boost" checked={boost === opt.id} onChange={() => setBoost(opt.id)} style={{ accentColor: '#4ECBA0' }} />
                     {opt.label} — <span className="font-semibold">{opt.price}</span>
                   </label>
                 ))}
@@ -359,12 +457,13 @@ export default function AnnoncePage() {
             {/* Submit */}
             <button
               onClick={handlePublish}
-              className="w-full py-3.5 rounded-full text-[14.5px] font-semibold text-white border-none cursor-pointer transition-colors"
+              disabled={publishing}
+              className="w-full py-3.5 rounded-full text-[14.5px] font-semibold text-white border-none cursor-pointer transition-colors disabled:opacity-60"
               style={{ background: '#4ECBA0' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#2AA87C')}
+              onMouseEnter={e => !publishing && (e.currentTarget.style.background = '#2AA87C')}
               onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
             >
-              Publier l'annonce →
+              {publishing ? 'Publication en cours…' : "Publier l'annonce →"}
             </button>
           </div>
         </div>
