@@ -172,7 +172,6 @@ export default function AnnoncePage() {
         charges:     form.charges ? Number(form.charges) : null,
         description: form.description,
         photos:      photoUrls,
-        boost_level: boost,
         is_active:   true,
         created_at:  new Date().toISOString(),
       })
