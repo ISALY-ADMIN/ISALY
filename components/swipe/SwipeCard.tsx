@@ -19,6 +19,9 @@ export interface SwipeProfile {
   tags: string[]
   bio: string
   certLevel?: CertLevel
+  photoUrl?: string | null
+  isListing?: boolean
+  ownerId?: string
 }
 
 interface SwipeCardProps {
@@ -107,18 +110,26 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           className="absolute inset-0"
           style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}88 100%)` }}
         />
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-          style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: '160px',
-            color: 'white',
-            fontWeight: 700,
-            lineHeight: 1,
-          }}
-        >
-          {profile.name[0]}
-        </div>
+        {profile.photoUrl ? (
+          <img
+            src={profile.photoUrl}
+            alt={profile.name}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+            style={{
+              fontFamily: "'DM Serif Display', serif",
+              fontSize: '160px',
+              color: 'white',
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            {profile.name[0]}
+          </div>
+        )}
         <div
           className="absolute bottom-0 inset-x-0"
           style={{ height: '130px', background: 'linear-gradient(to top, rgba(0,0,0,.80) 0%, transparent 100%)' }}

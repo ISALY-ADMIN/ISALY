@@ -148,7 +148,7 @@ export default function ListingsMap() {
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <ZoomControl position="bottomright" />
 
@@ -177,7 +177,7 @@ export default function ListingsMap() {
                       cursor: 'pointer',
                       border: '1px solid #E5E7EB',
                     }}
-                    onClick={() => { window.location.href = '/app/recherche' }}
+                    onClick={() => { window.location.href = `/app/recherche?listing=${item.id}` }}
                   >
                     <div style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
                       {item.title || `Colocation à ${item.city}`}
@@ -190,6 +190,26 @@ export default function ListingsMap() {
                         {item.rooms_available} chambre{item.rooms_available > 1 ? 's' : ''} disponible{item.rooms_available > 1 ? 's' : ''}
                       </div>
                     )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.location.href = `/app/messages?listing=${item.id}&owner=${item.owner_id}`
+                      }}
+                      style={{
+                        marginTop: '6px',
+                        width: '100%',
+                        padding: '6px',
+                        background: 'linear-gradient(135deg, #10B981, #059669)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      💬 Contacter
+                    </button>
                   </div>
                 ))}
                 {items.length > 3 && (

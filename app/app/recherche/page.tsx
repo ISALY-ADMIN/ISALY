@@ -7,6 +7,18 @@ import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadg
 import { createClient } from '@/lib/supabase/client'
 
 // ── Types ──────────────────────────────────────────────────────
+interface RealListing {
+  id: string
+  title: string
+  city: string
+  neighborhood: string
+  rent: number
+  rooms_available: number
+  photos: string[]
+  owner_id: string
+  description: string
+}
+
 interface SearchProfile {
   id: string
   name: string
@@ -312,6 +324,78 @@ function FiltersPanel({
   )
 }
 
+// ── Real listing card ─────────────────────────────────────────
+function RealListingCard({ listing }: { listing: RealListing }) {
+  const router = useRouter()
+  return (
+    <div
+      className="rounded-[16px] overflow-hidden flex flex-col"
+      style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}
+    >
+      <div
+        style={{
+          height: '120px',
+          background: listing.photos?.[0]
+            ? `url(${listing.photos[0]}) center/cover`
+            : 'linear-gradient(135deg, #6EE7B7, #047857)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '40px',
+          flexShrink: 0,
+        }}
+      >
+        {!listing.photos?.[0] && '🏠'}
+      </div>
+      <div className="p-4 flex flex-col flex-1">
+        <div className="flex justify-between items-start mb-1">
+          <span className="text-[15px] font-bold" style={{ color: '#111827' }}>
+            {listing.title || `Colocation à ${listing.city}`}
+          </span>
+          <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full flex-shrink-0 ml-1" style={{ background: '#ECFDF5', color: '#059669' }}>
+            🏠 Annonce
+          </span>
+        </div>
+        <div className="text-[12px] mb-2" style={{ color: '#6B7280' }}>
+          📍 {listing.city}{listing.neighborhood ? ` · ${listing.neighborhood}` : ''}
+        </div>
+        <div className="text-[14px] font-bold mb-2" style={{ color: '#10B981' }}>
+          {listing.rent}€<span className="text-[11px] font-normal" style={{ color: '#9CA3AF' }}>/mois</span>
+          {listing.rooms_available > 0 && (
+            <span className="text-[11px] font-normal ml-2" style={{ color: '#6B7280' }}>
+              · {listing.rooms_available} chambre{listing.rooms_available > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        {listing.description && (
+          <p className="text-[12px] mb-3" style={{ color: '#9CA3AF', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            {listing.description}
+          </p>
+        )}
+        <div className="flex gap-2 mt-auto">
+          <button
+            onClick={() => router.push(`/app/messages?listing=${listing.id}&owner=${listing.owner_id}`)}
+            className="flex-1 py-2 rounded-full text-[12px] font-bold text-white border-none cursor-pointer transition-colors"
+            style={{ background: '#10B981' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#059669')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#10B981')}
+          >
+            💬 Contacter
+          </button>
+          <button
+            className="flex-1 py-2 rounded-full text-[12px] font-semibold border-[1.5px] cursor-pointer bg-transparent transition-all"
+            style={{ borderColor: '#E5E7EB', color: '#374151' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#10B981'; e.currentTarget.style.color = '#10B981' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151' }}
+          >
+            👁️ Voir
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Profile card ──────────────────────────────────────────────
 function ProfileCard({ profile, cols }: { profile: SearchProfile; cols: number }) {
   const router = useRouter()
@@ -398,6 +482,21 @@ export default function RecherchePage() {
   const [showFilters, setShowFilters] = useState(true)
   const [page, setPage]               = useState(1)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [realListings, setRealListings] = useState<RealListing[]>([])
+
+  useEffect(() => {
+    async function fetchListings() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('listings')
+        .select('id, title, city, neighborhood, rent, rooms_available, photos, owner_id, description')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (data) setRealListings(data)
+    }
+    fetchListings()
+  }, [])
 
   // Reset page when filters change
   function patchFilters(patch: Partial<Filters>) {
@@ -536,6 +635,19 @@ export default function RecherchePage() {
           </div>
 
           <div className="px-6 pt-4 pb-8 max-w-[900px]">
+            {/* Real listings from Supabase */}
+            {realListings.length > 0 && (
+              <div className="mb-6">
+                <div className="text-[13px] font-bold mb-3" style={{ color: '#111827' }}>
+                  🏠 Annonces disponibles ({realListings.length})
+                </div>
+                <div className="grid gap-4" style={{ gridTemplateColumns: showFilters ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)' }}>
+                  {realListings.map(l => <RealListingCard key={l.id} listing={l} />)}
+                </div>
+                <hr style={{ margin: '24px 0', borderColor: '#E5E7EB' }} />
+              </div>
+            )}
+
             {/* Active pills */}
             {pills.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">

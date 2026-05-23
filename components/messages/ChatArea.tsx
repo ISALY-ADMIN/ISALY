@@ -21,12 +21,17 @@ interface Conv {
 interface ChatAreaProps {
   conv: Conv | null
   onSend: (text: string) => void
+  defaultMessage?: string
 }
 
-export default function ChatArea({ conv, onSend }: ChatAreaProps) {
+export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps) {
   const [input, setInput]       = useState('')
   const [typing, setTyping]     = useState(false)
   const msgsRef                 = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (defaultMessage) setInput(defaultMessage)
+  }, [defaultMessage])
 
   useEffect(() => {
     if (msgsRef.current) {

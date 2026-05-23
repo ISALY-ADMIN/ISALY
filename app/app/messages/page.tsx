@@ -30,12 +30,15 @@ const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3
 
 function MessagesContent() {
   const searchParams = useSearchParams()
-  const withName = searchParams.get('with')
+  const withName    = searchParams.get('with')
+  const listingParam = searchParams.get('listing')
+  const ownerParam  = searchParams.get('owner')
 
   const [convs, setConvs] = useState<Conv[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [ownerDraft, setOwnerDraft] = useState('')
 
   useEffect(() => {
     loadConversations()
@@ -47,6 +50,35 @@ function MessagesContent() {
       if (match) setActiveId(match.id)
     }
   }, [withName, convs])
+
+  useEffect(() => {
+    if (!ownerParam) return
+    async function openOwnerConversation() {
+      const supabase = createClient()
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', ownerParam)
+        .single()
+      const fn = ownerProfile?.first_name ?? 'Annonceur'
+      const ln = ownerProfile?.last_name ?? ''
+      const name = `${fn}${ln ? ' ' + ln[0] + '.' : ''}`.trim()
+      const initials = `${fn[0] ?? 'A'}${ln[0] ?? ''}`.toUpperCase()
+      const virtualConv: Conv = {
+        id: `owner_${ownerParam}`,
+        name,
+        initials,
+        color: '#10B981',
+        preview: 'Bonjour, je suis intéressé(e) par votre annonce.',
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        msgs: [],
+      }
+      setConvs(prev => prev.some(c => c.id === virtualConv.id) ? prev : [virtualConv, ...prev])
+      setActiveId(virtualConv.id)
+      setOwnerDraft('Bonjour, je suis intéressé(e) par votre annonce.')
+    }
+    openOwnerConversation()
+  }, [ownerParam])
 
   async function loadConversations() {
     try {
@@ -183,7 +215,11 @@ function MessagesContent() {
         ) : (
           <>
             <ConversationList convs={convs} activeId={activeId} onSelect={handleSelect} />
-            <ChatArea conv={activeConv} onSend={handleSend} />
+            <ChatArea
+              conv={activeConv}
+              onSend={handleSend}
+              defaultMessage={activeConv?.id.startsWith('owner_') ? ownerDraft : undefined}
+            />
           </>
         )}
       </div>

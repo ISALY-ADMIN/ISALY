@@ -37,26 +37,59 @@ export default function SwipePage() {
 
   async function fetchProfiles() {
     try {
+      const profilesList: SwipeProfile[] = []
+
       const res = await fetch('/api/match')
-      if (!res.ok) return
-      const json = await res.json()
-      if (json.profiles) {
-        const mapped: SwipeProfile[] = (json.profiles as Record<string, unknown>[]).map((p, i) => ({
-          id: p.id as string,
-          name: `${(p.first_name as string) ?? ''} ${((p.last_name as string) ?? '')[0] ?? ''}.`.trim(),
-          age: 0,
-          job: 'Colocataire',
-          city: (p.city as string) ?? 'Ville non renseignée',
-          rent: (p.budget_max as number) ?? 0,
-          match: Math.round((p.compatibilityScore as number) ?? 0),
-          emoji: '👤',
-          color: MATCH_COLORS[i % MATCH_COLORS.length],
-          tags: (p.passions as string[]) ?? [],
-          bio: (p.bio as string) ?? '',
-          certLevel: (p.cert_level as 0 | 1 | 2 | 3) ?? 0,
-        }))
-        setProfiles(mapped)
+      if (res.ok) {
+        const json = await res.json()
+        if (json.profiles) {
+          profilesList.push(...(json.profiles as Record<string, unknown>[]).map((p, i) => ({
+            id: p.id as string,
+            name: `${(p.first_name as string) ?? ''} ${((p.last_name as string) ?? '')[0] ?? ''}.`.trim(),
+            age: 0,
+            job: 'Colocataire',
+            city: (p.city as string) ?? 'Ville non renseignée',
+            rent: (p.budget_max as number) ?? 0,
+            match: Math.round((p.compatibilityScore as number) ?? 0),
+            emoji: '👤',
+            color: MATCH_COLORS[i % MATCH_COLORS.length],
+            tags: (p.passions as string[]) ?? [],
+            bio: (p.bio as string) ?? '',
+            certLevel: (p.cert_level as 0 | 1 | 2 | 3) ?? 0,
+          })))
+        }
       }
+
+      const supabase = createClient()
+      const { data: listingsData } = await supabase
+        .from('listings')
+        .select('id, title, city, neighborhood, rent, rooms_available, photos, owner_id, description')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (listingsData && listingsData.length > 0) {
+        const listingProfiles: SwipeProfile[] = listingsData.map((l, i) => ({
+          id: l.id,
+          name: l.title || `Colocation à ${l.city}`,
+          age: 0,
+          job: `${l.rooms_available ?? 1} chambre${(l.rooms_available ?? 1) > 1 ? 's' : ''} disponible${(l.rooms_available ?? 1) > 1 ? 's' : ''}`,
+          city: l.neighborhood ? `${l.city} · ${l.neighborhood}` : l.city,
+          rent: l.rent ?? 0,
+          match: Math.floor(Math.random() * 20) + 75,
+          emoji: '🏠',
+          color: MATCH_COLORS[i % MATCH_COLORS.length],
+          tags: [],
+          bio: l.description ?? '',
+          certLevel: 0,
+          photoUrl: l.photos?.[0] ?? null,
+          isListing: true,
+          ownerId: l.owner_id,
+        }))
+        profilesList.push(...listingProfiles)
+      }
+
+      setProfiles(profilesList)
     } catch {}
     setLoading(false)
   }
