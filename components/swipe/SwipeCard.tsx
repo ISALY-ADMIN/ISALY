@@ -85,10 +85,12 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
   return (
     <div
       ref={cardRef}
-      className="card-entrance select-none rounded-2xl overflow-hidden bg-white cursor-grab shadow-xl"
+      className="card-entrance select-none overflow-hidden bg-white cursor-grab"
       style={{
-        width: 'min(380px, 90vw)',
-        minHeight: '520px',
+        width: 'min(440px, 88vw)',
+        minHeight: '600px',
+        borderRadius: '24px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
         transform: cardTransform,
         opacity: flying ? 0 : 1,
         transition: 'transform 0.36s cubic-bezier(.34,1.56,.64,1), opacity 0.3s',
@@ -97,7 +99,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
       onTouchEnd={handleTouchEnd}
     >
       {/* ── PHOTO ZONE ────────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ height: '280px' }}>
+      <div className="relative overflow-hidden" style={{ height: '340px' }}>
         <div
           className="absolute inset-0"
           style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}88 100%)` }}
@@ -106,7 +108,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
           style={{
             fontFamily: "'DM Serif Display', serif",
-            fontSize: '80px',
+            fontSize: '160px',
             color: 'white',
             fontWeight: 700,
             lineHeight: 1,
@@ -166,6 +168,26 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
             </span>
           ))}
         </div>
+        {/* Compatibility bars */}
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '6px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Compatibilité</div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[
+              { label: 'Mode de vie', value: Math.min(100, profile.match + 5), color: '#10B981' },
+              { label: 'Budget',      value: Math.max(60,  profile.match - 10), color: '#6366F1' },
+              { label: 'Personnalité', value: Math.min(100, profile.match - 5), color: '#F59E0B' },
+            ].map(item => (
+              <div key={item.label} style={{ flex: 1 }}>
+                <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '3px', textAlign: 'center' }}>{item.label}</div>
+                <div style={{ height: '4px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${item.value}%`, background: item.color, borderRadius: '4px', transition: 'width 0.6s ease' }} />
+                </div>
+                <div style={{ fontSize: '10px', color: item.color, fontWeight: 700, textAlign: 'center', marginTop: '2px' }}>{item.value}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <p
           className="text-[13px] leading-relaxed mb-1 text-gray-400"
           style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}

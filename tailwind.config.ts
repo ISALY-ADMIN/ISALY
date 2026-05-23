@@ -22,7 +22,7 @@ const config: Config = {
         'app-bg': '#F7F8FA',
       },
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
+        sans: ['Inter', 'DM Sans', 'sans-serif'],
         serif: ['DM Serif Display', 'serif'],
       },
       borderRadius: {

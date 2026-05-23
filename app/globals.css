@@ -1,15 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  --sidebar-width: 232px;
   --mint:         #4ECBA0;
   --mint-dark:    #2AA87C;
   --mint-light:   #ECFDF5;
   --sidebar-bg:   #111827;
-  --app-bg:       #F7F8FA;
+  --app-bg:       #F0F4F0;
   --card-bg:      #FFFFFF;
   --border:       #E5E7EB;
   --text-primary: #111827;
@@ -24,7 +25,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', 'DM Sans', sans-serif;
   background: var(--app-bg);
   color: var(--text-primary);
   min-height: 100vh;
@@ -32,7 +33,7 @@ body {
 }
 
 /* ── Typography ──────────────────────────────────────────────── */
-h1, h2, h3 { font-family: 'DM Serif Display', serif; }
+h1, h2, h3, .font-serif { font-family: 'DM Serif Display', serif; }
 
 /* ── Cards ───────────────────────────────────────────────────── */
 .card {

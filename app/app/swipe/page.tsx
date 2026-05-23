@@ -8,7 +8,6 @@ import SwipeActions from '@/components/swipe/SwipeActions'
 import MatchList from '@/components/swipe/MatchList'
 import { createClient } from '@/lib/supabase/client'
 
-const FILTERS = ['Tous', '🌙 Couche-tard', '🌅 Lève-tôt', '🐱 Animaux ok', '🚭 Non-fumeur', '💼 CDI']
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 
 interface MatchItem {
@@ -24,7 +23,6 @@ export default function SwipePage() {
   const [profiles, setProfiles] = useState<SwipeProfile[]>([])
   const [matches, setMatches] = useState<MatchItem[]>([])
   const [index, setIndex] = useState(0)
-  const [activeFilter, setActiveFilter] = useState('Tous')
   const [matchPopup, setMatchPopup] = useState<SwipeProfile | null>(null)
   const [cardKey, setCardKey] = useState(0)
   const [swipeHint, setSwipeHint] = useState<'like' | 'nope' | 'super' | null>(null)
@@ -142,28 +140,34 @@ export default function SwipePage() {
   return (
     <>
       <Topbar title="Trouver" />
-      <div className="flex flex-col flex-1 overflow-hidden bg-gray-50">
+      <div className="flex flex-col flex-1 overflow-hidden bg-[#F0F4F0]">
 
-        {/* Filters */}
-        <div className="flex gap-2 px-5 py-3 border-b border-gray-100 flex-wrap flex-shrink-0 bg-white shadow-sm">
-          {FILTERS.map(f => (
+        {/* Status bar */}
+        <div style={{ background: '#F0F4F0', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: '#6B7280' }}>
+              {profiles.length > 0 ? `${profiles.length} profils compatibles trouvés` : 'Recherche en cours...'}
+            </span>
+            <span style={{ fontSize: '11px', background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>
+              Près de toi
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>
+              {index + 1}/{profiles.length > 0 ? profiles.length : '?'} vus
+            </span>
             <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border transition-all duration-200 ${
-                activeFilter === f
-                  ? 'bg-mint text-white border-mint shadow-sm'
-                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-mint hover:text-mint-dark'
-              }`}
+              onClick={() => console.log('filtres')}
+              style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 500, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              {f}
+              ⚙️ Filtres
             </button>
-          ))}
+          </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
           {/* Main swipe area */}
-          <div className="flex flex-col items-center justify-center gap-6 flex-1 overflow-y-auto p-7 bg-gray-50">
+          <div className="flex flex-col items-center justify-center gap-6 flex-1 overflow-y-auto p-7 bg-[#F0F4F0]">
             {loading ? (
               <div className="text-center">
                 <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
@@ -187,7 +191,7 @@ export default function SwipePage() {
                     🔄 Recommencer
                   </button>
                   <button
-                    onClick={() => setActiveFilter('Tous')}
+                    onClick={() => console.log('filtres')}
                     className="w-full px-6 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-500 cursor-pointer hover:border-mint hover:text-mint transition-colors bg-transparent"
                   >
                     Affiner mes filtres
@@ -196,6 +200,13 @@ export default function SwipePage() {
               </div>
             ) : (
               <>
+                {index > 0 && (
+                  <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#9CA3AF', background: 'rgba(255,255,255,0.7)', padding: '4px 12px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>
+                      {index} profil{index > 1 ? 's' : ''} vu{index > 1 ? 's' : ''} aujourd&apos;hui
+                    </span>
+                  </div>
+                )}
                 <SwipeCard
                   key={cardKey}
                   profile={profile}

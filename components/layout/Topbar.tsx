@@ -64,12 +64,12 @@ export default function Topbar({ title }: TopbarProps) {
         <div className="flex gap-2 items-center">
           {/* Search shortcut */}
           <Link href="/app/recherche">
-            <IconBtn title="Recherche avancée">🔍</IconBtn>
+            <LabelBtn title="Recherche avancée" icon="🔍" label="Rechercher" />
           </Link>
 
           {/* Notifications */}
           <div className="relative">
-            <IconBtn title="Notifications">🔔</IconBtn>
+            <LabelBtn title="Notifications" icon="🔔" label="Alertes" />
             <span
               className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2"
               style={{ background: '#4ECBA0', borderColor: '#FFFFFF', animation: 'pulse-mint 2s ease infinite' }}
@@ -77,7 +77,7 @@ export default function Topbar({ title }: TopbarProps) {
           </div>
 
           {/* Chatbot */}
-          <IconBtn onClick={() => setChatOpen(o => !o)} title="Assistant IA">🤖</IconBtn>
+          <LabelBtn onClick={() => setChatOpen(o => !o)} title="Assistant IA" icon="🤖" label="Assistant" />
 
           {/* Avatar + dropdown */}
           <div ref={dropdownRef} className="relative">
@@ -134,17 +134,18 @@ export default function Topbar({ title }: TopbarProps) {
   )
 }
 
-function IconBtn({ children, onClick, title }: { children: React.ReactNode; onClick?: () => void; title?: string }) {
+function LabelBtn({ icon, label, onClick, title }: { icon: string; label: string; onClick?: () => void; title?: string }) {
   return (
     <button
       onClick={onClick}
       title={title}
-      className="w-9 h-9 rounded-[10px] border-none cursor-pointer text-sm flex items-center justify-center transition-colors"
-      style={{ background: '#F3F4F6' }}
-      onMouseEnter={e => (e.currentTarget.style.background = '#E5E7EB')}
-      onMouseLeave={e => (e.currentTarget.style.background = '#F3F4F6')}
+      className="rounded-[10px] border border-[#E5E7EB] cursor-pointer flex items-center gap-2 transition-colors px-3 py-2 bg-white"
+      style={{ fontSize: '12px', fontWeight: 500, color: '#374151' }}
+      onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')}
+      onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
     >
-      {children}
+      <span className="text-sm">{icon}</span>
+      <span>{label}</span>
     </button>
   )
 }
