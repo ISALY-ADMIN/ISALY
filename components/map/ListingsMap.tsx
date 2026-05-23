@@ -147,8 +147,10 @@ export default function ListingsMap() {
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
+          url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=fr"
+          subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+          maxZoom={20}
         />
         <ZoomControl position="bottomright" />
 
@@ -179,6 +181,14 @@ export default function ListingsMap() {
                     }}
                     onClick={() => { window.location.href = `/app/recherche?listing=${item.id}` }}
                   >
+                    {item.photos?.[0] && (
+                      <img
+                        src={item.photos[0]}
+                        alt={item.title}
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                        style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px', marginBottom: '6px' }}
+                      />
+                    )}
                     <div style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
                       {item.title || `Colocation à ${item.city}`}
                     </div>

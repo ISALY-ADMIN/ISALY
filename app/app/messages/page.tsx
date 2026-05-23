@@ -6,14 +6,13 @@ import Topbar from '@/components/layout/Topbar'
 import ConversationList from '@/components/messages/ConversationList'
 import ChatArea from '@/components/messages/ChatArea'
 import { createClient } from '@/lib/supabase/client'
+import { CertLevel } from '@/components/ui/CertificationBadge'
 
 interface Msg {
   from: 'me' | 'them'
   text: string
   time: string
 }
-
-import { CertLevel } from '@/components/ui/CertificationBadge'
 
 interface Conv {
   id: string
@@ -30,9 +29,8 @@ const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3
 
 function MessagesContent() {
   const searchParams = useSearchParams()
-  const withName    = searchParams.get('with')
-  const listingParam = searchParams.get('listing')
-  const ownerParam  = searchParams.get('owner')
+  const withName   = searchParams.get('with')
+  const ownerParam = searchParams.get('owner')
 
   const [convs, setConvs] = useState<Conv[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -87,24 +85,16 @@ function MessagesContent() {
       if (!user) { setLoading(false); return }
       setCurrentUserId(user.id)
 
-      const { data: matchData } = await supabase
-        .from('matches')
-        .select('id, user1_id, user2_id')
+      const { data } = await supabase
+        .from('conversations')
+        .select('id, user1_id, user2_id, created_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
 
-      if (!matchData || matchData.length === 0) { setLoading(false); return }
+      if (!data || data.length === 0) { setLoading(false); return }
 
-      const matchIds = matchData.map(m => m.id)
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('id, match_id')
-        .in('match_id', matchIds)
-
-      if (!conversations || conversations.length === 0) { setLoading(false); return }
-
-      const otherUserIds = matchData
-        .map(m => m.user1_id === user.id ? m.user2_id : m.user1_id)
+      const otherUserIds = data
+        .map(c => c.user1_id === user.id ? c.user2_id : c.user1_id)
         .filter(Boolean) as string[]
 
       const { data: profiles } = await supabase
@@ -112,88 +102,76 @@ function MessagesContent() {
         .select('id, first_name, last_name')
         .in('id', otherUserIds)
 
-      const builtConvs: Conv[] = matchData
-        .map((match, i) => {
-          const conversation = conversations.find(c => c.match_id === match.id)
-          if (!conversation) return null
+      const builtConvs: Conv[] = data.map((conv, i) => {
+        const otherId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
+        const otherProfile = profiles?.find(p => p.id === otherId)
+        const fn = otherProfile?.first_name ?? 'Utilisateur'
+        const ln = otherProfile?.last_name ?? ''
+        const name = `${fn} ${ln[0] ?? ''}.`.trim()
+        const initials = `${fn[0] ?? ''}${ln[0] ?? ''}`.toUpperCase()
 
-          const otherId = match.user1_id === user.id ? match.user2_id : match.user1_id
-          const otherProfile = profiles?.find(p => p.id === otherId)
-          const fn = otherProfile?.first_name ?? 'Utilisateur'
-          const ln = otherProfile?.last_name ?? ''
-          const name = `${fn} ${ln[0] ?? ''}.`.trim()
-          const initials = `${fn[0] ?? ''}${ln[0] ?? ''}`.toUpperCase()
-
-          const conv: Conv = {
-            id: conversation.id as string,
-            name,
-            initials,
-            color: MATCH_COLORS[i % MATCH_COLORS.length],
-            preview: 'Nouvelle conversation',
-            time: '',
-            msgs: [],
-          }
-          return conv
-        })
-        .filter((c): c is Conv => c !== null)
+        return {
+          id: conv.id as string,
+          name,
+          initials,
+          color: MATCH_COLORS[i % MATCH_COLORS.length],
+          preview: 'Nouvelle conversation',
+          time: '',
+          msgs: [],
+        }
+      })
 
       setConvs(builtConvs)
     } catch {}
     setLoading(false)
   }
 
-  async function loadMessages(convId: string) {
-    try {
-      const res = await fetch(`/api/messages?conversationId=${convId}`)
-      if (!res.ok) return
-      const json = await res.json()
-      if (!json.messages) return
-
-      const mapped: Msg[] = json.messages.map((m: Record<string, unknown>) => ({
-        from: m.sender_id === currentUserId ? 'me' : 'them',
-        text: m.content as string ?? '',
-        time: new Date(m.created_at as string).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      }))
-
-      setConvs(cs => cs.map(c => {
-        if (c.id !== convId) return c
-        const lastMsg = mapped[mapped.length - 1]
-        return {
-          ...c,
-          msgs: mapped,
-          preview: lastMsg?.text ?? 'Nouvelle conversation',
-          time: lastMsg?.time ?? '',
-        }
-      }))
-    } catch {}
-  }
-
   function handleSelect(id: string) {
     setActiveId(id)
-    const conv = convs.find(c => c.id === id)
-    if (conv && conv.msgs.length === 0) {
-      loadMessages(id)
-    }
   }
 
   async function handleSend(text: string) {
     if (!activeId) return
     const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-    const newMsg: Msg = { from: 'me', text, time: now }
 
-    setConvs(cs => cs.map(c =>
-      c.id === activeId
-        ? { ...c, msgs: [...c.msgs, newMsg], preview: text, time: now }
-        : c
-    ))
+    const isVirtual = activeId.startsWith('owner_')
 
-    try {
-      await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId: activeId, content: text }),
-      })
-    } catch {}
+    if (isVirtual) {
+      const newMsg: Msg = { from: 'me', text, time: now }
+      setConvs(cs => cs.map(c =>
+        c.id === activeId
+          ? { ...c, msgs: [...c.msgs, newMsg], preview: text, time: now }
+          : c
+      ))
+      const receiverId = activeId.replace('owner_', '')
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ receiver_id: receiverId, content: text }),
+        })
+        const json = await res.json()
+        if (json.message?.conversation_id) {
+          // Replace virtual conv with real one
+          const realId = json.message.conversation_id as string
+          setConvs(cs => cs.map(c =>
+            c.id === activeId ? { ...c, id: realId } : c
+          ))
+          setActiveId(realId)
+        }
+      } catch {}
+    } else {
+      try {
+        await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversation_id: activeId, content: text }),
+        })
+      } catch {}
+      setConvs(cs => cs.map(c =>
+        c.id === activeId ? { ...c, preview: text, time: now } : c
+      ))
+    }
   }
 
   const activeConv = convs.find(c => c.id === activeId) ?? null
@@ -219,6 +197,8 @@ function MessagesContent() {
               conv={activeConv}
               onSend={handleSend}
               defaultMessage={activeConv?.id.startsWith('owner_') ? ownerDraft : undefined}
+              conversationId={activeId}
+              currentUserId={currentUserId}
             />
           </>
         )}

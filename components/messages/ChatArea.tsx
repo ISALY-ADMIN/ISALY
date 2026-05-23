@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import { createClient } from '@/lib/supabase/client'
 
 interface Msg {
   from: 'me' | 'them'
@@ -22,30 +23,76 @@ interface ChatAreaProps {
   conv: Conv | null
   onSend: (text: string) => void
   defaultMessage?: string
+  conversationId?: string | null
+  currentUserId?: string | null
 }
 
-export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps) {
-  const [input, setInput]       = useState('')
-  const [typing, setTyping]     = useState(false)
-  const msgsRef                 = useRef<HTMLDivElement>(null)
+export default function ChatArea({ conv, onSend, defaultMessage, conversationId, currentUserId }: ChatAreaProps) {
+  const [input, setInput]             = useState('')
+  const [realtimeMessages, setRealtimeMessages] = useState<Msg[]>([])
+  const msgsRef                       = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (defaultMessage) setInput(defaultMessage)
   }, [defaultMessage])
 
+  // Load messages + subscribe to Realtime when a real conversation is selected
+  useEffect(() => {
+    setRealtimeMessages([])
+    if (!conversationId || conversationId.startsWith('owner_')) return
+
+    const supabase = createClient()
+
+    async function loadMessages() {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id, content, sender_id, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+
+      if (error || !data) return
+
+      setRealtimeMessages(data.map(m => ({
+        from: m.sender_id === currentUserId ? 'me' : 'them',
+        text: m.content ?? '',
+        time: new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      })))
+    }
+
+    loadMessages()
+
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          const m = payload.new as { id: string; content: string; sender_id: string; created_at: string }
+          setRealtimeMessages(prev => [...prev, {
+            from: m.sender_id === currentUserId ? 'me' : 'them',
+            text: m.content ?? '',
+            time: new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          }])
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [conversationId, currentUserId])
+
+  const isVirtual = conv?.id.startsWith('owner_') ?? false
+  const displayMsgs = isVirtual ? (conv?.msgs ?? []) : realtimeMessages
+
   useEffect(() => {
     if (msgsRef.current) {
       msgsRef.current.scrollTop = msgsRef.current.scrollHeight
     }
-  }, [conv?.msgs, typing])
+  }, [displayMsgs])
 
   function send() {
     if (!input.trim() || !conv) return
     onSend(input.trim())
     setInput('')
-    // simulate typing indicator from "them"
-    setTyping(true)
-    setTimeout(() => setTyping(false), 2200)
   }
 
   const firstName = conv?.name.split(' ')[0] ?? ''
@@ -125,13 +172,13 @@ export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps
           </div>
         )}
 
-        {conv?.msgs.map((m, i) => {
-          const isMe        = m.from === 'me'
-          const prev        = conv.msgs[i - 1]
-          const next        = conv.msgs[i + 1]
-          const isFirst     = !prev || prev.from !== m.from
-          const isLast      = !next || next.from !== m.from
-          const showAvatar  = !isMe && isLast
+        {displayMsgs.map((m, i) => {
+          const isMe       = m.from === 'me'
+          const prev       = displayMsgs[i - 1]
+          const next       = displayMsgs[i + 1]
+          const isFirst    = !prev || prev.from !== m.from
+          const isLast     = !next || next.from !== m.from
+          const showAvatar = !isMe && isLast
 
           return (
             <div
@@ -139,9 +186,8 @@ export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps
               className={`flex items-end gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
               style={{ marginBottom: isLast ? '8px' : '2px' }}
             >
-              {/* Avatar placeholder — only for "them" side */}
               <div className="w-8 flex-shrink-0">
-                {showAvatar && (
+                {showAvatar && conv && (
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] text-white"
                     style={{ background: conv.color }}
@@ -152,7 +198,6 @@ export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps
               </div>
 
               <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`} style={{ maxWidth: '66%' }}>
-                {/* Bubble */}
                 <div className="relative">
                   <div
                     className="px-3.5 py-2.5 text-[13.5px] leading-relaxed"
@@ -172,7 +217,6 @@ export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps
                     {m.text}
                   </div>
 
-                  {/* Tail — last bubble in a run */}
                   {isLast && (
                     <div
                       style={{
@@ -189,7 +233,6 @@ export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps
                   )}
                 </div>
 
-                {/* Timestamp — appears on hover */}
                 <div
                   className="text-[10.5px] mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   style={{ color: '#9CA3AF', textAlign: isMe ? 'right' : 'left' }}
@@ -200,29 +243,6 @@ export default function ChatArea({ conv, onSend, defaultMessage }: ChatAreaProps
             </div>
           )
         })}
-
-        {/* Typing indicator */}
-        {typing && conv && (
-          <div className="flex items-end gap-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] text-white flex-shrink-0"
-              style={{ background: conv.color }}
-            >
-              {conv.initials}
-            </div>
-            <div
-              className="px-4 py-3 rounded-[18px] rounded-bl-[4px] flex items-center gap-1"
-              style={{
-                background: '#FFFFFF',
-                boxShadow: '0 1px 4px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04)',
-              }}
-            >
-              <span className="typing-dot" />
-              <span className="typing-dot" />
-              <span className="typing-dot" />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Input */}

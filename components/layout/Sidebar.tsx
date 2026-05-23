@@ -29,6 +29,7 @@ const spaceItems: NavItem[] = [
 ]
 const accountItems: NavItem[] = [
   { icon: '💳', label: 'Abonnements', href: '/app/paiement', id: 'paiement' },
+  { icon: '⚙️', label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
 ]
 
 // ── Mode Gestion nav ─────────────────────────────────────────
@@ -64,8 +65,10 @@ export default function Sidebar() {
   }, [collapsed])
 
   useEffect(() => {
+    const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
     async function loadProfile() {
-      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       const { data } = await supabase
@@ -81,14 +84,31 @@ export default function Sidebar() {
           avatarUrl: data.avatar_url ?? null,
         })
       }
+
       const { count } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('read', false)
         .neq('sender_id', user.id)
       setUnreadCount(count ?? 0)
+
+      channel = supabase
+        .channel('sidebar-unread')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          (payload) => {
+            const m = payload.new as { sender_id: string; read: boolean }
+            if (m.sender_id !== user.id && !m.read) {
+              setUnreadCount(n => n + 1)
+            }
+          }
+        )
+        .subscribe()
     }
+
     loadProfile()
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   async function handleSignOut() {

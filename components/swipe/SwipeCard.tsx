@@ -115,6 +115,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
             src={profile.photoUrl}
             alt={profile.name}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
           />
         ) : (
           <div
