@@ -20,7 +20,7 @@ interface FormData {
   city: string
   neighborhood: string
   surface: string
-  rooms: string
+  rooms_available: string
   description: string
 }
 
@@ -40,7 +40,7 @@ export default function AnnoncePage() {
 
   const [form, setForm] = useState<FormData>({
     title: '', rent: '', charges: '', city: '', neighborhood: '',
-    surface: '', rooms: '1', description: '',
+    surface: '', rooms_available: '1', description: '',
   })
 
   const [importUrl, setImportUrl]     = useState('')
@@ -112,7 +112,7 @@ export default function AnnoncePage() {
         rent:         json.rent  != null ? String(json.rent)    : f.rent,
         charges:      json.charges != null ? String(json.charges) : f.charges,
         surface:      json.surface != null ? String(json.surface) : f.surface,
-        rooms:        json.rooms != null ? String(json.rooms)   : f.rooms,
+        rooms_available: json.rooms != null ? String(json.rooms) : f.rooms_available,
       }))
       // Remplit les slots de prévisualisation avec les URLs importées (pas des File)
       if (Array.isArray(json.photos) && json.photos.length > 0) {
@@ -162,18 +162,19 @@ export default function AnnoncePage() {
       }
 
       const { error } = await supabase.from('listings').insert({
-        user_id:     user.id,
-        title:       form.title,
-        city:        form.city,
-        district:    form.neighborhood,
-        surface:     form.surface ? Number(form.surface) : null,
-        rooms:       Number(form.rooms),
-        rent:        Number(form.rent),
-        charges:     form.charges ? Number(form.charges) : null,
-        description: form.description,
-        photos:      photoUrls,
-        is_active:   true,
-        created_at:  new Date().toISOString(),
+        owner_id:        user.id,
+        title:           form.title || `Colocation à ${form.city}`,
+        description:     form.description,
+        city:            form.city,
+        neighborhood:    form.neighborhood,
+        rent:            Number(form.rent) || 0,
+        charges:         Number(form.charges) || 0,
+        surface:         Number(form.surface) || 0,
+        rooms_available: Number(form.rooms_available) || 1,
+        photos:          photoUrls,
+        boost_type:      boost,
+        boost_level:     boost,
+        is_active:       true,
       })
 
       if (error) {
@@ -226,7 +227,7 @@ export default function AnnoncePage() {
                 Explorer les profils →
               </button>
               <button
-                onClick={() => { setPublished(false); setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms: '1', description: '' }); setPreviews(Array(8).fill(null)); setPhotoFiles(Array(8).fill(null)) }}
+                onClick={() => { setPublished(false); setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', description: '' }); setPreviews(Array(8).fill(null)); setPhotoFiles(Array(8).fill(null)) }}
                 className="w-full py-3 rounded-full text-sm font-semibold border border-gray-200 text-gray-500 cursor-pointer hover:border-mint hover:text-mint transition-colors bg-transparent"
               >
                 Publier une autre annonce
@@ -361,7 +362,7 @@ export default function AnnoncePage() {
                   style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
               <Field label="Chambres disponibles">
-                <select value={form.rooms} onChange={set('rooms')}
+                <select value={form.rooms_available} onChange={set('rooms_available')}
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors cursor-pointer"
                   style={inputStyle} onFocus={focus} onBlur={blur}>
                   <option value="1">1</option>
