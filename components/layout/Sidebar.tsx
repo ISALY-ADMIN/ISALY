@@ -233,12 +233,12 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       style={
         active
           ? {
-              background: 'rgba(16,185,129,0.13)',
-              color: '#ffffff',
+              background: '#16302a',
+              color: '#4ECBA0',
               fontWeight: 600,
               paddingLeft: 'calc(0.875rem - 3px)',
               paddingRight: '0.875rem',
-              borderLeft: '3px solid #10B981',
+              borderLeft: '3px solid #4ECBA0',
             }
           : { color: '#9CA3AF', paddingLeft: '0.875rem', paddingRight: '0.875rem' }
       }

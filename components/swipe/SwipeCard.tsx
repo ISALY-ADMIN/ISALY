@@ -85,11 +85,10 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
   return (
     <div
       ref={cardRef}
-      className="card-entrance select-none rounded-2xl overflow-hidden bg-white cursor-grab"
+      className="card-entrance select-none rounded-2xl overflow-hidden bg-white cursor-grab shadow-xl"
       style={{
         width: 'min(380px, 90vw)',
-        minHeight: '530px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.07)',
+        minHeight: '520px',
         transform: cardTransform,
         opacity: flying ? 0 : 1,
         transition: 'transform 0.36s cubic-bezier(.34,1.56,.64,1), opacity 0.3s',
@@ -98,7 +97,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
       onTouchEnd={handleTouchEnd}
     >
       {/* ── PHOTO ZONE ────────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ height: '290px' }}>
+      <div className="relative overflow-hidden" style={{ height: '280px' }}>
         <div
           className="absolute inset-0"
           style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}88 100%)` }}
@@ -107,47 +106,21 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
           style={{
             fontFamily: "'DM Serif Display', serif",
-            fontSize: '130px',
+            fontSize: '80px',
             color: 'white',
-            opacity: 0.13,
+            fontWeight: 700,
             lineHeight: 1,
           }}
         >
           {profile.name[0]}
         </div>
         <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ fontSize: '76px', opacity: 0.85 }}
-        >
-          {profile.emoji}
-        </div>
-        <div
           className="absolute bottom-0 inset-x-0"
           style={{ height: '130px', background: 'linear-gradient(to top, rgba(0,0,0,.80) 0%, transparent 100%)' }}
         />
-        <div className="absolute bottom-0 inset-x-0 px-5 pb-4">
-          <div
-            style={{
-              fontFamily: "'DM Serif Display', serif",
-              fontSize: '24px',
-              fontWeight: 400,
-              color: '#ffffff',
-              lineHeight: 1.2,
-              marginBottom: '4px',
-            }}
-          >
-            {profile.name}{profile.age > 0 ? `, ${profile.age}` : ''}
-          </div>
-          <div className="text-[13px] flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,.80)' }}>
-            {profile.job && (
-              <><span>💼</span><span>{profile.job}</span><span className="opacity-40">·</span></>
-            )}
-            <span>📍</span>{profile.city}
-          </div>
-        </div>
         <div
-          className="absolute top-3 right-3 flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-lg"
-          style={{ color: '#059669', fontSize: '12px', fontWeight: 700 }}
+          className="absolute top-3 right-3 flex items-center gap-1 bg-white rounded-full px-3 py-1 shadow-md font-bold text-mint"
+          style={{ fontSize: '12px' }}
         >
           ❤️ {profile.match}%
         </div>
@@ -174,16 +147,14 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
       </div>
 
       {/* ── INFO ZONE ─────────────────────────────────────── */}
-      <div className="bg-white px-5 pt-4 pb-5">
-        <div className="mb-3">
-          {profile.rent > 0 ? (
-            <span>
-              <span style={{ fontSize: '17px', fontWeight: 700, color: '#111827' }}>{profile.rent}</span>
-              <span style={{ fontSize: '12px', color: '#9CA3AF', marginLeft: '3px' }}>€/mois</span>
-            </span>
-          ) : (
-            <span style={{ fontSize: '13px', color: '#9CA3AF' }}>Budget non renseigné</span>
-          )}
+      <div className="bg-white px-5 py-5">
+        <p className="text-2xl font-bold text-gray-900 mb-0.5">
+          {profile.name}{profile.age > 0 ? `, ${profile.age}` : ''}
+        </p>
+        <div className="text-sm text-gray-500 flex items-center gap-1.5 flex-wrap mb-3">
+          {profile.job && <span>{profile.job}</span>}
+          {profile.city && <><span>·</span><span>📍 {profile.city}</span></>}
+          {profile.rent > 0 && <><span>·</span><span>{profile.rent} €/mois</span></>}
         </div>
         <div className="flex flex-wrap gap-1.5 mb-3">
           {profile.tags.slice(0, 5).map(tag => (
@@ -196,26 +167,14 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           ))}
         </div>
         <p
-          className="text-[13px] leading-relaxed mb-4"
-          style={{ color: '#9CA3AF', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          className="text-[13px] leading-relaxed mb-1 text-gray-400"
+          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
         >
           {profile.bio || 'Aucune description pour l\'instant.'}
         </p>
         <button
           onClick={() => onMessage(profile.name)}
-          className="w-full py-3 rounded-[12px] text-sm font-semibold text-white border-none cursor-pointer flex items-center justify-center gap-2 transition-all"
-          style={{
-            background: 'linear-gradient(135deg, #10B981, #059669)',
-            boxShadow: '0 4px 14px rgba(16,185,129,0.38)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.boxShadow = '0 6px 22px rgba(16,185,129,0.55)'
-            e.currentTarget.style.transform = 'translateY(-1px)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.boxShadow = '0 4px 14px rgba(16,185,129,0.38)'
-            e.currentTarget.style.transform = ''
-          }}
+          className="w-full py-3 mt-3 rounded-full text-sm font-semibold text-white border-none cursor-pointer flex items-center justify-center gap-2 bg-mint hover:bg-mint-dark transition-all"
         >
           💬 Écrire à {firstName}
         </button>

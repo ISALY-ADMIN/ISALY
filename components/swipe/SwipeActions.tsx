@@ -16,13 +16,13 @@ export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: Sw
         onMouseLeave={() => onHint?.(null)}
         className="flex items-center justify-center cursor-pointer transition-all duration-200"
         style={{
-          width: '54px',
-          height: '54px',
+          width: '56px',
+          height: '56px',
           borderRadius: '50%',
           background: '#ffffff',
-          border: '1.5px solid #FECACA',
+          border: '2px solid #FEE2E2',
           boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-          color: '#EF4444',
+          color: '#F87171',
           fontSize: '22px',
           fontWeight: 700,
         }}
@@ -34,9 +34,9 @@ export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: Sw
         }}
         onMouseOut={e => {
           e.currentTarget.style.background = '#ffffff'
-          e.currentTarget.style.color = '#EF4444'
+          e.currentTarget.style.color = '#F87171'
           e.currentTarget.style.transform = ''
-          e.currentTarget.style.borderColor = '#FECACA'
+          e.currentTarget.style.borderColor = '#FEE2E2'
         }}
         title="Passer"
       >
@@ -49,26 +49,26 @@ export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: Sw
         onMouseLeave={() => onHint?.(null)}
         className="flex items-center justify-center cursor-pointer transition-all duration-200"
         style={{
-          width: '48px',
-          height: '48px',
+          width: '56px',
+          height: '56px',
           borderRadius: '50%',
           background: '#ffffff',
-          border: '1.5px solid #C7D2FE',
+          border: '2px solid #E0E7FF',
           boxShadow: '0 2px 10px rgba(0,0,0,0.07)',
-          color: '#4F46E5',
+          color: '#818CF8',
           fontSize: '20px',
         }}
         onMouseOver={e => {
-          e.currentTarget.style.background = '#4F46E5'
+          e.currentTarget.style.background = '#6366F1'
           e.currentTarget.style.color = '#ffffff'
           e.currentTarget.style.transform = 'scale(1.08)'
-          e.currentTarget.style.borderColor = '#4F46E5'
+          e.currentTarget.style.borderColor = '#6366F1'
         }}
         onMouseOut={e => {
           e.currentTarget.style.background = '#ffffff'
-          e.currentTarget.style.color = '#4F46E5'
+          e.currentTarget.style.color = '#818CF8'
           e.currentTarget.style.transform = ''
-          e.currentTarget.style.borderColor = '#C7D2FE'
+          e.currentTarget.style.borderColor = '#E0E7FF'
         }}
         title="Super like"
       >
@@ -81,22 +81,22 @@ export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: Sw
         onMouseLeave={() => onHint?.(null)}
         className="flex items-center justify-center cursor-pointer transition-all duration-200"
         style={{
-          width: '66px',
-          height: '66px',
+          width: '64px',
+          height: '64px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #10B981, #059669)',
-          boxShadow: '0 4px 20px rgba(16,185,129,0.50)',
+          background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)',
+          boxShadow: '0 4px 20px rgba(78,203,160,0.50)',
           color: '#ffffff',
           fontSize: '26px',
           border: 'none',
         }}
         onMouseOver={e => {
           e.currentTarget.style.transform = 'scale(1.10)'
-          e.currentTarget.style.boxShadow = '0 6px 28px rgba(16,185,129,0.65)'
+          e.currentTarget.style.boxShadow = '0 6px 28px rgba(78,203,160,0.65)'
         }}
         onMouseOut={e => {
           e.currentTarget.style.transform = ''
-          e.currentTarget.style.boxShadow = '0 4px 20px rgba(16,185,129,0.50)'
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(78,203,160,0.50)'
         }}
         title="J'adore"
       >
