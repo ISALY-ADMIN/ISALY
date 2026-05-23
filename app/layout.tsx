@@ -4,7 +4,21 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'ISALY — Trouve ta coloc parfaite',
-  description: 'ISALY combine le matching intelligent façon Tinder avec une gestion complète de ton bail.',
+  description: 'ISALY analyse tes habitudes, tes horaires et ta personnalité pour te connecter avec des colocataires vraiment compatibles.',
+  icons: {
+    icon: '/LOGO_ISALY.png',
+    apple: '/LOGO_ISALY.png',
+    shortcut: '/LOGO_ISALY.png',
+  },
+  openGraph: {
+    title: 'ISALY — Trouve ta coloc parfaite',
+    description: 'Matching intelligent pour trouver le colocataire idéal.',
+    url: 'https://isaly.fr',
+    siteName: 'ISALY',
+    images: [{ url: 'https://isaly.fr/LOGO_ISALY.png', width: 512, height: 512 }],
+    locale: 'fr_FR',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({
