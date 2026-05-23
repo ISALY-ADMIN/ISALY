@@ -79,7 +79,9 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
     setTimeout(() => { setFlying(null); onSwipe(dir) }, 400)
   }
 
-  const firstName = profile.name.split(' ')[0]
+  const firstName = profile.isListing
+    ? "l'annonceur"
+    : profile.name.split(' ')[0]
 
   const hintRotate = hint === 'like' ? 'rotate(2deg)' : hint === 'nope' ? 'rotate(-2deg)' : undefined
   const cardTransform = flying === 'left'
@@ -207,7 +209,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           {profile.bio || 'Aucune description pour l\'instant.'}
         </p>
         <Button className="w-full mt-3" size="lg" onClick={() => onMessage(profile.name)}>
-          💬 Écrire à {firstName}
+          {profile.isListing ? '💬 Contacter le loueur' : `💬 Écrire à ${firstName}`}
         </Button>
       </div>
     </Card>

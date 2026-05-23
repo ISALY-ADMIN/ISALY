@@ -165,7 +165,12 @@ export default function SwipePage() {
   }
 
   function goMessage(name: string) {
-    router.push(`/app/messages?with=${encodeURIComponent(name)}`)
+    const current = profiles[index]
+    if (current?.isListing && current?.ownerId) {
+      router.push(`/app/messages?owner=${current.ownerId}`)
+    } else {
+      router.push(`/app/messages?with=${encodeURIComponent(name)}`)
+    }
   }
 
   const noMoreProfiles = !loading && index >= profiles.length

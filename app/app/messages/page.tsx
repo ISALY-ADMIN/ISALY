@@ -40,6 +40,37 @@ function MessagesContent() {
 
   useEffect(() => {
     loadConversations()
+
+    const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel>
+
+    ;(async () => {
+      const userId = (await supabase.auth.getUser()).data.user?.id
+      if (!userId) return
+
+      channel = supabase
+        .channel('new-conversations')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversations',
+          filter: `user1_id=eq.${userId}`,
+        }, () => loadConversations())
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversations',
+          filter: `user2_id=eq.${userId}`,
+        }, () => loadConversations())
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        }, () => loadConversations())
+        .subscribe()
+    })()
+
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   useEffect(() => {
@@ -102,21 +133,29 @@ function MessagesContent() {
         .select('id, first_name, last_name')
         .in('id', otherUserIds)
 
+      const convIds = data.map(c => c.id)
+      const { data: lastMsgs } = await supabase
+        .from('messages')
+        .select('conversation_id, content, created_at')
+        .in('conversation_id', convIds)
+        .order('created_at', { ascending: false })
+
       const builtConvs: Conv[] = data.map((conv, i) => {
         const otherId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
         const otherProfile = profiles?.find(p => p.id === otherId)
         const fn = otherProfile?.first_name ?? 'Utilisateur'
         const ln = otherProfile?.last_name ?? ''
-        const name = `${fn} ${ln[0] ?? ''}.`.trim()
+        const name = `${fn} ${ln ? ln[0] + '.' : ''}`.trim()
         const initials = `${fn[0] ?? ''}${ln[0] ?? ''}`.toUpperCase()
+        const lastMsg = lastMsgs?.find(m => m.conversation_id === conv.id)
 
         return {
           id: conv.id as string,
           name,
           initials,
           color: MATCH_COLORS[i % MATCH_COLORS.length],
-          preview: 'Nouvelle conversation',
-          time: '',
+          preview: lastMsg?.content ?? 'Nouvelle conversation',
+          time: lastMsg ? new Date(lastMsg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '',
           msgs: [],
         }
       })
@@ -158,6 +197,7 @@ function MessagesContent() {
             c.id === activeId ? { ...c, id: realId } : c
           ))
           setActiveId(realId)
+          await loadConversations()
         }
       } catch {}
     } else {
