@@ -52,12 +52,12 @@ interface UserData {
 export default function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
-  const supabase = createClient()
   const { mode } = useLease()
   const [userData, setUserData] = useState<UserData>({ firstName: '', lastName: '', role: '', avatarUrl: null })
 
   useEffect(() => {
     async function loadProfile() {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       const { data } = await supabase
@@ -75,9 +75,10 @@ export default function Sidebar() {
       }
     }
     loadProfile()
-  }, [supabase])
+  }, [])
 
   async function handleSignOut() {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
     router.refresh()
