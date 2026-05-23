@@ -107,8 +107,25 @@ export default function Sidebar() {
         .subscribe()
     }
 
+    function handleMessagesRead() {
+      ;(async () => {
+        const { data: { user: u } } = await supabase.auth.getUser()
+        if (!u) return
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('read', false)
+          .neq('sender_id', u.id)
+        setUnreadCount(count ?? 0)
+      })()
+    }
+
+    window.addEventListener('messages-read', handleMessagesRead)
     loadProfile()
-    return () => { if (channel) supabase.removeChannel(channel) }
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+      window.removeEventListener('messages-read', handleMessagesRead)
+    }
   }, [])
 
   async function handleSignOut() {

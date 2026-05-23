@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import ConversationList from '@/components/messages/ConversationList'
 import ChatArea from '@/components/messages/ChatArea'
@@ -12,6 +12,8 @@ interface Msg {
   from: 'me' | 'them'
   text: string
   time: string
+  created_at?: string
+  replyTo?: { text: string; from: 'me' | 'them' }
 }
 
 interface Conv {
@@ -23,12 +25,15 @@ interface Conv {
   time: string
   msgs: Msg[]
   certLevel?: CertLevel
+  avatarUrl?: string | null
+  otherUserId?: string | null
 }
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 
 function MessagesContent() {
   const searchParams = useSearchParams()
+  const router     = useRouter()
   const withName   = searchParams.get('with')
   const ownerParam = searchParams.get('owner')
 
@@ -101,6 +106,8 @@ function MessagesContent() {
         preview: 'Bonjour, je suis intéressé(e) par votre annonce.',
         time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         msgs: [],
+        avatarUrl: null,
+        otherUserId: ownerParam,
       }
       setConvs(prev => prev.some(c => c.id === virtualConv.id) ? prev : [virtualConv, ...prev])
       setActiveId(virtualConv.id)
@@ -130,7 +137,7 @@ function MessagesContent() {
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', otherUserIds)
 
       const convIds = data.map(c => c.id)
@@ -157,6 +164,8 @@ function MessagesContent() {
           preview: lastMsg?.content ?? 'Nouvelle conversation',
           time: lastMsg ? new Date(lastMsg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '',
           msgs: [],
+          avatarUrl: (otherProfile as { avatar_url?: string | null } | undefined)?.avatar_url ?? null,
+          otherUserId: otherId,
         }
       })
 
@@ -169,14 +178,14 @@ function MessagesContent() {
     setActiveId(id)
   }
 
-  async function handleSend(text: string) {
+  async function handleSend(text: string, replyTo?: { text: string; from: 'me' | 'them' }) {
     if (!activeId) return
     const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
     const isVirtual = activeId.startsWith('owner_')
 
     if (isVirtual) {
-      const newMsg: Msg = { from: 'me', text, time: now }
+      const newMsg: Msg = { from: 'me', text, time: now, ...(replyTo ? { replyTo } : {}) }
       setConvs(cs => cs.map(c =>
         c.id === activeId
           ? { ...c, msgs: [...c.msgs, newMsg], preview: text, time: now }
@@ -239,6 +248,7 @@ function MessagesContent() {
               defaultMessage={activeConv?.id.startsWith('owner_') ? ownerDraft : undefined}
               conversationId={activeId}
               currentUserId={currentUserId}
+              onViewProfile={(userId) => router.push(`/app/profil?user=${userId}`)}
             />
           </>
         )}
