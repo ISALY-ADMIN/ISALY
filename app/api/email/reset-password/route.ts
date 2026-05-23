@@ -3,13 +3,18 @@ import { createClient } from '@supabase/supabase-js'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { resetPasswordTemplate } from '@/lib/email-templates'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
-
 export async function POST(request: Request) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('[reset] Supabase env vars not set')
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+  }
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+
   const { email } = await request.json()
   if (!email) return NextResponse.json({ error: 'Email requis' }, { status: 400 })
 
