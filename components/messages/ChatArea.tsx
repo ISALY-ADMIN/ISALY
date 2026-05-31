@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import { createClient } from '@/lib/supabase/client'
+import { useUserPresence, formatLastSeen } from '@/hooks/usePresence'
+import ColocRequestModal from '@/components/messages/ColocRequestModal'
 
 interface Msg {
   from: 'me' | 'them'
@@ -29,12 +31,13 @@ interface ChatAreaProps {
   defaultMessage?: string
   conversationId?: string | null
   currentUserId?: string | null
+  otherUserId?: string | null
   onViewProfile?: (userId: string) => void
 }
 
 const REACTION_EMOJIS = ['❤️', '😂', '👍', '🔥', '😮', '😢']
 
-export default function ChatArea({ conv, onSend, defaultMessage, conversationId, currentUserId, onViewProfile }: ChatAreaProps) {
+export default function ChatArea({ conv, onSend, defaultMessage, conversationId, currentUserId, otherUserId, onViewProfile }: ChatAreaProps) {
   const [input, setInput] = useState('')
   const [realtimeMessages, setRealtimeMessages] = useState<Msg[]>([])
   const msgsRef = useRef<HTMLDivElement>(null)
@@ -44,6 +47,9 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
   const [editText, setEditText] = useState('')
   const [replyTo, setReplyTo] = useState<Msg | null>(null)
   const [showActionsFor, setShowActionsFor] = useState<number | null>(null)
+  const [showColocModal, setShowColocModal] = useState(false)
+
+  const { isOnline, lastSeen, avgResponseTime } = useUserPresence(otherUserId ?? null)
 
   useEffect(() => {
     if (defaultMessage) setInput(defaultMessage)
@@ -149,7 +155,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
               )}
               <span
                 className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
-                style={{ background: '#4ECBA0', borderColor: '#FFFFFF' }}
+                style={{ background: isOnline ? '#4ECBA0' : '#9CA3AF', borderColor: '#FFFFFF' }}
               />
             </div>
             <div>
@@ -157,9 +163,37 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
                 <span className="font-bold text-[14px]" style={{ color: '#111827' }}>{conv.name}</span>
                 {conv.certLevel ? <CertificationBadge level={conv.certLevel} size="sm" /> : null}
               </div>
-              <div className="text-[11.5px] font-semibold" style={{ color: '#4ECBA0' }}>En ligne</div>
+              <div className="text-[11.5px] font-semibold" style={{ color: isOnline ? '#4ECBA0' : '#9CA3AF' }}>
+                {formatLastSeen(lastSeen)}
+              </div>
+              {avgResponseTime !== null && (
+                <div style={{ fontSize: '10.5px', color: '#9CA3AF', marginTop: '1px' }}>
+                  ⚡ Répond en ~{avgResponseTime < 60 ? `${avgResponseTime} min` : `${Math.round(avgResponseTime / 60)}h`} en moyenne
+                </div>
+              )}
             </div>
-            <div className="ml-auto flex gap-2">
+            <div className="ml-auto flex gap-2 items-center">
+              {conv && !conv.id.startsWith('owner_') && (
+                <button
+                  onClick={() => setShowColocModal(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(16,185,129,0.3)',
+                  }}
+                >
+                  🏠 Demander une coloc
+                </button>
+              )}
               <IconAction title="Voir le profil" onClick={() => { if (conv.otherUserId) onViewProfile?.(conv.otherUserId) }}>👤</IconAction>
               <IconAction title="Appel vidéo">📹</IconAction>
               <IconAction title="Plus d'options">⋯</IconAction>
@@ -520,6 +554,16 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
           ➤
         </button>
       </div>
+
+      {showColocModal && conv && otherUserId && currentUserId && (
+        <ColocRequestModal
+          onClose={() => setShowColocModal(false)}
+          otherUserId={otherUserId}
+          otherName={conv.name.split(' ')[0]}
+          currentUserId={currentUserId}
+          conversationId={conv.id}
+        />
+      )}
     </div>
   )
 }

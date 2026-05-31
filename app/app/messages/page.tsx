@@ -7,6 +7,7 @@ import ConversationList from '@/components/messages/ConversationList'
 import ChatArea from '@/components/messages/ChatArea'
 import { createClient } from '@/lib/supabase/client'
 import { CertLevel } from '@/components/ui/CertificationBadge'
+import { usePresence } from '@/hooks/usePresence'
 
 interface Msg {
   from: 'me' | 'them'
@@ -41,6 +42,8 @@ function MessagesContent() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  usePresence(currentUserId)
   const [ownerDraft, setOwnerDraft] = useState('')
 
   useEffect(() => {
@@ -248,6 +251,7 @@ function MessagesContent() {
               defaultMessage={activeConv?.id.startsWith('owner_') ? ownerDraft : undefined}
               conversationId={activeId}
               currentUserId={currentUserId}
+              otherUserId={activeConv?.otherUserId ?? null}
               onViewProfile={(userId) => router.push(`/app/profil?user=${userId}`)}
             />
           </>
