@@ -24,28 +24,42 @@ interface FormData {
   description: string
 }
 
+async function uploadPhotosToStorage(files: File[]): Promise<string[]> {
+  const supabase = createClient()
+  const urls: string[] = []
+  for (const file of files) {
+    const ext = file.name.split('.').pop() ?? 'jpg'
+    const path = `listings/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage
+      .from('listings')
+      .upload(path, file, { cacheControl: '3600', upsert: false })
+    if (!error) {
+      const { data } = supabase.storage.from('listings').getPublicUrl(path)
+      urls.push(data.publicUrl)
+    }
+  }
+  return urls
+}
+
 export default function AnnoncePage() {
   const router = useRouter()
 
-  // ── File upload refs ─────────────────────────────────────────
-  const fileInputRef  = useRef<HTMLInputElement>(null)
-  const activeSlot    = useRef<number>(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // ── State ────────────────────────────────────────────────────
-  const [boost, setBoost]           = useState<BoostOption>('featured')
-  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(Array(8).fill(null))
-  const [previews, setPreviews]     = useState<(string | null)[]>(Array(8).fill(null))
-  const [publishing, setPublishing] = useState(false)
-  const [published, setPublished]   = useState(false)
+  const [boost, setBoost]                   = useState<BoostOption>('featured')
+  const [photos, setPhotos]                 = useState<(File | string)[]>([])
+  const [photoPreviews, setPhotoPreviews]   = useState<string[]>([])
+  const [publishing, setPublishing]         = useState(false)
+  const [published, setPublished]           = useState(false)
 
   const [form, setForm] = useState<FormData>({
     title: '', rent: '', charges: '', city: '', neighborhood: '',
     surface: '', rooms_available: '1', description: '',
   })
 
-  const [importUrl, setImportUrl]     = useState('')
-  const [importing, setImporting]     = useState(false)
-  const [importError, setImportError] = useState('')
+  const [importUrl, setImportUrl]       = useState('')
+  const [importing, setImporting]       = useState(false)
+  const [importError, setImportError]   = useState('')
   const [importSource, setImportSource] = useState('')
 
   function set(field: keyof FormData) {
@@ -53,16 +67,12 @@ export default function AnnoncePage() {
       setForm(f => ({ ...f, [field]: e.target.value }))
   }
 
-  // ── CAS A+B : gestion des slots photos ──────────────────────
   function handleSlotClick(i: number) {
-    if (previews[i]) {
-      // Supprimer la photo de ce slot
-      if (previews[i]?.startsWith('blob:')) URL.revokeObjectURL(previews[i]!)
-      setPreviews(p => { const n = [...p]; n[i] = null; return n })
-      setPhotoFiles(p => { const n = [...p]; n[i] = null; return n })
+    if (photoPreviews[i]) {
+      if (photoPreviews[i].startsWith('blob:')) URL.revokeObjectURL(photoPreviews[i])
+      setPhotoPreviews(p => p.filter((_, idx) => idx !== i))
+      setPhotos(p => p.filter((_, idx) => idx !== i))
     } else {
-      // Ouvrir le file picker pour ce slot
-      activeSlot.current = i
       fileInputRef.current?.click()
     }
   }
@@ -70,28 +80,11 @@ export default function AnnoncePage() {
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
-    const start = activeSlot.current
-
-    setPhotoFiles(prev => {
-      const next = [...prev]
-      files.forEach((f, i) => { if (start + i < 8) next[start + i] = f })
-      return next
-    })
-    setPreviews(prev => {
-      const next = [...prev]
-      files.forEach((f, i) => {
-        const idx = start + i
-        if (idx < 8) {
-          if (next[idx]?.startsWith('blob:')) URL.revokeObjectURL(next[idx]!)
-          next[idx] = URL.createObjectURL(f)
-        }
-      })
-      return next
-    })
-    e.target.value = '' // permet de re-sélectionner le même fichier
+    setPhotos(prev => [...prev, ...files].slice(0, 8))
+    setPhotoPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))].slice(0, 8))
+    e.target.value = ''
   }
 
-  // ── Import depuis URL externe ────────────────────────────────
   async function handleImport() {
     if (!importUrl.trim()) { setImportError('Colle une URL avant d\'importer'); return }
     setImporting(true); setImportError(''); setImportSource('')
@@ -114,10 +107,10 @@ export default function AnnoncePage() {
         surface:      json.surface != null ? String(json.surface) : f.surface,
         rooms_available: json.rooms != null ? String(json.rooms) : f.rooms_available,
       }))
-      // Remplit les slots de prévisualisation avec les URLs importées (pas des File)
       if (Array.isArray(json.photos) && json.photos.length > 0) {
-        setPreviews(Array(8).fill(null).map((_: null, i: number) => json.photos[i] ?? null))
-        setPhotoFiles(Array(8).fill(null)) // pas de File pour les URLs importées
+        const importedUrls: string[] = json.photos.slice(0, 8)
+        setPhotos(importedUrls)
+        setPhotoPreviews(importedUrls)
       }
       setImportSource(json.source_name || 'Web')
     } catch {
@@ -127,7 +120,6 @@ export default function AnnoncePage() {
     }
   }
 
-  // ── CAS C : upload Supabase Storage + insert listing ────────
   async function handlePublish() {
     if (!form.title.trim() || !form.rent || !form.city.trim()) {
       alert('Titre, loyer et ville sont obligatoires.')
@@ -143,23 +135,10 @@ export default function AnnoncePage() {
         return
       }
 
-      // Upload des photos locales vers Supabase Storage
-      // Les URLs importées (https://) sont gardées telles quelles
-      const photoUrls: string[] = []
-      for (let i = 0; i < 8; i++) {
-        if (photoFiles[i]) {
-          const file = photoFiles[i]!
-          const ext  = file.name.split('.').pop() ?? 'jpg'
-          const path = `listings/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-          const { error: uploadError } = await supabase.storage.from('listings').upload(path, file)
-          if (!uploadError) {
-            const { data } = supabase.storage.from('listings').getPublicUrl(path)
-            photoUrls.push(data.publicUrl)
-          }
-        } else if (previews[i]) {
-          photoUrls.push(previews[i]!)
-        }
-      }
+      const filePhotos = photos.filter((p): p is File => p instanceof File)
+      const importedUrls = photos.filter((p): p is string => typeof p === 'string')
+      const uploadedUrls = await uploadPhotosToStorage(filePhotos)
+      const photoUrls = [...uploadedUrls, ...importedUrls]
 
       const { error } = await supabase.from('listings').insert({
         owner_id:        user.id,
@@ -198,7 +177,6 @@ export default function AnnoncePage() {
   const blur = (e: React.FocusEvent<HTMLElement>) =>
     ((e.target as HTMLElement & { style: CSSStyleDeclaration }).style.borderColor = '#2D2D2D')
 
-  // ── Écran de succès ──────────────────────────────────────────
   if (published) {
     return (
       <>
@@ -223,7 +201,12 @@ export default function AnnoncePage() {
                 Explorer les profils →
               </button>
               <button
-                onClick={() => { setPublished(false); setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', description: '' }); setPreviews(Array(8).fill(null)); setPhotoFiles(Array(8).fill(null)) }}
+                onClick={() => {
+                  setPublished(false)
+                  setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', description: '' })
+                  setPhotoPreviews([])
+                  setPhotos([])
+                }}
                 className="w-full py-3 rounded-full text-sm font-semibold border border-gray-200 text-gray-500 cursor-pointer hover:border-mint hover:text-mint transition-colors bg-transparent"
               >
                 Publier une autre annonce
@@ -239,7 +222,6 @@ export default function AnnoncePage() {
     <>
       <Topbar title="Mon annonce" />
 
-      {/* Hidden file input — CAS A */}
       <input
         ref={fileInputRef}
         type="file"
@@ -375,13 +357,13 @@ export default function AnnoncePage() {
                 style={inputStyle} onFocus={focus} onBlur={blur} />
             </Field>
 
-            {/* Photos — CAS A : input file caché, CAS B : preview blob URL */}
+            {/* Photos */}
             <div className="mb-4">
               <label className="block text-xs font-bold mb-1.5" style={{ color: '#9CA3AF' }}>
                 Photos (max 8)
-                {previews.filter(Boolean).length > 0 && (
+                {photoPreviews.length > 0 && (
                   <span className="ml-2 font-normal" style={{ color: '#4ECBA0' }}>
-                    {previews.filter(Boolean).length} ajoutée{previews.filter(Boolean).length > 1 ? 's' : ''}
+                    {photoPreviews.length} ajoutée{photoPreviews.length > 1 ? 's' : ''}
                   </span>
                 )}
                 <span className="ml-2 font-normal" style={{ color: '#6B7280' }}>
@@ -389,49 +371,52 @@ export default function AnnoncePage() {
                 </span>
               </label>
               <div className="grid grid-cols-4 gap-1.5">
-                {previews.map((preview, i) => (
-                  <div
-                    key={i}
-                    onClick={() => handleSlotClick(i)}
-                    className="aspect-square border-2 border-dashed rounded-[9px] flex items-center justify-center cursor-pointer text-xl transition-all overflow-hidden relative"
-                    style={{
-                      borderColor: preview ? '#4ECBA0' : '#2D2D2D',
-                      background: 'transparent',
-                      color: preview ? '#4ECBA0' : '#4B5563',
-                    }}
-                    title={preview ? 'Cliquer pour supprimer' : 'Cliquer pour ajouter une photo'}
-                  >
-                    {preview ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={preview}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          onError={e => {
-                            const parent = (e.target as HTMLImageElement).parentElement
-                            if (parent) {
-                              parent.style.background = '#0E2B1E'
-                              ;(e.target as HTMLImageElement).style.display = 'none'
-                              const span = document.createElement('span')
-                              span.style.fontSize = '20px'
-                              span.textContent = '📷'
-                              parent.appendChild(span)
-                            }
-                          }}
-                        />
-                        <div
-                          className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-                          style={{ background: 'rgba(0,0,0,0.5)', fontSize: '20px' }}
-                        >
-                          ✕
-                        </div>
-                      </>
-                    ) : (
-                      <span style={{ fontSize: '22px', color: '#4B5563' }}>+</span>
-                    )}
-                  </div>
-                ))}
+                {Array(8).fill(null).map((_, i) => {
+                  const preview = photoPreviews[i] ?? null
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => handleSlotClick(i)}
+                      className="aspect-square border-2 border-dashed rounded-[9px] flex items-center justify-center cursor-pointer text-xl transition-all overflow-hidden relative"
+                      style={{
+                        borderColor: preview ? '#4ECBA0' : '#2D2D2D',
+                        background: 'transparent',
+                        color: preview ? '#4ECBA0' : '#4B5563',
+                      }}
+                      title={preview ? 'Cliquer pour supprimer' : 'Cliquer pour ajouter une photo'}
+                    >
+                      {preview ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={preview}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={e => {
+                              const parent = (e.target as HTMLImageElement).parentElement
+                              if (parent) {
+                                parent.style.background = '#0E2B1E'
+                                ;(e.target as HTMLImageElement).style.display = 'none'
+                                const span = document.createElement('span')
+                                span.style.fontSize = '20px'
+                                span.textContent = '📷'
+                                parent.appendChild(span)
+                              }
+                            }}
+                          />
+                          <div
+                            className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                            style={{ background: 'rgba(0,0,0,0.5)', fontSize: '20px' }}
+                          >
+                            ✕
+                          </div>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: '22px', color: '#4B5563' }}>+</span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
 

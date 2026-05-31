@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
 import ChatbotWidget from '@/components/chatbot/ChatbotWidget'
+import NotifPanel from '@/components/notifications/NotifPanel'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -15,6 +16,8 @@ interface TopbarProps {
 export default function Topbar({ title }: TopbarProps) {
   const [chatOpen, setChatOpen]         = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showNotifs, setShowNotifs]     = useState(false)
+  const [notifCount, setNotifCount]     = useState(0)
   const [avatarUrl, setAvatarUrl]       = useState<string | null>(null)
   const [initials, setInitials]         = useState('…')
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -32,6 +35,30 @@ export default function Topbar({ title }: TopbarProps) {
       }
     }
     loadUser()
+  }, [])
+
+  useEffect(() => {
+    async function loadUnread() {
+      const res = await fetch('/api/notifications')
+      const json = await res.json()
+      setNotifCount((json.notifications ?? []).filter((n: { read: boolean }) => !n.read).length)
+    }
+    loadUnread()
+
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      const channel = supabase
+        .channel('notif-count')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, () => setNotifCount(c => c + 1))
+        .subscribe()
+      return () => { supabase.removeChannel(channel) }
+    })
   }, [])
 
   useEffect(() => {
@@ -64,35 +91,37 @@ export default function Topbar({ title }: TopbarProps) {
         </h1>
 
         <div className="flex gap-2 items-center">
+          {/* Notifications */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowNotifs(v => !v)}
+              style={{
+                background: '#fff',
+                border: '1px solid #E5E7EB',
+                borderRadius: '10px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              🔔 Alertes
+              {notifCount > 0 && (
+                <span style={{ background: '#10B981', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '10px', minWidth: '16px', textAlign: 'center' }}>
+                  {notifCount}
+                </span>
+              )}
+            </button>
+            {showNotifs && (
+              <NotifPanel onClose={() => { setShowNotifs(false); setNotifCount(0) }} />
+            )}
+          </div>
+
           <TooltipProvider>
-            {/* Search shortcut */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/app/recherche">
-                  <Button variant="ghost" size="sm" className="gap-2 text-[12px] font-medium text-gray-700 border border-[#E5E7EB] bg-white hover:bg-gray-50 rounded-[10px]">
-                    <span className="text-sm">🔍</span> Rechercher
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent>Recherche avancée</TooltipContent>
-            </Tooltip>
-
-            {/* Notifications */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="relative">
-                  <Button variant="ghost" size="sm" className="gap-2 text-[12px] font-medium text-gray-700 border border-[#E5E7EB] bg-white hover:bg-gray-50 rounded-[10px]">
-                    <span className="text-sm">🔔</span> Alertes
-                  </Button>
-                  <span
-                    className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2"
-                    style={{ background: '#4ECBA0', borderColor: '#FFFFFF', animation: 'pulse-mint 2s ease infinite' }}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>Notifications</TooltipContent>
-            </Tooltip>
-
             {/* Chatbot */}
             <Tooltip>
               <TooltipTrigger asChild>

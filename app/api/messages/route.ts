@@ -74,5 +74,30 @@ export async function POST(req: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify the other participant
+  const { data: convData } = await supabase
+    .from('conversations')
+    .select('user1_id, user2_id')
+    .eq('id', convId)
+    .single()
+
+  const otherUserId = convData?.user1_id === user.id ? convData?.user2_id : convData?.user1_id
+  if (otherUserId) {
+    const { data: senderProfile } = await supabase
+      .from('profiles')
+      .select('first_name')
+      .eq('id', user.id)
+      .single()
+    await supabase.from('notifications').insert({
+      user_id: otherUserId,
+      type: 'message',
+      title: `Nouveau message de ${senderProfile?.first_name ?? 'quelqu\'un'}`,
+      body: content.slice(0, 80),
+      read: false,
+      link: '/app/messages',
+    })
+  }
+
   return NextResponse.json({ message: data })
 }
