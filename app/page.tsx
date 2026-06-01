@@ -37,13 +37,12 @@ export default function LandingPage() {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         padding: '0 40px',
         height: '64px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         background: scrolled ? 'rgba(10,10,10,0.85)' : 'transparent',
         backdropFilter: scrolled ? 'blur(20px)' : 'none',
         borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
         transition: 'all 0.3s ease',
       }}>
-        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '22px', color: '#fff', letterSpacing: '0.3px' }}>Isaly</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link href="/auth/login" style={{
             color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '14px',
