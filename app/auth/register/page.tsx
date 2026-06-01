@@ -78,38 +78,13 @@ export default function RegisterPage() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', fontFamily: "'Outfit', sans-serif", position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Outfit', sans-serif", position: 'relative', overflow: 'hidden' }}>
 
       {/* Glow background */}
       <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-      {/* Left — branding (desktop only) */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '80px', position: 'relative' }} className="hidden lg:flex">
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '24px' }}>ISALY</div>
-          <h2 style={{ fontSize: '48px', fontWeight: 700, color: '#fff', lineHeight: 1.1, margin: '0 0 16px', letterSpacing: '-1px' }}>
-            Ta coloc idéale<br /><span style={{ background: 'linear-gradient(135deg, #10B981, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>existe déjà.</span>
-          </h2>
-          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, maxWidth: '380px' }}>
-            Rejoins des milliers de personnes qui ont trouvé leur colocataire parfait grâce au matching intelligent.
-          </p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {[
-            { icon: '🎯', text: 'Matching sur 40+ critères de compatibilité' },
-            { icon: '💬', text: 'Messagerie et gestion de bail intégrées' },
-            { icon: '🔒', text: 'Profils vérifiés et certifiés' },
-          ].map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>{item.icon}</div>
-              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>{item.text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right — form */}
-      <div style={{ width: '100%', maxWidth: '480px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', position: 'relative', zIndex: 1 }}>
+      {/* Form */}
+      <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', position: 'relative', zIndex: 1 }}>
         <div style={{ width: '100%' }}>
 
           {/* Header */}
