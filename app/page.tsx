@@ -43,9 +43,7 @@ export default function LandingPage() {
         borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
         transition: 'all 0.3s ease',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Image src="/LOGO_ISALY.png" alt="ISALY" width={100} height={32} style={{ objectFit: 'contain', height: '32px', width: 'auto' }} />
-        </div>
+        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '22px', color: '#fff', letterSpacing: '0.3px' }}>Isaly</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link href="/auth/login" style={{
             color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '14px',
