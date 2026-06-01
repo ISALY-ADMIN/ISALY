@@ -177,6 +177,16 @@ input[type='range'].dark-thumb::-webkit-slider-thumb {
   border-radius: 8px;
 }
 
+/* ── Drawer slide-in/out ─────────────────────────────────────── */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+
 /* ── Toast ───────────────────────────────────────────────────── */
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }

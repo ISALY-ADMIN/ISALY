@@ -12,184 +12,29 @@ interface Listing {
   city: string
   neighborhood: string
   rent: number
+  surface: number
   rooms_available: number
   photos: string[]
   owner_id: string
   description: string
   created_at: string
+  boost_type: string
 }
 
-// ── Filter defaults ───────────────────────────────────────────
+// ── Filter state ──────────────────────────────────────────────
 const DEFAULTS = {
-  budgetMin: 300, budgetMax: 2000,
+  budget_min: 0,
+  budget_max: 3000,
   city: '',
-  rooms: '' as '' | '1' | '2' | '3' | '4+',
-  sortBy: 'newest' as 'newest' | 'price_asc' | 'price_desc',
+  surface_min: 0,
+  rooms: 0,
+  sort: 'recent',
+  date_before: '',
+  boost_type: '',
 }
 type Filters = typeof DEFAULTS
 
 const PAGE_SIZE = 9
-
-// ── Dual range slider ─────────────────────────────────────────
-function DualRangeSlider({
-  min = 300, max = 2000, step = 50,
-  valueMin, valueMax,
-  onMin, onMax,
-}: {
-  min?: number; max?: number; step?: number
-  valueMin: number; valueMax: number
-  onMin: (v: number) => void; onMax: (v: number) => void
-}) {
-  const span = max - min
-  const leftPct  = ((valueMin - min) / span) * 100
-  const rightPct = 100 - ((valueMax - min) / span) * 100
-
-  return (
-    <div>
-      <div className="flex justify-between text-[12px] font-bold mb-2" style={{ color: '#4ECBA0' }}>
-        <span>{valueMin}€</span>
-        <span>{valueMax === 2000 ? '2000€+' : `${valueMax}€`}</span>
-      </div>
-      <div className="range-wrap">
-        <div className="absolute inset-x-0 h-1 rounded-full" style={{ background: '#2D2D2D', top: '50%', transform: 'translateY(-50%)' }} />
-        <div
-          className="absolute h-1 rounded-full"
-          style={{ left: `${leftPct}%`, right: `${rightPct}%`, background: '#4ECBA0', top: '50%', transform: 'translateY(-50%)' }}
-        />
-        <input
-          type="range" min={min} max={max} step={step} value={valueMin}
-          style={{ zIndex: valueMin > max - 200 ? 5 : 3 }}
-          onChange={e => onMin(Math.min(Number(e.target.value), valueMax - step))}
-        />
-        <input
-          type="range" min={min} max={max} step={step} value={valueMax}
-          style={{ zIndex: 4 }}
-          onChange={e => onMax(Math.max(Number(e.target.value), valueMin + step))}
-        />
-      </div>
-      <div className="text-[11px] text-center mt-1.5" style={{ color: '#6B7280' }}>
-        {valueMin}€ — {valueMax === 2000 ? '2000€ et +' : `${valueMax}€`}/mois
-      </div>
-    </div>
-  )
-}
-
-// ── Toggle button ─────────────────────────────────────────────
-function ToggleBtn({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-[1.5px] transition-all"
-      style={
-        active
-          ? { background: '#0E2B1E', color: '#4ECBA0', borderColor: '#4ECBA0' }
-          : { background: 'transparent', color: '#9CA3AF', borderColor: '#2D2D2D' }
-      }
-    >
-      {label}
-    </button>
-  )
-}
-
-// ── Filters panel ─────────────────────────────────────────────
-function FiltersPanel({
-  filters, onChange, onReset, onClose,
-}: {
-  filters: Filters
-  onChange: (patch: Partial<Filters>) => void
-  onReset: () => void
-  onClose: () => void
-}) {
-  return (
-    <div
-      className="flex flex-col overflow-y-auto"
-      style={{ width: '280px', height: '100%', background: '#111827' }}
-    >
-      <div className="flex justify-between items-center px-5 py-4 border-b" style={{ borderColor: '#1F2937' }}>
-        <span className="text-[13.5px] font-bold" style={{ color: '#F1F5F9' }}>Filtres</span>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onReset}
-            className="text-[12px] font-semibold cursor-pointer border-none bg-transparent"
-            style={{ color: '#4ECBA0' }}
-          >
-            Tout effacer
-          </button>
-          <button
-            onClick={onClose}
-            className="cursor-pointer border-none bg-transparent text-[20px] leading-none"
-            style={{ color: '#6B7280' }}
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      <div className="p-5 flex flex-col gap-6 flex-1">
-
-        {/* Budget */}
-        <div>
-          <div className="text-[11px] font-extrabold uppercase tracking-[1.5px] mb-3" style={{ color: '#4B5563' }}>Budget</div>
-          <DualRangeSlider
-            valueMin={filters.budgetMin} valueMax={filters.budgetMax}
-            onMin={v => onChange({ budgetMin: v })}
-            onMax={v => onChange({ budgetMax: v })}
-          />
-        </div>
-
-        {/* Localisation */}
-        <div>
-          <div className="text-[11px] font-extrabold uppercase tracking-[1.5px] mb-3" style={{ color: '#4B5563' }}>Ville</div>
-          <input
-            placeholder="Paris, Lyon, Marseille..."
-            value={filters.city}
-            onChange={e => onChange({ city: e.target.value })}
-            className="w-full px-3 py-2 rounded-[8px] text-[12.5px] border outline-none"
-            style={{ background: '#1F2937', borderColor: '#374151', color: '#E5E7EB' }}
-            onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-            onBlur={e => (e.target.style.borderColor = '#374151')}
-          />
-        </div>
-
-        {/* Chambres */}
-        <div>
-          <div className="text-[11px] font-extrabold uppercase tracking-[1.5px] mb-3" style={{ color: '#4B5563' }}>Chambres disponibles</div>
-          <div className="flex gap-1.5 flex-wrap">
-            {(['', '1', '2', '3', '4+'] as const).map(r => (
-              <ToggleBtn key={r} label={r || 'Toutes'} active={filters.rooms === r} onClick={() => onChange({ rooms: r })} />
-            ))}
-          </div>
-        </div>
-
-        {/* Tri */}
-        <div>
-          <div className="text-[11px] font-extrabold uppercase tracking-[1.5px] mb-3" style={{ color: '#4B5563' }}>Trier par</div>
-          <div className="flex flex-col gap-2">
-            {([
-              ['newest',     '🕐 Plus récents'],
-              ['price_asc',  '💰 Prix croissant'],
-              ['price_desc', '💰 Prix décroissant'],
-            ] as const).map(([v, l]) => (
-              <label key={v} className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sortBy"
-                  value={v}
-                  checked={filters.sortBy === v}
-                  onChange={() => onChange({ sortBy: v })}
-                  className="w-4 h-4 cursor-pointer"
-                  style={{ accentColor: '#4ECBA0' }}
-                />
-                <span className="text-[12.5px]" style={{ color: filters.sortBy === v ? '#4ECBA0' : '#9CA3AF' }}>{l}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  )
-}
 
 // ── Listing card ──────────────────────────────────────────────
 function ListingCard({ listing }: { listing: Listing }) {
@@ -282,22 +127,31 @@ export default function RecherchePage() {
 
   useEffect(() => {
     async function fetchListings() {
+      setLoadingListings(true)
       const supabase = createClient()
-      const { data } = await supabase
+      let q = supabase
         .from('listings')
-        .select('id, title, city, neighborhood, rent, rooms_available, photos, owner_id, description, created_at')
+        .select('id, title, city, neighborhood, rent, surface, rooms_available, photos, owner_id, description, created_at, boost_type')
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
+
+      if (filters.budget_max < 3000) q = q.lte('rent', filters.budget_max)
+      if (filters.budget_min > 0)    q = q.gte('rent', filters.budget_min)
+      if (filters.city)              q = q.ilike('city', `%${filters.city}%`)
+      if (filters.surface_min > 0)   q = q.gte('surface', filters.surface_min)
+      if (filters.rooms > 0)         q = q.gte('rooms_available', filters.rooms)
+      if (filters.boost_type)        q = q.eq('boost_type', filters.boost_type)
+
+      if (filters.sort === 'price_asc')  q = q.order('rent', { ascending: true })
+      else if (filters.sort === 'price_desc') q = q.order('rent', { ascending: false })
+      else if (filters.sort === 'surface')    q = q.order('surface', { ascending: false })
+      else                                    q = q.order('created_at', { ascending: false })
+
+      const { data } = await q
       if (data) setAllListings(data)
       setLoadingListings(false)
     }
     fetchListings()
-  }, [])
-
-  function patchFilters(patch: Partial<Filters>) {
-    setFilters(f => ({ ...f, ...patch }))
-    setPage(1)
-  }
+  }, [filters])
 
   function resetAll() {
     setFilters(DEFAULTS)
@@ -311,46 +165,35 @@ export default function RecherchePage() {
     setPage(1)
   }
 
+  // Text search applied client-side on already-filtered server results
   const filtered = useMemo(() => {
-    let results = allListings.filter(l => {
-      if (query) {
-        const text = `${l.title} ${l.city} ${l.neighborhood} ${l.description}`.toLowerCase()
-        if (!text.includes(query.toLowerCase())) return false
-      }
-      if (l.rent < filters.budgetMin || (filters.budgetMax < 2000 && l.rent > filters.budgetMax)) return false
-      if (filters.city && !l.city.toLowerCase().includes(filters.city.toLowerCase())) return false
-      if (filters.rooms) {
-        const r = filters.rooms === '4+' ? 4 : parseInt(filters.rooms)
-        if (filters.rooms === '4+' ? l.rooms_available < r : l.rooms_available !== r) return false
-      }
-      return true
+    if (!query) return allListings
+    return allListings.filter(l => {
+      const text = `${l.title} ${l.city} ${l.neighborhood} ${l.description}`.toLowerCase()
+      return text.includes(query.toLowerCase())
     })
-
-    results = [...results].sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'price_asc':  return a.rent - b.rent
-        case 'price_desc': return b.rent - a.rent
-        default:           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      }
-    })
-
-    return results
-  }, [query, filters, allListings])
+  }, [query, allListings])
 
   const visible = filtered.slice(0, page * PAGE_SIZE)
   const hasMore = visible.length < filtered.length
 
   // Active pills
   const pills: { label: string; clear: () => void }[] = []
-  if (query) pills.push({ label: `"${query}"`, clear: () => { setQuery(''); setSearchInput('') } })
-  if (filters.budgetMin > 300 || filters.budgetMax < 2000)
-    pills.push({ label: `${filters.budgetMin}€ — ${filters.budgetMax === 2000 ? '2000€+' : filters.budgetMax + '€'}`, clear: () => patchFilters({ budgetMin: 300, budgetMax: 2000 }) })
+  if (query)
+    pills.push({ label: `"${query}"`, clear: () => { setQuery(''); setSearchInput('') } })
+  if (filters.budget_min > 0 || filters.budget_max < 3000)
+    pills.push({ label: `${filters.budget_min}€ — ${filters.budget_max === 3000 ? '3000€+' : filters.budget_max + '€'}`, clear: () => setFilters(f => ({ ...f, budget_min: 0, budget_max: 3000 })) })
   if (filters.city)
-    pills.push({ label: `📍 ${filters.city}`, clear: () => patchFilters({ city: '' }) })
-  if (filters.rooms)
-    pills.push({ label: `${filters.rooms} chambre${filters.rooms === '1' ? '' : 's'}`, clear: () => patchFilters({ rooms: '' }) })
+    pills.push({ label: `📍 ${filters.city}`, clear: () => setFilters(f => ({ ...f, city: '' })) })
+  if (filters.surface_min > 0)
+    pills.push({ label: `≥ ${filters.surface_min}m²`, clear: () => setFilters(f => ({ ...f, surface_min: 0 })) })
+  if (filters.rooms > 0)
+    pills.push({ label: `${filters.rooms === 4 ? '4+' : filters.rooms} chambre${filters.rooms > 1 ? 's' : ''}`, clear: () => setFilters(f => ({ ...f, rooms: 0 })) })
+  if (filters.boost_type)
+    pills.push({ label: filters.boost_type === 'featured' ? '🚀 Mis en avant' : '⭐ Prioritaires', clear: () => setFilters(f => ({ ...f, boost_type: '' })) })
 
-  const gridCols = 'repeat(3, 1fr)'
+  const sortLabel = filters.sort === 'price_asc' ? '💰 Prix ↑' : filters.sort === 'price_desc' ? '💰 Prix ↓' : filters.sort === 'surface' ? '📐 Surface' : '🕐 Plus récents'
+  const activeFilterCount = pills.filter(p => !p.label.startsWith('"')).length
 
   return (
     <>
@@ -373,16 +216,16 @@ export default function RecherchePage() {
                   placeholder="Ville, quartier, description..."
                   className="w-full pl-10 pr-4 py-2.5 rounded-full text-[13.5px] border-[1.5px] outline-none transition-colors"
                   style={{ background: '#F9FAFB', borderColor: '#E5E7EB', color: '#111827' }}
-                  onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
+                  onFocus={e => (e.target.style.borderColor = '#10B981')}
                   onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                 />
               </div>
               <button
                 onClick={runSearch}
                 className="px-5 py-2.5 rounded-full text-[13px] font-bold text-white border-none cursor-pointer flex-shrink-0 transition-colors"
-                style={{ background: '#4ECBA0' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#2AA87C')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
+                style={{ background: '#10B981' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#059669')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#10B981')}
               >
                 Rechercher
               </button>
@@ -391,11 +234,16 @@ export default function RecherchePage() {
                 className="px-4 py-2.5 rounded-full text-[13px] font-semibold border-[1.5px] cursor-pointer flex-shrink-0 transition-all"
                 style={
                   showFilters
-                    ? { background: '#ECFDF5', color: '#4ECBA0', borderColor: '#4ECBA0' }
+                    ? { background: '#ECFDF5', color: '#10B981', borderColor: '#10B981' }
                     : { background: 'transparent', color: '#6B7280', borderColor: '#E5E7EB' }
                 }
               >
-                ⚙️ Filtres {pills.length > 0 && <span className="ml-1 text-[10px] font-extrabold px-1.5 py-px rounded-full" style={{ background: '#4ECBA0', color: '#FFFFFF' }}>{pills.length}</span>}
+                ⚙️ Filtres
+                {activeFilterCount > 0 && (
+                  <span className="ml-1.5 text-[10px] font-extrabold px-1.5 py-px rounded-full" style={{ background: '#10B981', color: '#fff' }}>
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -440,15 +288,13 @@ export default function RecherchePage() {
                     : <><strong style={{ color: '#111827' }}>{filtered.length} annonce{filtered.length > 1 ? 's' : ''}</strong> disponible{filtered.length > 1 ? 's' : ''}</>
                 }
               </div>
-              <div className="text-[11.5px]" style={{ color: '#9CA3AF' }}>
-                {filters.sortBy === 'newest' ? '🕐 Plus récents' : filters.sortBy === 'price_asc' ? '💰 Prix ↑' : '💰 Prix ↓'}
-              </div>
+              <div className="text-[11.5px]" style={{ color: '#9CA3AF' }}>{sortLabel}</div>
             </div>
 
             {/* Results grid */}
             {loadingListings ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="text-[52px] mb-4" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
+                <div className="text-[52px] mb-4">🏠</div>
                 <p className="text-[13.5px]" style={{ color: '#9CA3AF' }}>Recherche des annonces...</p>
               </div>
             ) : filtered.length === 0 ? (
@@ -458,19 +304,19 @@ export default function RecherchePage() {
                   Aucune annonce trouvée
                 </h3>
                 <p className="text-[13.5px] mb-5" style={{ color: '#6B7280' }}>
-                  Essayez d'élargir vos filtres ou de modifier votre recherche.
+                  Essayez d&apos;élargir vos filtres ou de modifier votre recherche.
                 </p>
                 <button
                   onClick={resetAll}
                   className="px-6 py-2.5 rounded-full text-[13px] font-bold text-white border-none cursor-pointer"
-                  style={{ background: '#4ECBA0' }}
+                  style={{ background: '#10B981' }}
                 >
                   Réinitialiser les filtres
                 </button>
               </div>
             ) : (
               <>
-                <div className="grid gap-4" style={{ gridTemplateColumns: gridCols }}>
+                <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                   {visible.map(l => <ListingCard key={l.id} listing={l} />)}
                 </div>
 
@@ -480,7 +326,7 @@ export default function RecherchePage() {
                       onClick={() => setPage(n => n + 1)}
                       className="px-8 py-3 rounded-full text-[13px] font-semibold border-[1.5px] cursor-pointer bg-transparent transition-all"
                       style={{ borderColor: '#E5E7EB', color: '#6B7280' }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#4ECBA0' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#10B981'; e.currentTarget.style.color = '#10B981' }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#6B7280' }}
                     >
                       Voir plus ({filtered.length - visible.length} annonces restantes)
@@ -497,27 +343,226 @@ export default function RecherchePage() {
             )}
           </div>
         </div>
-
       </div>
 
-      {/* ── Drawer overlay ──────────────────────────────── */}
+      {/* ── Overlay ─────────────────────────────────────────── */}
       {showFilters && (
         <div
           onClick={() => setShowFilters(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 40,
+            backdropFilter: 'blur(2px)',
+          }}
         />
       )}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, height: '100%',
-        transform: showFilters ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
-        zIndex: 50,
-        display: 'flex', flexDirection: 'column',
-        boxShadow: showFilters ? '-8px 0 32px rgba(0,0,0,0.25)' : 'none',
-      }}>
-        <FiltersPanel filters={filters} onChange={patchFilters} onReset={resetAll} onClose={() => setShowFilters(false)} />
-      </div>
 
+      {/* ── Drawer filtres ───────────────────────────────────── */}
+      {showFilters && (
+        <div style={{
+          position: 'fixed',
+          top: 0, right: 0, bottom: 0,
+          width: '340px',
+          background: '#fff',
+          zIndex: 50,
+          boxShadow: '-8px 0 32px rgba(0,0,0,0.15)',
+          animation: 'slideInRight 0.25s cubic-bezier(.34,1.56,.64,1)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+
+          {/* Header */}
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '20px', color: '#111827' }}>Filtres</div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <button
+                onClick={() => setFilters(DEFAULTS)}
+                style={{ fontSize: '12px', color: '#10B981', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Tout effacer
+              </button>
+              <button
+                onClick={() => setShowFilters(false)}
+                style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Corps scrollable */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+
+            {/* Budget */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>BUDGET</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#374151' }}>{filters.budget_min}€</span>
+                <span style={{ fontSize: '13px', color: '#374151' }}>{filters.budget_max === 3000 ? '3000€+' : `${filters.budget_max}€`}/mois</span>
+              </div>
+              <input type="range" min={0} max={3000} step={50}
+                value={filters.budget_min}
+                onChange={e => setFilters(f => ({ ...f, budget_min: Math.min(Number(e.target.value), f.budget_max - 50) }))}
+                style={{ width: '100%', accentColor: '#10B981' }}
+              />
+              <input type="range" min={0} max={3000} step={50}
+                value={filters.budget_max}
+                onChange={e => setFilters(f => ({ ...f, budget_max: Math.max(Number(e.target.value), f.budget_min + 50) }))}
+                style={{ width: '100%', accentColor: '#10B981', marginTop: '4px' }}
+              />
+            </div>
+
+            {/* Ville */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>VILLE</div>
+              <input
+                type="text"
+                placeholder="Lyon, Paris, Marseille..."
+                value={filters.city}
+                onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => (e.target.style.borderColor = '#10B981')}
+                onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+              />
+            </div>
+
+            {/* Surface */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>SURFACE MINIMUM</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#374151' }}>0 m²</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#10B981' }}>{filters.surface_min} m²</span>
+              </div>
+              <input type="range" min={0} max={200} step={5}
+                value={filters.surface_min}
+                onChange={e => setFilters(f => ({ ...f, surface_min: Number(e.target.value) }))}
+                style={{ width: '100%', accentColor: '#10B981' }}
+              />
+            </div>
+
+            {/* Chambres */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>CHAMBRES DISPONIBLES</div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[0, 1, 2, 3, 4].map(n => (
+                  <button key={n}
+                    onClick={() => setFilters(f => ({ ...f, rooms: n }))}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      border: '1.5px solid',
+                      borderColor: filters.rooms === n ? '#10B981' : '#E5E7EB',
+                      background: filters.rooms === n ? '#ECFDF5' : '#fff',
+                      color: filters.rooms === n ? '#059669' : '#6B7280',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {n === 0 ? 'Toutes' : n === 4 ? '4+' : n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Date d'entrée */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>DATE D&apos;ENTRÉE AVANT LE</div>
+              <input
+                type="date"
+                value={filters.date_before}
+                onChange={e => setFilters(f => ({ ...f, date_before: e.target.value }))}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => (e.target.style.borderColor = '#10B981')}
+                onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+              />
+            </div>
+
+            {/* Tri */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>TRIER PAR</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { value: 'recent',     label: '🕐 Plus récent' },
+                  { value: 'price_asc',  label: '💰 Prix croissant' },
+                  { value: 'price_desc', label: '💰 Prix décroissant' },
+                  { value: 'surface',    label: '📐 Surface' },
+                ].map(opt => (
+                  <button key={opt.value}
+                    onClick={() => setFilters(f => ({ ...f, sort: opt.value }))}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '10px',
+                      border: '1.5px solid',
+                      borderColor: filters.sort === opt.value ? '#10B981' : '#E5E7EB',
+                      background: filters.sort === opt.value ? '#ECFDF5' : '#fff',
+                      color: filters.sort === opt.value ? '#059669' : '#374151',
+                      fontSize: '13px',
+                      fontWeight: filters.sort === opt.value ? 600 : 400,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Type d'annonce */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>TYPE D&apos;ANNONCE</div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { value: '',         label: '📋 Toutes' },
+                  { value: 'featured', label: '🚀 Mis en avant' },
+                  { value: 'priority', label: '⭐ Prioritaires' },
+                ].map(opt => (
+                  <button key={opt.value}
+                    onClick={() => setFilters(f => ({ ...f, boost_type: opt.value }))}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '20px',
+                      border: '1.5px solid',
+                      borderColor: filters.boost_type === opt.value ? '#10B981' : '#E5E7EB',
+                      background: filters.boost_type === opt.value ? '#ECFDF5' : '#fff',
+                      color: filters.boost_type === opt.value ? '#059669' : '#6B7280',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ padding: '16px 24px', borderTop: '1px solid #F3F4F6', flexShrink: 0 }}>
+            <button
+              onClick={() => setShowFilters(false)}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '15px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(16,185,129,0.35)',
+              }}
+            >
+              Appliquer les filtres
+            </button>
+          </div>
+        </div>
+      )}
     </>
   )
 }
