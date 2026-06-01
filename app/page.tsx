@@ -80,21 +80,21 @@ export default function LandingPage() {
           marginBottom: '32px',
         }}>
           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-          Plateforme de colocation intelligente
+          ✦ La colocation sans mauvaises surprises
         </div>
 
         {/* Titre principal */}
         <h1 style={{ margin: '0 0 24px', lineHeight: 1.05, maxWidth: '820px' }}>
           <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, color: '#fff', letterSpacing: '-2px' }}>
-            Trouve ta coloc
+            La coloc que tu
           </span>
           <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, letterSpacing: '-2px', background: 'linear-gradient(135deg, #10B981, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            parfaite.
+            mérites enfin.
           </span>
         </h1>
 
         <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'rgba(255,255,255,0.5)', maxWidth: '520px', lineHeight: 1.7, margin: '0 0 48px' }}>
-          ISALY analyse tes habitudes, tes horaires et ta personnalité pour te connecter avec des colocataires vraiment compatibles.
+          Fini les conflits de mode de vie. ISALY analyse ta personnalité et tes habitudes pour te matcher uniquement avec des personnes vraiment compatibles avec toi.
         </p>
 
         {/* CTA buttons */}
@@ -110,7 +110,7 @@ export default function LandingPage() {
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 60px rgba(16,185,129,0.6)' }}
             onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 40px rgba(16,185,129,0.4)' }}
           >
-            Trouver ma coloc →
+            Trouver ma coloc — gratuit →
           </Link>
           <Link href="/auth/login" style={{
             background: 'rgba(255,255,255,0.05)',
@@ -129,10 +129,10 @@ export default function LandingPage() {
         {/* Stats */}
         <div style={{ display: 'flex', gap: '48px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {[
-            { value: '14k+', label: 'Utilisateurs actifs' },
-            { value: '94%', label: 'Taux de satisfaction' },
-            { value: '3 min', label: 'Pour trouver un match' },
-            { value: '0€', label: 'Pour commencer' },
+            { value: '9 sur 10', label: 'colocataires satisfaits' },
+            { value: '3 jours', label: 'pour trouver un match' },
+            { value: '100%', label: 'gratuit pour commencer' },
+            { value: '0 conflit', label: 'grâce au matching' },
           ].map(stat => (
             <div key={stat.label} style={{ textAlign: 'center' }}>
               <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '32px', color: '#fff', lineHeight: 1 }}>{stat.value}</div>
@@ -153,14 +153,14 @@ export default function LandingPage() {
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>PROCESSUS</div>
           <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-            Simple comme bonjour
+            De la recherche à l&apos;emménagement
           </h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2px' }}>
           {[
-            { num: '01', title: 'Crée ton profil', desc: 'Réponds à 7 questions sur ton mode de vie, tes habitudes et tes attentes. 5 minutes chrono.' },
-            { num: '02', title: 'Swipe & matche', desc: 'Notre algorithme calcule ta compatibilité avec chaque profil. Tu swipes, on matche.' },
-            { num: '03', title: 'Emménage serein', desc: "Gère ton bail, tes loyers et ta colocation directement depuis l'app." },
+            { num: '01', title: 'Ton profil en 5 min', desc: 'Réponds à 7 questions sur ton rythme de vie. Pas de blabla — juste ce qui compte vraiment pour vivre ensemble.' },
+            { num: '02', title: 'Swipe. Matche. Parle.', desc: 'Notre algorithme calcule ta compatibilité réelle avant même que tu ne swipes. Tu ne vois que les profils qui te correspondent.' },
+            { num: '03', title: 'Emménage sans stress', desc: "Bail, loyers, maintenance — tout est dans l'app. Tu gères ta coloc comme un pro, sans email, sans tableur." },
           ].map((step, i) => (
             <div key={i}
               style={{
@@ -190,17 +190,17 @@ export default function LandingPage() {
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>FONCTIONNALITÉS</div>
           <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-            Tout ce qu&apos;il te faut
+            Pensé pour que ça marche vraiment
           </h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
           {[
-            { icon: '🎯', title: 'Matching intelligent', desc: 'Algorithme pondéré sur 4 critères : mode de vie, règles, personnalité, intérêts.' },
-            { icon: '💬', title: 'Messagerie temps réel', desc: 'Chat instantané, réactions emoji, réponses, et demandes de colocation directes.' },
-            { icon: '🗺️', title: 'Carte des annonces', desc: 'Explore les logements disponibles sur une carte interactive avec filtres avancés.' },
-            { icon: '📁', title: 'Dossier numérique', desc: 'Centralise tes documents, partage ton dossier en un clic sécurisé 7 jours.' },
-            { icon: '🏠', title: 'Gestion du bail', desc: 'Suivi des loyers, maintenance, colocataires — tout en un seul endroit.' },
-            { icon: '🔒', title: 'Certification 3 niveaux', desc: 'Vérifie ton identité et booste ta crédibilité auprès des loueurs.' },
+            { icon: '🎯', title: 'Matching intelligent', desc: 'Compatibilité calculée sur 40+ critères de mode de vie. Pas de hasard, que des bonnes rencontres.' },
+            { icon: '💬', title: 'Messagerie temps réel', desc: "Parle, réagis, propose une coloc — tout depuis l'app. Sans donner ton numéro." },
+            { icon: '🗺️', title: 'Carte des annonces', desc: 'Trouve un logement près de toi sur une carte interactive. Filtre par budget, surface et disponibilité.' },
+            { icon: '📁', title: 'Dossier numérique', desc: 'Ton dossier locataire toujours prêt. Partage-le en un clic, sans rien imprimer.' },
+            { icon: '🏠', title: 'Gestion du bail', desc: 'Loyers, charges, signalements — tout centralisé. Ton proprio appréciera autant que toi.' },
+            { icon: '🔒', title: 'Certification 3 niveaux', desc: 'Plus ton profil est certifié, plus tu inspires confiance. Les loueurs le voient.' },
           ].map((feat, i) => (
             <div key={i}
               style={{
@@ -235,14 +235,14 @@ export default function LandingPage() {
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TÉMOIGNAGES</div>
           <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-            Ils ont trouvé leur coloc
+            Ils ne cherchent plus
           </h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
           {[
-            { name: 'Sophie M.', role: 'Étudiante, Lyon', text: "J'ai trouvé ma colocataire en 3 jours. Le score de compatibilité était à 91% et on s'entend parfaitement !", avatar: 'SM' },
-            { name: 'Thomas R.', role: 'Développeur, Paris', text: "Enfin une app qui comprend que la coloc c'est plus qu'un loyer partagé. Les filtres de mode de vie sont incroyables.", avatar: 'TR' },
-            { name: 'Léa K.', role: 'Designer, Bordeaux', text: "La gestion du bail directement dans l'app m'a sauvé la vie. Plus besoin de 50 emails avec mon proprio.", avatar: 'LK' },
+            { name: 'Sophie M.', role: 'Étudiante, Lyon', text: "En 3 jours j'avais trouvé ma colocataire. Le score de compatibilité était à 91% et 6 mois plus tard on est toujours aussi bien ensemble.", avatar: 'SM' },
+            { name: 'Thomas R.', role: 'Développeur, Paris', text: "J'avais essayé Le Bon Coin, Facebook, tout. Sur ISALY j'ai eu mon premier match en moins d'une heure.", avatar: 'TR' },
+            { name: 'Léa K.', role: 'Designer, Bordeaux', text: "La gestion du bail dans l'app m'a évité 50 emails avec mon proprio. Je recommande à tous ceux qui veulent une coloc sans prise de tête.", avatar: 'LK' },
           ].map((t, i) => (
             <div key={i} style={{
               padding: '32px',
@@ -269,7 +269,7 @@ export default function LandingPage() {
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TARIFS</div>
           <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-            Transparent &amp; simple
+            Zéro surprise sur la facture
           </h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
@@ -278,7 +278,7 @@ export default function LandingPage() {
               name: 'Essentiel',
               price: '0€',
               period: 'pour toujours',
-              desc: 'Pour trouver ta coloc',
+              desc: 'Pour chercher et trouver ta coloc',
               features: ['Swipe illimité', 'Messagerie', 'Dossier numérique', 'Carte des annonces'],
               cta: 'Commencer gratuitement',
               highlighted: false,
@@ -287,7 +287,7 @@ export default function LandingPage() {
               name: 'Sécurisé',
               price: '3%',
               period: 'du loyer / mois',
-              desc: 'Pour louer en confiance',
+              desc: 'Pour louer avec toutes les garanties',
               features: ['Tout Essentiel inclus', 'Assurance dossier', 'Certification niveau 3', 'Support prioritaire', 'Gestion bail complète'],
               cta: 'Choisir Sécurisé',
               highlighted: true,
@@ -343,10 +343,10 @@ export default function LandingPage() {
         }} />
         <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '24px' }}>REJOINS-NOUS</div>
         <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 400, color: '#fff', margin: '0 0 24px', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
-          Prêt à trouver<br />ta coloc idéale ?
+          La vie en coloc<br />commence ici.
         </h2>
         <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.45)', maxWidth: '440px', margin: '0 auto 48px', lineHeight: 1.7 }}>
-          Rejoins des milliers de personnes qui ont trouvé leur colocataire parfait avec ISALY.
+          Des milliers de personnes ont déjà trouvé leur colocataire parfait. Ta prochaine chambre t&apos;attend.
         </p>
         <Link href="/auth/register" style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
@@ -359,7 +359,7 @@ export default function LandingPage() {
           onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 0 80px rgba(16,185,129,0.6)' }}
           onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 60px rgba(16,185,129,0.4)' }}
         >
-          Créer mon compte gratuitement →
+          Créer mon compte — c&apos;est gratuit →
         </Link>
       </section>
 
