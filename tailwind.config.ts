@@ -57,8 +57,8 @@ const config: Config = {
         ring:   'hsl(var(--ring))',
       },
       fontFamily: {
-        sans: ['Coolvetica', 'Inter', 'sans-serif'],
-        serif: ['Coolvetica', 'sans-serif'],
+        sans: ['Outfit', 'sans-serif'],
+        serif: ['Outfit', 'sans-serif'],
       },
       borderRadius: {
         lg:      'var(--radius)',

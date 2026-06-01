@@ -86,10 +86,10 @@ export default function LandingPage() {
 
         {/* Titre principal */}
         <h1 style={{ margin: '0 0 24px', lineHeight: 1.05, maxWidth: '820px' }}>
-          <span style={{ display: 'block', fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, color: '#fff', letterSpacing: '-2px' }}>
+          <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, color: '#fff', letterSpacing: '-2px' }}>
             Trouve ta coloc
           </span>
-          <span style={{ display: 'block', fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, letterSpacing: '-2px', background: 'linear-gradient(135deg, #10B981, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, letterSpacing: '-2px', background: 'linear-gradient(135deg, #10B981, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             parfaite.
           </span>
         </h1>
@@ -136,7 +136,7 @@ export default function LandingPage() {
             { value: '0€', label: 'Pour commencer' },
           ].map(stat => (
             <div key={stat.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '32px', color: '#fff', lineHeight: 1 }}>{stat.value}</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '32px', color: '#fff', lineHeight: 1 }}>{stat.value}</div>
               <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{stat.label}</div>
             </div>
           ))}
@@ -153,7 +153,7 @@ export default function LandingPage() {
       <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>PROCESSUS</div>
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
             Simple comme bonjour
           </h2>
         </div>
@@ -177,9 +177,9 @@ export default function LandingPage() {
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.05)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
             >
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '72px', color: 'rgba(16,185,129,0.08)', position: 'absolute', top: '16px', right: '24px', lineHeight: 1 }}>{step.num}</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '72px', color: 'rgba(16,185,129,0.08)', position: 'absolute', top: '16px', right: '24px', lineHeight: 1 }}>{step.num}</div>
               <div style={{ fontSize: '13px', fontWeight: 600, color: '#10B981', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '2px' }}>{step.num}</div>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '28px', color: '#fff', marginBottom: '12px', fontWeight: 400 }}>{step.title}</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', color: '#fff', marginBottom: '12px', fontWeight: 400 }}>{step.title}</div>
               <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{step.desc}</div>
             </div>
           ))}
@@ -190,7 +190,7 @@ export default function LandingPage() {
       <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>FONCTIONNALITÉS</div>
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
             Tout ce qu&apos;il te faut
           </h2>
         </div>
@@ -224,7 +224,7 @@ export default function LandingPage() {
               }}
             >
               <div style={{ fontSize: '32px', marginBottom: '16px' }}>{feat.icon}</div>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '22px', color: '#fff', marginBottom: '10px', fontWeight: 400 }}>{feat.title}</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '22px', color: '#fff', marginBottom: '10px', fontWeight: 400 }}>{feat.title}</div>
               <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{feat.desc}</div>
             </div>
           ))}
@@ -235,7 +235,7 @@ export default function LandingPage() {
       <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TÉMOIGNAGES</div>
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
             Ils ont trouvé leur coloc
           </h2>
         </div>
@@ -251,7 +251,7 @@ export default function LandingPage() {
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: '16px',
             }}>
-              <div style={{ fontSize: '24px', color: '#10B981', marginBottom: '16px', fontFamily: "'DM Serif Display', serif" }}>&ldquo;</div>
+              <div style={{ fontSize: '24px', color: '#10B981', marginBottom: '16px', fontFamily: "'Outfit', sans-serif" }}>&ldquo;</div>
               <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, margin: '0 0 24px' }}>{t.text}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff' }}>{t.avatar}</div>
@@ -269,7 +269,7 @@ export default function LandingPage() {
       <section style={{ padding: '120px 24px', maxWidth: '900px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TARIFS</div>
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
             Transparent &amp; simple
           </h2>
         </div>
@@ -308,7 +308,7 @@ export default function LandingPage() {
                 </div>
               )}
               <div style={{ fontSize: '13px', fontWeight: 600, color: plan.highlighted ? '#10B981' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>{plan.name}</div>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '48px', color: '#fff', lineHeight: 1, marginBottom: '4px' }}>{plan.price}</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '48px', color: '#fff', lineHeight: 1, marginBottom: '4px' }}>{plan.price}</div>
               <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>{plan.period}</div>
               <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px' }}>{plan.desc}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '32px' }}>
@@ -343,7 +343,7 @@ export default function LandingPage() {
           pointerEvents: 'none',
         }} />
         <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '24px' }}>REJOINS-NOUS</div>
-        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 400, color: '#fff', margin: '0 0 24px', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
+        <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 400, color: '#fff', margin: '0 0 24px', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
           Prêt à trouver<br />ta coloc idéale ?
         </h2>
         <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.45)', maxWidth: '440px', margin: '0 auto 48px', lineHeight: 1.7 }}>

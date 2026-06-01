@@ -29,11 +29,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
-        <link rel="preload" href="/fonts/coolvetica.otf" as="font" type="font/otf" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-JXZRTY71Y4"
