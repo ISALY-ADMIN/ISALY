@@ -1,3 +1,16 @@
+@font-face {
+  font-family: 'Coolvetica';
+  src: url('/fonts/coolvetica.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  font-family: 'Coolvetica', sans-serif !important;
+  letter-spacing: 0.01em;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
 
 @tailwind base;
