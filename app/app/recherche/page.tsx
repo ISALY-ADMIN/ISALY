@@ -93,26 +93,36 @@ function ToggleBtn({ label, active, onClick }: { label: string; active: boolean;
 
 // ── Filters panel ─────────────────────────────────────────────
 function FiltersPanel({
-  filters, onChange, onReset,
+  filters, onChange, onReset, onClose,
 }: {
   filters: Filters
   onChange: (patch: Partial<Filters>) => void
   onReset: () => void
+  onClose: () => void
 }) {
   return (
     <div
-      className="flex flex-col overflow-y-auto flex-shrink-0 border-l"
-      style={{ width: '272px', background: '#111827', borderColor: '#1F2937' }}
+      className="flex flex-col overflow-y-auto"
+      style={{ width: '280px', height: '100%', background: '#111827' }}
     >
       <div className="flex justify-between items-center px-5 py-4 border-b" style={{ borderColor: '#1F2937' }}>
         <span className="text-[13.5px] font-bold" style={{ color: '#F1F5F9' }}>Filtres</span>
-        <button
-          onClick={onReset}
-          className="text-[12px] font-semibold cursor-pointer border-none bg-transparent"
-          style={{ color: '#4ECBA0' }}
-        >
-          Tout effacer
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onReset}
+            className="text-[12px] font-semibold cursor-pointer border-none bg-transparent"
+            style={{ color: '#4ECBA0' }}
+          >
+            Tout effacer
+          </button>
+          <button
+            onClick={onClose}
+            className="cursor-pointer border-none bg-transparent text-[20px] leading-none"
+            style={{ color: '#6B7280' }}
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       <div className="p-5 flex flex-col gap-6 flex-1">
@@ -264,7 +274,7 @@ export default function RecherchePage() {
   const [searchInput, setSearchInput] = useState('')
   const [query, setQuery]             = useState('')
   const [filters, setFilters]         = useState<Filters>(DEFAULTS)
-  const [showFilters, setShowFilters] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
   const [page, setPage]               = useState(1)
   const [allListings, setAllListings] = useState<Listing[]>([])
   const [loadingListings, setLoadingListings] = useState(true)
@@ -340,7 +350,7 @@ export default function RecherchePage() {
   if (filters.rooms)
     pills.push({ label: `${filters.rooms} chambre${filters.rooms === '1' ? '' : 's'}`, clear: () => patchFilters({ rooms: '' }) })
 
-  const gridCols = showFilters ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'
+  const gridCols = 'repeat(3, 1fr)'
 
   return (
     <>
@@ -488,12 +498,26 @@ export default function RecherchePage() {
           </div>
         </div>
 
-        {/* ── Filters panel ───────────────────────────────── */}
-        {showFilters && (
-          <FiltersPanel filters={filters} onChange={patchFilters} onReset={resetAll} />
-        )}
-
       </div>
+
+      {/* ── Drawer overlay ──────────────────────────────── */}
+      {showFilters && (
+        <div
+          onClick={() => setShowFilters(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }}
+        />
+      )}
+      <div style={{
+        position: 'fixed', top: 0, right: 0, height: '100%',
+        transform: showFilters ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 50,
+        display: 'flex', flexDirection: 'column',
+        boxShadow: showFilters ? '-8px 0 32px rgba(0,0,0,0.25)' : 'none',
+      }}>
+        <FiltersPanel filters={filters} onChange={patchFilters} onReset={resetAll} onClose={() => setShowFilters(false)} />
+      </div>
+
     </>
   )
 }
