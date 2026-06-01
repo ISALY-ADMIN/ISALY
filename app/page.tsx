@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -365,19 +364,13 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Image src="/LOGO_ISALY.png" alt="ISALY" width={80} height={24} style={{ objectFit: 'contain', height: '24px', width: 'auto', opacity: 0.5 }} />
-        </div>
-        <div style={{ display: 'flex', gap: '32px' }}>
-          {['Confidentialité', 'CGU', 'Contact'].map(link => (
-            <a key={link} href="#" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
-            >{link}</a>
-          ))}
-        </div>
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.2)' }}>© 2025 ISALY. Tous droits réservés.</div>
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
+        {['Confidentialité', 'CGU', 'Contact'].map(link => (
+          <a key={link} href="#" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
+          >{link}</a>
+        ))}
       </footer>
 
       <style>{`
