@@ -49,9 +49,17 @@ export default function MesAnnoncesPage() {
   }
 
   async function deleteListing(id: string) {
-    if (!confirm('Supprimer cette annonce ?')) return
+    if (!confirm('Supprimer définitivement cette annonce ? Cette action est irréversible.')) return
     const supabase = createClient()
-    await supabase.from('listings').delete().eq('id', id)
+    const { error } = await supabase
+      .from('listings')
+      .delete()
+      .eq('id', id)
+    if (error) {
+      alert('Erreur lors de la suppression : ' + error.message)
+      console.error(error)
+      return
+    }
     setListings(prev => prev.filter(l => l.id !== id))
   }
 
