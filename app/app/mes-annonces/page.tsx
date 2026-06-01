@@ -142,19 +142,22 @@ export default function MesAnnoncesPage() {
                 }}
               >
                 {/* Photo */}
-                <div style={{
-                  width: '180px',
-                  minHeight: '140px',
-                  flexShrink: 0,
-                  background: listing.photos?.[0]
-                    ? `url(${listing.photos[0]}) center/cover`
-                    : 'linear-gradient(135deg, #6EE7B7, #047857)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '36px',
-                }}>
-                  {!listing.photos?.[0] && '🏠'}
+                <div style={{ width: '180px', minHeight: '140px', flexShrink: 0, position: 'relative', overflow: 'hidden', borderRadius: '0' }}>
+                  {listing.photos?.[0] ? (
+                    <img
+                      src={listing.photos[0]}
+                      alt={listing.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                      onError={(e) => { e.currentTarget.style.display = 'none' }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%', height: '100%', minHeight: '140px',
+                      background: 'linear-gradient(135deg, #6EE7B7, #047857)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '36px'
+                    }}>🏠</div>
+                  )}
                 </div>
 
                 {/* Infos */}
