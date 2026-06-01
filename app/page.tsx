@@ -1,298 +1,266 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
 
 export default function LandingPage() {
-  return (
-    <main style={{ background: '#fff', minHeight: '100vh', fontFamily: "'DM Sans', sans-serif" }}>
+  const [scrolled, setScrolled] = useState(false)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
-      {/* ── NAVBAR ── */}
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20)
+    const onMouse = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY })
+    window.addEventListener('scroll', onScroll)
+    window.addEventListener('mousemove', onMouse)
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('mousemove', onMouse) }
+  }, [])
+
+  return (
+    <div style={{ fontFamily: "'Inter', 'DM Sans', sans-serif", background: '#0A0A0A', color: '#fff', minHeight: '100vh', overflowX: 'hidden' }}>
+
+      {/* Gradient cursor follower */}
+      <div style={{
+        position: 'fixed',
+        width: '600px', height: '600px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)',
+        left: mousePos.x - 300,
+        top: mousePos.y - 300,
+        pointerEvents: 'none',
+        zIndex: 0,
+        transition: 'left 0.3s ease, top 0.3s ease',
+      }} />
+
+      {/* NAVBAR */}
       <nav style={{
-        position: 'sticky', top: 0, zIndex: 50,
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        padding: '0 40px',
+        height: '64px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: '68px', padding: '0 48px',
-        background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(14px)',
-        borderBottom: '1px solid #F0F0F0',
+        background: scrolled ? 'rgba(10,10,10,0.85)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
+        transition: 'all 0.3s ease',
       }}>
-        <Image src="/LOGO_ISALY.png" alt="ISALY" height={38} width={130} style={{ width: 'auto', height: '38px', objectFit: 'contain' }} />
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <Link href="/auth/login">
-            <NavBtn ghost>Connexion</NavBtn>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Image src="/LOGO_ISALY.png" alt="ISALY" width={100} height={32} style={{ objectFit: 'contain', height: '32px', width: 'auto' }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link href="/auth/login" style={{
+            color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '14px',
+            padding: '8px 16px', borderRadius: '8px', transition: 'color 0.2s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
+          >
+            Connexion
           </Link>
-          <Link href="/onboarding">
-            <NavBtn>Commencer gratuitement</NavBtn>
+          <Link href="/auth/register" style={{
+            background: 'linear-gradient(135deg, #10B981, #059669)',
+            color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
+            padding: '9px 20px', borderRadius: '10px',
+            boxShadow: '0 0 20px rgba(16,185,129,0.3)',
+            transition: 'all 0.2s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(16,185,129,0.5)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 20px rgba(16,185,129,0.3)' }}
+          >
+            Commencer
           </Link>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section style={{
-        background: 'linear-gradient(160deg, #f0fdf8 0%, #fff 55%)',
-        padding: '100px 48px 80px',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Background blobs */}
+      {/* HERO */}
+      <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '120px 24px 80px', textAlign: 'center', position: 'relative' }}>
+
+        {/* Badge */}
         <div style={{
-          position: 'absolute', top: '-80px', right: '-80px',
-          width: '500px', height: '500px', borderRadius: '50%',
-          background: 'radial-gradient(circle, #4ECBA015 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '-60px', left: '-60px',
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(circle, #4ECBA010 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{ position: 'relative', maxWidth: '760px', margin: '0 auto' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            background: '#E8F9F3', color: '#2AA87C',
-            fontSize: '12px', fontWeight: 700, letterSpacing: '1.5px',
-            textTransform: 'uppercase', padding: '6px 16px', borderRadius: '50px',
-            marginBottom: '28px',
-          }}>
-            <span>✨</span> La colocation réinventée
-          </div>
-
-          <h1 style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: 'clamp(42px, 6vw, 72px)',
-            lineHeight: 1.06,
-            marginBottom: '24px',
-            color: '#1A1A1A',
-          }}>
-            Trouve des colocataires<br />
-            qui te <em style={{ color: '#4ECBA0', fontStyle: 'italic' }}>ressemblent vraiment.</em>
-          </h1>
-
-          <p style={{
-            fontSize: '18px', lineHeight: 1.8, color: '#6B7280',
-            maxWidth: '560px', margin: '0 auto 40px',
-          }}>
-            ISALY analyse tes habitudes, tes horaires et ta personnalité pour te connecter
-            avec des colocataires vraiment compatibles. Pas de hasard, que des bonnes rencontres.
-          </p>
-
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/onboarding">
-              <button style={{
-                padding: '15px 32px', borderRadius: '50px',
-                background: '#4ECBA0', color: '#fff',
-                fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(78,203,160,.35)',
-                transition: 'all .2s',
-              }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = '#2AA87C'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(78,203,160,.45)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = '#4ECBA0'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(78,203,160,.35)'
-                }}
-              >
-                Créer mon profil — c'est gratuit
-              </button>
-            </Link>
-            <Link href="/auth/login">
-              <button style={{
-                padding: '15px 32px', borderRadius: '50px',
-                background: 'transparent', color: '#1A1A1A',
-                fontSize: '15px', fontWeight: 600,
-                border: '1.5px solid #E5E7EB', cursor: 'pointer',
-                transition: 'all .2s',
-              }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = '#4ECBA0'
-                  e.currentTarget.style.color = '#2AA87C'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = '#E5E7EB'
-                  e.currentTarget.style.color = '#1A1A1A'
-                }}
-              >
-                J'ai déjà un compte
-              </button>
-            </Link>
-          </div>
-
-          <p style={{ fontSize: '13px', color: '#9CA3AF', marginTop: '20px' }}>
-            Rejoins 14 000+ colocataires · Sans carte bancaire
-          </p>
-        </div>
-
-        {/* Hero cards */}
-        <div style={{
-          maxWidth: '900px', margin: '64px auto 0',
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px',
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          background: 'rgba(16,185,129,0.1)',
+          border: '1px solid rgba(16,185,129,0.2)',
+          borderRadius: '20px', padding: '6px 16px',
+          fontSize: '13px', color: '#10B981', fontWeight: 500,
+          marginBottom: '32px',
         }}>
-          <ProfileCard
-            emoji="👩‍🎨" name="Sophie M." age={24} city="Paris 11ème"
-            rent={850} match={94} tags={['🌙 Couche-tard', '🎵 Musique']} color="#4ECBA0"
-          />
-          <ProfileCard
-            emoji="👨‍💻" name="Thomas R." age={27} city="Lyon 2ème"
-            rent={720} match={88} tags={['🌅 Lève-tôt', '🍳 Cuisine']} color="#6366F1"
-            style={{ transform: 'translateY(-16px)' }}
-          />
-          <ProfileCard
-            emoji="👩‍⚖️" name="Camille B." age={23} city="Paris 5ème"
-            rent={700} match={81} tags={['📚 Studieux', '🐕 Chien ok']} color="#F59E0B"
-          />
-        </div>
-      </section>
-
-      {/* ── STATS ── */}
-      <section style={{
-        background: '#111827',
-        padding: '72px 48px',
-        display: 'flex', justifyContent: 'center', gap: '80px', flexWrap: 'wrap',
-      }}>
-        {[
-          { num: '14k+', label: 'Colocataires actifs' },
-          { num: '94%', label: 'Taux de satisfaction' },
-          { num: '3 min', label: 'Pour créer ton profil' },
-          { num: '0 €', label: 'Pour commencer' },
-        ].map(s => (
-          <div key={s.num} style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '52px', color: '#4ECBA0' }}>{s.num}</div>
-            <div style={{ fontSize: '14px', color: '#9CA3AF', marginTop: '6px' }}>{s.label}</div>
-          </div>
-        ))}
-      </section>
-
-      {/* ── COMMENT ÇA MARCHE ── */}
-      <section style={{ maxWidth: '1000px', margin: '0 auto', padding: '100px 48px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <Kicker>Comment ça marche</Kicker>
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '44px', marginBottom: '14px', color: '#1A1A1A' }}>
-            Trois étapes, une nouvelle vie.
-          </h2>
-          <p style={{ fontSize: '16px', color: '#6B7280', maxWidth: '480px', margin: '0 auto', lineHeight: 1.75 }}>
-            Trouver la bonne coloc n'a jamais été aussi simple — ni aussi humain.
-          </p>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+          Plateforme de colocation intelligente
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '28px' }}>
+        {/* Titre principal */}
+        <h1 style={{ margin: '0 0 24px', lineHeight: 1.05, maxWidth: '820px' }}>
+          <span style={{ display: 'block', fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, color: '#fff', letterSpacing: '-2px' }}>
+            Trouve ta coloc
+          </span>
+          <span style={{ display: 'block', fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, letterSpacing: '-2px', background: 'linear-gradient(135deg, #10B981, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            parfaite.
+          </span>
+        </h1>
+
+        <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'rgba(255,255,255,0.5)', maxWidth: '520px', lineHeight: 1.7, margin: '0 0 48px' }}>
+          ISALY analyse tes habitudes, tes horaires et ta personnalité pour te connecter avec des colocataires vraiment compatibles.
+        </p>
+
+        {/* CTA buttons */}
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '80px' }}>
+          <Link href="/auth/register" style={{
+            background: 'linear-gradient(135deg, #10B981, #059669)',
+            color: '#fff', textDecoration: 'none', fontSize: '16px', fontWeight: 600,
+            padding: '14px 32px', borderRadius: '12px',
+            boxShadow: '0 0 40px rgba(16,185,129,0.4)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            transition: 'all 0.2s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 60px rgba(16,185,129,0.6)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 40px rgba(16,185,129,0.4)' }}
+          >
+            Trouver ma coloc →
+          </Link>
+          <Link href="/auth/login" style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '16px', fontWeight: 500,
+            padding: '14px 32px', borderRadius: '12px',
+            transition: 'all 0.2s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+          >
+            Se connecter
+          </Link>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: '48px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {[
-            {
-              step: '01', icon: '🪄',
-              title: 'Crée ton profil',
-              desc: 'Réponds à quelques questions sur ton rythme de vie, tes passions et ton budget. 3 minutes chrono.',
-            },
-            {
-              step: '02', icon: '💚',
-              title: 'Swipe & matche',
-              desc: "Notre algorithme te propose uniquement des profils vraiment compatibles. Lorsque c'est réciproque, c'est un match !",
-            },
-            {
-              step: '03', icon: '🏠',
-              title: 'Emménage serein',
-              desc: 'Échangez en messagerie, partagez vos dossiers et gérez votre bail directement depuis ISALY.',
-            },
-          ].map(s => (
-            <div key={s.step} style={{
-              background: '#fff', borderRadius: '18px', padding: '32px',
-              border: '1px solid #F0F0F0',
-              boxShadow: '0 2px 20px rgba(0,0,0,.05)',
-              position: 'relative', overflow: 'hidden',
-            }}>
-              <div style={{
-                position: 'absolute', top: '16px', right: '20px',
-                fontFamily: "'DM Serif Display', serif", fontSize: '52px',
-                color: '#4ECBA008', fontWeight: 700, lineHeight: 1,
-                userSelect: 'none',
-              }}>{s.step}</div>
-              <div style={{
-                width: '52px', height: '52px', borderRadius: '14px',
-                background: '#E8F9F3', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: '24px', marginBottom: '18px',
-              }}>{s.icon}</div>
-              <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '20px', marginBottom: '10px', color: '#1A1A1A' }}>
-                {s.title}
-              </h3>
-              <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: 1.75 }}>{s.desc}</p>
+            { value: '14k+', label: 'Utilisateurs actifs' },
+            { value: '94%', label: 'Taux de satisfaction' },
+            { value: '3 min', label: 'Pour trouver un match' },
+            { value: '0€', label: 'Pour commencer' },
+          ].map(stat => (
+            <div key={stat.label} style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '32px', color: '#fff', lineHeight: 1 }}>{stat.value}</div>
+              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Scroll indicator */}
+        <div style={{ position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
+          <div style={{ width: '1px', height: '40px', background: 'linear-gradient(to bottom, rgba(16,185,129,0.5), transparent)' }} />
+          Défiler
+        </div>
+      </section>
+
+      {/* COMMENT ÇA MARCHE */}
+      <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>PROCESSUS</div>
+          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+            Simple comme bonjour
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2px' }}>
+          {[
+            { num: '01', title: 'Crée ton profil', desc: 'Réponds à 7 questions sur ton mode de vie, tes habitudes et tes attentes. 5 minutes chrono.' },
+            { num: '02', title: 'Swipe & matche', desc: 'Notre algorithme calcule ta compatibilité avec chaque profil. Tu swipes, on matche.' },
+            { num: '03', title: 'Emménage serein', desc: "Gère ton bail, tes loyers et ta colocation directement depuis l'app." },
+          ].map((step, i) => (
+            <div key={i}
+              style={{
+                padding: '48px 40px',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: i === 0 ? '16px 0 0 16px' : i === 2 ? '0 16px 16px 0' : '0',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'background 0.3s',
+                cursor: 'default',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+            >
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '72px', color: 'rgba(16,185,129,0.08)', position: 'absolute', top: '16px', right: '24px', lineHeight: 1 }}>{step.num}</div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#10B981', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '2px' }}>{step.num}</div>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '28px', color: '#fff', marginBottom: '12px', fontWeight: 400 }}>{step.title}</div>
+              <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{step.desc}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
-      <section style={{ background: '#F7F8FA', padding: '100px 48px' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <Kicker>Tout en un</Kicker>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '44px', color: '#1A1A1A', marginBottom: '14px' }}>
-              Simple. Intelligent. Sécurisé.
-            </h2>
-            <p style={{ fontSize: '16px', color: '#6B7280', lineHeight: 1.75 }}>
-              ISALY résout les 3 grands problèmes de la colocation en France.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
-            {[
-              { icon: '❤️', title: 'Matching intelligent', desc: "Algorithme basé sur tes habitudes, horaires et passions. Fini les colocations ratées." },
-              { icon: '📁', title: 'Dossier sécurisé', desc: "Tes documents centralisés, certifiés et partageables en un clic. Zéro galère." },
-              { icon: '🏠', title: 'Gestion du bail', desc: "Loyers, charges, états des lieux. Tout est suivi automatiquement depuis ton espace." },
-              { icon: '💬', title: 'Messagerie intégrée', desc: "Discute avec tes matchs sans donner ton numéro. Sécurisé et instantané." },
-              { icon: '🛡️', title: 'Assurance dossier', desc: "Dossier certifié ISALY. Rassure les propriétaires, accélère ta recherche." },
-              { icon: '🚀', title: 'Annonces boostées', desc: "Loueurs : vos annonces touchent les candidats les plus compatibles en priorité." },
-            ].map(f => (
-              <FeatureCard key={f.title} icon={f.icon} title={f.title} desc={f.desc} />
-            ))}
-          </div>
+      {/* FEATURES */}
+      <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>FONCTIONNALITÉS</div>
+          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+            Tout ce qu&apos;il te faut
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+          {[
+            { icon: '🎯', title: 'Matching intelligent', desc: 'Algorithme pondéré sur 4 critères : mode de vie, règles, personnalité, intérêts.' },
+            { icon: '💬', title: 'Messagerie temps réel', desc: 'Chat instantané, réactions emoji, réponses, et demandes de colocation directes.' },
+            { icon: '🗺️', title: 'Carte des annonces', desc: 'Explore les logements disponibles sur une carte interactive avec filtres avancés.' },
+            { icon: '📁', title: 'Dossier numérique', desc: 'Centralise tes documents, partage ton dossier en un clic sécurisé 7 jours.' },
+            { icon: '🏠', title: 'Gestion du bail', desc: 'Suivi des loyers, maintenance, colocataires — tout en un seul endroit.' },
+            { icon: '🔒', title: 'Certification 3 niveaux', desc: 'Vérifie ton identité et booste ta crédibilité auprès des loueurs.' },
+          ].map((feat, i) => (
+            <div key={i}
+              style={{
+                padding: '32px',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '16px',
+                transition: 'all 0.3s',
+                cursor: 'default',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(16,185,129,0.05)'
+                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.2)'
+                e.currentTarget.style.transform = 'translateY(-4px)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+                e.currentTarget.style.transform = ''
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '16px' }}>{feat.icon}</div>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '22px', color: '#fff', marginBottom: '10px', fontWeight: 400 }}>{feat.title}</div>
+              <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{feat.desc}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ── TÉMOIGNAGES ── */}
-      <section style={{ maxWidth: '1000px', margin: '0 auto', padding: '100px 48px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-          <Kicker>Ils ont trouvé leur coloc</Kicker>
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '44px', color: '#1A1A1A' }}>
-            Des vraies rencontres.
+      {/* TÉMOIGNAGES */}
+      <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TÉMOIGNAGES</div>
+          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+            Ils ont trouvé leur coloc
           </h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
           {[
-            {
-              quote: "J'ai trouvé ma colocataire en 4 jours. On a vraiment les mêmes horaires et les mêmes valeurs. ISALY a tout compris.",
-              name: 'Léa D.', role: 'Étudiante en master', city: 'Paris', emoji: '👩‍🎓',
-            },
-            {
-              quote: "En tant que loueur, j'ai reçu uniquement des candidatures sérieuses et compatibles. Plus de perte de temps.",
-              name: 'Marc B.', role: 'Propriétaire', city: 'Lyon', emoji: '🏠',
-            },
-            {
-              quote: "Le dossier certifié m'a ouvert des portes que je n'arrivais pas à franchir avant. Recommande à 100%.",
-              name: 'Inès R.', role: 'Jeune actif', city: 'Bordeaux', emoji: '✨',
-            },
-          ].map(t => (
-            <div key={t.name} style={{
-              background: '#fff', borderRadius: '18px', padding: '28px',
-              border: '1px solid #F0F0F0', boxShadow: '0 2px 20px rgba(0,0,0,.05)',
+            { name: 'Sophie M.', role: 'Étudiante, Lyon', text: "J'ai trouvé ma colocataire en 3 jours. Le score de compatibilité était à 91% et on s'entend parfaitement !", avatar: 'SM' },
+            { name: 'Thomas R.', role: 'Développeur, Paris', text: "Enfin une app qui comprend que la coloc c'est plus qu'un loyer partagé. Les filtres de mode de vie sont incroyables.", avatar: 'TR' },
+            { name: 'Léa K.', role: 'Designer, Bordeaux', text: "La gestion du bail directement dans l'app m'a sauvé la vie. Plus besoin de 50 emails avec mon proprio.", avatar: 'LK' },
+          ].map((t, i) => (
+            <div key={i} style={{
+              padding: '32px',
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '16px',
             }}>
-              <div style={{ fontSize: '28px', marginBottom: '14px' }}>❝</div>
-              <p style={{ fontSize: '14px', lineHeight: 1.8, color: '#374151', marginBottom: '20px', fontStyle: 'italic' }}>
-                {t.quote}
-              </p>
+              <div style={{ fontSize: '24px', color: '#10B981', marginBottom: '16px', fontFamily: "'DM Serif Display', serif" }}>&ldquo;</div>
+              <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, margin: '0 0 24px' }}>{t.text}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '50%',
-                  background: '#E8F9F3', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', fontSize: '20px', flexShrink: 0,
-                }}>{t.emoji}</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff' }}>{t.avatar}</div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1A1A1A' }}>{t.name}</div>
-                  <div style={{ fontSize: '12px', color: '#9CA3AF' }}>{t.role} · {t.city}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{t.name}</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{t.role}</div>
                 </div>
               </div>
             </div>
@@ -300,230 +268,129 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section style={{ background: '#111827', padding: '100px 48px' }}>
-        <div style={{ maxWidth: '780px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{
-            display: 'inline-block', fontSize: '11px', fontWeight: 800,
-            textTransform: 'uppercase', letterSpacing: '2.5px',
-            color: '#4ECBA0', marginBottom: '14px',
-          }}>Tarifs</div>
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '42px', color: '#fff', marginBottom: '12px' }}>
-            Transparent & juste.
+      {/* PRICING */}
+      <section style={{ padding: '120px 24px', maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TARIFS</div>
+          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+            Transparent &amp; simple
           </h2>
-          <p style={{ fontSize: '16px', color: '#9CA3AF', marginBottom: '52px' }}>
-            On ne gagne que quand tu trouves ta coloc.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* Essentiel */}
-            <div style={{ background: '#1F2937', borderRadius: '18px', padding: '36px', border: '1px solid #374151', textAlign: 'left' }}>
-              <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 700, marginBottom: '8px' }}>Pour bien démarrer</div>
-              <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '24px', color: '#fff', marginBottom: '16px' }}>Essentiel</h3>
-              <div style={{ fontSize: '38px', fontWeight: 800, color: '#fff', marginBottom: '24px' }}>
-                Gratuit
-              </div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px', color: '#D1D5DB', marginBottom: '28px' }}>
-                <li style={{ display: 'flex', gap: '10px' }}><span style={{ color: '#4ECBA0' }}>✓</span> Swipe illimité</li>
-                <li style={{ display: 'flex', gap: '10px' }}><span style={{ color: '#4ECBA0' }}>✓</span> Messagerie avec tes matchs</li>
-                <li style={{ display: 'flex', gap: '10px' }}><span style={{ color: '#4ECBA0' }}>✓</span> Dossier de base</li>
-                <li style={{ display: 'flex', gap: '10px', opacity: 0.4 }}><span>✗</span> Assurance dossier</li>
-              </ul>
-              <Link href="/onboarding">
-                <button style={{
-                  width: '100%', padding: '13px', borderRadius: '50px',
-                  background: '#4ECBA0', color: '#fff', border: 'none',
-                  fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-                }}>
-                  Commencer gratuitement
-                </button>
-              </Link>
-            </div>
-
-            {/* Sécurisé */}
-            <div style={{ background: '#fff', borderRadius: '18px', padding: '36px', border: '2px solid #4ECBA0', textAlign: 'left', position: 'relative' }}>
-              <div style={{
-                position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)',
-                background: '#4ECBA0', color: '#fff', fontSize: '10px', fontWeight: 800,
-                padding: '4px 16px', borderRadius: '50px', letterSpacing: '.5px',
-              }}>POPULAIRE</div>
-              <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 700, marginBottom: '8px' }}>Pour aller plus loin</div>
-              <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '24px', color: '#1A1A1A', marginBottom: '16px' }}>Sécurisé</h3>
-              <div style={{ fontSize: '38px', fontWeight: 800, color: '#1A1A1A', marginBottom: '24px' }}>
-                3% <span style={{ fontSize: '14px', fontWeight: 400, color: '#6B7280' }}>du loyer/mois</span>
-              </div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px', color: '#374151', marginBottom: '28px' }}>
-                <li style={{ display: 'flex', gap: '10px' }}><span style={{ color: '#4ECBA0' }}>✓</span> Tout Essentiel inclus</li>
-                <li style={{ display: 'flex', gap: '10px' }}><span style={{ color: '#4ECBA0' }}>✓</span> Dossier certifié ISALY</li>
-                <li style={{ display: 'flex', gap: '10px' }}><span style={{ color: '#4ECBA0' }}>✓</span> Gestion bail complète</li>
-                <li style={{ display: 'flex', gap: '10px' }}><span style={{ color: '#4ECBA0' }}>✓</span> Support prioritaire</li>
-              </ul>
-              <Link href="/onboarding">
-                <button style={{
-                  width: '100%', padding: '13px', borderRadius: '50px',
-                  background: '#4ECBA0', color: '#fff', border: 'none',
-                  fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-                }}>
-                  Commencer avec Sécurisé
-                </button>
-              </Link>
-            </div>
-          </div>
         </div>
-      </section>
-
-      {/* ── CTA FINAL ── */}
-      <section style={{
-        background: 'linear-gradient(135deg, #E8F9F3 0%, #f0fdf8 100%)',
-        padding: '100px 48px',
-        textAlign: 'center',
-      }}>
-        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '48px', color: '#1A1A1A', marginBottom: '16px' }}>
-          Ta prochaine coloc<br />commence <em style={{ color: '#4ECBA0' }}>ici.</em>
-        </h2>
-        <p style={{ fontSize: '17px', color: '#6B7280', marginBottom: '36px', lineHeight: 1.75 }}>
-          Rejoins des milliers de personnes qui ont trouvé leur coloc idéale grâce à ISALY.
-        </p>
-        <Link href="/onboarding">
-          <button style={{
-            padding: '17px 44px', borderRadius: '50px',
-            background: '#4ECBA0', color: '#fff',
-            fontSize: '16px', fontWeight: 700, border: 'none', cursor: 'pointer',
-            boxShadow: '0 10px 32px rgba(78,203,160,.4)',
-            transition: 'all .2s',
-          }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = '#2AA87C'
-              e.currentTarget.style.transform = 'translateY(-2px)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = '#4ECBA0'
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}
-          >
-            Créer mon profil gratuitement →
-          </button>
-        </Link>
-        <p style={{ fontSize: '13px', color: '#9CA3AF', marginTop: '16px' }}>
-          Aucune carte bancaire requise · Profil créé en 3 minutes
-        </p>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer style={{
-        borderTop: '1px solid #F0F0F0', padding: '32px 48px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px',
-      }}>
-        <Image src="/LOGO_ISALY.png" alt="ISALY" height={28} width={100} style={{ width: 'auto', height: '28px', objectFit: 'contain', opacity: 0.7 }} />
-        <div style={{ fontSize: '13px', color: '#9CA3AF' }}>© 2025 ISALY · Tous droits réservés</div>
-        <div style={{ display: 'flex', gap: '20px' }}>
-          {['Mentions légales', 'Confidentialité', 'Contact'].map(l => (
-            <span key={l} style={{ fontSize: '13px', color: '#9CA3AF', cursor: 'pointer' }}>{l}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          {[
+            {
+              name: 'Essentiel',
+              price: '0€',
+              period: 'pour toujours',
+              desc: 'Pour trouver ta coloc',
+              features: ['Swipe illimité', 'Messagerie', 'Dossier numérique', 'Carte des annonces'],
+              cta: 'Commencer gratuitement',
+              highlighted: false,
+            },
+            {
+              name: 'Sécurisé',
+              price: '3%',
+              period: 'du loyer / mois',
+              desc: 'Pour louer en confiance',
+              features: ['Tout Essentiel inclus', 'Assurance dossier', 'Certification niveau 3', 'Support prioritaire', 'Gestion bail complète'],
+              cta: 'Choisir Sécurisé',
+              highlighted: true,
+            },
+          ].map((plan, i) => (
+            <div key={i} style={{
+              padding: '40px',
+              background: plan.highlighted ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${plan.highlighted ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
+              borderRadius: '20px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {plan.highlighted && (
+                <div style={{ position: 'absolute', top: '16px', right: '16px', background: '#10B981', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
+                  POPULAIRE
+                </div>
+              )}
+              <div style={{ fontSize: '13px', fontWeight: 600, color: plan.highlighted ? '#10B981' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>{plan.name}</div>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '48px', color: '#fff', lineHeight: 1, marginBottom: '4px' }}>{plan.price}</div>
+              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>{plan.period}</div>
+              <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px' }}>{plan.desc}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '32px' }}>
+                {plan.features.map(f => (
+                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+                    <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span> {f}
+                  </div>
+                ))}
+              </div>
+              <Link href="/auth/register" style={{
+                display: 'block', textAlign: 'center',
+                background: plan.highlighted ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.06)',
+                color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
+                padding: '13px', borderRadius: '10px',
+                boxShadow: plan.highlighted ? '0 0 30px rgba(16,185,129,0.3)' : 'none',
+                border: plan.highlighted ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                transition: 'all 0.2s',
+              }}>
+                {plan.cta}
+              </Link>
+            </div>
           ))}
         </div>
+      </section>
+
+      {/* CTA FINAL */}
+      <section style={{ padding: '120px 24px', textAlign: 'center', position: 'relative' }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: '600px', height: '600px', borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '24px' }}>REJOINS-NOUS</div>
+        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 400, color: '#fff', margin: '0 0 24px', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
+          Prêt à trouver<br />ta coloc idéale ?
+        </h2>
+        <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.45)', maxWidth: '440px', margin: '0 auto 48px', lineHeight: 1.7 }}>
+          Rejoins des milliers de personnes qui ont trouvé leur colocataire parfait avec ISALY.
+        </p>
+        <Link href="/auth/register" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          background: 'linear-gradient(135deg, #10B981, #059669)',
+          color: '#fff', textDecoration: 'none', fontSize: '17px', fontWeight: 700,
+          padding: '16px 40px', borderRadius: '14px',
+          boxShadow: '0 0 60px rgba(16,185,129,0.4)',
+          transition: 'all 0.2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 0 80px rgba(16,185,129,0.6)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 60px rgba(16,185,129,0.4)' }}
+        >
+          Créer mon compte gratuitement →
+        </Link>
+      </section>
+
+      {/* FOOTER */}
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Image src="/LOGO_ISALY.png" alt="ISALY" width={80} height={24} style={{ objectFit: 'contain', height: '24px', width: 'auto', opacity: 0.5 }} />
+        </div>
+        <div style={{ display: 'flex', gap: '32px' }}>
+          {['Confidentialité', 'CGU', 'Contact'].map(link => (
+            <a key={link} href="#" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
+            >{link}</a>
+          ))}
+        </div>
+        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.2)' }}>© 2025 ISALY. Tous droits réservés.</div>
       </footer>
 
-    </main>
-  )
-}
-
-/* ── Composants internes ── */
-
-function NavBtn({ children, ghost }: { children: React.ReactNode; ghost?: boolean }) {
-  return (
-    <button style={{
-      padding: '10px 22px', borderRadius: '50px',
-      background: ghost ? 'transparent' : '#4ECBA0',
-      color: ghost ? '#1A1A1A' : '#fff',
-      border: ghost ? '1.5px solid #E5E7EB' : 'none',
-      fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-      transition: 'all .2s',
-    }}>
-      {children}
-    </button>
-  )
-}
-
-function Kicker({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      fontSize: '11px', fontWeight: 800, textTransform: 'uppercase',
-      letterSpacing: '2.5px', color: '#2AA87C', marginBottom: '14px',
-    }}>
-      {children}
-    </div>
-  )
-}
-
-function ProfileCard({ emoji, name, age, city, rent, match, tags, color, style }: {
-  emoji: string; name: string; age: number; city: string;
-  rent: number; match: number; tags: string[]; color: string;
-  style?: React.CSSProperties
-}) {
-  return (
-    <div style={{
-      background: '#fff', borderRadius: '18px', overflow: 'hidden',
-      boxShadow: '0 8px 32px rgba(0,0,0,.10)',
-      border: '1px solid #F0F0F0',
-      transition: 'transform .3s',
-      ...style,
-    }}>
-      <div style={{
-        height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '54px', background: `linear-gradient(135deg, ${color}22, ${color}11)`,
-      }}>{emoji}</div>
-      <div style={{ padding: '16px 18px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '15px' }}>{name}, {age}</div>
-            <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px' }}>{city} · {rent}€/mois</div>
-          </div>
-          <div style={{
-            background: '#E8F9F3', color: '#2AA87C', fontSize: '11px',
-            fontWeight: 800, padding: '4px 10px', borderRadius: '50px',
-          }}>💚 {match}%</div>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-          {tags.map(t => (
-            <span key={t} style={{
-              background: '#F5F5F5', color: '#6B7280',
-              fontSize: '11px', padding: '3px 9px', borderRadius: '50px', fontWeight: 500,
-            }}>{t}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
-  return (
-    <div
-      style={{
-        background: '#fff', borderRadius: '16px', padding: '28px',
-        border: '1px solid #EBEBEB',
-        boxShadow: '0 2px 12px rgba(0,0,0,.04)',
-        transition: 'all .25s',
-        cursor: 'default',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-4px)'
-        e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,.10)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,.04)'
-      }}
-    >
-      <div style={{
-        width: '48px', height: '48px', borderRadius: '13px',
-        background: '#E8F9F3', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', fontSize: '22px', marginBottom: '16px',
-      }}>{icon}</div>
-      <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '18px', marginBottom: '8px', color: '#1A1A1A' }}>
-        {title}
-      </h3>
-      <p style={{ fontSize: '13.5px', color: '#6B7280', lineHeight: 1.75 }}>{desc}</p>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+      `}</style>
     </div>
   )
 }
