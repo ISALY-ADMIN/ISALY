@@ -86,10 +86,10 @@ export default function LandingPage() {
         {/* Titre principal */}
         <h1 style={{ margin: '0 0 24px', lineHeight: 1.05, maxWidth: '820px' }}>
           <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, color: '#fff', letterSpacing: '-2px' }}>
-            La coloc que tu
+            Ta coloc idéale
           </span>
           <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, letterSpacing: '-2px', background: 'linear-gradient(135deg, #10B981, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            mérites enfin.
+            existe déjà.
           </span>
         </h1>
 
