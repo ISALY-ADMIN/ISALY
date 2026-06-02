@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@/lib/supabase/server'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -16,6 +17,10 @@ Si tu ne sais pas quelque chose sur ISALY spécifiquement, oriente vers le suppo
 
 export async function POST(request: Request) {
   try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { message } = await request.json()
 
     if (!message?.trim()) {

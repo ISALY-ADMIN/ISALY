@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
@@ -38,6 +39,7 @@ const DEFAULT_PREFS: Record<string, boolean> = {
 
 export default function ParametresPage() {
   const { toast } = useToast()
+  const router = useRouter()
   const [prefs, setPrefs] = useState<Record<string, boolean>>(DEFAULT_PREFS)
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -90,8 +92,15 @@ export default function ParametresPage() {
   }
 
   async function handleDeleteAccount() {
-    toast({ title: 'Suppression demandée', description: 'Contacte support@isaly.fr pour finaliser la suppression.', duration: 5000 })
-    setDeleteConfirm(false)
+    if (!userId) return
+    const supabase = createClient()
+    const { error } = await supabase.from('profiles').delete().eq('id', userId)
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' })
+      return
+    }
+    await supabase.auth.signOut()
+    router.push('/')
   }
 
   return (

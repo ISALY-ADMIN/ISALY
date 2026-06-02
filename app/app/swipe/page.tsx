@@ -29,6 +29,7 @@ export default function SwipePage() {
   const [cardKey, setCardKey] = useState(0)
   const [swipeHint, setSwipeHint] = useState<'like' | 'nope' | 'super' | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     fetchProfiles()
@@ -195,7 +196,7 @@ export default function SwipePage() {
               {index + 1}/{profiles.length > 0 ? profiles.length : '?'} vus
             </span>
             <button
-              onClick={() => console.log('filtres')}
+              onClick={() => setShowFilters(true)}
               style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 500, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               ⚙️ Filtres
@@ -229,7 +230,7 @@ export default function SwipePage() {
                     🔄 Recommencer
                   </button>
                   <button
-                    onClick={() => console.log('filtres')}
+                    onClick={() => setShowFilters(true)}
                     className="w-full px-6 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-500 cursor-pointer hover:border-mint hover:text-mint transition-colors bg-transparent"
                   >
                     Affiner mes filtres
@@ -266,6 +267,110 @@ export default function SwipePage() {
           <MatchList matches={matches} />
         </div>
       </div>
+
+      {/* Filtres drawer */}
+      {showFilters && (
+        <>
+          <div
+            onClick={() => setShowFilters(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40, backdropFilter: 'blur(2px)' }}
+          />
+          <div style={{
+            position: 'fixed', top: 0, right: 0, bottom: 0, width: '320px',
+            background: '#fff', zIndex: 50,
+            boxShadow: '-8px 0 32px rgba(0,0,0,0.15)',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, color: '#111827' }}>Filtres</div>
+              <button onClick={() => setShowFilters(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9CA3AF' }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>BUDGET MAXIMUM</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', color: '#374151' }}>0€</span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#10B981' }} id="swipe-budget-label">1500€/mois</span>
+                </div>
+                <input type="range" min={200} max={3000} step={50} defaultValue={1500}
+                  style={{ width: '100%', accentColor: '#10B981' }}
+                  onChange={e => { const el = document.getElementById('swipe-budget-label'); if (el) el.textContent = e.target.value + '€/mois' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>VILLE</div>
+                <input type="text" placeholder="Lyon, Paris..." style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }}
+                  onFocus={e => (e.target.style.borderColor = '#10B981')}
+                  onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                />
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>MODE DE VIE</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+                  {['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail'].map(tag => (
+                    <button key={tag}
+                      onClick={e => {
+                        const btn = e.currentTarget
+                        const active = btn.dataset.active === 'true'
+                        btn.dataset.active = (!active).toString()
+                        btn.style.background = !active ? '#ECFDF5' : '#F3F4F6'
+                        btn.style.color = !active ? '#059669' : '#6B7280'
+                        btn.style.borderColor = !active ? '#10B981' : '#E5E7EB'
+                      }}
+                      style={{ padding: '7px 14px', borderRadius: '20px', border: '1.5px solid #E5E7EB', background: '#F3F4F6', color: '#6B7280', fontSize: '13px', cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>TRIER PAR</div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+                  {[
+                    { value: 'match', label: '❤️ Meilleur match' },
+                    { value: 'recent', label: '🕐 Plus récent' },
+                    { value: 'price', label: '💰 Prix croissant' },
+                  ].map(opt => (
+                    <button key={opt.value}
+                      onClick={e => {
+                        document.querySelectorAll('[data-sort]').forEach((b) => {
+                          (b as HTMLButtonElement).style.background = '#F9FAFB';
+                          (b as HTMLButtonElement).style.borderColor = '#E5E7EB';
+                          (b as HTMLButtonElement).style.color = '#374151';
+                          (b as HTMLButtonElement).style.fontWeight = '400'
+                        })
+                        const btn = e.currentTarget as HTMLButtonElement
+                        btn.style.background = '#ECFDF5'
+                        btn.style.borderColor = '#10B981'
+                        btn.style.color = '#059669'
+                        btn.style.fontWeight = '600'
+                      }}
+                      data-sort={opt.value}
+                      style={{ padding: '10px 16px', borderRadius: '10px', border: '1.5px solid #E5E7EB', background: '#F9FAFB', color: '#374151', fontSize: '13px', cursor: 'pointer', textAlign: 'left' as const, fontFamily: "'Outfit', sans-serif" }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #F3F4F6', flexShrink: 0 }}>
+              <button
+                onClick={() => setShowFilters(false)}
+                style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
+              >
+                Appliquer les filtres
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Match popup */}
       {matchPopup && (

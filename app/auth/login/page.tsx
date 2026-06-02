@@ -223,7 +223,7 @@ export default function LoginPage() {
 
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '20px', lineHeight: 1.6 }}>
             Protégé par{' '}
-            <a href="#" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>la politique de confidentialité</a>
+            <a href="/confidentialite" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>la politique de confidentialité</a>
             {' '}d&apos;ISALY.
           </p>
         </div>

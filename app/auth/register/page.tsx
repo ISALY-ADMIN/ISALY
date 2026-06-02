@@ -205,9 +205,9 @@ export default function RegisterPage() {
 
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '20px', lineHeight: 1.6 }}>
             En créant un compte, tu acceptes nos{' '}
-            <a href="#" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>CGU</a>
+            <a href="/cgu" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>CGU</a>
             {' '}et notre{' '}
-            <a href="#" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>politique de confidentialité</a>.
+            <a href="/confidentialite" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>politique de confidentialité</a>.
           </p>
         </div>
       </div>

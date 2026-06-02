@@ -341,6 +341,7 @@ export default function LandingPage() {
                 desc: 'Ton annonce vue par plus de locataires',
                 features: ['Annonce boostée dans le feed swipe', 'Visible en priorité dans la recherche', 'Badge "Mis en avant"', 'Accès aux dossiers certifiés', 'Messagerie directe'],
                 cta: 'Booster mon annonce',
+                href: '/auth/register?plan=essentiel',
                 highlighted: false,
               },
               {
@@ -350,6 +351,7 @@ export default function LandingPage() {
                 desc: 'Visibilité maximale, résultats garantis',
                 features: ['Tout Essentiel inclus', 'Position #1 dans le matching', 'Badge "Prioritaire" visible', 'Mis en avant sur la carte', 'Stats détaillées', 'Support 7j/7'],
                 cta: 'Choisir Prioritaire',
+                href: '/auth/register?plan=prioritaire',
                 highlighted: true,
               },
             ].map((plan, i) => (
@@ -376,7 +378,7 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
-                <Link href="/auth/register" style={{
+                <Link href={plan.href} style={{
                   display: 'block', textAlign: 'center',
                   background: plan.highlighted ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.06)',
                   color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
