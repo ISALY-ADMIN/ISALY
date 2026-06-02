@@ -271,21 +271,24 @@ export default function LandingPage() {
           <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
             Zéro surprise sur la facture
           </h2>
+          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.45)', textAlign: 'center', maxWidth: '560px', margin: '0 auto 60px', lineHeight: 1.7 }}>
+            Pour les locataires, ISALY est entièrement gratuit. Les loueurs peuvent booster leur visibilité. On prend uniquement 3% du loyer mensuel à la signature du bail — c&apos;est tout.
+          </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
           {[
             {
               name: 'Locataire',
-              price: '0€',
-              period: 'pour commencer',
-              desc: 'Trouve ta coloc, gratuitement',
+              price: '100% gratuit',
+              period: 'pour toujours',
+              desc: 'Trouve, matche et emménage sans rien payer',
               features: [
-                'Swipe illimité',
-                'Matching intelligent',
-                'Messagerie intégrée',
-                'Dossier numérique',
+                'Swipe & matching illimité',
+                'Messagerie avec les loueurs',
+                'Dossier numérique complet',
                 'Carte des annonces',
-                '3% du loyer à la signature du bail',
+                'Gestion du bail incluse',
+                '⚡ 3% du loyer/mois prélevés automatiquement à la signature — couvre l\'assurance dossier et la gestion locative',
               ],
               cta: 'Commencer gratuitement',
               highlighted: false,
@@ -295,13 +298,14 @@ export default function LandingPage() {
               name: 'Loueur — Essentiel',
               price: '9,99€',
               period: 'par mois',
-              desc: 'Mis en avant dans les résultats',
+              desc: 'Ton annonce vue par plus de locataires',
               features: [
-                'Annonce boostée dans le feed',
+                'Annonce mise en avant dans le feed swipe',
                 'Visible en priorité dans la recherche',
-                'Badge "Mis en avant"',
-                'Accès aux dossiers certifiés',
-                'Messagerie avec les candidats',
+                'Badge "Mis en avant" sur ton annonce',
+                'Accès aux dossiers certifiés des candidats',
+                'Messagerie directe avec les locataires',
+                '→ Idéal pour louer plus vite',
               ],
               cta: 'Booster mon annonce',
               highlighted: false,
@@ -311,14 +315,15 @@ export default function LandingPage() {
               name: 'Loueur — Prioritaire',
               price: '24,99€',
               period: 'par mois',
-              desc: 'Visibilité maximale garantie',
+              desc: 'Visibilité maximale, résultats garantis',
               features: [
                 'Tout Essentiel inclus',
-                'Position #1 dans le matching',
-                'Badge "Prioritaire" visible',
-                'Mise en avant dans la carte',
-                'Statistiques de vues avancées',
-                'Support dédié',
+                'Position #1 dans l\'algorithme de matching',
+                'Badge "Prioritaire" visible sur ta fiche',
+                'Mis en avant sur la carte interactive',
+                'Statistiques de vues et contacts détaillées',
+                'Support dédié 7j/7',
+                '→ Pour les loueurs qui ne veulent pas attendre',
               ],
               cta: 'Choisir Prioritaire',
               highlighted: true,
