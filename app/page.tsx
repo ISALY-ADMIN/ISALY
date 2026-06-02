@@ -397,11 +397,15 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
-        {['Confidentialité', 'CGU', 'Contact'].map(link => (
-          <a key={link} href="#" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
+        {[
+          { label: 'Confidentialité', href: '/confidentialite' },
+          { label: 'CGU', href: '/cgu' },
+          { label: 'Contact', href: '/contact' },
+        ].map(link => (
+          <Link key={link.label} href={link.href} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
-          >{link}</a>
+          >{link.label}</Link>
         ))}
       </footer>
 
