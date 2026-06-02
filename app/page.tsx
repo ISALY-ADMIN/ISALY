@@ -242,7 +242,7 @@ export default function LandingPage() {
           {[
             { name: 'Sophie M.', role: 'Étudiante, Lyon', text: "En 3 jours j'avais trouvé ma colocataire. Le score de compatibilité était à 91% et 6 mois plus tard on est toujours aussi bien ensemble.", photo: '/pictures/meuf.jpg' },
             { name: 'Thomas R.', role: 'Développeur, Paris', text: "J'avais essayé Le Bon Coin, Facebook, tout. Sur ISALY j'ai eu mon premier match en moins d'une heure.", photo: '/pictures/mec.jpg' },
-            { name: 'Léa K.', role: 'Designer, Bordeaux', text: "La gestion du bail dans l'app m'a évité 50 emails avec mon proprio. Je recommande à tous ceux qui veulent une coloc sans prise de tête.", photo: '/pictures/meuf 2.jpg' },
+            { name: 'Léa K.', role: 'Designer, Bordeaux', text: "La gestion du bail dans l'app m'a évité 50 emails avec mon proprio. Je recommande à tous ceux qui veulent une coloc sans prise de tête.", photo: '/pictures/meuf2.jpg' },
           ].map((t, i) => (
             <div key={i} style={{
               padding: '32px',
