@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import CertificationBadge from '@/components/ui/CertificationBadge'
+import ProfileCompletion from '@/components/ui/ProfileCompletion'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 
@@ -465,6 +466,15 @@ export default function ProfilPage() {
             <OutlineBtn onClick={startEdit}>✏️ Modifier</OutlineBtn>
           )}
         </div>
+
+        <ProfileCompletion profile={{
+          first_name: form.firstName,
+          last_name: form.lastName,
+          avatar_url: avatarUrl ?? undefined,
+          city: form.searchZone,
+          budget_max: form.budgetMax ? parseInt(form.budgetMax) : undefined,
+          cert_level: certLevel,
+        }} />
 
         {/* ── Ma Certification ─────────────────────────────── */}
         <SectionLabel>Ma certification</SectionLabel>

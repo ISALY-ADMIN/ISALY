@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import CompatibilityQuiz from '@/components/landing/CompatibilityQuiz'
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -262,6 +263,17 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* CALCULATEUR */}
+      <section style={{ padding: '120px 24px', maxWidth: '700px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>ESSAIE MAINTENANT</div>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+            Ton score de compatibilité
+          </h2>
+        </div>
+        <CompatibilityQuiz />
       </section>
 
       {/* PRICING */}

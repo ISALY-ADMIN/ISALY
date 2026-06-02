@@ -26,7 +26,8 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
     const supabase = createClient()
-    const { error: signUpError } = await supabase.auth.signUp({
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -38,6 +39,15 @@ export default function RegisterPage() {
       setError(translateError(signUpError.message))
       setLoading(false)
       return
+    }
+    if (newUser && ref) {
+      try {
+        await supabase.from('profiles').update({ referred_by: ref }).eq('id', newUser.id)
+        const { data: referrer } = await supabase.from('profiles').select('id, referral_count').eq('referral_code', ref).single()
+        if (referrer) {
+          await supabase.from('profiles').update({ referral_count: (referrer.referral_count ?? 0) + 1 }).eq('id', referrer.id)
+        }
+      } catch {}
     }
     try {
       await fetch('/api/email/confirm', {

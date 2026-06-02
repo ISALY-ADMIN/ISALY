@@ -1,151 +1,141 @@
 'use client'
-
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import Topbar from '@/components/layout/Topbar'
+import { createClient } from '@/lib/supabase/client'
 
-const PLANS = [
-  {
-    id: 'assurance',
-    icon: '🛡️',
-    name: 'Assurance dossier',
-    desc: 'Dossier certifié + gestion bail',
-    price: '3%',
-    unit: ' loyer/mois',
-  },
-  {
-    id: 'featured',
-    icon: '🚀',
-    name: 'Annonce mise en avant',
-    desc: '2× plus de contacts · Badge',
-    price: '9,99€',
-    unit: '/mois',
-  },
-  {
-    id: 'priority',
-    icon: '⭐',
-    name: 'Annonce prioritaire',
-    desc: 'Top du fil · Analytics',
-    price: '24,99€',
-    unit: '/mois',
-  },
-]
+function PaiementContent() {
+  const searchParams = useSearchParams()
+  const [loading, setLoading] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const success = searchParams.get('success')
+  const cancelled = searchParams.get('cancelled')
 
-export default function PaiementPage() {
-  const [selected, setSelected] = useState('featured')
-  const [paid, setPaid] = useState(false)
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+  }, [])
 
-  function handlePay() {
-    setPaid(true)
-    setTimeout(() => setPaid(false), 3000)
-    alert('✅ Paiement simulé — connectez votre clé Stripe pour activer les paiements réels.')
+  async function handleCheckout(plan: string) {
+    setLoading(plan)
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+      const { url, error } = await res.json()
+      if (error) { alert('Erreur : ' + error); setLoading(null); return }
+      window.location.href = url
+    } catch {
+      alert('Erreur de connexion au paiement')
+      setLoading(null)
+    }
   }
 
   return (
-    <>
-      <Topbar title="Paiement" />
-      <div className="flex-1 overflow-y-auto p-8">
-        <div style={{ maxWidth: '580px' }}>
-          <h1 className="text-[28px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#F1F5F9' }}>
-            Paiement
-          </h1>
-          <p className="text-[13.5px] mb-6" style={{ color: '#6B7280' }}>
-            Choisissez votre formule
-          </p>
+    <div style={{ minHeight: '100vh', background: '#F0F4F0' }}>
+      <Topbar title="Abonnements" />
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 24px' }}>
 
-          {/* Plans */}
-          <div className="rounded-[14px] p-5 border mb-3.5" style={{ background: '#1A1A1A', borderColor: '#2D2D2D' }}>
-            <div className="font-extrabold text-[13.5px] mb-3.5" style={{ color: '#E5E7EB' }}>Choisir une formule</div>
-            {PLANS.map(plan => (
-              <div
-                key={plan.id}
-                onClick={() => setSelected(plan.id)}
-                className="flex items-center gap-3.5 p-3.5 rounded-[9px] cursor-pointer transition-all mb-2.5 border-2"
+        {success && (
+          <div style={{ background: '#ECFDF5', border: '1px solid #10B981', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '20px' }}>🎉</span>
+            <div>
+              <div style={{ fontWeight: 700, color: '#065F46' }}>Abonnement activé !</div>
+              <div style={{ fontSize: '13px', color: '#059669' }}>Ton boost est maintenant actif. Tes annonces sont mises en avant.</div>
+            </div>
+          </div>
+        )}
+
+        {cancelled && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #EF4444', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
+            <div style={{ fontWeight: 700, color: '#991B1B' }}>Paiement annulé</div>
+            <div style={{ fontSize: '13px', color: '#DC2626' }}>Aucun prélèvement n&apos;a été effectué.</div>
+          </div>
+        )}
+
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Abonnements</h1>
+          <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>Booste la visibilité de tes annonces pour louer plus vite.</p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+          {[
+            {
+              id: 'featured',
+              name: 'Essentiel',
+              price: '9,99€',
+              period: '/mois',
+              desc: 'Ton annonce vue par plus de locataires',
+              color: '#6366F1',
+              features: ['Annonce boostée dans le feed', 'Visible en priorité dans la recherche', 'Badge "Mis en avant"', 'Accès aux dossiers certifiés', 'Messagerie directe'],
+              highlighted: false,
+            },
+            {
+              id: 'priority',
+              name: 'Prioritaire',
+              price: '24,99€',
+              period: '/mois',
+              desc: 'Visibilité maximale garantie',
+              color: '#10B981',
+              features: ['Tout Essentiel inclus', 'Position #1 dans le matching', 'Badge "Prioritaire" visible', 'Mis en avant sur la carte', 'Stats détaillées', 'Support 7j/7'],
+              highlighted: true,
+            },
+          ].map(plan => (
+            <div key={plan.id} style={{
+              background: '#fff',
+              border: plan.highlighted ? `2px solid ${plan.color}` : '1px solid #E5E7EB',
+              borderRadius: '16px',
+              padding: '28px',
+              position: 'relative',
+            }}>
+              {plan.highlighted && (
+                <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: plan.color, color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 14px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
+                  MEILLEURE OFFRE
+                </div>
+              )}
+              <div style={{ fontSize: '12px', fontWeight: 600, color: plan.color, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>{plan.name}</div>
+              <div style={{ fontSize: '36px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{plan.price}<span style={{ fontSize: '14px', fontWeight: 400, color: '#9CA3AF' }}>{plan.period}</span></div>
+              <div style={{ fontSize: '13px', color: '#6B7280', margin: '8px 0 20px' }}>{plan.desc}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                {plan.features.map(f => (
+                  <div key={f} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#374151' }}>
+                    <span style={{ color: plan.color, fontWeight: 700, flexShrink: 0 }}>✓</span> {f}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => handleCheckout(plan.id)}
+                disabled={loading === plan.id}
                 style={{
-                  borderColor: selected === plan.id ? '#4ECBA0' : '#2D2D2D',
-                  background: selected === plan.id ? '#0E2B1E' : '#161616',
+                  width: '100%', padding: '12px',
+                  background: plan.highlighted ? `linear-gradient(135deg, ${plan.color}, #059669)` : '#fff',
+                  color: plan.highlighted ? '#fff' : plan.color,
+                  border: `2px solid ${plan.color}`,
+                  borderRadius: '10px', fontSize: '14px', fontWeight: 700,
+                  cursor: 'pointer', transition: 'all 0.2s',
+                  opacity: loading === plan.id ? 0.7 : 1,
+                  fontFamily: "'Outfit', sans-serif",
                 }}
               >
-                <div className="text-2xl">{plan.icon}</div>
-                <div className="flex-1">
-                  <div className="font-bold text-[13.5px]" style={{ color: '#E5E7EB' }}>{plan.name}</div>
-                  <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{plan.desc}</div>
-                </div>
-                <div className="text-[17px] font-bold" style={{ color: '#F1F5F9' }}>
-                  {plan.price}
-                  <span className="text-xs font-normal" style={{ color: '#6B7280' }}>{plan.unit}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Payment form */}
-          <div className="rounded-[14px] p-5 border" style={{ background: '#1A1A1A', borderColor: '#2D2D2D' }}>
-            <div className="font-extrabold text-[13.5px] mb-3.5" style={{ color: '#E5E7EB' }}>Informations de paiement</div>
-
-            <Field label="Titulaire">
-              <TextInput placeholder="Alex Martin" />
-            </Field>
-            <Field label="Numéro de carte">
-              <TextInput placeholder="1234 5678 9012 3456" />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Expiration">
-                <TextInput placeholder="MM/AA" />
-              </Field>
-              <Field label="CVV">
-                <input
-                  type="password"
-                  placeholder="123"
-                  className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
-                  style={{ background: '#161616', borderColor: '#2D2D2D', color: '#E5E7EB' }}
-                  onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-                  onBlur={e => (e.target.style.borderColor = '#2D2D2D')}
-                />
-              </Field>
+                {loading === plan.id ? '⏳ Redirection...' : `Choisir ${plan.name} →`}
+              </button>
             </div>
+          ))}
+        </div>
 
-            {/* Stripe badge */}
-            <div
-              className="flex items-center gap-2 text-xs rounded-lg px-3 py-2.5 mt-3"
-              style={{ background: '#252525', color: '#6B7280' }}
-            >
-              <span className="font-black text-[13px]" style={{ color: '#635BFF' }}>stripe</span>
-              Paiement sécurisé — données chiffrées
-            </div>
-
-            <button
-              onClick={handlePay}
-              className="w-full py-3.5 rounded-full text-[14.5px] font-semibold text-white border-none cursor-pointer transition-colors mt-3.5"
-              style={{ background: '#4ECBA0' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#2AA87C')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
-            >
-              Payer maintenant 🔒
-            </button>
+        <div style={{ marginTop: '32px', padding: '20px', background: '#fff', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+          <div style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', lineHeight: 1.7 }}>
+            Paiement sécurisé par <strong>Stripe</strong> · Résiliation à tout moment · Sans engagement · Facturation mensuelle
           </div>
         </div>
       </div>
-    </>
-  )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-4">
-      <label className="block text-xs font-bold mb-1.5" style={{ color: '#9CA3AF' }}>{label}</label>
-      {children}
     </div>
   )
 }
 
-function TextInput({ placeholder }: { placeholder: string }) {
-  return (
-    <input
-      placeholder={placeholder}
-      className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
-      style={{ background: '#161616', borderColor: '#2D2D2D', color: '#E5E7EB' }}
-      onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-      onBlur={e => (e.target.style.borderColor = '#2D2D2D')}
-    />
-  )
+export default function PaiementPage() {
+  return <Suspense fallback={<div>Chargement...</div>}><PaiementContent /></Suspense>
 }

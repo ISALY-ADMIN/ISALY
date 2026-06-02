@@ -59,6 +59,16 @@ function getPillStyle(tag: string): string {
 export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCardProps) {
   const cardRef    = useRef<HTMLDivElement>(null)
   const [flying, setFlying] = useState<'left' | 'right' | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  async function toggleFavorite() {
+    setSaved(s => !s)
+    await fetch('/api/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_id: profile.id, target_type: profile.isListing ? 'listing' : 'profile' }),
+    })
+  }
   const startX     = useRef(0)
   const isDragging = useRef(false)
 
@@ -208,6 +218,21 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         >
           {profile.bio || 'Aucune description pour l\'instant.'}
         </p>
+        <button
+          onClick={toggleFavorite}
+          style={{
+            width: '100%', marginBottom: '8px',
+            padding: '10px',
+            background: saved ? '#ECFDF5' : '#F9FAFB',
+            border: `1px solid ${saved ? '#10B981' : '#E5E7EB'}`,
+            borderRadius: '12px',
+            color: saved ? '#059669' : '#6B7280',
+            fontSize: '13px', fontWeight: 600,
+            cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+          }}
+        >
+          {saved ? '🔖 Sauvegardé' : '🔖 Sauvegarder'}
+        </button>
         <Button className="w-full mt-3" size="lg" onClick={() => onMessage(profile.name)}>
           {profile.isListing ? '💬 Contacter le loueur' : `💬 Écrire à ${firstName}`}
         </Button>
