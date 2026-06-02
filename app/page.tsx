@@ -265,7 +265,7 @@ export default function LandingPage() {
       </section>
 
       {/* PRICING */}
-      <section style={{ padding: '120px 24px', maxWidth: '900px', margin: '0 auto' }}>
+      <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TARIFS</div>
           <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
@@ -275,22 +275,54 @@ export default function LandingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
           {[
             {
-              name: 'Essentiel',
+              name: 'Locataire',
               price: '0€',
-              period: 'pour toujours',
-              desc: 'Pour chercher et trouver ta coloc',
-              features: ['Swipe illimité', 'Messagerie', 'Dossier numérique', 'Carte des annonces'],
+              period: 'pour commencer',
+              desc: 'Trouve ta coloc, gratuitement',
+              features: [
+                'Swipe illimité',
+                'Matching intelligent',
+                'Messagerie intégrée',
+                'Dossier numérique',
+                'Carte des annonces',
+                '3% du loyer à la signature du bail',
+              ],
               cta: 'Commencer gratuitement',
               highlighted: false,
+              tag: null,
             },
             {
-              name: 'Sécurisé',
-              price: '3%',
-              period: 'du loyer / mois',
-              desc: 'Pour louer avec toutes les garanties',
-              features: ['Tout Essentiel inclus', 'Assurance dossier', 'Certification niveau 3', 'Support prioritaire', 'Gestion bail complète'],
-              cta: 'Choisir Sécurisé',
+              name: 'Loueur — Essentiel',
+              price: '9,99€',
+              period: 'par mois',
+              desc: 'Mis en avant dans les résultats',
+              features: [
+                'Annonce boostée dans le feed',
+                'Visible en priorité dans la recherche',
+                'Badge "Mis en avant"',
+                'Accès aux dossiers certifiés',
+                'Messagerie avec les candidats',
+              ],
+              cta: 'Booster mon annonce',
+              highlighted: false,
+              tag: null,
+            },
+            {
+              name: 'Loueur — Prioritaire',
+              price: '24,99€',
+              period: 'par mois',
+              desc: 'Visibilité maximale garantie',
+              features: [
+                'Tout Essentiel inclus',
+                'Position #1 dans le matching',
+                'Badge "Prioritaire" visible',
+                'Mise en avant dans la carte',
+                'Statistiques de vues avancées',
+                'Support dédié',
+              ],
+              cta: 'Choisir Prioritaire',
               highlighted: true,
+              tag: 'MEILLEURE OFFRE',
             },
           ].map((plan, i) => (
             <div key={i} style={{
@@ -301,9 +333,9 @@ export default function LandingPage() {
               position: 'relative',
               overflow: 'hidden',
             }}>
-              {plan.highlighted && (
+              {plan.tag && (
                 <div style={{ position: 'absolute', top: '16px', right: '16px', background: '#10B981', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
-                  POPULAIRE
+                  {plan.tag}
                 </div>
               )}
               <div style={{ fontSize: '13px', fontWeight: 600, color: plan.highlighted ? '#10B981' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>{plan.name}</div>
