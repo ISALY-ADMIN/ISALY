@@ -97,6 +97,18 @@ export async function POST(req: Request) {
       read: false,
       link: '/app/messages',
     })
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/api/push/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: otherUserId,
+          title: `Nouveau message de ${senderProfile?.first_name ?? 'quelqu\'un'}`,
+          body: content.slice(0, 80),
+          url: '/app/messages',
+        }),
+      })
+    } catch {}
   }
 
   return NextResponse.json({ message: data })

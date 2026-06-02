@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import CertificationBadge from '@/components/ui/CertificationBadge'
 import ProfileCompletion from '@/components/ui/ProfileCompletion'
+import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 
@@ -266,6 +267,7 @@ export default function ProfilPage() {
   const [showBailModal, setShowBailModal] = useState(false)
 
   // Profile data from Supabase
+  const [userId, setUserId] = useState('')
   const [email, setEmail] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [lifestyleTags, setLifestyleTags] = useState<string[]>([])
@@ -319,6 +321,7 @@ export default function ProfilPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      setUserId(user.id)
       setEmail(user.email ?? '')
 
       const { data: profile } = await supabase
@@ -577,12 +580,8 @@ export default function ProfilPage() {
 
         {/* ── Avis de colocataires ─────────────────────────── */}
         <SectionLabel>Avis de colocataires</SectionLabel>
-        <div className="rounded-[14px] border overflow-hidden mb-5" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
-          <div className="p-8 text-center">
-            <div className="text-[36px] mb-3">⭐</div>
-            <p className="text-[13.5px] font-semibold mb-1" style={{ color: '#111827' }}>Aucun avis pour l&apos;instant</p>
-            <p className="text-[12.5px]" style={{ color: '#6B7280' }}>Vos colocataires pourront laisser un avis après votre colocation.</p>
-          </div>
+        <div className="rounded-[14px] p-5 border mb-5" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
+          <ReviewStars userId={userId} canReview={false} />
         </div>
 
         {/* ── Informations ─────────────────────────────────── */}

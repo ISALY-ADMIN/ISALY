@@ -8,6 +8,7 @@ import SwipeActions from '@/components/swipe/SwipeActions'
 import MatchList from '@/components/swipe/MatchList'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import PushPermission from '@/components/notifications/PushPermission'
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 
@@ -203,6 +204,8 @@ export default function SwipePage() {
             </button>
           </div>
         </div>
+
+        <PushPermission />
 
         <div className="flex flex-1 overflow-hidden">
           {/* Main swipe area */}
