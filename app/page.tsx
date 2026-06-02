@@ -268,105 +268,126 @@ export default function LandingPage() {
       <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TARIFS</div>
-          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
             Zéro surprise sur la facture
           </h2>
-          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.45)', textAlign: 'center', maxWidth: '560px', margin: '0 auto 60px', lineHeight: 1.7 }}>
-            Pour les locataires, ISALY est entièrement gratuit. Les loueurs peuvent booster leur visibilité. On prend uniquement 3% du loyer mensuel à la signature du bail — c&apos;est tout.
-          </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          {[
-            {
-              name: 'Locataire',
-              price: '100% gratuit',
-              period: 'pour toujours',
-              desc: 'Trouve, matche et emménage sans rien payer',
-              features: [
-                'Swipe & matching illimité',
-                'Messagerie avec les loueurs',
-                'Dossier numérique complet',
-                'Carte des annonces',
-                'Gestion du bail incluse',
-                '⚡ 3% du loyer/mois prélevés automatiquement à la signature — couvre l\'assurance dossier et la gestion locative',
-              ],
-              cta: 'Commencer gratuitement',
-              highlighted: false,
-              tag: null,
-            },
-            {
-              name: 'Loueur — Essentiel',
-              price: '9,99€',
-              period: 'par mois',
-              desc: 'Ton annonce vue par plus de locataires',
-              features: [
-                'Annonce mise en avant dans le feed swipe',
-                'Visible en priorité dans la recherche',
-                'Badge "Mis en avant" sur ton annonce',
-                'Accès aux dossiers certifiés des candidats',
-                'Messagerie directe avec les locataires',
-                '→ Idéal pour louer plus vite',
-              ],
-              cta: 'Booster mon annonce',
-              highlighted: false,
-              tag: null,
-            },
-            {
-              name: 'Loueur — Prioritaire',
-              price: '24,99€',
-              period: 'par mois',
-              desc: 'Visibilité maximale, résultats garantis',
-              features: [
-                'Tout Essentiel inclus',
-                'Position #1 dans l\'algorithme de matching',
-                'Badge "Prioritaire" visible sur ta fiche',
-                'Mis en avant sur la carte interactive',
-                'Statistiques de vues et contacts détaillées',
-                'Support dédié 7j/7',
-                '→ Pour les loueurs qui ne veulent pas attendre',
-              ],
-              cta: 'Choisir Prioritaire',
-              highlighted: true,
-              tag: 'MEILLEURE OFFRE',
-            },
-          ].map((plan, i) => (
-            <div key={i} style={{
-              padding: '40px',
-              background: plan.highlighted ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
-              border: `1px solid ${plan.highlighted ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
-              borderRadius: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
-              {plan.tag && (
-                <div style={{ position: 'absolute', top: '16px', right: '16px', background: '#10B981', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
-                  {plan.tag}
-                </div>
-              )}
-              <div style={{ fontSize: '13px', fontWeight: 600, color: plan.highlighted ? '#10B981' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>{plan.name}</div>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '48px', color: '#fff', lineHeight: 1, marginBottom: '4px' }}>{plan.price}</div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>{plan.period}</div>
-              <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px' }}>{plan.desc}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '32px' }}>
-                {plan.features.map(f => (
-                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
-                    <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span> {f}
-                  </div>
-                ))}
-              </div>
+
+        {/* BLOC 1 — LOCATAIRES */}
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', whiteSpace: 'nowrap' }}>
+              Pour les locataires
+            </div>
+            <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+          </div>
+          <div style={{
+            background: 'rgba(16,185,129,0.05)',
+            border: '1px solid rgba(16,185,129,0.15)',
+            borderRadius: '20px',
+            padding: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '32px',
+          }}>
+            <div style={{ flex: 1, minWidth: '280px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#10B981', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>LOCATAIRE</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '64px', fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: '6px' }}>Gratuit</div>
+              <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', marginBottom: '24px' }}>pour toujours — aucune carte requise</div>
+              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '400px', margin: '0 0 24px' }}>
+                Swipe, matche, contacte les loueurs et gère ton bail. Tout est gratuit. On prend uniquement <span style={{ color: '#10B981', fontWeight: 600 }}>2,5% du loyer mensuel</span> à la signature du bail — comme une assurance dossier incluse.
+              </p>
               <Link href="/auth/register" style={{
-                display: 'block', textAlign: 'center',
-                background: plan.highlighted ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.06)',
-                color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
-                padding: '13px', borderRadius: '10px',
-                boxShadow: plan.highlighted ? '0 0 30px rgba(16,185,129,0.3)' : 'none',
-                border: plan.highlighted ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                transition: 'all 0.2s',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 600,
+                padding: '13px 28px', borderRadius: '12px',
+                boxShadow: '0 0 30px rgba(16,185,129,0.3)',
               }}>
-                {plan.cta}
+                Commencer gratuitement →
               </Link>
             </div>
-          ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '240px' }}>
+              {['Swipe & matching illimité', 'Messagerie intégrée', 'Dossier numérique complet', 'Carte des annonces', 'Gestion du bail incluse', 'Support par chat'].map(f => (
+                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+                  <span style={{ color: '#10B981', fontWeight: 700, fontSize: '16px' }}>✓</span> {f}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* BLOC 2 — LOUEURS */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', whiteSpace: 'nowrap' }}>
+              Pour les loueurs — mise en avant facultative
+            </div>
+            <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+          </div>
+          <p style={{ textAlign: 'center', fontSize: '14px', color: 'rgba(255,255,255,0.35)', marginBottom: '28px' }}>
+            Publier une annonce est gratuit. Ces options sont facultatives pour accélérer ta mise en location.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            {[
+              {
+                name: 'Essentiel',
+                price: '9,99€',
+                period: 'par mois',
+                desc: 'Ton annonce vue par plus de locataires',
+                features: ['Annonce boostée dans le feed swipe', 'Visible en priorité dans la recherche', 'Badge "Mis en avant"', 'Accès aux dossiers certifiés', 'Messagerie directe'],
+                cta: 'Booster mon annonce',
+                highlighted: false,
+              },
+              {
+                name: 'Prioritaire',
+                price: '24,99€',
+                period: 'par mois',
+                desc: 'Visibilité maximale, résultats garantis',
+                features: ['Tout Essentiel inclus', 'Position #1 dans le matching', 'Badge "Prioritaire" visible', 'Mis en avant sur la carte', 'Stats détaillées', 'Support 7j/7'],
+                cta: 'Choisir Prioritaire',
+                highlighted: true,
+              },
+            ].map((plan, i) => (
+              <div key={i} style={{
+                padding: '32px',
+                background: plan.highlighted ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${plan.highlighted ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                borderRadius: '16px',
+                position: 'relative',
+              }}>
+                {plan.highlighted && (
+                  <div style={{ position: 'absolute', top: '16px', right: '16px', background: '#10B981', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
+                    MEILLEURE OFFRE
+                  </div>
+                )}
+                <div style={{ fontSize: '13px', fontWeight: 600, color: plan.highlighted ? '#10B981' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>{plan.name}</div>
+                <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '40px', fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: '4px' }}>{plan.price}</div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>{plan.period}</div>
+                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '24px' }}>{plan.desc}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '28px' }}>
+                  {plan.features.map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: 'rgba(255,255,255,0.65)' }}>
+                      <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span> {f}
+                    </div>
+                  ))}
+                </div>
+                <Link href="/auth/register" style={{
+                  display: 'block', textAlign: 'center',
+                  background: plan.highlighted ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.06)',
+                  color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
+                  padding: '13px', borderRadius: '10px',
+                  border: plan.highlighted ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                }}>
+                  {plan.cta}
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
