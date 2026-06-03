@@ -148,8 +148,8 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           style={{ height: '130px', background: 'linear-gradient(to top, rgba(0,0,0,.80) 0%, transparent 100%)' }}
         />
         <div
-          className="absolute top-3 right-3 flex items-center gap-1 bg-white rounded-full px-3 py-1 shadow-md font-bold text-mint"
-          style={{ fontSize: '12px' }}
+          className="absolute top-3 right-3 flex items-center gap-1 rounded-full px-3 py-1 font-bold"
+          style={{ fontSize: '12px', background: 'rgba(10,10,10,0.7)', color: '#10B981', backdropFilter: 'blur(6px)', border: '1px solid rgba(16,185,129,0.4)' }}
         >
           ❤️ {profile.match}%
         </div>
@@ -176,11 +176,11 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
       </div>
 
       {/* ── INFO ZONE ─────────────────────────────────────── */}
-      <div className="bg-white px-5 py-5">
-        <p className="text-2xl font-bold text-gray-900 mb-0.5">
+      <div className="px-5 py-5" style={{ background: 'rgba(15,15,15,0.97)' }}>
+        <p className="text-2xl font-bold mb-0.5" style={{ color: '#ffffff' }}>
           {profile.name}{profile.age > 0 ? `, ${profile.age}` : ''}
         </p>
-        <div className="text-sm text-gray-500 flex items-center gap-1.5 flex-wrap mb-3">
+        <div className="text-sm flex items-center gap-1.5 flex-wrap mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>
           {profile.job && <span>{profile.job}</span>}
           {profile.city && <><span>·</span><span>📍 {profile.city}</span></>}
           {profile.rent > 0 && <><span>·</span><span>{profile.rent} €/mois</span></>}
@@ -194,7 +194,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         </div>
         {/* Compatibility bars */}
         <div style={{ marginBottom: '12px' }}>
-          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '6px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Compatibilité</div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Compatibilité</div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {[
               { label: 'Mode de vie', value: Math.min(100, profile.match + 5), color: '#10B981' },
@@ -202,8 +202,8 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
               { label: 'Personnalité', value: Math.min(100, profile.match - 5), color: '#F59E0B' },
             ].map(item => (
               <div key={item.label} style={{ flex: 1 }}>
-                <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '3px', textAlign: 'center' }}>{item.label}</div>
-                <div style={{ height: '4px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginBottom: '3px', textAlign: 'center' }}>{item.label}</div>
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${item.value}%`, background: item.color, borderRadius: '4px', transition: 'width 0.6s ease' }} />
                 </div>
                 <div style={{ fontSize: '10px', color: item.color, fontWeight: 700, textAlign: 'center', marginTop: '2px' }}>{item.value}%</div>
@@ -213,8 +213,8 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         </div>
 
         <p
-          className="text-[13px] leading-relaxed mb-1 text-gray-400"
-          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          className="text-[13px] leading-relaxed mb-1"
+          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', color: 'rgba(255,255,255,0.5)' }}
         >
           {profile.bio || 'Aucune description pour l\'instant.'}
         </p>
@@ -223,10 +223,10 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           style={{
             width: '100%', marginBottom: '8px',
             padding: '10px',
-            background: saved ? '#ECFDF5' : '#F9FAFB',
-            border: `1px solid ${saved ? '#10B981' : '#E5E7EB'}`,
+            background: saved ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)',
+            border: `1px solid ${saved ? '#10B981' : 'rgba(255,255,255,0.1)'}`,
             borderRadius: '12px',
-            color: saved ? '#059669' : '#6B7280',
+            color: saved ? '#10B981' : 'rgba(255,255,255,0.6)',
             fontSize: '13px', fontWeight: 600,
             cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
           }}

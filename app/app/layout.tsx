@@ -5,9 +5,12 @@ import { Toaster } from '@/components/ui/toaster'
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <LeaseProvider>
-      <div className="flex min-h-screen" style={{ background: '#F0F4F0' }}>
+      <div className="flex min-h-screen" style={{ background: '#0A0A0A' }}>
         <Sidebar />
-        <div className="flex flex-col flex-1 overflow-hidden" style={{ marginLeft: 'var(--sidebar-width, 232px)', transition: 'margin-left 0.2s ease' }}>
+        <div
+          className="flex flex-col flex-1 overflow-hidden"
+          style={{ marginLeft: 'var(--sidebar-width, 232px)', transition: 'margin-left 0.2s ease' }}
+        >
           {children}
         </div>
       </div>

@@ -13,42 +13,41 @@ h1, h2, h3, h4, h5, h6, .font-serif {
 @tailwind utilities;
 
 :root {
-  /* ── shadcn/ui design tokens (charte ISALY) ──────────────── */
-  --background: 240 20% 97%;
-  --foreground: 0 0% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
+  --background: 0 0% 4%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 95%;
   --primary: 158 56% 52%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 158 56% 95%;
-  --secondary-foreground: 158 56% 25%;
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 9% 46%;
-  --accent: 158 56% 92%;
-  --accent-foreground: 158 56% 20%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 80%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 50%;
+  --accent: 158 56% 15%;
+  --accent-foreground: 158 56% 80%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 13% 91%;
-  --input: 220 13% 91%;
+  --border: 0 0% 15%;
+  --input: 0 0% 12%;
   --ring: 158 56% 52%;
   --radius: 0.75rem;
-
-  /* ── ISALY custom tokens ─────────────────────────────────── */
+  --mint: #10B981;
+  --mint-light: rgba(16,185,129,0.1);
+  --mint-dark: #059669;
+  --sidebar-bg: #0A0A0A;
+  --app-bg: #0A0A0A;
   --sidebar-width: 232px;
-  --mint:          #4ECBA0;
-  --mint-dark:     #2AA87C;
-  --mint-light:    #ECFDF5;
-  --sidebar-bg:    #111827;
-  --app-bg:        #F0F4F0;
-  --card-bg:       #FFFFFF;
-  --text-primary:  #111827;
-  --text-muted:    #6B7280;
-  --danger:        #EF4444;
-  --warning:       #F59E0B;
-  --shadow-card:   0 2px 16px rgba(0,0,0,.06);
-  --shadow-lg:     0 8px 36px rgba(0,0,0,.12);
+  --card-bg: rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.08);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255,255,255,0.5);
+  --text-muted: rgba(255,255,255,0.25);
+  --danger:   #EF4444;
+  --warning:  #F59E0B;
+  --shadow-card: 0 2px 16px rgba(0,0,0,.3);
+  --shadow-lg:   0 8px 36px rgba(0,0,0,.5);
 }
 
 .dark {
@@ -392,3 +391,78 @@ button, a[role="button"] {
 .card-entrance {
   animation: card-entrance 0.45s cubic-bezier(.34,1.56,.64,1);
 }
+
+/* ── Dark app utilities ──────────────────────────────────────── */
+.app-card {
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.app-card:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.14);
+  transform: translateY(-2px);
+}
+.app-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.25);
+  margin-bottom: 16px;
+}
+.app-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+.app-subtitle {
+  font-size: 14px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.7;
+}
+.app-btn-primary {
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  box-shadow: 0 0 20px rgba(16,185,129,0.25);
+  transition: all 0.2s ease;
+}
+.app-btn-primary:hover {
+  box-shadow: 0 0 40px rgba(16,185,129,0.45);
+  transform: translateY(-1px);
+}
+.app-btn-ghost {
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7);
+  border: 0.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.2s ease;
+}
+.app-btn-ghost:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.2);
+}
+@keyframes fadeUpDark {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUpDark 0.4s cubic-bezier(.34,1.56,.64,1) both; }
+.fade-up-1 { animation-delay: 0.05s; }
+.fade-up-2 { animation-delay: 0.10s; }
+.fade-up-3 { animation-delay: 0.15s; }
+.fade-up-4 { animation-delay: 0.20s; }

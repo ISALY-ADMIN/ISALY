@@ -191,9 +191,9 @@ export default function SwipePage() {
       <div className="flex flex-col flex-1 overflow-hidden bg-[#F0F4F0]">
 
         {/* Status bar */}
-        <div style={{ background: '#F0F4F0', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', color: '#6B7280' }}>
+            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
               {profiles.length > 0 ? `${profiles.length} profils compatibles trouvés` : 'Recherche en cours...'}
             </span>
             <span style={{ fontSize: '11px', background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>
@@ -201,12 +201,12 @@ export default function SwipePage() {
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
               {index + 1}/{profiles.length > 0 ? profiles.length : '?'} vus
             </span>
             <button
               onClick={() => setShowFilters(true)}
-              style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 500, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               ⚙️ Filtres
             </button>
@@ -252,7 +252,7 @@ export default function SwipePage() {
               <>
                 {index > 0 && (
                   <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#9CA3AF', background: 'rgba(255,255,255,0.7)', padding: '4px 12px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>
+                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.7)', padding: '4px 12px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>
                       {index} profil{index > 1 ? 's' : ''} vu{index > 1 ? 's' : ''} aujourd&apos;hui
                     </span>
                   </div>
@@ -288,20 +288,20 @@ export default function SwipePage() {
           />
           <div style={{
             position: 'fixed', top: 0, right: 0, bottom: 0, width: '320px',
-            background: '#fff', zIndex: 50,
+            background: '#111111', zIndex: 50,
             boxShadow: '-8px 0 32px rgba(0,0,0,0.15)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, color: '#111827' }}>Filtres</div>
-              <button onClick={() => setShowFilters(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9CA3AF' }}>✕</button>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>Filtres</div>
+              <button onClick={() => setShowFilters(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'rgba(255,255,255,0.35)' }}>✕</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
 
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>BUDGET MAXIMUM</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>BUDGET MAXIMUM</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '13px', color: '#374151' }}>0€</span>
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)' }}>0€</span>
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#10B981' }}>{filterBudget < 3000 ? `${filterBudget}€/mois` : 'Pas de limite'}</span>
                 </div>
                 <input type="range" min={200} max={3000} step={50} value={filterBudget}
@@ -311,7 +311,7 @@ export default function SwipePage() {
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>VILLE</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>VILLE</div>
                 <input type="text" placeholder="Lyon, Paris..." value={filterCity} onChange={e => setFilterCity(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }}
                   onFocus={e => (e.target.style.borderColor = '#10B981')}
                   onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
@@ -319,7 +319,7 @@ export default function SwipePage() {
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>MODE DE VIE</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>MODE DE VIE</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
                   {['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail'].map(tag => (
                     <button key={tag}
@@ -331,7 +331,7 @@ export default function SwipePage() {
                         btn.style.color = !active ? '#059669' : '#6B7280'
                         btn.style.borderColor = !active ? '#10B981' : '#E5E7EB'
                       }}
-                      style={{ padding: '7px 14px', borderRadius: '20px', border: '1.5px solid #E5E7EB', background: '#F3F4F6', color: '#6B7280', fontSize: '13px', cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
+                      style={{ padding: '7px 14px', borderRadius: '20px', border: '1.5px solid #E5E7EB', background: '#F3F4F6', color: 'rgba(255,255,255,0.5)', fontSize: '13px', cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
                     >
                       {tag}
                     </button>
@@ -340,7 +340,7 @@ export default function SwipePage() {
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>TRIER PAR</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>TRIER PAR</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
                   {[
                     { value: 'match', label: '❤️ Meilleur match' },
@@ -382,8 +382,9 @@ export default function SwipePage() {
             style={{
               maxWidth: '360px',
               width: '100%',
-              background: '#FFFFFF',
-              boxShadow: '0 24px 80px rgba(0,0,0,.2)',
+              background: '#111111',
+              boxShadow: '0 24px 80px rgba(0,0,0,.7)',
+              border: '1px solid rgba(255,255,255,0.1)',
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -394,7 +395,7 @@ export default function SwipePage() {
             >
               C&apos;est un match !
             </h2>
-            <p className="text-[13.5px] mb-6" style={{ color: '#6B7280' }}>
+            <p className="text-[13.5px] mb-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
               Toi & {matchPopup.name} — envoyez un premier message !
             </p>
             <div className="flex gap-2.5">
@@ -408,7 +409,7 @@ export default function SwipePage() {
               <button
                 onClick={() => setMatchPopup(null)}
                 className="flex-1 py-3 rounded-full text-[13.5px] font-semibold border cursor-pointer transition-colors"
-                style={{ background: '#FFFFFF', color: '#6B7280', borderColor: '#E5E7EB' }}
+                style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', borderColor: 'rgba(255,255,255,0.1)' }}
               >
                 Continuer
               </button>

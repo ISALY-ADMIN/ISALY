@@ -20,11 +20,12 @@ export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: Sw
           onClick={onPass}
           onMouseEnter={() => onHint?.('nope')}
           onMouseLeave={() => onHint?.(null)}
-          className="w-[60px] h-[60px] rounded-full border-2 border-red-200 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 text-2xl"
+          className="w-[60px] h-[60px] rounded-full text-2xl"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(239,68,68,0.3)', color: '#EF4444' }}
         >
           ✕
         </Button>
-        <div className="text-[10px] text-gray-400">Passer</div>
+        <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Passer</div>
       </div>
 
       {/* SUPER */}
@@ -35,11 +36,12 @@ export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: Sw
           onClick={onSuperLike}
           onMouseEnter={() => onHint?.('super')}
           onMouseLeave={() => onHint?.(null)}
-          className="w-[52px] h-[52px] rounded-full border-2 border-indigo-200 text-indigo-400 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 text-xl"
+          className="w-[52px] h-[52px] rounded-full text-xl"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(99,102,241,0.3)', color: '#6366F1' }}
         >
           ⭐
         </Button>
-        <div className="text-[10px] text-gray-400">Super</div>
+        <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Super</div>
       </div>
 
       {/* LIKE */}

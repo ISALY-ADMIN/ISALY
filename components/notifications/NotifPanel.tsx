@@ -94,18 +94,18 @@ export default function NotifPanel({ onClose }: { onClose: () => void }) {
         top: '48px',
         right: '0',
         width: '360px',
-        background: '#fff',
+        background: '#111111',
         borderRadius: '16px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
         zIndex: 100,
         overflow: 'hidden',
-        border: '1px solid #E5E7EB',
+        border: '1px solid rgba(255,255,255,0.1)',
       }}
     >
       {/* Header */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '17px', color: '#111827' }}>Alertes</div>
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '17px', color: '#ffffff' }}>Alertes</div>
           {unread > 0 && <div style={{ fontSize: '12px', color: '#10B981', marginTop: '1px' }}>{unread} non lue{unread > 1 ? 's' : ''}</div>}
         </div>
         {unread > 0 && (
@@ -121,12 +121,12 @@ export default function NotifPanel({ onClose }: { onClose: () => void }) {
       {/* Liste */}
       <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
         {loading ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>Chargement...</div>
+          <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>Chargement...</div>
         ) : notifs.length === 0 ? (
           <div style={{ padding: '40px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔔</div>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '15px', color: '#111827', marginBottom: '6px' }}>Aucune alerte</div>
-            <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Tes notifications apparaîtront ici</div>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '15px', color: '#ffffff', marginBottom: '6px' }}>Aucune alerte</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>Tes notifications apparaîtront ici</div>
           </div>
         ) : (
           notifs.map(n => (
@@ -138,20 +138,20 @@ export default function NotifPanel({ onClose }: { onClose: () => void }) {
                 gap: '12px',
                 padding: '14px 20px',
                 cursor: 'pointer',
-                background: n.read ? '#fff' : '#F0FDF4',
-                borderBottom: '1px solid #F9FAFB',
+                background: n.read ? 'transparent' : 'rgba(16,185,129,0.08)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-              onMouseLeave={e => (e.currentTarget.style.background = n.read ? '#fff' : '#F0FDF4')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(16,185,129,0.08)')}
             >
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
                 {getNotifIcon(n.type)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', marginBottom: '2px' }}>{n.title}</div>
-                {n.body && <div style={{ fontSize: '12px', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>}
-                <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '3px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', marginBottom: '2px' }}>{n.title}</div>
+                {n.body && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>}
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '3px' }}>
                   {new Date(n.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>

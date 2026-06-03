@@ -135,12 +135,12 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
   const firstName = conv?.name.split(' ')[0] ?? ''
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden" style={{ background: '#F7F8FA' }}>
+    <div className="flex flex-col flex-1 overflow-hidden" style={{ background: 'transparent' }}>
 
       {/* Header */}
       <div
-        className="border-b flex items-center gap-3 px-5 py-3 flex-shrink-0"
-        style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 1px 0 #F3F4F6' }}
+        className="flex items-center gap-3 px-5 py-3 flex-shrink-0"
+        style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}
       >
         {conv ? (
           <>
@@ -410,11 +410,9 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
                         borderTopRightRadius:    isMe  && !isFirst ? '6px' : '18px',
                         borderBottomLeftRadius:  !isMe && !isLast  ? '6px' : isLast && !isMe ? '4px' : '18px',
                         borderBottomRightRadius: isMe  && !isLast  ? '6px' : isLast && isMe  ? '4px' : '18px',
-                        background: isMe ? 'linear-gradient(135deg, #4ECBA0, #2AA87C)' : '#FFFFFF',
-                        color: isMe ? '#FFFFFF' : '#111827',
-                        boxShadow: isMe
-                          ? '0 2px 12px rgba(78,203,160,.3)'
-                          : '0 1px 4px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04)',
+                        background: isMe ? 'linear-gradient(135deg, #4ECBA0, #2AA87C)' : 'rgba(255,255,255,0.08)',
+                        color: isMe ? '#FFFFFF' : '#ffffff',
+                        boxShadow: isMe ? '0 2px 12px rgba(78,203,160,.3)' : 'none',
                       }}
                     >
                       {m.replyTo && (
@@ -502,8 +500,8 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
 
       {/* Input */}
       <div
-        className="border-t px-4 py-3 flex gap-2.5 items-center flex-shrink-0"
-        style={{ background: '#FFFFFF', borderColor: '#E5E7EB' }}
+        className="px-4 py-3 flex gap-2.5 items-center flex-shrink-0"
+        style={{ background: 'rgba(255,255,255,0.03)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}
       >
         <>
           <button onClick={() => fileRef.current?.click()} className="w-9 h-9 rounded-full border-none cursor-pointer text-lg flex items-center justify-center flex-shrink-0" style={{ background: '#F3F4F6', color: '#6B7280' }} title="Pièce jointe">📎</button>
@@ -531,12 +529,12 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
           disabled={!conv}
           className="flex-1 px-4 py-2.5 rounded-full text-[13.5px] border-[1.5px] outline-none transition-colors"
           style={{
-            background: '#F9FAFB',
-            borderColor: '#E5E7EB',
-            color: '#111827',
+            background: 'rgba(255,255,255,0.06)',
+            borderColor: 'rgba(255,255,255,0.1)',
+            color: '#ffffff',
           }}
-          onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-          onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+          onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
+          onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
         />
 
         <div style={{ position: 'relative' }}>
