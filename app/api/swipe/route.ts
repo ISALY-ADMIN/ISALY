@@ -40,9 +40,32 @@ export async function POST(request: Request) {
         .single()
 
       if (match) {
-        // Create conversation for the match
         await supabase.from('conversations').insert({ match_id: match.id })
         matched = true
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'
+        await fetch(`${appUrl}/api/push/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: swipedId,
+            title: 'Nouveau match ! ❤️',
+            body: "Quelqu'un a liké ton profil en retour. Va lui écrire !",
+            url: '/app/messages',
+          }),
+        }).catch(() => {})
+
+        await fetch(`${appUrl}/api/notifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: swipedId,
+            type: 'match',
+            title: 'Nouveau match !',
+            body: 'Vous vous êtes likés mutuellement.',
+            link: '/app/swipe',
+          }),
+        }).catch(() => {})
       }
     }
   }

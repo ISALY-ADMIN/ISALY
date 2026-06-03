@@ -31,6 +31,9 @@ export default function SwipePage() {
   const [swipeHint, setSwipeHint] = useState<'like' | 'nope' | 'super' | null>(null)
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
+  const [filterBudget, setFilterBudget] = useState(3000)
+  const [filterCity, setFilterCity] = useState('')
+  const [filterSort, setFilterSort] = useState('match')
 
   useEffect(() => {
     fetchProfiles()
@@ -91,7 +94,12 @@ export default function SwipePage() {
         profilesList.push(...listingProfiles)
       }
 
-      setProfiles(profilesList)
+      let filtered = [...profilesList]
+      if (filterBudget < 3000) filtered = filtered.filter(p => p.rent <= filterBudget || p.rent === 0)
+      if (filterCity.trim()) filtered = filtered.filter(p => p.city.toLowerCase().includes(filterCity.toLowerCase()))
+      if (filterSort === 'price') filtered.sort((a, b) => a.rent - b.rent)
+      else filtered.sort((a, b) => b.match - a.match)
+      setProfiles(filtered)
     } catch {}
     setLoading(false)
   }
@@ -294,17 +302,17 @@ export default function SwipePage() {
                 <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>BUDGET MAXIMUM</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ fontSize: '13px', color: '#374151' }}>0€</span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#10B981' }} id="swipe-budget-label">1500€/mois</span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#10B981' }}>{filterBudget < 3000 ? `${filterBudget}€/mois` : 'Pas de limite'}</span>
                 </div>
-                <input type="range" min={200} max={3000} step={50} defaultValue={1500}
+                <input type="range" min={200} max={3000} step={50} value={filterBudget}
                   style={{ width: '100%', accentColor: '#10B981' }}
-                  onChange={e => { const el = document.getElementById('swipe-budget-label'); if (el) el.textContent = e.target.value + '€/mois' }}
+                  onChange={e => setFilterBudget(Number(e.target.value))}
                 />
               </div>
 
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9CA3AF', marginBottom: '12px' }}>VILLE</div>
-                <input type="text" placeholder="Lyon, Paris..." style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }}
+                <input type="text" placeholder="Lyon, Paris..." value={filterCity} onChange={e => setFilterCity(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }}
                   onFocus={e => (e.target.style.borderColor = '#10B981')}
                   onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                 />
@@ -340,21 +348,8 @@ export default function SwipePage() {
                     { value: 'price', label: '💰 Prix croissant' },
                   ].map(opt => (
                     <button key={opt.value}
-                      onClick={e => {
-                        document.querySelectorAll('[data-sort]').forEach((b) => {
-                          (b as HTMLButtonElement).style.background = '#F9FAFB';
-                          (b as HTMLButtonElement).style.borderColor = '#E5E7EB';
-                          (b as HTMLButtonElement).style.color = '#374151';
-                          (b as HTMLButtonElement).style.fontWeight = '400'
-                        })
-                        const btn = e.currentTarget as HTMLButtonElement
-                        btn.style.background = '#ECFDF5'
-                        btn.style.borderColor = '#10B981'
-                        btn.style.color = '#059669'
-                        btn.style.fontWeight = '600'
-                      }}
-                      data-sort={opt.value}
-                      style={{ padding: '10px 16px', borderRadius: '10px', border: '1.5px solid #E5E7EB', background: '#F9FAFB', color: '#374151', fontSize: '13px', cursor: 'pointer', textAlign: 'left' as const, fontFamily: "'Outfit', sans-serif" }}
+                      onClick={() => setFilterSort(opt.value)}
+                      style={{ padding: '10px 16px', borderRadius: '10px', border: `1.5px solid ${filterSort === opt.value ? '#10B981' : '#E5E7EB'}`, background: filterSort === opt.value ? '#ECFDF5' : '#F9FAFB', color: filterSort === opt.value ? '#059669' : '#374151', fontSize: '13px', fontWeight: filterSort === opt.value ? 600 : 400, cursor: 'pointer', textAlign: 'left' as const, fontFamily: "'Outfit', sans-serif" }}
                     >
                       {opt.label}
                     </button>
@@ -365,7 +360,7 @@ export default function SwipePage() {
 
             <div style={{ padding: '16px 24px', borderTop: '1px solid #F3F4F6', flexShrink: 0 }}>
               <button
-                onClick={() => setShowFilters(false)}
+                onClick={() => { setShowFilters(false); fetchProfiles() }}
                 style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
               >
                 Appliquer les filtres

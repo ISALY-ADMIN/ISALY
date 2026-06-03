@@ -41,6 +41,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
   const [input, setInput] = useState('')
   const [realtimeMessages, setRealtimeMessages] = useState<Msg[]>([])
   const msgsRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const [reactions, setReactions] = useState<Record<number, string[]>>({})
   const [showReactionPicker, setShowReactionPicker] = useState<number | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -48,6 +49,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
   const [replyTo, setReplyTo] = useState<Msg | null>(null)
   const [showActionsFor, setShowActionsFor] = useState<number | null>(null)
   const [showColocModal, setShowColocModal] = useState(false)
+  const [showEmojis, setShowEmojis] = useState(false)
 
   const { isOnline, lastSeen, avgResponseTime } = useUserPresence(otherUserId ?? null)
 
@@ -503,15 +505,23 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
         className="border-t px-4 py-3 flex gap-2.5 items-center flex-shrink-0"
         style={{ background: '#FFFFFF', borderColor: '#E5E7EB' }}
       >
-        <button
-          className="w-9 h-9 rounded-full border-none cursor-pointer text-lg flex items-center justify-center flex-shrink-0 transition-colors"
-          style={{ background: '#F3F4F6', color: '#6B7280' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#E5E7EB')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#F3F4F6')}
-          title="Pièce jointe"
-        >
-          📎
-        </button>
+        <>
+          <button onClick={() => fileRef.current?.click()} className="w-9 h-9 rounded-full border-none cursor-pointer text-lg flex items-center justify-center flex-shrink-0" style={{ background: '#F3F4F6', color: '#6B7280' }} title="Pièce jointe">📎</button>
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file || !conv) return
+              const { createClient } = await import('@/lib/supabase/client')
+              const supabase = createClient()
+              const path = `messages/${Date.now()}-${file.name.replace(/\s/g, '_')}`
+              const { error } = await supabase.storage.from('documents').upload(path, file)
+              if (!error) {
+                const { data } = supabase.storage.from('documents').getPublicUrl(path)
+                onSend(`📎 [${file.name}](${data.publicUrl})`)
+              }
+            }}
+          />
+        </>
 
         <input
           value={input}
@@ -529,15 +539,16 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
           onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
         />
 
-        <button
-          className="w-9 h-9 rounded-full border-none cursor-pointer text-base flex items-center justify-center flex-shrink-0 transition-colors"
-          style={{ background: '#F3F4F6', color: '#6B7280' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#E5E7EB')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#F3F4F6')}
-          title="Emoji"
-        >
-          😊
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => setShowEmojis(!showEmojis)} className="w-9 h-9 rounded-full border-none cursor-pointer text-base flex items-center justify-center flex-shrink-0" style={{ background: '#F3F4F6', color: '#6B7280' }}>😊</button>
+          {showEmojis && (
+            <div style={{ position: 'absolute', bottom: '44px', right: 0, background: '#fff', borderRadius: '12px', padding: '10px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', zIndex: 20, width: '200px' }}>
+              {['😊','😂','❤️','👍','🔥','😍','🙏','😅','👏','🥰','😎','🤔','😢','😮','🎉','✨','💪','🏠','🤝','✅'].map(em => (
+                <button key={em} onClick={() => { setInput(prev => prev + em); setShowEmojis(false) }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', padding: '4px', borderRadius: '6px' }} onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>{em}</button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button
           onClick={send}

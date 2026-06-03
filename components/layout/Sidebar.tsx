@@ -16,10 +16,11 @@ interface NavItem {
 
 // ── Mode Recherche nav ───────────────────────────────────────
 const mainItems: NavItem[] = [
-  { icon: '🔥', label: 'Trouver',    href: '/app/swipe',     id: 'swipe' },
-  { icon: '🔍', label: 'Rechercher', href: '/app/recherche', id: 'recherche' },
-  { icon: '🗺️', label: 'Carte',      href: '/app/carte',     id: 'carte' },
-  { icon: '💬', label: 'Messages',   href: '/app/messages',  id: 'messages' },
+  { icon: '🏡', label: 'Accueil',    href: '/app/dashboard-home', id: 'dashboard-home' },
+  { icon: '🔥', label: 'Trouver',    href: '/app/swipe',          id: 'swipe' },
+  { icon: '🔍', label: 'Rechercher', href: '/app/recherche',      id: 'recherche' },
+  { icon: '🗺️', label: 'Carte',      href: '/app/carte',          id: 'carte' },
+  { icon: '💬', label: 'Messages',   href: '/app/messages',       id: 'messages' },
 ]
 const spaceItems: NavItem[] = [
   { icon: '📁', label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },

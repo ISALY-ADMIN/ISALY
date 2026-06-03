@@ -16,6 +16,14 @@ export async function GET() {
   return NextResponse.json({ notifications: data ?? [] })
 }
 
+export async function POST(req: Request) {
+  const supabase = createClient()
+  const { user_id, type, title, body, link } = await req.json()
+  if (!user_id || !title) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  await supabase.from('notifications').insert({ user_id, type, title, body, link, read: false })
+  return NextResponse.json({ ok: true })
+}
+
 export async function PATCH(req: Request) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()

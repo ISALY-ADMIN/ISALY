@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
-import CertificationBadge from '@/components/ui/CertificationBadge'
+import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import ProfileCompletion from '@/components/ui/ProfileCompletion'
 import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
@@ -290,6 +290,9 @@ export default function ProfilPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Certification — Level 2
+  const certFileRef = useRef<HTMLInputElement>(null)
+  const [certUploading, setCertUploading] = useState(false)
+  const [certUploaded, setCertUploaded] = useState(false)
   const [phoneVerified, setPhoneVerified] = useState(false)
   const [showPhoneModal, setShowPhoneModal] = useState(false)
   const level2Docs = { identityFront: false, identityBack: false, selfie: false }
@@ -312,7 +315,7 @@ export default function ProfilPage() {
   const level3MandatoryDone = [level3Docs.payslip1, level3Docs.payslip2, level3Docs.payslip3, level3Docs.domicile].filter(Boolean).length
   const level3Progress = Math.round((level3MandatoryDone / 4) * 100)
 
-  const certLevel = 1 as const
+  const [certLevel, setCertLevel] = useState<CertLevel>(1)
 
   // ── Load user data ────────────────────────────────────────
   useEffect(() => {
@@ -396,6 +399,31 @@ export default function ProfilPage() {
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
     } catch {}
     setUploadingAvatar(false)
+  }
+
+  async function handleCertUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setCertUploading(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setCertUploading(false); return }
+    const path = `certs/${user.id}-${Date.now()}-${file.name.replace(/\s/g, '_')}`
+    const { error } = await supabase.storage.from('documents').upload(path, file)
+    if (!error) {
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path)
+      try {
+        await supabase.from('user_documents').insert({
+          user_id: user.id,
+          type: 'identity',
+          url: urlData.publicUrl,
+          status: 'pending',
+        })
+      } catch {}
+      await supabase.from('profiles').update({ cert_level: 2 }).eq('id', user.id)
+      setCertUploaded(true)
+    }
+    setCertUploading(false)
   }
 
   async function handleSignOut() {
@@ -516,10 +544,19 @@ export default function ProfilPage() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[12.5px]">
-                <span style={{ color: '#9CA3AF' }}>○</span>
+                <span style={{ color: certUploaded ? '#4ECBA0' : '#9CA3AF' }}>{certUploaded ? '✓' : '○'}</span>
                 <span style={{ color: '#111827' }}>Pièce d&apos;identité recto/verso</span>
               </div>
-              <button className="text-[11.5px] font-bold px-3 py-1 rounded-full border-none cursor-pointer" style={{ background: '#3B82F6', color: '#fff' }}>Uploader →</button>
+              <>
+                <input ref={certFileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleCertUpload} />
+                <button
+                  onClick={() => certFileRef.current?.click()}
+                  disabled={certUploading || certUploaded}
+                  style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, background: certUploaded ? '#ECFDF5' : 'linear-gradient(135deg, #10B981, #059669)', color: certUploaded ? '#059669' : '#fff', border: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
+                >
+                  {certUploading ? '⏳ Upload...' : certUploaded ? '✓ Document envoyé' : '📤 Uploader ma CNI'}
+                </button>
+              </>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[12.5px]">

@@ -60,7 +60,7 @@ export default function FinalizePage() {
       }
 
       try { localStorage.removeItem('isaly_onboarding_data') } catch {}
-      router.push('/app/swipe')
+      router.push('/app/dashboard-home')
     }
 
     finalize()
