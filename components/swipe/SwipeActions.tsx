@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 
 interface SwipeActionsProps {
@@ -11,7 +12,12 @@ interface SwipeActionsProps {
 
 export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: SwipeActionsProps) {
   return (
-    <div className="flex items-end justify-center gap-6 py-2">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.3 }}
+      style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '24px', paddingTop: '8px' }}
+    >
       {/* PASS */}
       <div className="flex flex-col items-center gap-1">
         <Button
@@ -57,6 +63,6 @@ export default function SwipeActions({ onPass, onSuperLike, onLike, onHint }: Sw
         </Button>
         <div className="text-[10px] text-[#10B981] font-semibold">J&apos;adore</div>
       </div>
-    </div>
+    </motion.div>
   )
 }

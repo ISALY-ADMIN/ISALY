@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import ProfileCompletion from '@/components/ui/ProfileCompletion'
 import Link from 'next/link'
+import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerContainer'
 
 export default function DashboardHomePage() {
   const router = useRouter()
@@ -48,52 +50,63 @@ export default function DashboardHomePage() {
       <Topbar title="Accueil" />
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 24px' }}>
 
-        <div style={{ marginBottom: '24px' }}>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          style={{ marginBottom: '24px' }}
+        >
           <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px' }}>
             Bonjour {firstName} 👋
           </h1>
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-        </div>
+        </motion.div>
 
         <ProfileCompletion profile={profile} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
           {[
             { label: 'Matchs', value: stats.matches, icon: '❤️', href: '/app/swipe', color: '#EF4444' },
             { label: 'Messages non lus', value: stats.messages, icon: '💬', href: '/app/messages', color: '#10B981' },
             { label: 'Favoris', value: stats.favorites, icon: '🔖', href: '/app/favoris', color: '#F59E0B' },
           ].map(s => (
-            <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
-              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '20px 16px', border: '0.5px solid rgba(255,255,255,0.08)', textAlign: 'center', transition: 'transform 0.15s, background 0.15s', cursor: 'pointer' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.07)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)' }}
-              >
-                <div style={{ fontSize: '28px', marginBottom: '6px' }}>{s.icon}</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '4px' }}>{s.label}</div>
+            <StaggerItem key={s.label}>
+              <Link href={s.href} style={{ textDecoration: 'none' }}>
+                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '20px 16px', border: '0.5px solid rgba(255,255,255,0.08)', textAlign: 'center', transition: 'transform 0.15s, background 0.15s', cursor: 'pointer' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.07)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)' }}
+                >
+                  <div style={{ fontSize: '28px', marginBottom: '6px' }}>{s.icon}</div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '4px' }}>{s.label}</div>
+                </div>
+              </Link>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
+
+        <StaggerContainer staggerDelay={0.1} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <StaggerItem>
+            <Link href="/app/swipe" style={{ textDecoration: 'none' }}>
+              <div style={{ background: 'linear-gradient(135deg, #10B981, #059669)', borderRadius: '16px', padding: '24px', color: '#fff', cursor: 'pointer' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔥</div>
+                <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>Continuer le swipe</div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>Trouve ton prochain colocataire</div>
               </div>
             </Link>
-          ))}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-          <Link href="/app/swipe" style={{ textDecoration: 'none' }}>
-            <div style={{ background: 'linear-gradient(135deg, #10B981, #059669)', borderRadius: '16px', padding: '24px', color: '#fff', cursor: 'pointer' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔥</div>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>Continuer le swipe</div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>Trouve ton prochain colocataire</div>
-            </div>
-          </Link>
-          <Link href="/app/recherche" style={{ textDecoration: 'none' }}>
-            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '16px', padding: '24px', border: '0.5px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>Rechercher</div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Parcourir toutes les annonces</div>
-            </div>
-          </Link>
-        </div>
+          </StaggerItem>
+          <StaggerItem>
+            <Link href="/app/recherche" style={{ textDecoration: 'none' }}>
+              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '16px', padding: '24px', border: '0.5px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
+                <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>Rechercher</div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Parcourir toutes les annonces</div>
+              </div>
+            </Link>
+          </StaggerItem>
+        </StaggerContainer>
 
         {listings.length > 0 && (
           <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '16px', padding: '20px 24px', border: '0.5px solid rgba(255,255,255,0.08)' }}>

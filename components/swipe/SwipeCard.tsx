@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -101,6 +102,11 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
     : hintRotate
 
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+    >
     <Card
       ref={cardRef}
       className="card-entrance select-none overflow-hidden cursor-grab"
@@ -238,5 +244,6 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         </Button>
       </div>
     </Card>
+    </motion.div>
   )
 }
