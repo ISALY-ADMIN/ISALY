@@ -6,11 +6,15 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 function translateError(msg: string): string {
-  if (msg.includes('already registered') || msg.includes('already exists')) return 'Cet email est déjà utilisé.'
-  if (msg.includes('invalid email')) return 'Adresse email invalide.'
-  if (msg.includes('Password should be at least')) return 'Le mot de passe doit contenir au moins 8 caractères.'
+  if (!msg) return 'Une erreur inconnue est survenue.'
+  if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('User already registered')) return 'Cet email est déjà utilisé. Connecte-toi plutôt.'
+  if (msg.includes('invalid email') || msg.includes('Invalid email')) return 'Adresse email invalide.'
+  if (msg.includes('Password should be at least') || msg.includes('password')) return 'Le mot de passe doit contenir au moins 8 caractères.'
   if (msg.includes('signup_disabled')) return 'Les inscriptions sont temporairement désactivées.'
-  return 'Une erreur est survenue. Réessaie.'
+  if (msg.includes('rate limit') || msg.includes('too many')) return 'Trop de tentatives. Attends quelques minutes.'
+  if (msg.includes('network') || msg.includes('fetch')) return 'Erreur réseau. Vérifie ta connexion.'
+  if (msg.includes('Email not confirmed')) return 'Email non confirmé. Vérifie ta boîte mail.'
+  return `Erreur : ${msg}`
 }
 
 export default function RegisterPage() {
@@ -36,6 +40,7 @@ export default function RegisterPage() {
       },
     })
     if (signUpError) {
+      console.error('Supabase signUp error:', signUpError)
       setError(translateError(signUpError.message))
       setLoading(false)
       return
@@ -55,7 +60,10 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, firstName: form.firstName }),
       })
-    } catch {}
+    } catch (emailErr) {
+      console.warn('Email confirm failed (non-blocking):', emailErr)
+      // Ne pas bloquer l'inscription si l'email échoue
+    }
     setEmailSent(true)
     setLoading(false)
   }
