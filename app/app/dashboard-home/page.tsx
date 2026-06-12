@@ -57,7 +57,7 @@ export default function DashboardHomePage() {
           style={{ marginBottom: '24px' }}
         >
           <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px' }}>
-            Bonjour {firstName} 👋
+            Bonjour {firstName}
           </h1>
         </motion.div>
 
