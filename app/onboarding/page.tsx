@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -560,40 +560,94 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1)
   const [d, setD] = useState<OnboardingData>(DEFAULT)
   const [saving, setSaving] = useState(false)
+  const [resumeBanner, setResumeBanner] = useState(false)
+  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Auto-complete: if user is already logged in AND localStorage has completed data, save and redirect
+  // Load: check DB draft first (if logged in), then localStorage
   useEffect(() => {
-    async function checkAutoComplete() {
+    async function loadDraft() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_draft, onboarding_step, onboarding_completed')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.onboarding_completed) {
+          router.push('/app/swipe')
+          return
+        }
+
+        if (profile?.onboarding_draft && profile.onboarding_step > 0) {
+          const draft = profile.onboarding_draft as Record<string, unknown>
+          const localRaw = (() => { try { return localStorage.getItem('isaly_onboarding_data') } catch { return null } })()
+          const localStep = (() => { try { const p = JSON.parse(localRaw ?? '{}'); return p.onboarding_step ?? 0 } catch { return 0 } })()
+          if (profile.onboarding_step >= localStep) {
+            setD({ ...DEFAULT, ...(draft as Partial<OnboardingData>) })
+            setStep(profile.onboarding_step)
+            setResumeBanner(true)
+            setTimeout(() => setResumeBanner(false), 4000)
+            return
+          }
+        }
+      }
+
+      // Fallback: localStorage
       let raw: string | null = null
       try { raw = localStorage.getItem('isaly_onboarding_data') } catch {}
       if (!raw) return
       let saved: Record<string, unknown> = {}
       try { saved = JSON.parse(raw) } catch { return }
-      if (!saved.onboarding_completed) return
+      if (saved.onboarding_completed) {
+        if (user) {
+          const supabase = createClient()
+          await supabase.from('profiles').upsert({
+            id: user.id, email: user.email,
+            first_name: (saved.first_name as string) || null,
+            last_name: (saved.last_name as string) || null,
+            role: (saved.role as string) || null,
+            city: (saved.city as string) || null,
+            budget_max: typeof saved.budget_max === 'number' ? saved.budget_max : null,
+            onboarding_completed: true,
+            matching_data: saved.matching_data ?? null,
+          })
+          try { localStorage.removeItem('isaly_onboarding_data') } catch {}
+          router.push('/app/swipe')
+        }
+        return
+      }
+      if (saved.onboarding_step && typeof saved.onboarding_step === 'number' && saved.onboarding_step > 1) {
+        setD({ ...DEFAULT, ...(saved as Partial<OnboardingData>) })
+        setStep(saved.onboarding_step as number)
+      }
+    }
+    loadDraft()
+  }, [router])
 
+  // Debounced save to DB + localStorage after each step update
+  function saveDraftToServer(data: OnboardingData, currentStep: number) {
+    if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current)
+    draftSaveTimer.current = setTimeout(async () => {
+      try { localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...data, onboarding_step: currentStep })) } catch {}
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      await supabase.from('profiles').upsert({
-        id: user.id,
-        email: user.email,
-        first_name:  (saved.first_name  as string) || null,
-        last_name:   (saved.last_name   as string) || null,
-        role:        (saved.role        as string) || null,
-        city:        (saved.city        as string) || null,
-        budget_max:  typeof saved.budget_max === 'number' ? saved.budget_max : null,
-        onboarding_completed: true,
-        matching_data: saved.matching_data ?? null,
-      })
-      try { localStorage.removeItem('isaly_onboarding_data') } catch {}
-      router.push('/app/swipe')
-    }
-    checkAutoComplete()
-  }, [router])
+      await supabase.from('profiles').update({
+        onboarding_draft: { ...data, onboarding_step: currentStep } as Record<string, unknown>,
+        onboarding_step: currentStep,
+      }).eq('id', user.id)
+    }, 800)
+  }
 
   function upd<K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) {
-    setD(prev => ({ ...prev, [key]: value }))
+    setD(prev => {
+      const next = { ...prev, [key]: value }
+      saveDraftToServer(next, step)
+      return next
+    })
   }
 
   function togglePill(key: 'zones' | 'non_negotiables', val: string, max?: number) {
@@ -614,8 +668,20 @@ export default function OnboardingPage() {
   }
 
   async function next() {
-    try { localStorage.setItem('isaly_onboarding_data', JSON.stringify(d)) } catch {}
-    if (step < TOTAL) { setStep(s => s + 1); return }
+    const nextStep = step < TOTAL ? step + 1 : step
+    try { localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, onboarding_step: nextStep })) } catch {}
+    if (step < TOTAL) {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        supabase.from('profiles').update({
+          onboarding_draft: { ...d, onboarding_step: nextStep } as Record<string, unknown>,
+          onboarding_step: nextStep,
+        }).eq('id', user.id).then(() => {})
+      }
+      setStep(s => s + 1)
+      return
+    }
     await finish()
   }
 
@@ -636,8 +702,11 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
-      // Already logged in (Google OAuth or direct register) — save directly
-      await supabase.from('profiles').upsert({ id: user.id, email: user.email, ...payload })
+      // Already logged in — save directly and clear draft
+      await supabase.from('profiles').upsert({
+        id: user.id, email: user.email, ...payload,
+        onboarding_draft: null, onboarding_step: 0,
+      })
       try { localStorage.removeItem('isaly_onboarding_data') } catch {}
       router.push('/app/swipe')
     } else {
@@ -661,6 +730,13 @@ export default function OnboardingPage() {
         className="bg-white rounded-[24px] w-full"
         style={{ padding: '36px 40px', boxShadow: '0 8px 36px rgba(0,0,0,.13)', maxWidth: '560px' }}
       >
+        {/* Resume banner */}
+        {resumeBanner && (
+          <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#10B981', textAlign: 'center' }}>
+            On reprend où tu t'étais arrêté ✓
+          </div>
+        )}
+
         {/* Logo */}
         <div className="flex justify-center mb-4">
           <Image
