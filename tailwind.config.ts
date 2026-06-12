@@ -9,21 +9,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* ── ISALY brand ── */
-        mint: '#4ECBA0',
-        'mint-light': '#E8F9F3',
-        'mint-dark': '#2AA87C',
-        charcoal: '#1A1A1A',
-        'gray-mid': '#6B7280',
-        'gray-light': '#F5F5F5',
-        'gray-border': '#E5E7EB',
-        'sidebar-bg': '#111827',
-        danger: '#EF4444',
-        warning: '#F59E0B',
-        'app-bg': '#F7F8FA',
+        /* ── ISALY brand (new) ── */
+        platre:       '#F4F3EE',
+        nuit:         '#14171F',
+        jaune:        '#FFC857',
+        'jaune-light':'#FFF8E7',
+        'jaune-dark': '#F59E0B',
+        /* ── Legacy aliases (backward compat) ── */
+        mint:         '#FFC857',
+        'mint-light': '#FFF8E7',
+        'mint-dark':  '#F59E0B',
+        /* ── Neutral ── */
+        charcoal:     '#14171F',
+        'gray-mid':   '#7A7A74',
+        'gray-light': '#F4F3EE',
+        'gray-border':'#E5E4DE',
+        'sidebar-bg': '#14171F',
+        danger:       '#EF4444',
+        warning:      '#F59E0B',
+        'app-bg':     '#F4F3EE',
         /* ── shadcn/ui design tokens ── */
-        background:  'hsl(var(--background))',
-        foreground:  'hsl(var(--foreground))',
+        background:   'hsl(var(--background))',
+        foreground:   'hsl(var(--foreground))',
         card: {
           DEFAULT:    'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
@@ -57,18 +64,20 @@ const config: Config = {
         ring:   'hsl(var(--ring))',
       },
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
-        serif: ['Outfit', 'sans-serif'],
+        sans:  ['Schibsted Grotesk', 'sans-serif'],
+        title: ['Bricolage Grotesque', 'sans-serif'],
+        serif: ['Bricolage Grotesque', 'sans-serif'],
       },
       borderRadius: {
         lg:      'var(--radius)',
         md:      'calc(var(--radius) - 2px)',
         sm:      'calc(var(--radius) - 4px)',
         DEFAULT: '14px',
+        pill:    '50px',
       },
       boxShadow: {
-        card: '0 2px 12px rgba(0,0,0,.07)',
-        lg:   '0 8px 36px rgba(0,0,0,.13)',
+        card: '0 2px 12px rgba(20,23,31,0.06)',
+        lg:   '0 8px 36px rgba(20,23,31,0.12)',
       },
     },
   },

@@ -3,528 +3,508 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import CompatibilityQuiz from '@/components/landing/CompatibilityQuiz'
+import BuildingAnimation from '@/components/landing/BuildingAnimation'
 import ScrollReveal from '@/components/animations/ScrollReveal'
 import Marquee from '@/components/animations/Marquee'
-import FloatingCard from '@/components/animations/FloatingCard'
 import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerContainer'
+
+const P = '#F4F3EE'
+const N = '#14171F'
+const J = '#FFC857'
+const BORDER = '#E5E4DE'
+const GRAY = '#7A7A74'
+
+const darkBtn: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: '6px',
+  background: N, color: P,
+  textDecoration: 'none', fontWeight: 700,
+  padding: '12px 26px', borderRadius: '50px',
+  fontSize: '15px', transition: 'opacity 0.2s',
+  border: 'none', cursor: 'pointer',
+}
+const ghostBtn: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: '6px',
+  background: 'transparent', color: N,
+  textDecoration: 'none', fontWeight: 600,
+  padding: '12px 26px', borderRadius: '50px',
+  fontSize: '15px', border: `1.5px solid ${BORDER}`,
+  transition: 'border-color 0.2s',
+}
+const pill: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: '6px',
+  background: `${N}0D`, border: `1px solid ${N}18`,
+  borderRadius: '50px', padding: '5px 14px',
+  fontSize: '12px', fontWeight: 600, color: N,
+}
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    const onMouse = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY })
-    window.addEventListener('scroll', onScroll)
-    window.addEventListener('mousemove', onMouse)
-    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('mousemove', onMouse) }
+    const fn = () => setScrolled(window.scrollY > 30)
+    window.addEventListener('scroll', fn)
+    return () => window.removeEventListener('scroll', fn)
   }, [])
 
   return (
-    <div style={{ fontFamily: "'Inter', 'DM Sans', sans-serif", background: '#0A0A0A', color: '#fff', minHeight: '100vh', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: "'Schibsted Grotesk', sans-serif", background: P, color: N, minHeight: '100vh', overflowX: 'hidden' }}>
 
-      {/* Gradient cursor follower */}
-      <div style={{
-        position: 'fixed',
-        width: '600px', height: '600px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)',
-        left: mousePos.x - 300,
-        top: mousePos.y - 300,
-        pointerEvents: 'none',
-        zIndex: 0,
-        transition: 'left 0.3s ease, top 0.3s ease',
-      }} />
-
-      {/* NAVBAR */}
+      {/* ── NAVBAR ── */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        padding: '0 40px',
-        height: '64px',
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        background: scrolled ? 'rgba(10,10,10,0.85)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(20px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
-        transition: 'all 0.3s ease',
+        height: '64px', padding: '0 clamp(20px, 4vw, 48px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: scrolled ? 'rgba(244,243,238,0.92)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(12px)' : 'none',
+        borderBottom: scrolled ? `1px solid ${BORDER}` : 'none',
+        transition: 'all 0.3s',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Link href="/auth/login" style={{
-            color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '14px',
-            padding: '8px 16px', borderRadius: '8px', transition: 'color 0.2s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
-          >
+        <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '24px', fontWeight: 800, color: N, letterSpacing: '-0.5px' }}>
+          ISALY<span style={{ color: J }}>.</span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Link href="/auth/login" style={{ color: N, textDecoration: 'none', fontSize: '14px', fontWeight: 500, padding: '8px 16px', borderRadius: '50px' }}>
             Connexion
           </Link>
-          <Link href="/auth/register" style={{
-            background: 'linear-gradient(135deg, #10B981, #059669)',
-            color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
-            padding: '9px 20px', borderRadius: '10px',
-            boxShadow: '0 0 20px rgba(16,185,129,0.3)',
-            transition: 'all 0.2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(16,185,129,0.5)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 20px rgba(16,185,129,0.3)' }}
-          >
-            Commencer
+          <Link href="/auth/register" style={{ ...darkBtn, padding: '9px 20px', fontSize: '14px' }}>
+            Commencer →
           </Link>
         </div>
       </nav>
 
-      {/* HERO */}
-      <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '120px 24px 80px', textAlign: 'center', position: 'relative' }}>
+      {/* ── HERO ── */}
+      <section style={{
+        maxWidth: '1180px', margin: '0 auto',
+        padding: 'clamp(100px, 14vw, 140px) clamp(20px, 4vw, 48px) 80px',
+        display: 'grid', gridTemplateColumns: '1fr 1fr',
+        gap: 'clamp(40px, 6vw, 88px)', alignItems: 'center',
+      }}>
+        {/* Left: text */}
+        <div>
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <span style={{ ...pill, marginBottom: '26px', display: 'inline-flex' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: J, flexShrink: 0 }} />
+              14 000 colocataires actifs
+            </span>
+          </motion.div>
 
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            background: 'rgba(16,185,129,0.1)',
-            border: '1px solid rgba(16,185,129,0.2)',
-            borderRadius: '20px', padding: '6px 16px',
-            fontSize: '13px', color: '#10B981', fontWeight: 500,
-            marginBottom: '32px',
-          }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-            ✦ La colocation sans mauvaises surprises
-          </div>
-        </motion.div>
-
-        {/* Titre principal */}
-        <motion.h1
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-          style={{ margin: '0 0 24px', lineHeight: 1.05, maxWidth: '820px' }}
-        >
-          <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, color: '#fff', letterSpacing: '-2px' }}>
-            Ta coloc idéale
-          </span>
-          <span style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 400, letterSpacing: '-2px', background: 'linear-gradient(135deg, #10B981, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            existe déjà.
-          </span>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35 }}
-          style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'rgba(255,255,255,0.5)', maxWidth: '520px', lineHeight: 1.7, margin: '0 0 48px' }}
-        >
-          Fini les conflits de mode de vie. ISALY analyse ta personnalité et tes habitudes pour te matcher uniquement avec des personnes vraiment compatibles avec toi.
-        </motion.p>
-
-        {/* CTA buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '80px' }}
-        >
-          <Link href="/auth/register" style={{
-            background: 'linear-gradient(135deg, #10B981, #059669)',
-            color: '#fff', textDecoration: 'none', fontSize: '16px', fontWeight: 600,
-            padding: '14px 32px', borderRadius: '12px',
-            boxShadow: '0 0 40px rgba(16,185,129,0.4)',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            transition: 'all 0.2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 60px rgba(16,185,129,0.6)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 40px rgba(16,185,129,0.4)' }}
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+            style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(44px, 6.5vw, 76px)', fontWeight: 800, lineHeight: 1.06, margin: '0 0 20px', letterSpacing: '-2px' }}
           >
-            Trouver ma coloc — gratuit →
-          </Link>
-          <Link href="/auth/login" style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '16px', fontWeight: 500,
-            padding: '14px 32px', borderRadius: '12px',
-            transition: 'all 0.2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+            Trouve ta coloc{' '}
+            <em style={{ color: J, fontStyle: 'italic' }}>parfaite.</em>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+            style={{ fontSize: 'clamp(15px, 1.8vw, 17px)', color: GRAY, lineHeight: 1.75, margin: '0 0 36px', maxWidth: '460px' }}
           >
-            Se connecter
-          </Link>
-        </motion.div>
+            ISALY combine le matching intelligent façon Tinder avec une gestion complète de ton bail. Fini les conflits de mode de vie et les mauvaises surprises.
+          </motion.p>
 
-        {/* Stats */}
-        <StaggerContainer style={{ display: 'flex', gap: '48px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {[
-            { value: '9 sur 10', label: 'colocataires satisfaits' },
-            { value: '3 jours', label: 'pour trouver un match' },
-            { value: '100%', label: 'gratuit pour commencer' },
-            { value: '0 conflit', label: 'grâce au matching' },
-          ].map(stat => (
-            <StaggerItem key={stat.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '32px', fontWeight: 700, color: '#fff', lineHeight: 1 }}>{stat.value}</div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{stat.label}</div>
-            </StaggerItem>
-          ))}
-        </StaggerContainer>
-
-        {/* Scroll indicator */}
-        <div style={{ position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
-          <div style={{ width: '1px', height: '40px', background: 'linear-gradient(to bottom, rgba(16,185,129,0.5), transparent)' }} />
-          Défiler
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <Link href="/auth/register" style={darkBtn}>Commencer gratuitement</Link>
+              <Link href="/auth/login" style={ghostBtn}>Se connecter</Link>
+            </div>
+            <div style={{ display: 'flex', gap: '20px', fontSize: '12.5px', color: '#B0AFA8', flexWrap: 'wrap' }}>
+              <span>✓ 3 min pour créer ton profil</span>
+              <span>✓ 100% gratuit</span>
+              <span>✓ Sans carte bancaire</span>
+            </div>
+          </motion.div>
         </div>
+
+        {/* Right: building + floating card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
+          style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}
+        >
+          <BuildingAnimation />
+
+          {/* Floating compat card */}
+          <motion.div
+            animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute', bottom: '20px', right: '-8px',
+              background: '#fff', borderRadius: '16px', padding: '12px 16px',
+              boxShadow: '0 6px 24px rgba(20,23,31,0.12)', border: `1px solid ${BORDER}`,
+              minWidth: '190px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#FFF8E7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>👩‍🎨</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: N }}>Sophie M.</div>
+                <div style={{ fontSize: '11px', color: GRAY }}>Paris 11ème · 850€/mois</div>
+              </div>
+              <div style={{ background: J, color: N, fontSize: '11px', fontWeight: 800, padding: '3px 9px', borderRadius: '50px', flexShrink: 0 }}>94%</div>
+            </div>
+          </motion.div>
+
+          {/* "Nouveau match" badge */}
+          <motion.div
+            animate={{ y: [0, 6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            style={{
+              position: 'absolute', top: '16px', left: '-8px',
+              background: N, color: '#fff',
+              borderRadius: '50px', padding: '7px 14px',
+              fontSize: '12px', fontWeight: 700,
+              boxShadow: '0 4px 16px rgba(20,23,31,0.2)',
+            }}
+          >
+            🎉 Nouveau match !
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* MARQUEE */}
-      <div style={{ padding: '32px 0', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* ── MARQUEE ── */}
+      <div style={{ borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, padding: '18px 0' }}>
         <Marquee items={[
-          '🏠 Colocation intelligente',
-          '❤️ Matching compatible',
-          '💬 Messagerie temps réel',
-          '🗺️ Carte des annonces',
-          '📁 Dossier numérique',
-          '🔒 Profils certifiés',
-          '⚡ Trouvé en 3 jours',
-          '🎯 40+ critères',
-          '0€ pour commencer',
+          '🏠 Matching intelligent', '❤️ 40+ critères', '💬 Messagerie temps réel',
+          '📁 Dossier certifié', '🔒 Bail sécurisé', '⚡ Match en 3 jours',
+          '0€ pour commencer', '🗺️ Carte des annonces', '🎯 Score de compatibilité',
         ]} />
       </div>
 
-      {/* COMMENT ÇA MARCHE */}
+      {/* ── STATS BAND ── */}
+      <div style={{ background: N, padding: 'clamp(48px, 6vw, 72px) clamp(20px, 4vw, 48px)' }}>
+        <StaggerContainer style={{
+          maxWidth: '900px', margin: '0 auto',
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '32px', textAlign: 'center',
+        }}>
+          {[
+            { val: '14k+', label: 'Colocataires actifs' },
+            { val: '94%',  label: 'Taux de satisfaction' },
+            { val: '3 min', label: 'Pour créer ton profil' },
+            { val: '0€',   label: 'Pour commencer' },
+          ].map(s => (
+            <StaggerItem key={s.label}>
+              <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(36px, 4.5vw, 54px)', fontWeight: 800, color: J, lineHeight: 1 }}>{s.val}</div>
+              <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '8px' }}>{s.label}</div>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
+      </div>
+
+      {/* ── PROBLÈMES + SOLUTIONS ── */}
       <ScrollReveal delay={0}>
-        <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>PROCESSUS</div>
-            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-              De la recherche à l&apos;emménagement
+        <section style={{ maxWidth: '1100px', margin: '0 auto', padding: 'clamp(72px, 8vw, 110px) clamp(20px, 4vw, 48px)' }}>
+
+          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px', color: '#B0AFA8', marginBottom: '12px' }}>POURQUOI ISALY</div>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(30px, 4vw, 46px)', fontWeight: 800, color: N, margin: '0 0 14px', letterSpacing: '-1px' }}>
+              La coloc, c'est souvent…
             </h2>
+            <p style={{ fontSize: '16px', color: GRAY, maxWidth: '420px', margin: '0 auto' }}>Ces problèmes te semblent familiers ?</p>
           </div>
-          <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2px' }}>
+
+          {/* Problem cards */}
+          <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px', marginBottom: '36px' }}>
             {[
-              { num: '01', title: 'Ton profil en 5 min', desc: 'Réponds à 7 questions sur ton rythme de vie. Pas de blabla — juste ce qui compte vraiment pour vivre ensemble.' },
-              { num: '02', title: 'Swipe. Matche. Parle.', desc: 'Notre algorithme calcule ta compatibilité réelle avant même que tu ne swipes. Tu ne vois que les profils qui te correspondent.' },
-              { num: '03', title: 'Emménage sans stress', desc: "Bail, loyers, maintenance — tout est dans l'app. Tu gères ta coloc comme un pro, sans email, sans tableur." },
-            ].map((step, i) => (
-              <StaggerItem key={i}>
-                <div
-                  style={{
-                    padding: '48px 40px',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: i === 0 ? '16px 0 0 16px' : i === 2 ? '0 16px 16px 0' : '0',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'background 0.3s',
-                    cursor: 'default',
-                    height: '100%',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.05)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                >
-                  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '72px', color: 'rgba(16,185,129,0.08)', position: 'absolute', top: '16px', right: '24px', lineHeight: 1 }}>{step.num}</div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#10B981', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '2px' }}>{step.num}</div>
-                  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', color: '#fff', marginBottom: '12px', fontWeight: 400 }}>{step.title}</div>
-                  <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{step.desc}</div>
+              { icon: '😬', title: 'Mauvaise entente', desc: "Tu t'installes avec quelqu'un dont tu ne connais pas les habitudes. Résultat : tensions, conflits, déménagement en catastrophe." },
+              { icon: '📋', title: 'Dossier refusé', desc: "Tu passes des heures à scanner tes documents. Tu ne sais même pas si ton dossier est complet. Et au final, les loueurs ne répondent pas." },
+              { icon: '📱', title: 'Gestion chaotique', desc: "WhatsApp pour les loyers, email pour les charges, tableur pour les réparations. C'est épuisant." },
+            ].map((p) => (
+              <StaggerItem key={p.title}>
+                <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', border: `1px solid ${BORDER}`, borderLeft: '4px solid #EF4444', height: '100%' }}>
+                  <div style={{ fontSize: '36px', marginBottom: '14px' }}>{p.icon}</div>
+                  <h3 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '18px', fontWeight: 700, color: N, marginBottom: '8px' }}>{p.title}</h3>
+                  <p style={{ fontSize: '14px', color: GRAY, lineHeight: 1.7 }}>{p.desc}</p>
                 </div>
               </StaggerItem>
             ))}
           </StaggerContainer>
-        </section>
-      </ScrollReveal>
 
-      {/* FEATURES */}
-      <ScrollReveal delay={0}>
-        <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>FONCTIONNALITÉS</div>
-            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-              Pensé pour que ça marche vraiment
-            </h2>
-          </div>
-          <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-            {[
-              { icon: '🎯', title: 'Matching intelligent', desc: 'Compatibilité calculée sur 40+ critères de mode de vie. Pas de hasard, que des bonnes rencontres.' },
-              { icon: '💬', title: 'Messagerie temps réel', desc: "Parle, réagis, propose une coloc — tout depuis l'app. Sans donner ton numéro." },
-              { icon: '🗺️', title: 'Carte des annonces', desc: 'Trouve un logement près de toi sur une carte interactive. Filtre par budget, surface et disponibilité.' },
-              { icon: '📁', title: 'Dossier numérique', desc: 'Ton dossier locataire toujours prêt. Partage-le en un clic, sans rien imprimer.' },
-              { icon: '🏠', title: 'Gestion du bail', desc: 'Loyers, charges, signalements — tout centralisé. Ton proprio appréciera autant que toi.' },
-              { icon: '🔒', title: 'Certification 3 niveaux', desc: 'Plus ton profil est certifié, plus tu inspires confiance. Les loueurs le voient.' },
-            ].map((feat, i) => (
-              <StaggerItem key={i}>
-                <div
-                  style={{
-                    padding: '32px',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '16px',
-                    transition: 'all 0.3s',
-                    cursor: 'default',
-                    height: '100%',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(16,185,129,0.05)'
-                    e.currentTarget.style.borderColor = 'rgba(16,185,129,0.2)'
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
-                    e.currentTarget.style.transform = ''
-                  }}
-                >
-                  <div style={{ fontSize: '32px', marginBottom: '16px' }}>{feat.icon}</div>
-                  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '22px', color: '#fff', marginBottom: '10px', fontWeight: 400 }}>{feat.title}</div>
-                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{feat.desc}</div>
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </section>
-      </ScrollReveal>
-
-      {/* TÉMOIGNAGES */}
-      <ScrollReveal delay={0}>
-        <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TÉMOIGNAGES</div>
-            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-              Ils ne cherchent plus
-            </h2>
-          </div>
-          <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-            {[
-              { name: 'Sophie M.', role: 'Étudiante, Lyon', text: "En 3 jours j'avais trouvé ma colocataire. Le score de compatibilité était à 91% et 6 mois plus tard on est toujours aussi bien ensemble.", photo: '/pictures/meuf.jpg' },
-              { name: 'Thomas R.', role: 'Développeur, Paris', text: "J'avais essayé Le Bon Coin, Facebook, tout. Sur ISALY j'ai eu mon premier match en moins d'une heure.", photo: '/pictures/mec.jpg' },
-              { name: 'Léa K.', role: 'Designer, Bordeaux', text: "La gestion du bail dans l'app m'a évité 50 emails avec mon proprio. Je recommande à tous ceux qui veulent une coloc sans prise de tête.", photo: '/pictures/meuf2.jpg' },
-            ].map((t, i) => (
-              <StaggerItem key={i}>
-                <div style={{
-                  padding: '32px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: '16px',
-                  height: '100%',
-                }}>
-                  <div style={{ fontSize: '24px', color: '#10B981', marginBottom: '16px', fontFamily: "'Outfit', sans-serif" }}>&ldquo;</div>
-                  <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, margin: '0 0 24px' }}>{t.text}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src={t.photo} alt={t.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{t.name}</div>
-                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{t.role}</div>
-                    </div>
-                  </div>
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </section>
-      </ScrollReveal>
-
-      {/* CALCULATEUR */}
-      <ScrollReveal delay={0}>
-        <section style={{ padding: '120px 24px', maxWidth: '700px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>ESSAIE MAINTENANT</div>
-            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-              Ton score de compatibilité
-            </h2>
-          </div>
-          <CompatibilityQuiz />
-        </section>
-      </ScrollReveal>
-
-      {/* PRICING */}
-      <ScrollReveal delay={0}>
-        <section style={{ padding: '120px 24px', maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>TARIFS</div>
-            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
-              Zéro surprise sur la facture
-            </h2>
-          </div>
-
-          {/* BLOC 1 — LOCATAIRES */}
-          <div style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', whiteSpace: 'nowrap' }}>
-                Pour les locataires
-              </div>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+          {/* Separator arrow */}
+          <div style={{ textAlign: 'center', padding: '4px 0 28px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: N, color: '#fff', padding: '9px 22px', borderRadius: '50px', fontSize: '13px', fontWeight: 700 }}>
+              ↓&nbsp; ISALY résout tout ça
             </div>
-            <FloatingCard delay={0} amplitude={5}>
-              <div style={{
-                background: 'rgba(16,185,129,0.05)',
-                border: '1px solid rgba(16,185,129,0.15)',
-                borderRadius: '20px',
-                padding: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '32px',
-              }}>
-                <div style={{ flex: 1, minWidth: '280px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#10B981', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>LOCATAIRE</div>
-                  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '64px', fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: '6px' }}>Gratuit</div>
-                  <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', marginBottom: '24px' }}>pour toujours — aucune carte requise</div>
-                  <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '400px', margin: '0 0 24px' }}>
-                    Swipe, matche, contacte les loueurs et gère ton bail. Tout est gratuit. On prend uniquement <span style={{ color: '#10B981', fontWeight: 600 }}>2,5% du loyer mensuel</span> à la signature du bail — comme une assurance dossier incluse.
-                  </p>
-                  <Link href="/auth/register" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
-                    color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 600,
-                    padding: '13px 28px', borderRadius: '12px',
-                    boxShadow: '0 0 30px rgba(16,185,129,0.3)',
-                  }}>
-                    Commencer gratuitement →
-                  </Link>
+          </div>
+
+          {/* Solution cards */}
+          <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
+            {[
+              { icon: '🎯', title: 'Matching intelligent', desc: "Notre algorithme analyse 40+ critères de mode de vie. Tu swipes uniquement des profils vraiment compatibles avec toi. Score affiché sur chaque carte." },
+              { icon: '📁', title: 'Dossier certifié', desc: "Centralise tous tes documents en un clic. Partage-le instantanément avec un lien sécurisé. Ton dossier est toujours prêt et à jour." },
+              { icon: '🏠', title: 'Gestion complète', desc: "Bail, loyers, charges, maintenances — tout dans l'app. Ta coloc gérée comme un pro, sans email, sans tableur." },
+            ].map((s) => (
+              <StaggerItem key={s.title}>
+                <div style={{ background: N, borderRadius: '16px', padding: '28px', borderLeft: `4px solid ${J}`, height: '100%' }}>
+                  <div style={{ fontSize: '36px', marginBottom: '14px' }}>{s.icon}</div>
+                  <h3 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>{s.title}</h3>
+                  <p style={{ fontSize: '14px', color: '#9CA3AF', lineHeight: 1.7 }}>{s.desc}</p>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '240px' }}>
-                  {['Swipe & matching illimité', 'Messagerie intégrée', 'Dossier numérique complet', 'Carte des annonces', 'Gestion du bail incluse', 'Support par chat'].map(f => (
-                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
-                      <span style={{ color: '#10B981', fontWeight: 700, fontSize: '16px' }}>✓</span> {f}
-                    </div>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+        </section>
+      </ScrollReveal>
+
+      {/* ── DEUX ESPACES ── */}
+      <ScrollReveal delay={0}>
+        <section style={{ background: N, padding: 'clamp(72px, 8vw, 110px) clamp(20px, 4vw, 48px)' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px', color: '#6B7280', marginBottom: '12px' }}>POUR TOUT LE MONDE</div>
+              <h2 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(30px, 4vw, 46px)', fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-1px' }}>
+                Une plateforme, deux espaces
+              </h2>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              {/* Locataires */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '20px', padding: 'clamp(28px, 3vw, 44px)' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', color: '#6B7280', marginBottom: '14px' }}>LOCATAIRES</div>
+                <h3 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(22px, 2.5vw, 28px)', fontWeight: 800, color: '#fff', marginBottom: '12px' }}>Je cherche une coloc</h3>
+                <p style={{ fontSize: '15px', color: '#9CA3AF', marginBottom: '28px', lineHeight: 1.7 }}>Swipe des profils compatibles, envoie ton dossier en 1 clic, gère ton bail dans l'app.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '32px' }}>
+                  {[
+                    '🔥 Swipe & matching compatible',
+                    '💬 Messagerie instantanée',
+                    '📁 Dossier numérique certifié',
+                    '🗺️ Carte des annonces',
+                    '🏠 Gestion du bail incluse',
+                  ].map(f => (
+                    <div key={f} style={{ fontSize: '14px', color: '#D1D5DB' }}>{f}</div>
                   ))}
                 </div>
+                <Link href="/auth/register" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#fff', color: N, textDecoration: 'none', fontSize: '14px', fontWeight: 700, padding: '12px 24px', borderRadius: '50px' }}>
+                  Je cherche une coloc →
+                </Link>
               </div>
-            </FloatingCard>
-          </div>
 
-          {/* BLOC 2 — LOUEURS */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', whiteSpace: 'nowrap' }}>
-                Pour les loueurs — mise en avant facultative
+              {/* Loueurs */}
+              <div style={{ background: J, borderRadius: '20px', padding: 'clamp(28px, 3vw, 44px)' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', color: `${N}80`, marginBottom: '14px' }}>PROPRIÉTAIRES</div>
+                <h3 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(22px, 2.5vw, 28px)', fontWeight: 800, color: N, marginBottom: '12px' }}>Je loue mon bien</h3>
+                <p style={{ fontSize: '15px', color: `${N}99`, marginBottom: '28px', lineHeight: 1.7 }}>Publie une annonce, reçois des dossiers certifiés et gère tes colocataires depuis un tableau de bord.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '32px' }}>
+                  {[
+                    "📢 Publication d'annonce gratuite",
+                    '🎯 Locataires pré-qualifiés',
+                    '📋 Dossiers certifiés vérifiés',
+                    '💳 Suivi des loyers',
+                    '👥 Gestion des colocataires',
+                  ].map(f => (
+                    <div key={f} style={{ fontSize: '14px', color: `${N}CC` }}>{f}</div>
+                  ))}
+                </div>
+                <Link href="/auth/register?role=loueur" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: N, color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 700, padding: '12px 24px', borderRadius: '50px' }}>
+                  Je loue mon bien →
+                </Link>
               </div>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
             </div>
-            <p style={{ textAlign: 'center', fontSize: '14px', color: 'rgba(255,255,255,0.35)', marginBottom: '28px' }}>
-              Publier une annonce est gratuit. Ces options sont facultatives pour accélérer ta mise en location.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ── SWIPE DEMO ── */}
+      <ScrollReveal delay={0}>
+        <section style={{ maxWidth: '1100px', margin: '0 auto', padding: 'clamp(72px, 8vw, 110px) clamp(20px, 4vw, 48px)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(40px, 6vw, 88px)', alignItems: 'center' }}>
+
+            {/* Steps */}
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px', color: '#B0AFA8', marginBottom: '12px' }}>COMMENT ÇA MARCHE</div>
+              <h2 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(30px, 4vw, 46px)', fontWeight: 800, color: N, margin: '0 0 36px', letterSpacing: '-1px', lineHeight: 1.1 }}>
+                Swipe. Matche.<br />Emménage.
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
+                {[
+                  { num: '01', title: 'Crée ton profil', desc: 'Réponds à 5 questions sur ton rythme de vie. Notre algorithme fait le reste.' },
+                  { num: '02', title: 'Swipe des profils', desc: 'Vois uniquement des personnes compatibles avec toi. Le score est affiché sur chaque carte.' },
+                  { num: '03', title: 'Parle & emménage', desc: "Contacte directement tes matchs. Gère tout ton bail depuis l'app." },
+                ].map((step) => (
+                  <div key={step.num} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: J, color: N, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, flexShrink: 0 }}>
+                      {step.num}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: N, marginBottom: '4px' }}>{step.title}</div>
+                      <div style={{ fontSize: '14px', color: GRAY, lineHeight: 1.65 }}>{step.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '36px' }}>
+                <Link href="/auth/register" style={darkBtn}>Essayer maintenant →</Link>
+              </div>
+            </div>
+
+            {/* Mock swipe card */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: '320px', background: '#fff', borderRadius: '22px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(20,23,31,0.14)', border: `1px solid ${BORDER}` }}>
+                {/* Photo area */}
+                <div style={{ height: '210px', background: 'linear-gradient(135deg, #FFF8E7, #FFF0CC)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px' }}>
+                  👩‍🎨
+                </div>
+                {/* Card body */}
+                <div style={{ padding: '20px 22px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <div>
+                      <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '21px', fontWeight: 800, color: N }}>Sophie M., 24</div>
+                      <div style={{ fontSize: '12.5px', color: GRAY, marginTop: '2px' }}>Designer UX · Paris 11ème · 850€/mois</div>
+                    </div>
+                    <div style={{ background: J, color: N, fontSize: '12px', fontWeight: 800, padding: '5px 12px', borderRadius: '50px', flexShrink: 0, marginLeft: '8px' }}>
+                      💚 94%
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '12px' }}>
+                    {['🌙 Couche-tard', '🎵 Musique', '🏠 Télétravail', '🐱 Animaux ok'].map(tag => (
+                      <span key={tag} style={{ background: P, color: '#4A4A42', fontSize: '11px', fontWeight: 500, padding: '4px 10px', borderRadius: '50px', border: `1px solid ${BORDER}` }}>{tag}</span>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '13px', color: GRAY, lineHeight: 1.65, marginBottom: '14px' }}>Passionnée de design et de musique indie. Coloc calme en semaine, festive le weekend !</p>
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fff', border: `1.5px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(20,23,31,0.08)' }}>✕</div>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: J, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', cursor: 'pointer', boxShadow: `0 4px 16px rgba(255,200,87,0.4)` }}>♥</div>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fff', border: `1.5px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(20,23,31,0.08)' }}>⭐</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ── PRICING ── */}
+      <ScrollReveal delay={0}>
+        <section style={{ background: N, padding: 'clamp(72px, 8vw, 110px) clamp(20px, 4vw, 48px)' }}>
+          <div style={{ maxWidth: '1060px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px', color: J, marginBottom: '12px' }}>TARIFS</div>
+              <h2 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(30px, 4vw, 46px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', letterSpacing: '-1px' }}>
+                Transparent & juste
+              </h2>
+              <p style={{ fontSize: '16px', color: '#6B7280' }}>On ne gagne que quand tu trouves ta coloc.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
               {[
                 {
-                  name: 'Essentiel',
-                  price: '9,99€',
-                  period: 'par mois',
-                  desc: 'Ton annonce vue par plus de locataires',
-                  features: ['Annonce boostée dans le feed swipe', 'Visible en priorité dans la recherche', 'Badge "Mis en avant"', 'Accès aux dossiers certifiés', 'Messagerie directe'],
-                  cta: 'Booster mon annonce',
-                  href: '/auth/register?plan=essentiel',
+                  label: 'LOCATAIRE', name: 'Essentiel',
+                  price: 'Gratuit', priceNote: 'pour toujours',
+                  desc: 'Pour trouver ta coloc',
+                  features: ['Swipe & matching illimité', 'Messagerie avec matchs', 'Dossier de base', 'Carte des annonces'],
+                  crossed: ['Assurance dossier', 'Gestion bail complète'],
+                  cta: 'Commencer', href: '/auth/register',
                   highlighted: false,
-                  floatDelay: 0.8,
                 },
                 {
-                  name: 'Prioritaire',
-                  price: '24,99€',
-                  period: 'par mois',
-                  desc: 'Visibilité maximale, résultats garantis',
-                  features: ['Tout Essentiel inclus', 'Position #1 dans le matching', 'Badge "Prioritaire" visible', 'Mis en avant sur la carte', 'Stats détaillées', 'Support 7j/7'],
-                  cta: 'Choisir Prioritaire',
-                  href: '/auth/register?plan=prioritaire',
+                  label: 'LOCATAIRE', name: 'Sécurisé',
+                  price: '2,5%', priceNote: 'du loyer/mois',
+                  desc: 'Pour une coloc sereine',
+                  badge: 'POPULAIRE',
+                  features: ['Tout Essentiel inclus', 'Assurance dossier certifié', 'Gestion bail complète', 'Support prioritaire'],
+                  crossed: [],
+                  cta: "S'assurer", href: '/app/paiement',
                   highlighted: true,
-                  floatDelay: 1.6,
                 },
-              ].map((plan, i) => (
-                <FloatingCard key={i} delay={plan.floatDelay} amplitude={i === 1 ? 8 : 6}>
-                  <div style={{
-                    padding: '32px',
-                    background: plan.highlighted ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${plan.highlighted ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                    borderRadius: '16px',
-                    position: 'relative',
-                    height: '100%',
-                  }}>
-                    {plan.highlighted && (
-                      <div style={{ position: 'absolute', top: '16px', right: '16px', background: '#10B981', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
-                        MEILLEURE OFFRE
-                      </div>
-                    )}
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: plan.highlighted ? '#10B981' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>{plan.name}</div>
-                    <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '40px', fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: '4px' }}>{plan.price}</div>
-                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>{plan.period}</div>
-                    <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '24px' }}>{plan.desc}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '28px' }}>
-                      {plan.features.map(f => (
-                        <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: 'rgba(255,255,255,0.65)' }}>
-                          <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span> {f}
-                        </div>
-                      ))}
+                {
+                  label: 'LOUEUR', name: 'Boost annonce',
+                  price: '9,99€', priceNote: 'par mois',
+                  desc: 'Pour louer plus vite',
+                  features: ["Annonce mise en avant", 'Badge "Prioritaire"', 'Dossiers certifiés', 'Messagerie directe'],
+                  crossed: [],
+                  cta: 'Booster mon annonce', href: '/auth/register?role=loueur',
+                  highlighted: false,
+                  note: 'Prioritaire à 24,99€/mois disponible',
+                },
+              ].map((plan) => (
+                <div key={plan.name} style={{
+                  background: plan.highlighted ? '#fff' : 'rgba(255,255,255,0.04)',
+                  border: plan.highlighted ? `2px solid ${J}` : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '20px', padding: '32px',
+                  position: 'relative', display: 'flex', flexDirection: 'column',
+                }}>
+                  {plan.badge && (
+                    <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: J, color: N, fontSize: '10px', fontWeight: 800, padding: '4px 14px', borderRadius: '50px', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                      {plan.badge}
                     </div>
-                    <Link href={plan.href} style={{
-                      display: 'block', textAlign: 'center',
-                      background: plan.highlighted ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.06)',
-                      color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
-                      padding: '13px', borderRadius: '10px',
-                      border: plan.highlighted ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                    }}>
-                      {plan.cta}
-                    </Link>
+                  )}
+                  <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: plan.highlighted ? '#B0AFA8' : '#6B7280', marginBottom: '6px' }}>{plan.label}</div>
+                  <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '22px', fontWeight: 800, color: plan.highlighted ? N : '#fff', marginBottom: '12px' }}>{plan.name}</div>
+                  <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '42px', fontWeight: 800, color: plan.highlighted ? N : '#fff', lineHeight: 1, marginBottom: '4px' }}>{plan.price}</div>
+                  <div style={{ fontSize: '13px', color: plan.highlighted ? GRAY : '#6B7280', marginBottom: '6px' }}>{plan.priceNote}</div>
+                  <div style={{ fontSize: '14px', color: plan.highlighted ? GRAY : '#9CA3AF', marginBottom: '24px' }}>{plan.desc}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '28px', flex: 1 }}>
+                    {plan.features.map(f => (
+                      <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: plan.highlighted ? N : '#D1D5DB' }}>
+                        <span style={{ color: J, fontWeight: 800, flexShrink: 0 }}>✓</span> {f}
+                      </div>
+                    ))}
+                    {plan.crossed?.map(f => (
+                      <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: '#4B5563', textDecoration: 'line-through' }}>
+                        <span style={{ flexShrink: 0 }}>✗</span> {f}
+                      </div>
+                    ))}
                   </div>
-                </FloatingCard>
+                  <Link href={plan.href} style={{ display: 'block', textAlign: 'center', background: plan.highlighted ? N : 'rgba(255,255,255,0.08)', color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 700, padding: '13px', borderRadius: '50px', border: plan.highlighted ? 'none' : '1px solid rgba(255,255,255,0.14)', transition: 'opacity 0.2s' }}>
+                    {plan.cta}
+                  </Link>
+                  {'note' in plan && plan.note && (
+                    <div style={{ textAlign: 'center', fontSize: '11px', color: '#4B5563', marginTop: '10px' }}>{plan.note}</div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
         </section>
       </ScrollReveal>
 
-      {/* CTA FINAL */}
+      {/* ── CTA FINAL ── */}
       <ScrollReveal delay={0}>
-        <section style={{ padding: '120px 24px', textAlign: 'center', position: 'relative' }}>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: '600px', height: '600px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '24px' }}>REJOINS-NOUS</div>
-          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 400, color: '#fff', margin: '0 0 24px', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
-            La vie en coloc<br />commence ici.
-          </h2>
-          <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.45)', maxWidth: '440px', margin: '0 auto 48px', lineHeight: 1.7 }}>
-            Des milliers de personnes ont déjà trouvé leur colocataire parfait. Ta prochaine chambre t&apos;attend.
-          </p>
-          <Link href="/auth/register" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            background: 'linear-gradient(135deg, #10B981, #059669)',
-            color: '#fff', textDecoration: 'none', fontSize: '17px', fontWeight: 700,
-            padding: '16px 40px', borderRadius: '14px',
-            boxShadow: '0 0 60px rgba(16,185,129,0.4)',
-            transition: 'all 0.2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 0 80px rgba(16,185,129,0.6)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 60px rgba(16,185,129,0.4)' }}
-          >
-            Créer mon compte — c&apos;est gratuit →
-          </Link>
+        <section style={{ padding: 'clamp(80px, 8vw, 120px) clamp(20px, 4vw, 48px)', textAlign: 'center' }}>
+          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px', color: '#B0AFA8', marginBottom: '16px' }}>REJOINS-NOUS</div>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 'clamp(34px, 5vw, 58px)', fontWeight: 800, color: N, margin: '0 0 18px', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
+              Ta prochaine chambre<br />t&apos;attend.
+            </h2>
+            <p style={{ fontSize: '16px', color: GRAY, margin: '0 0 40px', lineHeight: 1.7 }}>
+              Des milliers de personnes ont déjà trouvé leur colocataire parfait sur ISALY. C&apos;est gratuit pour commencer.
+            </p>
+            <Link href="/auth/register" style={{ ...darkBtn, padding: '16px 40px', fontSize: '16px', fontWeight: 800 }}>
+              Créer mon compte — c&apos;est gratuit →
+            </Link>
+          </div>
         </section>
       </ScrollReveal>
 
-      {/* FOOTER */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
-        {[
-          { label: 'Confidentialité', href: '/confidentialite' },
-          { label: 'CGU', href: '/cgu' },
-          { label: 'Contact', href: '/contact' },
-        ].map(link => (
-          <Link key={link.label} href={link.href} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
-          >{link.label}</Link>
-        ))}
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop: `1px solid ${BORDER}`, padding: 'clamp(28px, 3vw, 44px) clamp(20px, 4vw, 48px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '20px', fontWeight: 800, color: N }}>
+          ISALY<span style={{ color: J }}>.</span>
+        </div>
+        <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
+          {[
+            { label: 'Confidentialité', href: '/confidentialite' },
+            { label: 'CGU', href: '/cgu' },
+            { label: 'Contact', href: '/contact' },
+          ].map(link => (
+            <Link key={link.label} href={link.href} style={{ fontSize: '13px', color: '#B0AFA8', textDecoration: 'none' }}>
+              {link.label}
+            </Link>
+          ))}
+        </div>
+        <div style={{ fontSize: '13px', color: '#B0AFA8' }}>© 2025 ISALY</div>
       </footer>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.8); }
+        @media (max-width: 760px) {
+          section > div[style*="grid-template-columns: 1fr 1fr"],
+          section[style*="grid-template-columns: 1fr 1fr"] {
+            grid-template-columns: 1fr !important;
+          }
         }
-        * { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        @media (max-width: 640px) {
+          [style*="grid-template-columns: repeat(3, 1fr)"] { grid-template-columns: 1fr !important; }
+          [style*="grid-template-columns: repeat(4, 1fr)"] { grid-template-columns: 1fr 1fr !important; }
+        }
       `}</style>
     </div>
   )

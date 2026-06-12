@@ -82,14 +82,14 @@ export default function Topbar({ title }: TopbarProps) {
       <div
         className="h-[56px] flex items-center px-6 gap-3.5 sticky top-0 z-10 flex-shrink-0"
         style={{
-          background: 'rgba(10,10,10,0.85)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(244,243,238,0.92)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid #E5E4DE',
         }}
       >
         <h1
           className="text-[17px] font-semibold flex-1"
-          style={{ fontFamily: 'DM Sans, sans-serif', color: '#ffffff', letterSpacing: '-0.01em' }}
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif", color: '#14171F', letterSpacing: '-0.01em' }}
         >
           {title}
         </h1>
@@ -100,25 +100,25 @@ export default function Topbar({ title }: TopbarProps) {
             <button
               onClick={() => setShowNotifs(v => !v)}
               style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(20,23,31,0.06)',
+                border: '1px solid rgba(20,23,31,0.1)',
                 borderRadius: '10px',
                 padding: '6px 12px',
                 fontSize: '12px',
                 fontWeight: 500,
-                color: 'rgba(255,255,255,0.7)',
+                color: '#14171F',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 transition: 'all 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.10)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(20,23,31,0.10)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(20,23,31,0.06)')}
             >
               🔔 Alertes
               {notifCount > 0 && (
-                <span style={{ background: '#10B981', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '10px', minWidth: '16px', textAlign: 'center' }}>
+                <span style={{ background: '#FFC857', color: '#14171F', fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '10px', minWidth: '16px', textAlign: 'center' }}>
                   {notifCount}
                 </span>
               )}
@@ -138,12 +138,12 @@ export default function Topbar({ title }: TopbarProps) {
                   onClick={() => setChatOpen(o => !o)}
                   className="gap-2 text-[12px] font-medium rounded-[10px]"
                   style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.7)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(20,23,31,0.06)',
+                    color: '#14171F',
+                    border: '1px solid rgba(20,23,31,0.1)',
                   }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = 'rgba(255,255,255,0.10)')}
-                  onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                  onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = 'rgba(20,23,31,0.10)')}
+                  onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = 'rgba(20,23,31,0.06)')}
                 >
                   <span className="text-sm">🤖</span> Assistant
                 </Button>
@@ -158,8 +158,9 @@ export default function Topbar({ title }: TopbarProps) {
               onClick={() => setShowDropdown(o => !o)}
               className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs text-white cursor-pointer border-none transition-all overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)',
-                boxShadow: showDropdown ? '0 0 0 3px rgba(78,203,160,.3)' : undefined,
+                background: 'linear-gradient(135deg, #FFC857, #F59E0B)',
+                boxShadow: showDropdown ? '0 0 0 3px rgba(255,200,87,.3)' : undefined,
+                color: '#14171F',
                 padding: 0,
               }}
             >
@@ -174,11 +175,11 @@ export default function Topbar({ title }: TopbarProps) {
               <div
                 className="absolute right-0 top-11 z-50 overflow-hidden animate-fade-up"
                 style={{
-                  background: '#111111',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E4DE',
                   borderRadius: '14px',
                   width: '190px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,.5)',
+                  boxShadow: '0 8px 32px rgba(20,23,31,.12)',
                 }}
               >
                 <Link
@@ -189,7 +190,7 @@ export default function Topbar({ title }: TopbarProps) {
                   <DropdownItem icon="👤">Mon profil</DropdownItem>
                 </Link>
                 <DropdownItem icon="⚙️">Paramètres</DropdownItem>
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+                <div style={{ height: '1px', background: '#E5E4DE', margin: '4px 0' }} />
                 <button
                   onClick={handleSignOut}
                   className="w-full border-none bg-transparent cursor-pointer text-left"
@@ -212,8 +213,8 @@ function DropdownItem({ icon, children, danger }: { icon: string; children: Reac
   return (
     <div
       className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium cursor-pointer transition-colors"
-      style={{ color: danger ? '#EF4444' : '#ffffff' }}
-      onMouseEnter={e => (e.currentTarget.style.background = danger ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.06)')}
+      style={{ color: danger ? '#EF4444' : '#14171F' }}
+      onMouseEnter={e => (e.currentTarget.style.background = danger ? 'rgba(239,68,68,0.08)' : 'rgba(20,23,31,0.05)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       <span className="text-base">{icon}</span>

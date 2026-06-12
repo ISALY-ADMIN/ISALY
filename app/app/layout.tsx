@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <LeaseProvider>
-      <div className="flex min-h-screen" style={{ background: '#0A0A0A' }}>
+      <div className="flex min-h-screen" style={{ background: '#F4F3EE' }}>
         <Sidebar />
         <div
           className="flex flex-col flex-1 overflow-hidden"
