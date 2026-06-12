@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -151,13 +150,6 @@ export default function Sidebar() {
         className="flex items-center flex-shrink-0 border-b"
         style={{ borderColor: '#1F2937', padding: '14px 12px', gap: '8px', minHeight: '68px' }}
       >
-        <Image
-          src="/LOGO_ISALY.png"
-          alt="ISALY"
-          height={48}
-          width={48}
-          style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }}
-        />
         {!collapsed && (
           <button
             onClick={() => setCollapsed(true)}
