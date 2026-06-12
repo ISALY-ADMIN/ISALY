@@ -71,6 +71,8 @@ export interface Profile {
   profile_complete: number
   is_visible: boolean
   onboarding_completed?: boolean
+  is_admin?: boolean
+  suspended?: boolean
   created_at: string
   /** Extended matching vector stored as JSONB. Populated from the full questionnaire. */
   matching_data?: import('@/lib/matching').MatchingData | null

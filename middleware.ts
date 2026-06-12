@@ -33,33 +33,46 @@ export async function middleware(request: NextRequest) {
   }
 
   const isAppRoute = pathname.startsWith('/app')
+  const isAdminRoute = pathname.startsWith('/admin')
   const isRoot = pathname === '/'
   const isOnboarding = pathname === '/onboarding'
   // Only login + register bounce connected users; other auth pages (finalize, callback, etc.) stay accessible
   const isLoginOrRegister = pathname === '/auth/login' || pathname === '/auth/register'
 
-  // Not connected: only block /app/*
-  if (!user && isAppRoute) {
+  // Not connected: block /app/* and /admin/*
+  if (!user && (isAppRoute || isAdminRoute)) {
     return redirect('/auth/login')
   }
 
   if (user) {
-    // Only fetch profile on routes where onboarding state matters
-    if (isAppRoute || isLoginOrRegister || isOnboarding || isRoot) {
+    // Fetch profile on routes where onboarding/admin state matters
+    if (isAppRoute || isAdminRoute || isLoginOrRegister || isOnboarding || isRoot) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('onboarding_completed')
+        .select('onboarding_completed, is_admin, suspended')
         .eq('id', user.id)
         .single()
 
       const onboardingDone = profile?.onboarding_completed === true
+      const isAdmin = profile?.is_admin === true
+      const isSuspended = profile?.suspended === true
+
+      // Suspended users can't access /app/* (shown a dedicated blocked page)
+      if (isSuspended && isAppRoute && pathname !== '/app/suspendu') {
+        return redirect('/app/suspendu')
+      }
+
+      // /admin/* requires is_admin = true
+      if (isAdminRoute && !isAdmin) {
+        return redirect('/app/dashboard-home')
+      }
 
       // Connected + done: bounce away from public/auth/onboarding pages
       if (onboardingDone && (isRoot || isLoginOrRegister || isOnboarding)) {
         return redirect('/app/swipe')
       }
 
-      // Connected + not done: block /app/* until finalize runs
+      // Connected + not done: block /app/* until finalize runs (admin routes are exempt)
       if (!onboardingDone && isAppRoute) {
         return redirect('/auth/finalize')
       }
