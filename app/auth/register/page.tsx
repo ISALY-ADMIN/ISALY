@@ -31,7 +31,7 @@ export default function RegisterPage() {
     setError('')
     const supabase = createClient()
     const ref = new URLSearchParams(window.location.search).get('ref')
-    const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -45,6 +45,9 @@ export default function RegisterPage() {
       setLoading(false)
       return
     }
+    const newUser = data.user
+    const hasSession = !!data.session
+
     if (newUser && ref) {
       try {
         await supabase.from('profiles').update({ referred_by: ref }).eq('id', newUser.id)
@@ -54,15 +57,26 @@ export default function RegisterPage() {
         }
       } catch {}
     }
+
+    // Email confirmation disabled in Supabase → session is immediate, redirect directly
+    if (hasSession) {
+      router.push('/onboarding')
+      return
+    }
+
+    // Email confirmation enabled → send custom Resend email
     try {
-      await fetch('/api/email/confirm', {
+      const res = await fetch('/api/email/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, firstName: form.firstName }),
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        console.warn('Email confirm API error:', json)
+      }
     } catch (emailErr) {
       console.warn('Email confirm failed (non-blocking):', emailErr)
-      // Ne pas bloquer l'inscription si l'email échoue
     }
     setEmailSent(true)
     setLoading(false)

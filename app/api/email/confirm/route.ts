@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   console.log('[confirm] FROM_EMAIL:', FROM_EMAIL)
 
   try {
-    // Generate a magic link — confirms email AND auto-logs the user in one click
+    // Generate a magic link — logs the user in directly (bypasses email confirmation)
     console.log('[confirm] calling generateLink...')
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
