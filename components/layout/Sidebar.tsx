@@ -5,8 +5,16 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
+import {
+  Home, Flame, Search, Map, MessageCircle,
+  Folder, User, Megaphone, FileText, Bookmark,
+  CreditCard, Gift, Settings, LogOut,
+  Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
+  type LucideIcon,
+} from 'lucide-react'
 
 interface NavItem {
+  icon: LucideIcon
   label: string
   href: string
   id: string
@@ -14,35 +22,35 @@ interface NavItem {
 
 // ── Mode Recherche nav ───────────────────────────────────────
 const mainItems: NavItem[] = [
-  { label: 'Accueil',    href: '/app/dashboard-home', id: 'dashboard-home' },
-  { label: 'Trouver',    href: '/app/swipe',          id: 'swipe' },
-  { label: 'Rechercher', href: '/app/recherche',      id: 'recherche' },
-  { label: 'Carte',      href: '/app/carte',          id: 'carte' },
-  { label: 'Messages',   href: '/app/messages',       id: 'messages' },
+  { icon: Home,          label: 'Accueil',    href: '/app/dashboard-home', id: 'dashboard-home' },
+  { icon: Flame,         label: 'Trouver',    href: '/app/swipe',          id: 'swipe' },
+  { icon: Search,        label: 'Rechercher', href: '/app/recherche',      id: 'recherche' },
+  { icon: Map,           label: 'Carte',      href: '/app/carte',          id: 'carte' },
+  { icon: MessageCircle, label: 'Messages',   href: '/app/messages',       id: 'messages' },
 ]
 const spaceItems: NavItem[] = [
-  { label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
-  { label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
-  { label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
-  { label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
-  { label: 'Favoris',      href: '/app/favoris',      id: 'favoris' },
+  { icon: Folder,    label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
+  { icon: User,      label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
+  { icon: Megaphone, label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
+  { icon: FileText,  label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
+  { icon: Bookmark,  label: 'Favoris',      href: '/app/favoris',      id: 'favoris' },
 ]
 const accountItems: NavItem[] = [
-  { label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
-  { label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
-  { label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
+  { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
+  { icon: Gift,       label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
+  { icon: Settings,   label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
 ]
 
 // ── Mode Gestion nav ─────────────────────────────────────────
 const gestionItems: NavItem[] = [
-  { label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
-  { label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
-  { label: 'Mon dossier',      href: '/app/dossier',      id: 'dossier' },
-  { label: 'Mes colocataires', href: '/app/colocataires', id: 'colocataires' },
-  { label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
-  { label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
-  { label: 'Messages',         href: '/app/messages',     id: 'messages' },
-  { label: 'Mon profil',       href: '/app/profil',       id: 'profil' },
+  { icon: LayoutDashboard, label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
+  { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
+  { icon: Folder,          label: 'Mon dossier',      href: '/app/dossier',      id: 'dossier' },
+  { icon: Users,           label: 'Mes colocataires', href: '/app/colocataires', id: 'colocataires' },
+  { icon: Wrench,          label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
+  { icon: ClipboardList,   label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
+  { icon: MessageCircle,   label: 'Messages',         href: '/app/messages',     id: 'messages' },
+  { icon: User,            label: 'Mon profil',       href: '/app/profil',       id: 'profil' },
 ]
 
 interface UserData {
@@ -144,7 +152,7 @@ export default function Sidebar() {
       className="fixed top-0 left-0 bottom-0 z-50 flex flex-col"
       style={{ width: collapsed ? '64px' : '232px', background: '#111827', transition: 'width 0.2s ease', overflow: 'hidden' }}
     >
-      {/* ── Logo + toggle ─────────────────────────────────── */}
+      {/* ── Toggle ────────────────────────────────────────── */}
       <div
         className="flex items-center flex-shrink-0 border-b"
         style={{ borderColor: '#1F2937', padding: '14px 12px', gap: '8px', minHeight: '68px' }}
@@ -262,7 +270,7 @@ export default function Sidebar() {
       <div className="border-t" style={{ borderColor: '#1F2937' }}>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-3.5 py-2.5 mx-2 my-1 rounded-[10px] text-[13.5px] font-medium transition-all duration-200 border-none cursor-pointer"
+          className="flex items-center gap-3 px-3.5 py-2.5 mx-2 my-1 rounded-[10px] font-medium transition-all duration-200 border-none cursor-pointer"
           style={{
             color: '#6B7280',
             background: 'none',
@@ -272,9 +280,14 @@ export default function Sidebar() {
           }}
           onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6B7280' }}
+          title={collapsed ? 'Déconnexion' : undefined}
         >
-          <span className="text-[18px] w-5 text-center flex-shrink-0">🚪</span>
-          {!collapsed && 'Déconnexion'}
+          <LogOut size={18} strokeWidth={1.75} style={{ flexShrink: 0, opacity: 0.7 }} />
+          {!collapsed && (
+            <span style={{ textTransform: 'uppercase', fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600, letterSpacing: '1px' }}>
+              Déconnexion
+            </span>
+          )}
         </button>
 
         <Link
@@ -325,17 +338,17 @@ function NavSection({ label }: { label: string }) {
 }
 
 function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: boolean; collapsed: boolean; unread: number }) {
+  const IconComponent = item.icon
   return (
     <Link
       href={item.href}
       title={collapsed ? item.label : undefined}
-      className="flex items-center gap-3 py-2.5 mx-2 my-px rounded-[10px] text-[13.5px] font-medium transition-all duration-200 no-underline relative"
+      className="flex items-center gap-3 py-2.5 mx-2 my-px rounded-[10px] transition-all duration-200 no-underline relative"
       style={
         active
           ? {
               background: '#16302a',
               color: '#4ECBA0',
-              fontWeight: 600,
               paddingLeft: collapsed ? undefined : 'calc(0.875rem - 3px)',
               paddingRight: '0.875rem',
               borderLeft: collapsed ? 'none' : '3px solid #4ECBA0',
@@ -361,6 +374,7 @@ function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: b
         }
       }}
     >
+      <IconComponent size={18} strokeWidth={1.75} style={{ flexShrink: 0, opacity: 0.7 }} />
       {!collapsed && (
         <span className="flex-1" style={{ textTransform: 'uppercase', fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600, letterSpacing: '1px' }}>
           {item.label}
