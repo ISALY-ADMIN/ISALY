@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import InstallPrompt from '@/components/InstallPrompt'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
     apple: '/favicon.png',
     shortcut: '/favicon.png',
   },
+  manifest: '/manifest.webmanifest',
   openGraph: {
     title: 'Ta coloc idéale existe déjà',
     description: 'Matching intelligent pour trouver le colocataire idéal.',
@@ -29,6 +31,12 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="ISALY" />
+        <meta name="theme-color" content="#10B981" />
         <link rel="icon" href="/favicon.png?v=2" type="image/png" />
         <link rel="shortcut icon" href="/favicon.png?v=2" />
         <link rel="apple-touch-icon" href="/favicon.png?v=2" />
@@ -46,7 +54,17 @@ export default function RootLayout({
           gtag('config', 'G-JXZRTY71Y4');
         `}
       </Script>
-      <body>{children}</body>
+      <Script id="register-sw" strategy="afterInteractive">
+        {`
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+          }
+        `}
+      </Script>
+      <body>
+        {children}
+        <InstallPrompt />
+      </body>
     </html>
   )
 }
