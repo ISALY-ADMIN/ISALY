@@ -9,7 +9,7 @@ import {
   Home, Flame, Search, Map, MessageCircle,
   Folder, User, Megaphone, FileText, Bookmark,
   CreditCard, Gift, Settings, LogOut,
-  Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
+  Users, ClipboardList, Wrench, Receipt, LayoutDashboard, ShieldAlert,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -58,6 +58,7 @@ interface UserData {
   lastName: string
   role: string
   avatarUrl: string | null
+  isAdmin: boolean
 }
 
 export default function Sidebar() {
@@ -66,7 +67,7 @@ export default function Sidebar() {
   const { mode }                        = useLease()
   const [collapsed, setCollapsed]       = useState(false)
   const [unreadCount, setUnreadCount]   = useState(0)
-  const [userData, setUserData]         = useState<UserData>({ firstName: '', lastName: '', role: '', avatarUrl: null })
+  const [userData, setUserData]         = useState<UserData>({ firstName: '', lastName: '', role: '', avatarUrl: null, isAdmin: false })
 
   // Sync sidebar width to CSS variable so layout can react without a context
   useEffect(() => {
@@ -82,7 +83,7 @@ export default function Sidebar() {
       if (!user) return
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, avatar_url')
+        .select('first_name, last_name, role, avatar_url, is_admin')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -91,6 +92,7 @@ export default function Sidebar() {
           lastName:  data.last_name ?? '',
           role:      data.role ?? '',
           avatarUrl: data.avatar_url ?? null,
+          isAdmin:   data.is_admin === true,
         })
       }
 
@@ -262,6 +264,17 @@ export default function Sidebar() {
             {accountItems.map(item => (
               <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
             ))}
+            {userData.isAdmin && (
+              <>
+                {!collapsed && <NavSection label="Admin" />}
+                <NavLink
+                  item={{ icon: ShieldAlert, label: 'Administration', href: '/admin', id: 'admin' }}
+                  active={pathname.startsWith('/admin')}
+                  collapsed={collapsed}
+                  unread={0}
+                />
+              </>
+            )}
           </>
         )}
       </div>
