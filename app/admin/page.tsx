@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
-import Link from 'next/link'
+import { StatCard, QuickLink } from './HoverCards'
 
 async function getStats() {
   const supabase = createClient()
@@ -41,14 +41,14 @@ async function getRecentActions() {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  suspend_user: 'Compte suspendu',
+  suspend_user:   'Compte suspendu',
   unsuspend_user: 'Compte réactivé',
   verify_identity: 'Identité vérifiée',
   reject_identity: 'Identité rejetée',
   disable_listing: 'Annonce désactivée',
-  enable_listing: 'Annonce réactivée',
-  resolve_report: 'Signalement résolu',
-  dismiss_report: 'Signalement ignoré',
+  enable_listing:  'Annonce réactivée',
+  resolve_report:  'Signalement résolu',
+  dismiss_report:  'Signalement ignoré',
 }
 
 function formatDate(iso: string) {
@@ -57,26 +57,23 @@ function formatDate(iso: string) {
   })
 }
 
-interface StatCard {
-  label: string
-  value: number
-  href: string
-  color: string
-  bg: string
-  icon: string
-  alert?: boolean
-}
-
 export default async function AdminDashboard() {
   await getAdminUser()
   const [stats, actions] = await Promise.all([getStats(), getRecentActions()])
 
-  const cards: StatCard[] = [
-    { label: 'Utilisateurs', value: stats.users, href: '/admin/utilisateurs', color: '#60A5FA', bg: 'rgba(96,165,250,0.1)', icon: '👥' },
-    { label: 'Annonces actives', value: stats.listings, href: '/admin/annonces', color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)', icon: '🏠' },
-    { label: 'Matchs total', value: stats.matches, href: '/admin', color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', icon: '❤️' },
+  const cards = [
+    { label: 'Utilisateurs',            value: stats.users,               href: '/admin/utilisateurs', color: '#60A5FA', bg: 'rgba(96,165,250,0.1)',  icon: '👥' },
+    { label: 'Annonces actives',         value: stats.listings,            href: '/admin/annonces',     color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)',  icon: '🏠' },
+    { label: 'Matchs total',             value: stats.matches,             href: '/admin',              color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', icon: '❤️' },
     { label: 'Vérifications en attente', value: stats.pendingVerifications, href: '/admin/verifications', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: '📋', alert: stats.pendingVerifications > 0 },
-    { label: 'Signalements ouverts', value: stats.openReports, href: '/admin/signalements', color: '#EF4444', bg: 'rgba(239,68,68,0.1)', icon: '🚩', alert: stats.openReports > 0 },
+    { label: 'Signalements ouverts',     value: stats.openReports,         href: '/admin/signalements', color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   icon: '🚩', alert: stats.openReports > 0 },
+  ]
+
+  const quickLinks = [
+    { href: '/admin/utilisateurs',  label: 'Gérer les utilisateurs',  icon: '👥', desc: 'Voir, suspendre, modifier les comptes' },
+    { href: '/admin/verifications', label: 'Vérifier les dossiers',   icon: '✅', desc: "Valider les pièces d'identité" },
+    { href: '/admin/annonces',      label: 'Modérer les annonces',    icon: '🏠', desc: 'Désactiver les annonces problématiques' },
+    { href: '/admin/signalements',  label: 'Traiter les signalements', icon: '🚩', desc: 'Répondre aux signalements ouverts' },
   ]
 
   return (
@@ -92,42 +89,10 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats grid */}
+      {/* Stats grid — client components (hover effects) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '40px' }}>
         {cards.map(card => (
-          <Link
-            key={card.label}
-            href={card.href}
-            style={{ textDecoration: 'none' }}
-          >
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: `1px solid ${card.alert ? card.color + '50' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: '16px',
-                padding: '22px',
-                transition: 'all 0.15s',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.07)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                  {card.icon}
-                </div>
-                {card.alert && (
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: card.color, boxShadow: `0 0 6px ${card.color}` }} />
-                )}
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: '6px' }}>
-                {card.value.toLocaleString('fr-FR')}
-              </div>
-              <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 500 }}>
-                {card.label}
-              </div>
-            </div>
-          </Link>
+          <StatCard key={card.label} {...card} />
         ))}
       </div>
 
@@ -180,27 +145,10 @@ export default async function AdminDashboard() {
         )}
       </div>
 
-      {/* Quick links */}
+      {/* Quick links — client components (hover effects) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '32px' }}>
-        {[
-          { href: '/admin/utilisateurs', label: 'Gérer les utilisateurs', icon: '👥', desc: 'Voir, suspendre, modifier les comptes' },
-          { href: '/admin/verifications', label: 'Vérifier les dossiers', icon: '✅', desc: 'Valider les pièces d\'identité' },
-          { href: '/admin/annonces', label: 'Modérer les annonces', icon: '🏠', desc: 'Désactiver les annonces problématiques' },
-          { href: '/admin/signalements', label: 'Traiter les signalements', icon: '🚩', desc: 'Répondre aux signalements ouverts' },
-        ].map(link => (
-          <Link key={link.href} href={link.href} style={{ textDecoration: 'none' }}>
-            <div
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', transition: 'all 0.15s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(78,203,160,0.3)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(78,203,160,0.05)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)' }}
-            >
-              <span style={{ fontSize: '24px' }}>{link.icon}</span>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#E5E7EB', marginBottom: '2px' }}>{link.label}</div>
-                <div style={{ fontSize: '12px', color: '#6B7280' }}>{link.desc}</div>
-              </div>
-            </div>
-          </Link>
+        {quickLinks.map(link => (
+          <QuickLink key={link.href} {...link} />
         ))}
       </div>
 
