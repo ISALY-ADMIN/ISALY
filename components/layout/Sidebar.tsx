@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 
 interface NavItem {
-  icon: string
   label: string
   href: string
   id: string
@@ -15,35 +14,35 @@ interface NavItem {
 
 // ── Mode Recherche nav ───────────────────────────────────────
 const mainItems: NavItem[] = [
-  { icon: '🏡', label: 'Accueil',    href: '/app/dashboard-home', id: 'dashboard-home' },
-  { icon: '🔥', label: 'Trouver',    href: '/app/swipe',          id: 'swipe' },
-  { icon: '🔍', label: 'Rechercher', href: '/app/recherche',      id: 'recherche' },
-  { icon: '🗺️', label: 'Carte',      href: '/app/carte',          id: 'carte' },
-  { icon: '💬', label: 'Messages',   href: '/app/messages',       id: 'messages' },
+  { label: 'Accueil',    href: '/app/dashboard-home', id: 'dashboard-home' },
+  { label: 'Trouver',    href: '/app/swipe',          id: 'swipe' },
+  { label: 'Rechercher', href: '/app/recherche',      id: 'recherche' },
+  { label: 'Carte',      href: '/app/carte',          id: 'carte' },
+  { label: 'Messages',   href: '/app/messages',       id: 'messages' },
 ]
 const spaceItems: NavItem[] = [
-  { icon: '📁', label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
-  { icon: '👤', label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
-  { icon: '📢', label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
-  { icon: '📋', label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
-  { icon: '🔖', label: 'Favoris',      href: '/app/favoris',      id: 'favoris' },
+  { label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
+  { label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
+  { label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
+  { label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
+  { label: 'Favoris',      href: '/app/favoris',      id: 'favoris' },
 ]
 const accountItems: NavItem[] = [
-  { icon: '💳', label: 'Abonnements', href: '/app/paiement',    id: 'paiement' },
-  { icon: '🎁', label: 'Parrainage',  href: '/app/parrainage',  id: 'parrainage' },
-  { icon: '⚙️', label: 'Paramètres', href: '/app/parametres',  id: 'parametres' },
+  { label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
+  { label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
+  { label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
 ]
 
 // ── Mode Gestion nav ─────────────────────────────────────────
 const gestionItems: NavItem[] = [
-  { icon: '🏡', label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
-  { icon: '💳', label: 'Mes loyers',        href: '/app/loyers',       id: 'loyers' },
-  { icon: '📁', label: 'Mon dossier',       href: '/app/dossier',      id: 'dossier' },
-  { icon: '👥', label: 'Mes colocataires',  href: '/app/colocataires', id: 'colocataires' },
-  { icon: '🔧', label: 'Maintenance',       href: '/app/maintenance',  id: 'maintenance' },
-  { icon: '📄', label: 'Mon bail',          href: '/app/bail',         id: 'bail' },
-  { icon: '💬', label: 'Messages',          href: '/app/messages',     id: 'messages' },
-  { icon: '👤', label: 'Mon profil',        href: '/app/profil',       id: 'profil' },
+  { label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
+  { label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
+  { label: 'Mon dossier',      href: '/app/dossier',      id: 'dossier' },
+  { label: 'Mes colocataires', href: '/app/colocataires', id: 'colocataires' },
+  { label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
+  { label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
+  { label: 'Messages',         href: '/app/messages',     id: 'messages' },
+  { label: 'Mon profil',       href: '/app/profil',       id: 'profil' },
 ]
 
 interface UserData {
@@ -362,8 +361,11 @@ function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: b
         }
       }}
     >
-      <span className="text-[18px] w-5 text-center flex-shrink-0 leading-none">{item.icon}</span>
-      {!collapsed && <span className="flex-1">{item.label}</span>}
+      {!collapsed && (
+        <span className="flex-1" style={{ textTransform: 'uppercase', fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600, letterSpacing: '1px' }}>
+          {item.label}
+        </span>
+      )}
       {!collapsed && unread > 0 && (
         <span style={{ marginLeft: 'auto', background: '#10B981', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '20px' }}>
           {unread}
