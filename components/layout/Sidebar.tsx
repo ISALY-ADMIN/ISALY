@@ -144,12 +144,12 @@ export default function Sidebar() {
   return (
     <aside
       className="fixed top-0 left-0 bottom-0 z-50 flex flex-col"
-      style={{ width: collapsed ? '64px' : '232px', background: '#14171F', transition: 'width 0.2s ease', overflow: 'hidden' }}
+      style={{ width: collapsed ? '64px' : '232px', background: '#111827', transition: 'width 0.2s ease', overflow: 'hidden' }}
     >
       {/* ── Logo + toggle ─────────────────────────────────── */}
       <div
         className="flex items-center flex-shrink-0 border-b"
-        style={{ borderColor: '#1E2330', padding: '14px 12px', gap: '8px', minHeight: '68px' }}
+        style={{ borderColor: '#1F2937', padding: '14px 12px', gap: '8px', minHeight: '68px' }}
       >
         <Image
           src="/LOGO_ISALY.png"
@@ -173,7 +173,7 @@ export default function Sidebar() {
               transition: 'all 0.15s',
               flexShrink: 0,
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1E2330' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1F2937' }}
             onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
             title="Réduire"
           >
@@ -189,7 +189,7 @@ export default function Sidebar() {
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: '1px solid #1E2330',
+            borderBottom: '1px solid #1F2937',
             color: '#6B7280',
             cursor: 'pointer',
             fontSize: '14px',
@@ -199,7 +199,7 @@ export default function Sidebar() {
             transition: 'all 0.15s',
             flexShrink: 0,
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1E2330' }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1F2937' }}
           onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
           title="Développer"
         >
@@ -212,8 +212,8 @@ export default function Sidebar() {
         {mode === 'gestion' ? (
           <>
             {!collapsed && (
-              <div className="mx-3 mt-3 mb-2 px-3 py-2 rounded-[8px] text-center" style={{ background: 'rgba(255,200,87,0.12)', border: '1px solid rgba(255,200,87,0.3)' }}>
-                <span className="text-[11.5px] font-extrabold" style={{ color: '#FFC857' }}>🏠 Mode Locataire</span>
+              <div className="mx-3 mt-3 mb-2 px-3 py-2 rounded-[8px] text-center" style={{ background: '#0E2B1E', border: '1px solid #2AA87C' }}>
+                <span className="text-[11.5px] font-extrabold" style={{ color: '#4ECBA0' }}>🏠 Mode Locataire</span>
               </div>
             )}
             {gestionItems.map(item => (
@@ -230,9 +230,9 @@ export default function Sidebar() {
                 <Link
                   href="/app/swipe"
                   className="flex items-center justify-center gap-2 py-2 rounded-[8px] text-[12px] font-semibold no-underline transition-all"
-                  style={{ color: '#6B7280', border: '1px solid #1E2330' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#FFC857'; e.currentTarget.style.color = '#FFC857' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1E2330'; e.currentTarget.style.color = '#6B7280' }}
+                  style={{ color: '#6B7280', border: '1px solid #1F2937' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#4ECBA0' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F2937'; e.currentTarget.style.color = '#6B7280' }}
                 >
                   🔍 Chercher une coloc
                 </Link>
@@ -264,7 +264,7 @@ export default function Sidebar() {
       </div>
 
       {/* ── Bottom : sign out + user card ─────────────────── */}
-      <div className="border-t" style={{ borderColor: '#1E2330' }}>
+      <div className="border-t" style={{ borderColor: '#1F2937' }}>
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3.5 py-2.5 mx-2 my-1 rounded-[10px] text-[13.5px] font-medium transition-all duration-200 border-none cursor-pointer"
@@ -275,7 +275,7 @@ export default function Sidebar() {
             textAlign: 'left',
             justifyContent: collapsed ? 'center' : undefined,
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#1E2330'; e.currentTarget.style.color = '#E5E7EB' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6B7280' }}
         >
           <span className="text-[18px] w-5 text-center flex-shrink-0">🚪</span>
@@ -286,7 +286,7 @@ export default function Sidebar() {
           href="/app/profil"
           className="flex items-center gap-3 px-3 py-2.5 mx-2 mb-2 rounded-[10px] cursor-pointer transition-colors no-underline"
           style={{ justifyContent: collapsed ? 'center' : undefined, background: 'transparent' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#1E2330')}
+          onMouseEnter={e => (e.currentTarget.style.background = '#1F2937')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           <div className="relative flex-shrink-0">
@@ -295,14 +295,14 @@ export default function Sidebar() {
             ) : (
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white"
-                style={{ background: 'linear-gradient(135deg, #FFC857, #F59E0B)' }}
+                style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
               >
                 {initials}
               </div>
             )}
             <div
               className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
-              style={{ background: '#FFC857', borderColor: '#111827' }}
+              style={{ background: '#4ECBA0', borderColor: '#111827' }}
             />
           </div>
           {!collapsed && (
@@ -338,12 +338,12 @@ function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: b
       style={
         active
           ? {
-              background: 'rgba(255,200,87,0.12)',
-              color: '#FFC857',
+              background: '#16302a',
+              color: '#4ECBA0',
               fontWeight: 600,
               paddingLeft: collapsed ? undefined : 'calc(0.875rem - 3px)',
               paddingRight: '0.875rem',
-              borderLeft: collapsed ? 'none' : '3px solid #FFC857',
+              borderLeft: collapsed ? 'none' : '3px solid #4ECBA0',
               justifyContent: collapsed ? 'center' : undefined,
             }
           : {
@@ -355,7 +355,7 @@ function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: b
       }
       onMouseEnter={e => {
         if (!active) {
-          e.currentTarget.style.background = '#1E2330'
+          e.currentTarget.style.background = '#1F2937'
           e.currentTarget.style.color = '#E5E7EB'
         }
       }}
