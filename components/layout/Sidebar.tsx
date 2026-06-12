@@ -177,7 +177,9 @@ export default function Sidebar() {
             onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
             title="Réduire"
           >
-            ←
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
+            </svg>
           </button>
         )}
       </div>
@@ -203,7 +205,9 @@ export default function Sidebar() {
           onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
           title="Développer"
         >
-          →
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+          </svg>
         </button>
       )}
 
