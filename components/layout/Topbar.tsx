@@ -87,12 +87,7 @@ export default function Topbar({ title }: TopbarProps) {
           borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}
       >
-        <h1
-          className="text-[17px] font-semibold flex-1"
-          style={{ fontFamily: 'DM Sans, sans-serif', color: '#ffffff', letterSpacing: '-0.01em' }}
-        >
-          {title}
-        </h1>
+        <div className="flex-1" />
 
         <div className="flex gap-2 items-center">
           {/* Notifications */}

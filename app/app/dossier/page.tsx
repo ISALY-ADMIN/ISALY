@@ -285,7 +285,6 @@ export default function DossierPage() {
         {/* Header row */}
         <div className="flex justify-between items-start gap-6 mb-6">
           <div className="flex-1">
-            <h1 className="text-[28px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Mon dossier</h1>
             <p className="text-[13.5px] mb-4" style={{ color: '#6B7280' }}>Gérez vos documents et partagez votre dossier en toute sécurité</p>
             <button onClick={() => setShowShare(true)} className="px-5 py-2.5 rounded-full text-sm font-semibold text-white border-none cursor-pointer transition-colors" style={{ background: '#4ECBA0' }} onMouseEnter={e => (e.currentTarget.style.background = '#2AA87C')} onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}>
               📤 Partager mon dossier

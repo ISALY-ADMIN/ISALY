@@ -57,7 +57,6 @@ function PaiementContent() {
         )}
 
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Abonnements</h1>
           <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>Booste la visibilité de tes annonces pour louer plus vite.</p>
         </div>
 

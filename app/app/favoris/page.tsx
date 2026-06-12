@@ -35,7 +35,6 @@ export default function FavorisPage() {
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Topbar title="Mes favoris" />
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
-        <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#ffffff', marginBottom: '24px' }}>Mes favoris</h1>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.35)' }}>Chargement...</div>
         ) : listings.length === 0 && profiles.length === 0 ? (

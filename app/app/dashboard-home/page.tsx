@@ -59,12 +59,11 @@ export default function DashboardHomePage() {
           <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px' }}>
             Bonjour {firstName} 👋
           </h1>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
         </motion.div>
 
-        <ProfileCompletion profile={profile} />
+        <Link href="/app/profil" style={{ textDecoration: 'none', display: 'block', cursor: 'pointer' }}>
+          <ProfileCompletion profile={profile} />
+        </Link>
 
         <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
           {[
