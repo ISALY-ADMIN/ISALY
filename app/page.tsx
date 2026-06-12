@@ -505,17 +505,43 @@ export default function LandingPage() {
       </ScrollReveal>
 
       {/* FOOTER */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
-        {[
-          { label: 'Confidentialité', href: '/confidentialite' },
-          { label: 'CGU', href: '/cgu' },
-          { label: 'Contact', href: '/contact' },
-        ].map(link => (
-          <Link key={link.label} href={link.href} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
-          >{link.label}</Link>
-        ))}
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px' }}>
+        {/* Colocation dans les grandes villes */}
+        <div style={{ maxWidth: '1100px', margin: '0 auto 40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.25)', marginBottom: '16px' }}>
+            Colocation dans les grandes villes
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {[
+              ['paris', 'Paris'], ['marseille', 'Marseille'], ['lyon', 'Lyon'], ['toulouse', 'Toulouse'],
+              ['nice', 'Nice'], ['nantes', 'Nantes'], ['montpellier', 'Montpellier'], ['strasbourg', 'Strasbourg'],
+              ['bordeaux', 'Bordeaux'], ['lille', 'Lille'], ['rennes', 'Rennes'], ['reims', 'Reims'],
+              ['grenoble', 'Grenoble'], ['dijon', 'Dijon'], ['angers', 'Angers'], ['nimes', 'Nîmes'],
+              ['clermont-ferrand', 'Clermont-Ferrand'], ['toulon', 'Toulon'], ['saint-etienne', 'Saint-Étienne'], ['le-havre', 'Le Havre'],
+            ].map(([slug, name]) => (
+              <Link key={slug} href={`/colocation/${slug}`} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', padding: '5px 12px', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', transition: 'color 0.2s, border-color 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#10B981'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}
+              >
+                Colocation {name}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Liens légaux */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
+          {[
+            { label: 'Confidentialité', href: '/confidentialite' },
+            { label: 'CGU', href: '/cgu' },
+            { label: 'Contact', href: '/contact' },
+          ].map(link => (
+            <Link key={link.label} href={link.href} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
+            >{link.label}</Link>
+          ))}
+        </div>
       </footer>
 
       <style>{`
