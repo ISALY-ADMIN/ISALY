@@ -101,12 +101,23 @@ function ListingCard({ listing }: { listing: Listing }) {
             💬 Contacter
           </button>
           <button
+            onClick={() => router.push(`/annonce/${listing.id}`)}
             className="flex-1 py-2 rounded-full text-[12px] font-semibold border-[1.5px] cursor-pointer bg-transparent transition-all"
             style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#10B981'; e.currentTarget.style.color = '#10B981' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)' }}
           >
             👁️ Voir
+          </button>
+          <button
+            onClick={() => { navigator.clipboard.writeText(`https://isaly.fr/annonce/${listing.id}`).catch(() => {}) }}
+            className="py-2 px-3 rounded-full text-[12px] border-[1.5px] cursor-pointer bg-transparent transition-all"
+            style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}
+            title="Copier le lien"
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#10B981'; e.currentTarget.style.color = '#10B981' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+          >
+            🔗
           </button>
         </div>
       </div>
