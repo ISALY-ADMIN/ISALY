@@ -128,26 +128,25 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           className="absolute inset-0"
           style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}88 100%)` }}
         />
-        {profile.photoUrl ? (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{
+            fontFamily: "'DM Serif Display', serif",
+            fontSize: '160px',
+            color: 'white',
+            fontWeight: 700,
+            lineHeight: 1,
+          }}
+        >
+          {profile.name[0]}
+        </div>
+        {profile.photoUrl && (
           <img
             src={profile.photoUrl}
             alt={profile.name}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
             onError={(e) => { e.currentTarget.style.display = 'none' }}
           />
-        ) : (
-          <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-            style={{
-              fontFamily: "'DM Serif Display', serif",
-              fontSize: '160px',
-              color: 'white',
-              fontWeight: 700,
-              lineHeight: 1,
-            }}
-          >
-            {profile.name[0]}
-          </div>
         )}
         <div
           className="absolute bottom-0 inset-x-0"

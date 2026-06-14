@@ -56,14 +56,15 @@ function ListingCard({ listing }: { listing: Listing }) {
           fontSize: '40px',
         }}
       >
-        {listing.photos?.[0] ? (
+        🏠
+        {listing.photos?.[0] && (
           <img
             src={listing.photos[0]}
             alt={listing.title}
             onError={(e) => { e.currentTarget.style.display = 'none' }}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           />
-        ) : '🏠'}
+        )}
       </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="flex justify-between items-start mb-1">
