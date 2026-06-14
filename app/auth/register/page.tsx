@@ -50,11 +50,11 @@ export default function RegisterPage() {
 
     if (newUser && ref) {
       try {
-        await supabase.from('profiles').update({ referred_by: ref }).eq('id', newUser.id)
-        const { data: referrer } = await supabase.from('profiles').select('id, referral_count').eq('referral_code', ref).single()
-        if (referrer) {
-          await supabase.from('profiles').update({ referral_count: (referrer.referral_count ?? 0) + 1 }).eq('id', referrer.id)
-        }
+        await fetch('/api/referral/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ref }),
+        })
       } catch {}
     }
 
@@ -85,10 +85,14 @@ export default function RegisterPage() {
   async function handleGoogle() {
     setGoogleLoading(true)
     const supabase = createClient()
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    const callbackUrl = ref
+      ? `${window.location.origin}/auth/callback?ref=${encodeURIComponent(ref)}`
+      : `${window.location.origin}/auth/callback`
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
         queryParams: { prompt: 'select_account' },
       },
     })
