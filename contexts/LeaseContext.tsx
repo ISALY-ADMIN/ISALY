@@ -19,20 +19,26 @@ export interface ActiveLease {
 interface LeaseContextValue {
   lease: ActiveLease | null
   loading: boolean
-  mode: 'gestion' | 'recherche'
+  mode: 'locataire' | 'loueur'
+  hasActiveListing: boolean
+  setMode: (mode: 'locataire' | 'loueur') => void
   refresh: () => void
 }
 
 const LeaseContext = createContext<LeaseContextValue>({
   lease: null,
   loading: true,
-  mode: 'recherche',
+  mode: 'locataire',
+  hasActiveListing: false,
+  setMode: () => {},
   refresh: () => {},
 })
 
 export function LeaseProvider({ children }: { children: React.ReactNode }) {
-  const [lease, setLease] = useState<ActiveLease | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [lease, setLease]                       = useState<ActiveLease | null>(null)
+  const [loading, setLoading]                   = useState(true)
+  const [activeMode, setActiveMode]             = useState<'locataire' | 'loueur'>('locataire')
+  const [hasActiveListing, setHasActiveListing] = useState(false)
 
   const fetchLease = useCallback(async () => {
     setLoading(true)
@@ -41,14 +47,26 @@ export function LeaseProvider({ children }: { children: React.ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
+      // Fetch active_mode from profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('active_mode')
         .eq('id', user.id)
         .single()
 
-      if (profile?.role !== 'locataire') { setLoading(false); return }
+      if (profile?.active_mode === 'locataire' || profile?.active_mode === 'loueur') {
+        setActiveMode(profile.active_mode)
+      }
 
+      // Check if user has at least one active listing (enables switcher)
+      const { count: listingCount } = await supabase
+        .from('listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', user.id)
+        .eq('is_active', true)
+      setHasActiveListing((listingCount ?? 0) > 0)
+
+      // Fetch active lease (used by lease-detail pages)
       const { data } = await supabase
         .from('leases')
         .select('*')
@@ -65,7 +83,14 @@ export function LeaseProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { fetchLease() }, [fetchLease])
 
   return (
-    <LeaseContext.Provider value={{ lease, loading, mode: lease ? 'gestion' : 'recherche', refresh: fetchLease }}>
+    <LeaseContext.Provider value={{
+      lease,
+      loading,
+      mode: activeMode,
+      hasActiveListing,
+      setMode: setActiveMode,
+      refresh: fetchLease,
+    }}>
       {children}
     </LeaseContext.Provider>
   )
