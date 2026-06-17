@@ -22,7 +22,7 @@ interface NavItem {
   id: string
 }
 
-// ── Mode Locataire nav ───────────────────────────────────────
+// ── Mode Locataire ───────────────────────────────────────────
 const locataireMainItems: NavItem[] = [
   { icon: Home,          label: 'Accueil',     href: '/app/dashboard-home', id: 'dashboard-home' },
   { icon: Flame,         label: 'Trouver',     href: '/app/swipe',          id: 'swipe' },
@@ -31,10 +31,12 @@ const locataireMainItems: NavItem[] = [
   { icon: MessageCircle, label: 'Messages',    href: '/app/messages',       id: 'messages' },
 ]
 const locataireSpaceItems: NavItem[] = [
-  { icon: Building2, label: 'Ma maison',    href: '/app/maison',    id: 'maison' },
-  { icon: Folder,    label: 'Mon dossier',  href: '/app/dossier',   id: 'dossier' },
-  { icon: User,      label: 'Mon profil',   href: '/app/profil',    id: 'profil' },
-  { icon: Bookmark,  label: 'Favoris',      href: '/app/favoris',   id: 'favoris' },
+  { icon: Building2, label: 'Ma maison',    href: '/app/maison',       id: 'maison' },
+  { icon: Folder,    label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
+  { icon: User,      label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
+  { icon: Megaphone, label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
+  { icon: FileText,  label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
+  { icon: Bookmark,  label: 'Favoris',      href: '/app/favoris',      id: 'favoris' },
 ]
 const locataireAccountItems: NavItem[] = [
   { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
@@ -42,23 +44,25 @@ const locataireAccountItems: NavItem[] = [
   { icon: Settings,   label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
 ]
 
-// ── Mode Loueur nav ──────────────────────────────────────────
+// ── Mode Loueur ──────────────────────────────────────────────
 const loueurGestionItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
   { icon: Megaphone,       label: 'Mon annonce',      href: '/app/annonce',      id: 'annonce' },
   { icon: FileText,        label: 'Mes annonces',     href: '/app/mes-annonces', id: 'mes-annonces' },
-  { icon: Users,           label: 'Mes colocataires', href: '/app/colocataires', id: 'colocataires' },
+  { icon: Users,           label: 'Colocataires',     href: '/app/colocataires', id: 'colocataires' },
   { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
   { icon: Wrench,          label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
   { icon: ClipboardList,   label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
 ]
-const loueurCommonItems: NavItem[] = [
-  { icon: MessageCircle, label: 'Messages',    href: '/app/messages', id: 'messages' },
-  { icon: Folder,        label: 'Mon dossier', href: '/app/dossier',  id: 'dossier' },
-  { icon: User,          label: 'Mon profil',  href: '/app/profil',   id: 'profil' },
+const loueurCommunicationItems: NavItem[] = [
+  { icon: MessageCircle, label: 'Messages', href: '/app/messages', id: 'messages' },
 ]
 const loueurAccountItems: NavItem[] = [
-  { icon: Settings, label: 'Paramètres', href: '/app/parametres', id: 'parametres' },
+  { icon: Folder,     label: 'Mon dossier',  href: '/app/dossier',    id: 'dossier' },
+  { icon: User,       label: 'Mon profil',   href: '/app/profil',     id: 'profil' },
+  { icon: CreditCard, label: 'Abonnements',  href: '/app/paiement',   id: 'paiement' },
+  { icon: Gift,       label: 'Parrainage',   href: '/app/parrainage', id: 'parrainage' },
+  { icon: Settings,   label: 'Paramètres',   href: '/app/parametres', id: 'parametres' },
 ]
 
 interface UserData {
@@ -70,14 +74,18 @@ interface UserData {
 }
 
 export default function Sidebar() {
-  const pathname                        = usePathname()
-  const router                          = useRouter()
-  const { mode, hasActiveListing, setMode } = useLease()
-  const [collapsed, setCollapsed]       = useState(false)
-  const [unreadCount, setUnreadCount]   = useState(0)
-  const [userData, setUserData]         = useState<UserData>({ firstName: '', lastName: '', role: '', avatarUrl: null, isAdmin: false })
+  const pathname                    = usePathname()
+  const router                      = useRouter()
+  const { setMode: syncContextMode } = useLease()
 
-  // Sync sidebar width to CSS variable so layout can react without a context
+  const [collapsed, setCollapsed]   = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [currentMode, setCurrentMode] = useState<'locataire' | 'loueur'>('locataire')
+  const [userData, setUserData]     = useState<UserData>({
+    firstName: '', lastName: '', role: '', avatarUrl: null, isAdmin: false,
+  })
+
+  // Sync sidebar width to CSS variable so the main content margin reacts
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-width', collapsed ? '64px' : '232px')
   }, [collapsed])
@@ -89,21 +97,29 @@ export default function Sidebar() {
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+
+      // Include active_mode so the switcher is initialised from the persisted value
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, avatar_url, is_admin')
+        .select('first_name, last_name, role, avatar_url, is_admin, active_mode')
         .eq('id', user.id)
         .single()
+
       if (data) {
         setUserData({
           firstName: data.first_name ?? '',
-          lastName:  data.last_name ?? '',
-          role:      data.role ?? '',
+          lastName:  data.last_name  ?? '',
+          role:      data.role       ?? '',
           avatarUrl: data.avatar_url ?? null,
-          isAdmin:   data.is_admin === true,
+          isAdmin:   data.is_admin   === true,
         })
+        // Hydrate local mode state + keep LeaseContext in sync
+        const dbMode = data.active_mode === 'loueur' ? 'loueur' : 'locataire'
+        setCurrentMode(dbMode)
+        syncContextMode(dbMode)
       }
 
+      // Unread message badge
       const { count } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
@@ -111,18 +127,13 @@ export default function Sidebar() {
         .neq('sender_id', user.id)
       setUnreadCount(count ?? 0)
 
+      // Real-time badge update
       channel = supabase
         .channel('sidebar-unread')
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages' },
-          (payload) => {
-            const m = payload.new as { sender_id: string; read: boolean }
-            if (m.sender_id !== user.id && !m.read) {
-              setUnreadCount(n => n + 1)
-            }
-          }
-        )
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+          const m = payload.new as { sender_id: string; read: boolean }
+          if (m.sender_id !== user.id && !m.read) setUnreadCount(n => n + 1)
+        })
         .subscribe()
     }
 
@@ -145,6 +156,7 @@ export default function Sidebar() {
       if (channel) supabase.removeChannel(channel)
       window.removeEventListener('messages-read', handleMessagesRead)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleSignOut() {
@@ -154,15 +166,16 @@ export default function Sidebar() {
     router.refresh()
   }
 
-  async function handleModeSwitch(newMode: 'locataire' | 'loueur') {
-    setMode(newMode)
-    try {
-      await fetch('/api/profile/mode', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: newMode }),
-      })
-    } catch {}
+  function handleModeSwitch(newMode: 'locataire' | 'loueur') {
+    // Optimistic — update UI immediately
+    setCurrentMode(newMode)
+    syncContextMode(newMode)
+    // Persist silently in background
+    fetch('/api/profile/mode', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: newMode }),
+    }).catch(() => {})
   }
 
   const initials    = ((userData.firstName[0] ?? '') + (userData.lastName[0] ?? '')).toUpperCase() || '?'
@@ -171,9 +184,14 @@ export default function Sidebar() {
   return (
     <aside
       className="fixed top-0 left-0 bottom-0 z-50 flex flex-col"
-      style={{ width: collapsed ? '64px' : '232px', background: '#111827', transition: 'width 0.2s ease', overflow: 'hidden' }}
+      style={{
+        width: collapsed ? '64px' : '232px',
+        background: '#111827',
+        transition: 'width 0.2s ease',
+        overflow: 'hidden',
+      }}
     >
-      {/* ── Toggle ────────────────────────────────────────── */}
+      {/* ── Header / toggle ───────────────────────────────── */}
       <div
         className="flex items-center flex-shrink-0 border-b"
         style={{ borderColor: '#1F2937', padding: '14px 12px', gap: '8px', minHeight: '68px' }}
@@ -182,16 +200,9 @@ export default function Sidebar() {
           <button
             onClick={() => setCollapsed(true)}
             style={{
-              marginLeft: 'auto',
-              background: 'none',
-              border: 'none',
-              color: '#6B7280',
-              cursor: 'pointer',
-              fontSize: '16px',
-              padding: '4px 6px',
-              borderRadius: '6px',
-              transition: 'all 0.15s',
-              flexShrink: 0,
+              marginLeft: 'auto', background: 'none', border: 'none',
+              color: '#6B7280', cursor: 'pointer', padding: '4px 6px',
+              borderRadius: '6px', transition: 'all 0.15s', flexShrink: 0,
             }}
             onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1F2937' }}
             onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
@@ -204,22 +215,14 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Expand button when collapsed */}
+      {/* Expand button (collapsed state) */}
       {collapsed && (
         <button
           onClick={() => setCollapsed(false)}
           style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: '1px solid #1F2937',
-            color: '#6B7280',
-            cursor: 'pointer',
-            fontSize: '14px',
-            padding: '8px',
-            width: '100%',
-            textAlign: 'center',
-            transition: 'all 0.15s',
-            flexShrink: 0,
+            background: 'none', border: 'none', borderBottom: '1px solid #1F2937',
+            color: '#6B7280', cursor: 'pointer', padding: '8px',
+            width: '100%', textAlign: 'center', transition: 'all 0.15s', flexShrink: 0,
           }}
           onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1F2937' }}
           onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
@@ -231,37 +234,27 @@ export default function Sidebar() {
         </button>
       )}
 
-      {/* ── Mode Switcher (only when expanded and user has active listing) ── */}
-      {!collapsed && hasActiveListing && (
-        <div className="flex-shrink-0 pt-2">
-          <ModeSwitcher currentMode={mode} onSwitch={handleModeSwitch} />
+      {/* ── Mode Switcher — always visible when sidebar is expanded ── */}
+      {!collapsed && (
+        <div className="flex-shrink-0 px-3 pt-3 pb-1">
+          <ModeSwitcher currentMode={currentMode} onSwitch={handleModeSwitch} />
         </div>
       )}
 
       {/* ── Scrollable nav ────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        {mode === 'loueur' ? (
+        {currentMode === 'loueur' ? (
           <>
             {!collapsed && <NavSection label="Gestion" />}
             {loueurGestionItems.map(item => (
-              <NavLink
-                key={item.id}
-                item={item}
-                active={pathname === item.href}
-                collapsed={collapsed}
-                unread={0}
-              />
+              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
             ))}
+
             {!collapsed && <NavSection label="Communication" />}
-            {loueurCommonItems.map(item => (
-              <NavLink
-                key={item.id}
-                item={item}
-                active={pathname === item.href}
-                collapsed={collapsed}
-                unread={item.id === 'messages' ? unreadCount : 0}
-              />
+            {loueurCommunicationItems.map(item => (
+              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={item.id === 'messages' ? unreadCount : 0} />
             ))}
+
             {!collapsed && <NavSection label="Compte" />}
             {loueurAccountItems.map(item => (
               <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
@@ -271,22 +264,19 @@ export default function Sidebar() {
           <>
             {!collapsed && <NavSection label="Principal" />}
             {locataireMainItems.map(item => (
-              <NavLink
-                key={item.id}
-                item={item}
-                active={pathname === item.href}
-                collapsed={collapsed}
-                unread={item.id === 'messages' ? unreadCount : 0}
-              />
+              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={item.id === 'messages' ? unreadCount : 0} />
             ))}
+
             {!collapsed && <NavSection label="Mon espace" />}
             {locataireSpaceItems.map(item => (
               <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
             ))}
+
             {!collapsed && <NavSection label="Compte" />}
             {locataireAccountItems.map(item => (
               <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
             ))}
+
             {userData.isAdmin && (
               <>
                 {!collapsed && <NavSection label="Admin" />}
@@ -302,16 +292,14 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* ── Bottom : sign out + user card ─────────────────── */}
-      <div className="border-t" style={{ borderColor: '#1F2937' }}>
+      {/* ── Bottom : déconnexion + carte utilisateur ───────── */}
+      <div className="border-t flex-shrink-0" style={{ borderColor: '#1F2937' }}>
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3.5 py-2.5 mx-2 my-1 rounded-[10px] font-medium transition-all duration-200 border-none cursor-pointer"
           style={{
-            color: '#6B7280',
-            background: 'none',
-            width: 'calc(100% - 16px)',
-            textAlign: 'left',
+            color: '#6B7280', background: 'none',
+            width: 'calc(100% - 16px)', textAlign: 'left',
             justifyContent: collapsed ? 'center' : undefined,
           }}
           onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' }}
@@ -355,7 +343,7 @@ export default function Sidebar() {
                 {displayName}
               </div>
               <div className="text-[11px]" style={{ color: '#6B7280' }}>
-                {userData.role === 'loueur' ? 'Loueur' : userData.role === 'locataire' ? 'Locataire' : 'Membre'}
+                {currentMode === 'loueur' ? 'Mode Loueur' : 'Mode Locataire'}
               </div>
             </div>
           )}
@@ -373,8 +361,12 @@ function NavSection({ label }: { label: string }) {
   )
 }
 
-function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: boolean; collapsed: boolean; unread: number }) {
-  const IconComponent = item.icon
+function NavLink({
+  item, active, collapsed, unread,
+}: {
+  item: NavItem; active: boolean; collapsed: boolean; unread: number
+}) {
+  const Icon = item.icon
   return (
     <Link
       href={item.href}
@@ -383,8 +375,7 @@ function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: b
       style={
         active
           ? {
-              background: '#16302a',
-              color: '#4ECBA0',
+              background: '#16302a', color: '#4ECBA0',
               paddingLeft: collapsed ? undefined : 'calc(0.875rem - 3px)',
               paddingRight: '0.875rem',
               borderLeft: collapsed ? 'none' : '3px solid #4ECBA0',
@@ -392,27 +383,19 @@ function NavLink({ item, active, collapsed, unread }: { item: NavItem; active: b
             }
           : {
               color: '#9CA3AF',
-              paddingLeft: '0.875rem',
-              paddingRight: '0.875rem',
+              paddingLeft: '0.875rem', paddingRight: '0.875rem',
               justifyContent: collapsed ? 'center' : undefined,
             }
       }
-      onMouseEnter={e => {
-        if (!active) {
-          e.currentTarget.style.background = '#1F2937'
-          e.currentTarget.style.color = '#E5E7EB'
-        }
-      }}
-      onMouseLeave={e => {
-        if (!active) {
-          e.currentTarget.style.background = 'none'
-          e.currentTarget.style.color = '#9CA3AF'
-        }
-      }}
+      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#1F2937'; e.currentTarget.style.color = '#E5E7EB' } }}
+      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#9CA3AF' } }}
     >
-      <IconComponent size={18} strokeWidth={1.75} style={{ flexShrink: 0, opacity: 0.7 }} />
+      <Icon size={18} strokeWidth={1.75} style={{ flexShrink: 0, opacity: 0.7 }} />
       {!collapsed && (
-        <span className="flex-1" style={{ textTransform: 'uppercase', fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600, letterSpacing: '1px' }}>
+        <span
+          className="flex-1"
+          style={{ textTransform: 'uppercase', fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600, letterSpacing: '1px' }}
+        >
           {item.label}
         </span>
       )}

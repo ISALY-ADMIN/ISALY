@@ -10,52 +10,64 @@ export default function ModeSwitcher({ currentMode, onSwitch }: ModeSwitcherProp
     <div
       role="group"
       aria-label="Changer de mode"
-      className="relative flex mx-3 my-2 rounded-full p-0.5 select-none"
-      style={{ background: 'rgba(255,255,255,0.07)' }}
+      className="relative flex select-none w-full"
+      style={{
+        background: 'rgba(255,255,255,0.07)',
+        borderRadius: '10px',
+        padding: '4px',
+      }}
     >
       {/* Sliding active pill */}
       <div
         aria-hidden="true"
-        className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full pointer-events-none"
+        className="absolute pointer-events-none"
         style={{
+          top: '4px',
+          bottom: '4px',
+          left: '4px',
+          width: 'calc(50% - 4px)',
           background: '#4ECBA0',
-          left: '2px',
-          transform: currentMode === 'loueur' ? 'translateX(calc(100% + 2px))' : 'translateX(0)',
-          transition: 'transform 0.25s cubic-bezier(.4,0,.2,1)',
+          borderRadius: '7px',
+          transform: currentMode === 'loueur' ? 'translateX(100%)' : 'translateX(0)',
+          transition: 'transform 0.25s ease',
         }}
       />
 
       <button
-        role="radio"
+        role="switch"
         aria-checked={currentMode === 'locataire'}
         onClick={() => onSwitch('locataire')}
-        className="relative z-10 flex-1 py-1.5 rounded-full border-none cursor-pointer transition-colors duration-200"
+        className="relative z-10 flex-1 border-none cursor-pointer"
         style={{
           background: 'transparent',
           color: currentMode === 'locataire' ? '#1A1A1A' : 'rgba(255,255,255,0.45)',
           fontFamily: "'Outfit', sans-serif",
           fontSize: '11px',
-          fontWeight: 700,
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase',
+          fontWeight: 500,
+          letterSpacing: '0.3px',
+          padding: '6px 0',
+          borderRadius: '6px',
+          transition: 'color 0.2s ease',
         }}
       >
         Locataire
       </button>
 
       <button
-        role="radio"
+        role="switch"
         aria-checked={currentMode === 'loueur'}
         onClick={() => onSwitch('loueur')}
-        className="relative z-10 flex-1 py-1.5 rounded-full border-none cursor-pointer transition-colors duration-200"
+        className="relative z-10 flex-1 border-none cursor-pointer"
         style={{
           background: 'transparent',
           color: currentMode === 'loueur' ? '#1A1A1A' : 'rgba(255,255,255,0.45)',
           fontFamily: "'Outfit', sans-serif",
           fontSize: '11px',
-          fontWeight: 700,
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase',
+          fontWeight: 500,
+          letterSpacing: '0.3px',
+          padding: '6px 0',
+          borderRadius: '6px',
+          transition: 'color 0.2s ease',
         }}
       >
         Loueur
