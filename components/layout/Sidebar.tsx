@@ -5,11 +5,13 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
+import ModeSwitcher from '@/components/ModeSwitcher'
 import {
   Home, Flame, Search, Map, MessageCircle,
   Folder, User, Megaphone, FileText, Bookmark,
   CreditCard, Gift, Settings, LogOut,
-  Users, ClipboardList, Wrench, Receipt, LayoutDashboard, ShieldAlert,
+  Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
+  ShieldAlert, Building2,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -20,37 +22,43 @@ interface NavItem {
   id: string
 }
 
-// ── Mode Recherche nav ───────────────────────────────────────
-const mainItems: NavItem[] = [
-  { icon: Home,          label: 'Accueil',    href: '/app/dashboard-home', id: 'dashboard-home' },
-  { icon: Flame,         label: 'Trouver',    href: '/app/swipe',          id: 'swipe' },
-  { icon: Search,        label: 'Rechercher', href: '/app/recherche',      id: 'recherche' },
-  { icon: Map,           label: 'Carte',      href: '/app/carte',          id: 'carte' },
-  { icon: MessageCircle, label: 'Messages',   href: '/app/messages',       id: 'messages' },
+// ── Mode Locataire nav ───────────────────────────────────────
+const locataireMainItems: NavItem[] = [
+  { icon: Home,          label: 'Accueil',     href: '/app/dashboard-home', id: 'dashboard-home' },
+  { icon: Flame,         label: 'Trouver',     href: '/app/swipe',          id: 'swipe' },
+  { icon: Search,        label: 'Rechercher',  href: '/app/recherche',      id: 'recherche' },
+  { icon: Map,           label: 'Carte',       href: '/app/carte',          id: 'carte' },
+  { icon: MessageCircle, label: 'Messages',    href: '/app/messages',       id: 'messages' },
 ]
-const spaceItems: NavItem[] = [
-  { icon: Folder,    label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
-  { icon: User,      label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
-  { icon: Megaphone, label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
-  { icon: FileText,  label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
-  { icon: Bookmark,  label: 'Favoris',      href: '/app/favoris',      id: 'favoris' },
+const locataireSpaceItems: NavItem[] = [
+  { icon: Building2, label: 'Ma maison',    href: '/app/maison',    id: 'maison' },
+  { icon: Folder,    label: 'Mon dossier',  href: '/app/dossier',   id: 'dossier' },
+  { icon: User,      label: 'Mon profil',   href: '/app/profil',    id: 'profil' },
+  { icon: Bookmark,  label: 'Favoris',      href: '/app/favoris',   id: 'favoris' },
 ]
-const accountItems: NavItem[] = [
+const locataireAccountItems: NavItem[] = [
   { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
   { icon: Gift,       label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
   { icon: Settings,   label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
 ]
 
-// ── Mode Gestion nav ─────────────────────────────────────────
-const gestionItems: NavItem[] = [
+// ── Mode Loueur nav ──────────────────────────────────────────
+const loueurGestionItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
-  { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
-  { icon: Folder,          label: 'Mon dossier',      href: '/app/dossier',      id: 'dossier' },
+  { icon: Megaphone,       label: 'Mon annonce',      href: '/app/annonce',      id: 'annonce' },
+  { icon: FileText,        label: 'Mes annonces',     href: '/app/mes-annonces', id: 'mes-annonces' },
   { icon: Users,           label: 'Mes colocataires', href: '/app/colocataires', id: 'colocataires' },
+  { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
   { icon: Wrench,          label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
   { icon: ClipboardList,   label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
-  { icon: MessageCircle,   label: 'Messages',         href: '/app/messages',     id: 'messages' },
-  { icon: User,            label: 'Mon profil',       href: '/app/profil',       id: 'profil' },
+]
+const loueurCommonItems: NavItem[] = [
+  { icon: MessageCircle, label: 'Messages',    href: '/app/messages', id: 'messages' },
+  { icon: Folder,        label: 'Mon dossier', href: '/app/dossier',  id: 'dossier' },
+  { icon: User,          label: 'Mon profil',  href: '/app/profil',   id: 'profil' },
+]
+const loueurAccountItems: NavItem[] = [
+  { icon: Settings, label: 'Paramètres', href: '/app/parametres', id: 'parametres' },
 ]
 
 interface UserData {
@@ -64,7 +72,7 @@ interface UserData {
 export default function Sidebar() {
   const pathname                        = usePathname()
   const router                          = useRouter()
-  const { mode }                        = useLease()
+  const { mode, hasActiveListing, setMode } = useLease()
   const [collapsed, setCollapsed]       = useState(false)
   const [unreadCount, setUnreadCount]   = useState(0)
   const [userData, setUserData]         = useState<UserData>({ firstName: '', lastName: '', role: '', avatarUrl: null, isAdmin: false })
@@ -146,6 +154,17 @@ export default function Sidebar() {
     router.refresh()
   }
 
+  async function handleModeSwitch(newMode: 'locataire' | 'loueur') {
+    setMode(newMode)
+    try {
+      await fetch('/api/profile/mode', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: newMode }),
+      })
+    } catch {}
+  }
+
   const initials    = ((userData.firstName[0] ?? '') + (userData.lastName[0] ?? '')).toUpperCase() || '?'
   const displayName = `${userData.firstName} ${userData.lastName}`.trim() || 'Mon profil'
 
@@ -212,16 +231,29 @@ export default function Sidebar() {
         </button>
       )}
 
+      {/* ── Mode Switcher (only when expanded and user has active listing) ── */}
+      {!collapsed && hasActiveListing && (
+        <div className="flex-shrink-0 pt-2">
+          <ModeSwitcher currentMode={mode} onSwitch={handleModeSwitch} />
+        </div>
+      )}
+
       {/* ── Scrollable nav ────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        {mode === 'gestion' ? (
+        {mode === 'loueur' ? (
           <>
-            {!collapsed && (
-              <div className="mx-3 mt-3 mb-2 px-3 py-2 rounded-[8px] text-center" style={{ background: '#0E2B1E', border: '1px solid #2AA87C' }}>
-                <span className="text-[11.5px] font-extrabold" style={{ color: '#4ECBA0' }}>🏠 Mode Locataire</span>
-              </div>
-            )}
-            {gestionItems.map(item => (
+            {!collapsed && <NavSection label="Gestion" />}
+            {loueurGestionItems.map(item => (
+              <NavLink
+                key={item.id}
+                item={item}
+                active={pathname === item.href}
+                collapsed={collapsed}
+                unread={0}
+              />
+            ))}
+            {!collapsed && <NavSection label="Communication" />}
+            {loueurCommonItems.map(item => (
               <NavLink
                 key={item.id}
                 item={item}
@@ -230,24 +262,15 @@ export default function Sidebar() {
                 unread={item.id === 'messages' ? unreadCount : 0}
               />
             ))}
-            {!collapsed && (
-              <div className="mx-3 mb-2 mt-2">
-                <Link
-                  href="/app/swipe"
-                  className="flex items-center justify-center gap-2 py-2 rounded-[8px] text-[12px] font-semibold no-underline transition-all"
-                  style={{ color: '#6B7280', border: '1px solid #1F2937' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#4ECBA0' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F2937'; e.currentTarget.style.color = '#6B7280' }}
-                >
-                  🔍 Chercher une coloc
-                </Link>
-              </div>
-            )}
+            {!collapsed && <NavSection label="Compte" />}
+            {loueurAccountItems.map(item => (
+              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
+            ))}
           </>
         ) : (
           <>
             {!collapsed && <NavSection label="Principal" />}
-            {mainItems.map(item => (
+            {locataireMainItems.map(item => (
               <NavLink
                 key={item.id}
                 item={item}
@@ -257,11 +280,11 @@ export default function Sidebar() {
               />
             ))}
             {!collapsed && <NavSection label="Mon espace" />}
-            {spaceItems.map(item => (
+            {locataireSpaceItems.map(item => (
               <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
             ))}
             {!collapsed && <NavSection label="Compte" />}
-            {accountItems.map(item => (
+            {locataireAccountItems.map(item => (
               <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
             ))}
             {userData.isAdmin && (

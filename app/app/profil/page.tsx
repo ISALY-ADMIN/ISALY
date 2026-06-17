@@ -696,31 +696,31 @@ export default function ProfilPage() {
           </p>
           <div className="flex gap-3">
             <button
-              onClick={() => { if (mode === 'gestion') { /* already in recherche when no active lease */ } }}
+              onClick={() => { if (mode === 'loueur') { /* switch via sidebar switcher */ } }}
               className="flex-1 py-3 rounded-[12px] border-[2px] cursor-pointer transition-all text-[13px] font-semibold"
               style={
-                mode === 'recherche'
+                mode === 'locataire'
                   ? { background: '#ECFDF5', borderColor: '#4ECBA0', color: '#2AA87C' }
                   : { background: '#F9FAFB', borderColor: '#E5E7EB', color: '#6B7280' }
               }
             >
               🔍 Je cherche une coloc
-              {mode === 'recherche' && <div className="text-[10px] mt-0.5" style={{ color: '#4ECBA0' }}>Mode actuel</div>}
+              {mode === 'locataire' && <div className="text-[10px] mt-0.5" style={{ color: '#4ECBA0' }}>Mode actuel</div>}
             </button>
             <button
-              onClick={() => { if (mode === 'recherche') setShowBailModal(true) }}
+              onClick={() => { if (mode === 'locataire') setShowBailModal(true) }}
               className="flex-1 py-3 rounded-[12px] border-[2px] cursor-pointer transition-all text-[13px] font-semibold"
               style={
-                mode === 'gestion'
+                mode === 'loueur'
                   ? { background: '#ECFDF5', borderColor: '#4ECBA0', color: '#2AA87C' }
                   : { background: '#F9FAFB', borderColor: '#E5E7EB', color: '#6B7280' }
               }
             >
               🏠 Je suis dans un bail
-              {mode === 'gestion' && <div className="text-[10px] mt-0.5" style={{ color: '#4ECBA0' }}>Mode actuel</div>}
+              {mode === 'loueur' && <div className="text-[10px] mt-0.5" style={{ color: '#4ECBA0' }}>Mode actuel</div>}
             </button>
           </div>
-          {mode === 'gestion' && lease && (
+          {mode === 'loueur' && lease && (
             <div className="mt-3 px-3 py-2.5 rounded-[10px] text-[12.5px]" style={{ background: '#F0FDF4', color: '#2AA87C' }}>
               📍 {lease.address}{lease.city ? `, ${lease.city}` : ''} · {lease.monthly_rent} €/mois
             </div>
