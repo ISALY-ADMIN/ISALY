@@ -84,6 +84,28 @@ export function identityRejectedTemplate(firstName: string): string {
   return BASE.replace('{{BODY}}', body)
 }
 
+export function rentReminderTemplate(firstName: string, monthLabel: string, amount: number): string {
+  const body = `
+    <div style="padding:36px 40px">
+      <h2 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700">Rappel de loyer 📅</h2>
+      <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6">
+        Bonjour ${firstName || 'toi'}, ton loyer de <strong>${monthLabel}</strong> (${amount} €) est toujours en attente.
+        Merci de régulariser ta situation auprès de ton propriétaire dès que possible.
+      </p>
+      <div style="background:#fffbeb;border-radius:12px;padding:16px 20px;margin-bottom:24px">
+        <p style="margin:0;font-size:13px;color:#92400e">⏳ Loyer de ${monthLabel} en attente — ${amount} €</p>
+      </div>
+      <div style="text-align:center;margin:28px 0">
+        <a href="https://isaly.fr/app/loyers"
+          style="display:inline-block;background:linear-gradient(135deg,#4ECBA0,#2AA87C);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 36px;border-radius:50px;box-shadow:0 4px 16px rgba(78,203,160,.35)">
+          Voir mes loyers
+        </a>
+      </div>
+    </div>
+  `
+  return BASE.replace('{{BODY}}', body)
+}
+
 export function resetPasswordTemplate(resetUrl: string): string {
   const body = `
     <div style="padding:36px 40px">
