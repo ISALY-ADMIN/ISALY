@@ -106,6 +106,25 @@ export function rentReminderTemplate(firstName: string, monthLabel: string, amou
   return BASE.replace('{{BODY}}', body)
 }
 
+export function bailSignatureRequestTemplate(firstName: string, signUrl: string): string {
+  const body = `
+    <div style="padding:36px 40px">
+      <h2 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700">Votre bail est prêt à signer ✍️</h2>
+      <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6">
+        Bonjour ${firstName || 'toi'}, ton propriétaire a préparé ton contrat de location.
+        Clique ci-dessous pour le consulter et le signer électroniquement.
+      </p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="${signUrl}"
+          style="display:inline-block;background:linear-gradient(135deg,#4ECBA0,#2AA87C);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 36px;border-radius:50px;box-shadow:0 4px 16px rgba(78,203,160,.35)">
+          ✍️ Consulter et signer
+        </a>
+      </div>
+    </div>
+  `
+  return BASE.replace('{{BODY}}', body)
+}
+
 export function resetPasswordTemplate(resetUrl: string): string {
   const body = `
     <div style="padding:36px 40px">

@@ -51,6 +51,7 @@ const loueurGestionItems: NavItem[] = [
   { icon: FileText,        label: 'Mes annonces',     href: '/app/mes-annonces', id: 'mes-annonces' },
   { icon: Users,           label: 'Mes locataires',   href: '/app/locataires',   id: 'locataires' },
   { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
+  { icon: Folder,          label: 'Mes documents',    href: '/app/documents',    id: 'documents' },
   { icon: Wrench,          label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
   { icon: ClipboardList,   label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
 ]
