@@ -32,6 +32,7 @@ const locataireMainItems: NavItem[] = [
 ]
 const locataireSpaceItems: NavItem[] = [
   { icon: Building2, label: 'Ma maison',    href: '/app/maison',       id: 'maison' },
+  { icon: Wrench,    label: 'Maintenance',  href: '/app/maintenance',  id: 'maintenance' },
   { icon: Folder,    label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
   { icon: User,      label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
   { icon: Megaphone, label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
