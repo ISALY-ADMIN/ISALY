@@ -49,7 +49,7 @@ const loueurGestionItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
   { icon: Megaphone,       label: 'Mon annonce',      href: '/app/annonce',      id: 'annonce' },
   { icon: FileText,        label: 'Mes annonces',     href: '/app/mes-annonces', id: 'mes-annonces' },
-  { icon: Users,           label: 'Colocataires',     href: '/app/colocataires', id: 'colocataires' },
+  { icon: Users,           label: 'Mes locataires',   href: '/app/locataires',   id: 'locataires' },
   { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
   { icon: Wrench,          label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
   { icon: ClipboardList,   label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
