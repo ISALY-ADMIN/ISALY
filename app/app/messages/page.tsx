@@ -8,6 +8,7 @@ import ChatArea from '@/components/messages/ChatArea'
 import { createClient } from '@/lib/supabase/client'
 import { CertLevel } from '@/components/ui/CertificationBadge'
 import { usePresence } from '@/hooks/usePresence'
+import { useLease } from '@/contexts/LeaseContext'
 
 interface Msg {
   from: 'me' | 'them'
@@ -28,6 +29,7 @@ interface Conv {
   certLevel?: CertLevel
   avatarUrl?: string | null
   otherUserId?: string | null
+  sectionLabel?: string
 }
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
@@ -42,6 +44,7 @@ function MessagesContent() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const { mode } = useLease()
 
   usePresence(currentUserId)
   const [ownerDraft, setOwnerDraft] = useState('')
@@ -128,7 +131,7 @@ function MessagesContent() {
 
       const { data } = await supabase
         .from('conversations')
-        .select('id, user1_id, user2_id, created_at')
+        .select('id, user1_id, user2_id, created_at, lease_id, conversation_type')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
 
@@ -150,6 +153,14 @@ function MessagesContent() {
         .in('conversation_id', convIds)
         .order('created_at', { ascending: false })
 
+      const leaseIds = Array.from(new Set(data.map(c => c.lease_id).filter(Boolean))) as string[]
+      let leases: { id: string; address: string }[] = []
+      if (leaseIds.length > 0) {
+        const { data: leasesData } = await supabase.from('leases').select('id, address').in('id', leaseIds)
+        leases = (leasesData ?? []) as { id: string; address: string }[]
+      }
+      const hasBailConv = data.some(c => c.conversation_type === 'bail')
+
       const builtConvs: Conv[] = data.map((conv, i) => {
         const otherId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
         const otherProfile = profiles?.find(p => p.id === otherId)
@@ -158,6 +169,11 @@ function MessagesContent() {
         const name = `${fn} ${ln ? ln[0] + '.' : ''}`.trim()
         const initials = `${fn[0] ?? ''}${ln[0] ?? ''}`.toUpperCase()
         const lastMsg = lastMsgs?.find(m => m.conversation_id === conv.id)
+        const isBail = conv.conversation_type === 'bail'
+        const leaseAddress = isBail ? leases.find(l => l.id === conv.lease_id)?.address : undefined
+        const sectionLabel = isBail
+          ? (mode === 'loueur' ? (leaseAddress ?? '🏠 Baux') : '🏠 Ma colocation')
+          : (hasBailConv ? '💬 Messages' : undefined)
 
         return {
           id: conv.id as string,
@@ -169,7 +185,16 @@ function MessagesContent() {
           msgs: [],
           avatarUrl: (otherProfile as { avatar_url?: string | null } | undefined)?.avatar_url ?? null,
           otherUserId: otherId,
-        }
+          sectionLabel,
+          _isBail: isBail,
+        } as Conv & { _isBail: boolean }
+      })
+
+      builtConvs.sort((a, b) => {
+        const aBail = (a as Conv & { _isBail?: boolean })._isBail ? 0 : 1
+        const bBail = (b as Conv & { _isBail?: boolean })._isBail ? 0 : 1
+        if (aBail !== bBail) return aBail - bBail
+        return (a.sectionLabel ?? '').localeCompare(b.sectionLabel ?? '')
       })
 
       setConvs(builtConvs)

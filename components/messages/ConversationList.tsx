@@ -11,6 +11,7 @@ interface Conv {
   time: string
   certLevel?: CertLevel
   unread?: number
+  sectionLabel?: string
 }
 
 interface ConversationListProps {
@@ -55,11 +56,17 @@ export default function ConversationList({ convs, activeId, onSelect }: Conversa
             </a>
           </div>
         ) : (
-          convs.map(c => {
+          convs.map((c, idx) => {
             const isActive = activeId === c.id
+            const showHeader = !!c.sectionLabel && c.sectionLabel !== convs[idx - 1]?.sectionLabel
             return (
+              <div key={c.id}>
+                {showHeader && (
+                  <div className="px-2.5 pt-3 pb-1.5 text-[10.5px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    {c.sectionLabel}
+                  </div>
+                )}
               <button
-                key={c.id}
                 onClick={() => onSelect(c.id)}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] w-full border-none cursor-pointer transition-colors mb-0.5 text-left"
                 style={{ background: isActive ? 'rgba(16,185,129,0.12)' : 'transparent' }}
@@ -101,6 +108,7 @@ export default function ConversationList({ convs, activeId, onSelect }: Conversa
                   ) : null}
                 </div>
               </button>
+              </div>
             )
           })
         )}
