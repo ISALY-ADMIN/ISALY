@@ -106,6 +106,28 @@ export function rentReminderTemplate(firstName: string, monthLabel: string, amou
   return BASE.replace('{{BODY}}', body)
 }
 
+export function maintenanceRequestTemplate(title: string, category: string, description: string, maintenanceUrl: string): string {
+  const body = `
+    <div style="padding:36px 40px">
+      <h2 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700">Nouveau signalement 🔧</h2>
+      <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.6">
+        Un locataire vient de signaler un problème (<strong>${category}</strong>) sur l'un de vos biens.
+      </p>
+      <div style="background:#f9fafb;border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid #f3f4f6">
+        <p style="margin:0 0 6px;font-size:14px;color:#111827;font-weight:700">${title}</p>
+        <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5">${description}</p>
+      </div>
+      <div style="text-align:center;margin:28px 0">
+        <a href="${maintenanceUrl}"
+          style="display:inline-block;background:linear-gradient(135deg,#4ECBA0,#2AA87C);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 36px;border-radius:50px;box-shadow:0 4px 16px rgba(78,203,160,.35)">
+          Voir le signalement
+        </a>
+      </div>
+    </div>
+  `
+  return BASE.replace('{{BODY}}', body)
+}
+
 export function bailSignatureRequestTemplate(firstName: string, signUrl: string): string {
   const body = `
     <div style="padding:36px 40px">

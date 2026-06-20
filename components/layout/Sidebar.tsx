@@ -11,7 +11,7 @@ import {
   Folder, User, Megaphone, FileText, Bookmark,
   CreditCard, Gift, Settings, LogOut,
   Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
-  ShieldAlert, Building2,
+  ShieldAlert, Building2, AlertTriangle,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -31,13 +31,13 @@ const locataireMainItems: NavItem[] = [
   { icon: MessageCircle, label: 'Messages',    href: '/app/messages',       id: 'messages' },
 ]
 const locataireSpaceItems: NavItem[] = [
-  { icon: Building2, label: 'Ma maison',    href: '/app/maison',       id: 'maison' },
-  { icon: Wrench,    label: 'Maintenance',  href: '/app/maintenance',  id: 'maintenance' },
-  { icon: Folder,    label: 'Mon dossier',  href: '/app/dossier',      id: 'dossier' },
-  { icon: User,      label: 'Mon profil',   href: '/app/profil',       id: 'profil' },
-  { icon: Megaphone, label: 'Mon annonce',  href: '/app/annonce',      id: 'annonce' },
-  { icon: FileText,  label: 'Mes annonces', href: '/app/mes-annonces', id: 'mes-annonces' },
-  { icon: Bookmark,  label: 'Favoris',      href: '/app/favoris',      id: 'favoris' },
+  { icon: Building2,     label: 'Ma maison',             href: '/app/maison',             id: 'maison' },
+  { icon: AlertTriangle, label: 'Déclarer un problème',  href: '/app/declarer-probleme',  id: 'declarer-probleme' },
+  { icon: Folder,        label: 'Mon dossier',           href: '/app/dossier',            id: 'dossier' },
+  { icon: User,          label: 'Mon profil',            href: '/app/profil',             id: 'profil' },
+  { icon: Megaphone,     label: 'Mon annonce',           href: '/app/annonce',            id: 'annonce' },
+  { icon: FileText,      label: 'Mes annonces',          href: '/app/mes-annonces',       id: 'mes-annonces' },
+  { icon: Bookmark,      label: 'Favoris',                href: '/app/favoris',           id: 'favoris' },
 ]
 const locataireAccountItems: NavItem[] = [
   { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },

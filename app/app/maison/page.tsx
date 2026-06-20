@@ -233,7 +233,7 @@ export default function MaisonPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="text-[15px] font-bold" style={{ color: '#111827' }}>🔧 Signalements</div>
             <Link
-              href="/app/maintenance"
+              href="/app/declarer-probleme"
               className="no-underline px-3.5 py-1.5 rounded-full text-[12px] font-semibold"
               style={{ background: '#F3F4F6', color: '#374151' }}
             >

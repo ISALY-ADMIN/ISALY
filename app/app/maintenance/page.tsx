@@ -1,14 +1,20 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLease } from '@/contexts/LeaseContext'
 import Topbar from '@/components/layout/Topbar'
-import TenantMaintenanceClient from './TenantMaintenanceClient'
 import LoueurMaintenance from './LoueurMaintenance'
 
 export default function MaintenancePage() {
   const { mode, loading } = useLease()
+  const router = useRouter()
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && mode === 'locataire') router.replace('/app/declarer-probleme')
+  }, [loading, mode, router])
+
+  if (loading || mode === 'locataire') {
     return (
       <>
         <Topbar title="Maintenance" />
@@ -19,6 +25,5 @@ export default function MaintenancePage() {
     )
   }
 
-  if (mode === 'loueur') return <LoueurMaintenance />
-  return <TenantMaintenanceClient />
+  return <LoueurMaintenance />
 }
