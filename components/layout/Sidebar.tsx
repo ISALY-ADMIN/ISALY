@@ -48,7 +48,7 @@ const locataireAccountItems: NavItem[] = [
 // ── Mode Loueur ──────────────────────────────────────────────
 const loueurGestionItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord',  href: '/app/dashboard',    id: 'dashboard' },
-  { icon: Megaphone,       label: 'Mon annonce',      href: '/app/annonce',      id: 'annonce' },
+  { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',   id: 'annonce' },
   { icon: FileText,        label: 'Mes annonces',     href: '/app/mes-annonces', id: 'mes-annonces' },
   { icon: Users,           label: 'Mes locataires',   href: '/app/locataires',   id: 'locataires' },
   { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
