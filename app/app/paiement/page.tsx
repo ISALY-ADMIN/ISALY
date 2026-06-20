@@ -4,6 +4,94 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import { useLease } from '@/contexts/LeaseContext'
+
+function SwiperPlusContent() {
+  const searchParams = useSearchParams()
+  const [loading, setLoading] = useState(false)
+  const [available, setAvailable] = useState(false)
+  const success = searchParams.get('success')
+  const cancelled = searchParams.get('cancelled')
+
+  useEffect(() => {
+    fetch('/api/stripe/checkout').then(r => r.json()).then(j => setAvailable(!!j.swiperPlusAvailable)).catch(() => {})
+  }, [])
+
+  async function handleCheckout() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'swiper_plus' }),
+      })
+      const { url, error } = await res.json()
+      if (error) { alert('Erreur : ' + error); setLoading(false); return }
+      window.location.href = url
+    } catch {
+      alert('Erreur de connexion au paiement')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#F0F4F0' }}>
+      <Topbar title="Abonnements" />
+      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '40px 24px' }}>
+
+        {success && (
+          <div style={{ background: '#ECFDF5', border: '1px solid #10B981', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '20px' }}>🎉</span>
+            <div>
+              <div style={{ fontWeight: 700, color: '#065F46' }}>Swiper+ activé !</div>
+              <div style={{ fontSize: '13px', color: '#059669' }}>Swipes et messages illimités dès maintenant.</div>
+            </div>
+          </div>
+        )}
+        {cancelled && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #EF4444', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
+            <div style={{ fontWeight: 700, color: '#991B1B' }}>Paiement annulé</div>
+            <div style={{ fontSize: '13px', color: '#DC2626' }}>Aucun prélèvement n&apos;a été effectué.</div>
+          </div>
+        )}
+
+        <div style={{ background: '#fff', border: '2px solid #4ECBA0', borderRadius: '16px', padding: '32px', textAlign: 'center' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#2AA87C', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '10px' }}>Swiper+</div>
+          <div style={{ fontSize: '40px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>
+            5,99€<span style={{ fontSize: '14px', fontWeight: 400, color: '#9CA3AF' }}>/mois</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', margin: '24px 0', textAlign: 'left' }}>
+            {['Swipes illimités', 'Messages illimités', 'Accès prioritaire aux nouveaux profils'].map(f => (
+              <div key={f} style={{ display: 'flex', gap: '8px', fontSize: '14px', color: '#374151' }}>
+                <span style={{ color: '#4ECBA0', fontWeight: 700, flexShrink: 0 }}>✓</span> {f}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={handleCheckout}
+            disabled={!available || loading}
+            style={{
+              width: '100%', padding: '14px',
+              background: available ? 'linear-gradient(135deg, #4ECBA0, #2AA87C)' : '#E5E7EB',
+              color: available ? '#fff' : '#9CA3AF',
+              border: 'none', borderRadius: '10px', fontSize: '14.5px', fontWeight: 700,
+              cursor: available ? 'pointer' : 'not-allowed',
+              fontFamily: "'Outfit', sans-serif",
+            }}
+          >
+            {loading ? '⏳ Redirection...' : available ? "S'abonner →" : 'Bientôt disponible'}
+          </button>
+        </div>
+
+        <div style={{ marginTop: '24px', padding: '18px', background: '#fff', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+          <div style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', lineHeight: 1.7 }}>
+            Paiement sécurisé par <strong>Stripe</strong> · Résiliation à tout moment · Sans engagement
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function PaiementContent() {
   const searchParams = useSearchParams()
@@ -135,6 +223,12 @@ function PaiementContent() {
   )
 }
 
+function PaiementSwitch() {
+  const { mode } = useLease()
+  if (mode === 'locataire') return <SwiperPlusContent />
+  return <PaiementContent />
+}
+
 export default function PaiementPage() {
-  return <Suspense fallback={<div>Chargement...</div>}><PaiementContent /></Suspense>
+  return <Suspense fallback={<div>Chargement...</div>}><PaiementSwitch /></Suspense>
 }

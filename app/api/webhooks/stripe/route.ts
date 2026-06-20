@@ -18,6 +18,52 @@ export async function POST(request: Request) {
   const supabase = createClient()
 
   switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object as { metadata?: Record<string, string>; subscription?: string }
+      if (session.metadata?.plan === 'swiper_plus' && session.metadata.user_id) {
+        let expiresAt = new Date()
+        expiresAt.setMonth(expiresAt.getMonth() + 1)
+        if (session.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription)
+            expiresAt = new Date(subscription.current_period_end * 1000)
+          } catch {}
+        }
+        await supabase.from('profiles').update({
+          swiper_plus_active: true,
+          swiper_plus_expires_at: expiresAt.toISOString(),
+        }).eq('id', session.metadata.user_id)
+      }
+      break
+    }
+
+    case 'invoice.payment_succeeded': {
+      const invoice = event.data.object as { subscription?: string }
+      if (invoice.subscription) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(invoice.subscription)
+          const userId = subscription.metadata?.user_id
+          if (subscription.metadata?.plan === 'swiper_plus' && userId) {
+            await supabase.from('profiles').update({
+              swiper_plus_active: true,
+              swiper_plus_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+            }).eq('id', userId)
+          }
+        } catch {}
+      }
+      break
+    }
+
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object as { metadata?: Record<string, string> }
+      if (subscription.metadata?.plan === 'swiper_plus' && subscription.metadata.user_id) {
+        await supabase.from('profiles').update({
+          swiper_plus_active: false,
+        }).eq('id', subscription.metadata.user_id)
+      }
+      break
+    }
+
     case 'payment_intent.succeeded': {
       const paymentIntent = event.data.object
       const { userId, planType } = paymentIntent.metadata

@@ -10,12 +10,34 @@ const PLANS: Record<string, { price: number; name: string; interval: 'month' }> 
   assurance: { price: 0,    name: 'ISALY Assurance Dossier',  interval: 'month' },
 }
 
+export async function GET() {
+  return NextResponse.json({ swiperPlusAvailable: !!process.env.STRIPE_PRICE_SWIPER_PLUS })
+}
+
 export async function POST(req: Request) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { plan, listing_id, loyer } = await req.json()
+
+  if (plan === 'swiper_plus') {
+    const priceId = process.env.STRIPE_PRICE_SWIPER_PLUS
+    if (!priceId) return NextResponse.json({ error: 'Swiper+ indisponible pour le moment' }, { status: 400 })
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: user.email,
+      metadata: { user_id: user.id, plan },
+      subscription_data: { metadata: { user_id: user.id, plan } },
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/app/paiement?success=true`,
+      cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/app/paiement?cancelled=true`,
+    })
+
+    return NextResponse.json({ url: session.url })
+  }
 
   let unitAmount = PLANS[plan]?.price ?? 999
   if (plan === 'assurance' && loyer) {
