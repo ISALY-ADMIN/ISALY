@@ -54,7 +54,7 @@ const loueurGestionItems: NavItem[] = [
   { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
   { icon: Folder,          label: 'Mes documents',    href: '/app/documents',    id: 'documents' },
   { icon: Wrench,          label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
-  { icon: ClipboardList,   label: 'Mon bail',         href: '/app/bail',         id: 'bail' },
+  { icon: ClipboardList,   label: 'Mes baux',         href: '/app/baux',         id: 'baux' },
 ]
 const loueurCommunicationItems: NavItem[] = [
   { icon: MessageCircle, label: 'Messages', href: '/app/messages', id: 'messages' },

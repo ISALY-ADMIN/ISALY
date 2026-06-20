@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TenantLoyersClient from './TenantLoyersClient'
-import LoueurLoyers from './LoueurLoyers'
 
 export default async function LoyersPage() {
   const supabase = createClient()
@@ -15,7 +14,7 @@ export default async function LoyersPage() {
     .single()
 
   if (profile?.active_mode === 'loueur') {
-    return <LoueurLoyers />
+    redirect('/app/baux?tab=loyers')
   }
 
   return <TenantLoyersClient />
