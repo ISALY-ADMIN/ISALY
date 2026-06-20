@@ -2,19 +2,15 @@
 
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
-import ChatbotWidget from '@/components/chatbot/ChatbotWidget'
 import NotifPanel from '@/components/notifications/NotifPanel'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/Button'
 
 interface TopbarProps {
   title: string
 }
 
 export default function Topbar({ title }: TopbarProps) {
-  const [chatOpen, setChatOpen]         = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [showNotifs, setShowNotifs]     = useState(false)
   const [notifCount, setNotifCount]     = useState(0)
@@ -94,26 +90,27 @@ export default function Topbar({ title }: TopbarProps) {
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowNotifs(v => !v)}
+              title="Alertes"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '10px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: 500,
-                color: 'rgba(255,255,255,0.7)',
+                width: '34px',
+                height: '34px',
+                fontSize: '15px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                justifyContent: 'center',
+                position: 'relative',
                 transition: 'all 0.15s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.10)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
             >
-              🔔 Alertes
+              🔔
               {notifCount > 0 && (
-                <span style={{ background: '#10B981', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '10px', minWidth: '16px', textAlign: 'center' }}>
+                <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#10B981', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '10px', minWidth: '16px', textAlign: 'center' }}>
                   {notifCount}
                 </span>
               )}
@@ -122,30 +119,6 @@ export default function Topbar({ title }: TopbarProps) {
               <NotifPanel onClose={() => { setShowNotifs(false); setNotifCount(0) }} />
             )}
           </div>
-
-          <TooltipProvider>
-            {/* Chatbot */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setChatOpen(o => !o)}
-                  className="gap-2 text-[12px] font-medium rounded-[10px]"
-                  style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.7)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = 'rgba(255,255,255,0.10)')}
-                  onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                >
-                  <span className="text-sm">🤖</span> Assistant
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Assistant IA</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
 
           {/* Avatar + dropdown */}
           <div ref={dropdownRef} className="relative">
@@ -196,8 +169,6 @@ export default function Topbar({ title }: TopbarProps) {
           </div>
         </div>
       </div>
-
-      <ChatbotWidget open={chatOpen} onClose={() => setChatOpen(false)} />
     </>
   )
 }
