@@ -60,7 +60,6 @@ const loueurCommunicationItems: NavItem[] = [
   { icon: MessageCircle, label: 'Messages', href: '/app/messages', id: 'messages' },
 ]
 const loueurAccountItems: NavItem[] = [
-  { icon: Folder,     label: 'Mon dossier',  href: '/app/dossier',    id: 'dossier' },
   { icon: User,       label: 'Mon profil',   href: '/app/profil',     id: 'profil' },
   { icon: CreditCard, label: 'Abonnements',  href: '/app/paiement',   id: 'paiement' },
   { icon: Gift,       label: 'Parrainage',   href: '/app/parrainage', id: 'parrainage' },
