@@ -24,7 +24,7 @@ interface NavItem {
 
 // ── Mode Locataire ───────────────────────────────────────────
 const locataireMainItems: NavItem[] = [
-  { icon: Home,          label: 'Accueil',     href: '/app/dashboard-home', id: 'dashboard-home' },
+  { icon: Home,          label: 'Tableau de bord', href: '/app/dashboard-home', id: 'dashboard-home' },
   { icon: Flame,         label: 'Trouver',     href: '/app/swipe',          id: 'swipe' },
   { icon: Search,        label: 'Rechercher',  href: '/app/recherche',      id: 'recherche' },
   { icon: Map,           label: 'Carte',       href: '/app/carte',          id: 'carte' },
