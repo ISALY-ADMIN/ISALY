@@ -61,10 +61,10 @@ export default function BailPage() {
       <Topbar title="Mon bail" />
       <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '620px' }}>
 
-        <h2 className="text-[24px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+        <h2 className="text-[24px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>
           Mon bail
         </h2>
-        <p className="text-[13px] mb-6" style={{ color: '#6B7280' }}>
+        <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
           Informations et documents relatifs à votre location.
         </p>
 

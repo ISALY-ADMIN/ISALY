@@ -162,7 +162,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[14px]" style={{ color: '#111827' }}>{conv.name}</span>
+                <span className="font-bold text-[14px]" style={{ color: '#fff' }}>{conv.name}</span>
                 {conv.certLevel ? <CertificationBadge level={conv.certLevel} size="sm" /> : null}
               </div>
               <div className="text-[11.5px] font-semibold" style={{ color: isOnline ? '#4ECBA0' : '#9CA3AF' }}>
@@ -210,7 +210,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
               💬
             </div>
             <div>
-              <div className="font-bold text-[14px]" style={{ color: '#111827' }}>Tes messages</div>
+              <div className="font-bold text-[14px]" style={{ color: '#fff' }}>Tes messages</div>
               <div className="text-[11.5px]" style={{ color: '#9CA3AF' }}>Sélectionne une conversation</div>
             </div>
           </>
@@ -224,7 +224,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
             <div className="text-[60px] mb-5" style={{ animation: 'bop 1.8s ease infinite' }}>💬</div>
             <h3
               className="text-[20px] mb-2"
-              style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}
+              style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}
             >
               Tes conversations ici
             </h3>
@@ -480,18 +480,18 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
 
       {/* Reply preview */}
       {replyTo && (
-        <div style={{ background: '#F0F4F0', borderLeft: '3px solid #10B981', padding: '8px 12px', margin: '0 16px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: 'rgba(16,185,129,0.1)', borderLeft: '3px solid #10B981', padding: '8px 12px', margin: '0 16px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, marginBottom: '2px' }}>
               Réponse à {replyTo.from === 'me' ? 'toi-même' : conv?.name.split(' ')[0]}
             </div>
-            <div style={{ fontSize: '12px', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
               {replyTo.text}
             </div>
           </div>
           <button
             onClick={() => setReplyTo(null)}
-            style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '16px', padding: '0 4px' }}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '16px', padding: '0 4px' }}
           >
             ✕
           </button>

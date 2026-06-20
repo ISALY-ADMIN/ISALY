@@ -108,8 +108,8 @@ export default function BailGenerator({ lease, members }: { lease: LeaseRow; mem
 
   return (
     <div className="mb-8">
-      <h3 className="text-[16px] font-bold mb-1" style={{ color: '#111827' }}>📝 Créer un contrat de bail</h3>
-      <p className="text-[12.5px] mb-4" style={{ color: '#6B7280' }}>Logement non meublé — Loi n°89-462 du 6 juillet 1989</p>
+      <h3 className="text-[16px] font-bold mb-1" style={{ color: '#fff' }}>📝 Créer un contrat de bail</h3>
+      <p className="text-[12.5px] mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>Logement non meublé — Loi n°89-462 du 6 juillet 1989</p>
 
       <div className="rounded-[16px] p-5 flex flex-col gap-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
 

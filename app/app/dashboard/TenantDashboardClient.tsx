@@ -207,10 +207,10 @@ export default function TenantDashboardClient() {
 
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="mb-6">
-          <h1 className="text-[26px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+          <h1 className="text-[26px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>
             Bonjour {firstName} 👋
           </h1>
-          <p className="text-[14px] mb-2" style={{ color: '#6B7280' }}>
+          <p className="text-[14px] mb-2" style={{ color: 'rgba(255,255,255,0.5)' }}>
             📍 {lease.address}{lease.city ? `, ${lease.city}` : ''}
           </p>
           <span

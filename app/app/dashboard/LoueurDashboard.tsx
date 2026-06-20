@@ -233,10 +233,10 @@ export default async function LoueurDashboard({ ownerId }: { ownerId: string }) 
       <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '980px' }}>
 
         <div className="mb-6">
-          <h1 className="text-[26px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+          <h1 className="text-[26px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>
             Bonjour {firstName} 👋
           </h1>
-          <p className="text-[14px]" style={{ color: '#6B7280' }}>
+          <p className="text-[14px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
             Voici un aperçu de votre activité de bailleur.
           </p>
         </div>
@@ -261,7 +261,7 @@ export default async function LoueurDashboard({ ownerId }: { ownerId: string }) 
         {/* Mes biens */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[16px] font-bold" style={{ color: '#111827' }}>🏠 Mes biens</h2>
+            <h2 className="text-[16px] font-bold" style={{ color: '#fff' }}>🏠 Mes biens</h2>
             <Link href="/app/mes-annonces" className="text-[12.5px] font-semibold no-underline" style={{ color: '#2AA87C' }}>
               Gérer mes annonces →
             </Link>
@@ -308,7 +308,7 @@ export default async function LoueurDashboard({ ownerId }: { ownerId: string }) 
 
         {/* Alertes actives */}
         <div className="mb-6">
-          <h2 className="text-[16px] font-bold mb-3" style={{ color: '#111827' }}>🔔 Alertes actives</h2>
+          <h2 className="text-[16px] font-bold mb-3" style={{ color: '#fff' }}>🔔 Alertes actives</h2>
           {alerts.length === 0 ? (
             <div className="text-center py-8 rounded-[14px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
               <div className="text-[32px] mb-2">✅</div>
@@ -336,7 +336,7 @@ export default async function LoueurDashboard({ ownerId }: { ownerId: string }) 
 
         {/* Activité récente */}
         <div className="mb-6">
-          <h2 className="text-[16px] font-bold mb-3" style={{ color: '#111827' }}>🕓 Activité récente</h2>
+          <h2 className="text-[16px] font-bold mb-3" style={{ color: '#fff' }}>🕓 Activité récente</h2>
           {recentActivity.length === 0 ? (
             <div className="text-center py-8 rounded-[14px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
               <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucune activité récente.</p>

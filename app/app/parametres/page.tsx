@@ -106,7 +106,7 @@ export default function ParametresPage() {
   return (
     <>
       <Topbar title="Paramètres" />
-      <div className="flex-1 overflow-y-auto" style={{ background: '#F7F8FA' }}>
+      <div className="flex-1 overflow-y-auto" style={{ background: 'transparent' }}>
         <div style={{ maxWidth: '680px', margin: '0 auto', padding: '32px 24px 64px' }}>
 
           {/* Account info */}
@@ -228,7 +228,7 @@ function Section({ title, icon, children }: { title: string; icon: string; child
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[18px]">{icon}</span>
-        <h2 className="text-[15px] font-bold" style={{ color: '#111827' }}>{title}</h2>
+        <h2 className="text-[15px] font-bold" style={{ color: '#fff' }}>{title}</h2>
       </div>
       <div className="rounded-[16px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 1px 8px rgba(0,0,0,.04)' }}>
         {children}

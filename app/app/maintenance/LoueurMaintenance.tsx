@@ -169,7 +169,7 @@ export default function LoueurMaintenance() {
         <Topbar title="Maintenance" />
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
           <div className="text-[52px] mb-4">🔧</div>
-          <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Aucun bail actif</h3>
+          <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Aucun bail actif</h3>
           <p className="text-[13px]" style={{ color: '#6B7280' }}>Les signalements apparaîtront ici une fois un bail actif créé.</p>
         </div>
       </>
@@ -182,8 +182,8 @@ export default function LoueurMaintenance() {
     <>
       <Topbar title="Maintenance" />
       <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '800px' }}>
-        <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Signalements</h2>
-        <p className="text-[13px] mb-5" style={{ color: '#6B7280' }}>Gérez les signalements de vos locataires.</p>
+        <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Signalements</h2>
+        <p className="text-[13px] mb-5" style={{ color: 'rgba(255,255,255,0.5)' }}>Gérez les signalements de vos locataires.</p>
 
         {leases.length > 1 && (
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1">

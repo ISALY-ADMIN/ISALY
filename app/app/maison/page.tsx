@@ -115,10 +115,10 @@ export default function MaisonPage() {
         <Topbar title="Ma maison" />
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center" style={{ maxWidth: '480px', margin: '0 auto' }}>
           <div className="text-[64px] mb-4">🏠</div>
-          <h2 className="text-[22px] font-extrabold mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+          <h2 className="text-[22px] font-extrabold mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>
             Tu n&apos;as pas encore de bail actif
           </h2>
-          <p className="text-[14px] mb-6" style={{ color: '#6B7280', lineHeight: '1.6' }}>
+          <p className="text-[14px] mb-6" style={{ color: 'rgba(255,255,255,0.5)', lineHeight: '1.6' }}>
             Une fois que tu auras signé un bail, tu pourras suivre ton loyer, tes colocataires et les signalements depuis cette page.
           </p>
           <Link

@@ -173,7 +173,7 @@ function LocataireDetailContent() {
         {/* Historique des paiements */}
         {leaseId && (
           <div className="mb-6">
-            <h3 className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>💳 Historique des paiements</h3>
+            <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}>💳 Historique des paiements</h3>
             {payments.length === 0 ? (
               <div className="text-center py-6 rounded-[12px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                 <p className="text-[13px]" style={{ color: '#9CA3AF' }}>Aucun paiement enregistré.</p>
@@ -205,7 +205,7 @@ function LocataireDetailContent() {
 
         {/* Documents */}
         <div className="mb-6">
-          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>📄 Documents fournis</h3>
+          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}>📄 Documents fournis</h3>
           {!dossier ? (
             <div className="text-center py-6 rounded-[12px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
               <p className="text-[13px]" style={{ color: '#9CA3AF' }}>Aucun dossier soumis.</p>
@@ -234,7 +234,7 @@ function LocataireDetailContent() {
 
         {/* Avis reçus */}
         <div className="mb-6">
-          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>⭐ Avis reçus</h3>
+          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}>⭐ Avis reçus</h3>
           {reviews.length === 0 ? (
             <div className="text-center py-6 rounded-[12px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
               <p className="text-[13px]" style={{ color: '#9CA3AF' }}>Aucun avis pour le moment.</p>

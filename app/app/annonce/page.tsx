@@ -186,11 +186,11 @@ export default function AnnoncePage() {
             <div className="text-6xl mb-4">✅</div>
             <h2
               className="text-[26px] mb-2"
-              style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}
+              style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}
             >
               Annonce publiée !
             </h2>
-            <p className="text-[14px] mb-6" style={{ color: '#6B7280' }}>
+            <p className="text-[14px] mb-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
               Elle est maintenant visible par tous les utilisateurs sur ISALY.
             </p>
             <div className="flex flex-col gap-2.5">

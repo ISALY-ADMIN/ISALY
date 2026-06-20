@@ -26,11 +26,11 @@ export default function ParrainagePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F4F0' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Topbar title="Parrainage" />
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 24px' }}>
-        <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>Parraine tes amis</h1>
-        <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '32px' }}>Invite un ami sur ISALY et vous obtenez tous les deux 1 mois de boost gratuit.</p>
+        <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Parraine tes amis</h1>
+        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '32px' }}>Invite un ami sur ISALY et vous obtenez tous les deux 1 mois de boost gratuit.</p>
 
         <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', border: '1px solid #E5E7EB', marginBottom: '20px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '12px' }}>TON LIEN DE PARRAINAGE</div>

@@ -103,7 +103,7 @@ export default function DocumentsStorage({ lease }: { lease: LeaseRow }) {
 
   return (
     <div className="mb-8">
-      <h3 className="text-[16px] font-bold mb-3" style={{ color: '#111827' }}>📁 Documents du contrat — {lease.address}</h3>
+      <h3 className="text-[16px] font-bold mb-3" style={{ color: '#fff' }}>📁 Documents du contrat — {lease.address}</h3>
 
       <input ref={fileInputRef} type="file" accept="application/pdf,image/*" style={{ display: 'none' }} onChange={handleFile} />
 

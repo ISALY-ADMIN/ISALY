@@ -91,10 +91,10 @@ export default function ColocatairesPage() {
 
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+            <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>
               Mes colocataires
             </h2>
-            <p className="text-[13px]" style={{ color: '#6B7280' }}>
+            <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
               {lease.nb_roommates} colocataire{lease.nb_roommates > 1 ? 's' : ''} au total
             </p>
           </div>

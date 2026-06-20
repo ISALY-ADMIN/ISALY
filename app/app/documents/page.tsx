@@ -82,8 +82,8 @@ export default function DocumentsPage() {
     <>
       <Topbar title="Mes documents" />
       <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '900px' }}>
-        <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Mes documents</h2>
-        <p className="text-[13px] mb-5" style={{ color: '#6B7280' }}>Stockage de documents et création de bail par contrat.</p>
+        <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Mes documents</h2>
+        <p className="text-[13px] mb-5" style={{ color: 'rgba(255,255,255,0.5)' }}>Stockage de documents et création de bail par contrat.</p>
 
         {leases.length === 0 ? (
           <div className="text-center py-16 rounded-[18px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>

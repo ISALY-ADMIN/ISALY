@@ -331,7 +331,7 @@ export default function SwipePage() {
                         btn.style.color = !active ? '#059669' : '#6B7280'
                         btn.style.borderColor = !active ? '#10B981' : '#E5E7EB'
                       }}
-                      style={{ padding: '7px 14px', borderRadius: '20px', border: '1.5px solid #E5E7EB', background: '#F3F4F6', color: 'rgba(255,255,255,0.5)', fontSize: '13px', cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
+                      style={{ padding: '7px 14px', borderRadius: '20px', border: '1.5px solid #E5E7EB', background: '#F3F4F6', color: '#6B7280', fontSize: '13px', cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
                     >
                       {tag}
                     </button>

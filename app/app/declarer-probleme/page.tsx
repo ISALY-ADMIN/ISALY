@@ -274,8 +274,8 @@ export default function DeclarerProblemePage() {
 
         {/* MODULE B — Mes signalements */}
         <div className="mb-3">
-          <h3 className="text-[16px] font-bold" style={{ color: '#111827' }}>Mes signalements</h3>
-          <p className="text-[12.5px]" style={{ color: '#6B7280' }}>
+          <h3 className="text-[16px] font-bold" style={{ color: '#fff' }}>Mes signalements</h3>
+          <p className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
             {requests.length > 0 ? `${requests.length} signalement${requests.length > 1 ? 's' : ''}` : 'Aucun signalement pour le moment'}
           </p>
         </div>

@@ -64,17 +64,17 @@ export default function MesAnnoncesPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#F0F4F0' }}>
+    <div className="flex flex-col min-h-screen" style={{ background: 'transparent' }}>
       <Topbar title="Mes annonces" />
       <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div>
-            <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '28px', color: '#111827', margin: 0 }}>
+            <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '28px', color: '#fff', margin: 0 }}>
               Mes annonces
             </h1>
-            <p style={{ fontSize: '14px', color: '#9CA3AF', marginTop: '4px' }}>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
               {listings.length} annonce{listings.length > 1 ? 's' : ''} publiée{listings.length > 1 ? 's' : ''}
             </p>
           </div>

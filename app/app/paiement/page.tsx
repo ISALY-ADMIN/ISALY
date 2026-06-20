@@ -35,7 +35,7 @@ function SwiperPlusContent() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F4F0' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Topbar title="Abonnements" />
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '40px 24px' }}>
 
@@ -123,7 +123,7 @@ function PaiementContent() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F4F0' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Topbar title="Abonnements" />
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 24px' }}>
 
@@ -145,7 +145,7 @@ function PaiementContent() {
         )}
 
         <div style={{ marginBottom: '32px' }}>
-          <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>Booste la visibilité de tes annonces pour louer plus vite.</p>
+          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Booste la visibilité de tes annonces pour louer plus vite.</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>

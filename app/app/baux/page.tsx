@@ -202,8 +202,8 @@ function BauxPageInner() {
         <Topbar title="Mes baux" />
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
           <div className="text-[52px] mb-4">📋</div>
-          <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Aucun bail pour le moment</h3>
-          <p className="text-[13px]" style={{ color: '#6B7280' }}>Vos baux apparaîtront ici une fois un contrat créé sur l&apos;un de vos biens.</p>
+          <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Aucun bail pour le moment</h3>
+          <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Vos baux apparaîtront ici une fois un contrat créé sur l&apos;un de vos biens.</p>
         </div>
       </>
     )
@@ -264,8 +264,8 @@ function BauxPageInner() {
       <Topbar title="Mes baux" />
       <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '880px' }}>
 
-        <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Mes baux</h2>
-        <p className="text-[13px] mb-5" style={{ color: '#6B7280' }}>Tout sur votre contrat de location, par bien.</p>
+        <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Mes baux</h2>
+        <p className="text-[13px] mb-5" style={{ color: 'rgba(255,255,255,0.5)' }}>Tout sur votre contrat de location, par bien.</p>
 
         {leases.length > 1 && (
           <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
@@ -335,7 +335,7 @@ function BauxPageInner() {
 
         {/* b. Locataires */}
         <div ref={locatairesRef} className="mb-7">
-          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>Locataires</h3>
+          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}>Locataires</h3>
           {tenants.length === 0 ? (
             <div className="text-center py-10 rounded-[14px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
               <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucun locataire rattaché à ce bail.</p>
@@ -375,7 +375,7 @@ function BauxPageInner() {
         {/* c. Loyers */}
         <div ref={loyersRef} className="mb-7">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[15px] font-bold" style={{ color: '#111827' }}>Loyers — {MONTHS_FR[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}</h3>
+            <h3 className="text-[15px] font-bold" style={{ color: '#fff' }}>Loyers — {MONTHS_FR[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}</h3>
             <Link href="/app/loyers" className="no-underline text-[12px] font-semibold" style={{ color: '#4ECBA0' }}>Voir l&apos;historique complet →</Link>
           </div>
           <div className="rounded-[14px] overflow-hidden" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
