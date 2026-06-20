@@ -62,7 +62,6 @@ const loueurCommunicationItems: NavItem[] = [
 const loueurAccountItems: NavItem[] = [
   { icon: User,       label: 'Mon profil',   href: '/app/profil',     id: 'profil' },
   { icon: CreditCard, label: 'Abonnements',  href: '/app/paiement',   id: 'paiement' },
-  { icon: Gift,       label: 'Parrainage',   href: '/app/parrainage', id: 'parrainage' },
   { icon: Settings,   label: 'Paramètres',   href: '/app/parametres', id: 'parametres' },
 ]
 
