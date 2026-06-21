@@ -2,13 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { cache } from 'react'
 import ShareButtons from './ShareButtons'
 
 interface Props {
   params: { id: string }
 }
 
-async function getListing(id: string) {
+const getListing = cache(async (id: string) => {
   const supabase = createClient()
   const { data } = await supabase
     .from('listings')
@@ -24,7 +25,7 @@ async function getListing(id: string) {
     .eq('is_active', true)
     .single()
   return data
-}
+})
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listing = await getListing(params.id)
