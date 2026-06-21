@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
 import Link from 'next/link'
+import Image from 'next/image'
 
 async function getUsers() {
   const supabase = createClient()
@@ -62,7 +63,7 @@ export default async function AdminUtilisateurs() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                   {user.avatar_url
-                    ? <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ? <Image src={user.avatar_url} alt="" width={34} height={34} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : ((user.first_name?.[0] ?? '') + (user.last_name?.[0] ?? '')).toUpperCase() || '?'}
                 </div>
                 <div>

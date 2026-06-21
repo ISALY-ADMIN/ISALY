@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
 import NotifPanel from '@/components/notifications/NotifPanel'
 import { createClient } from '@/lib/supabase/client'
@@ -132,7 +133,7 @@ export default function Topbar({ title }: TopbarProps) {
               }}
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt={initials} className="w-full h-full object-cover" />
+                <Image src={avatarUrl} alt={initials} width={36} height={36} className="w-full h-full object-cover" />
               ) : (
                 initials
               )}

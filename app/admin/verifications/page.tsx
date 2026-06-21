@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
+import Image from 'next/image'
 import VerifyActions from './VerifyActions'
 
 async function getPendingDossiers() {
@@ -60,7 +61,7 @@ export default async function AdminVerifications() {
                   {/* Avatar */}
                   <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 700, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                     {profile?.avatar_url
-                      ? <img src={profile.avatar_url} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ? <Image src={profile.avatar_url} alt={initials} width={44} height={44} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : initials}
                   </div>
 

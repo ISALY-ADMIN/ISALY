@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 
@@ -139,7 +140,7 @@ function LocataireDetailContent() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-6 p-5 rounded-[16px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,.05)' }}>
           {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt={name} className="w-[72px] h-[72px] rounded-full object-cover flex-shrink-0" />
+            <Image src={profile.avatar_url} alt={name} width={72} height={72} className="w-[72px] h-[72px] rounded-full object-cover flex-shrink-0" />
           ) : (
             <div className="w-[72px] h-[72px] rounded-full flex items-center justify-center font-extrabold text-xl text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}>
               {initials}

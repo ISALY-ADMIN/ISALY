@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export const revalidate = 3600
 
@@ -132,7 +133,7 @@ export default async function ColocationVillePage({ params }: Props) {
                 >
                   <div style={{ height: '160px', background: 'linear-gradient(135deg, #6EE7B7, #047857)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>
                     {(l.photos as string[] | null)?.[0] ? (
-                      <img src={(l.photos as string[])[0]} alt={l.title ?? ''} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <Image src={(l.photos as string[])[0]} alt={l.title ?? ''} fill sizes="280px" style={{ objectFit: 'cover' }} />
                     ) : '🏠'}
                   </div>
                   <div style={{ padding: '16px' }}>

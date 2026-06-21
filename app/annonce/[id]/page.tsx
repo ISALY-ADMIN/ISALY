@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { cache } from 'react'
 import ShareButtons from './ShareButtons'
 
@@ -88,10 +89,13 @@ export default async function AnnoncePubliquePage({ params }: Props) {
         {/* Photos */}
         {photos.length > 0 ? (
           <div style={{ borderRadius: '20px', overflow: 'hidden', marginBottom: '32px', height: '380px', position: 'relative', background: 'linear-gradient(135deg, #6EE7B7, #047857)' }}>
-            <img
+            <Image
               src={photos[0]}
               alt={listing.title ?? 'Photo annonce'}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              fill
+              priority
+              sizes="(max-width: 900px) 100vw, 900px"
+              style={{ objectFit: 'cover' }}
             />
             {photos.length > 1 && (
               <div style={{ position: 'absolute', bottom: '16px', right: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '20px' }}>
@@ -160,7 +164,7 @@ export default async function AnnoncePubliquePage({ params }: Props) {
               <div style={{ padding: '20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 700, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                   {owner.avatar_url
-                    ? <img src={owner.avatar_url} alt={owner.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ? <Image src={owner.avatar_url} alt={owner.first_name ?? ''} width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : owner.first_name[0].toUpperCase()
                   }
                 </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -66,7 +67,7 @@ export default function InstallPrompt() {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-        <img src="/favicon.png" alt="ISALY" style={{ width: '48px', height: '48px', borderRadius: '12px', flexShrink: 0 }} />
+        <Image src="/favicon.png" alt="ISALY" width={48} height={48} style={{ width: '48px', height: '48px', borderRadius: '12px', flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
             Installer ISALY

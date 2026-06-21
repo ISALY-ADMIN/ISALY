@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 
@@ -235,7 +236,7 @@ export default function LoueurMaintenance() {
                       <p className="text-[11.5px] mt-1" style={{ color: '#9CA3AF' }}>
                         {tenantNames[req.tenant_id ?? ''] ?? 'Locataire'} · {formatDate(req.created_at)}
                       </p>
-                      {req.photo_url && <img src={req.photo_url} alt={req.title} className="mt-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />}
+                      {req.photo_url && <Image src={req.photo_url} alt={req.title} width={120} height={90} className="mt-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />}
                     </div>
                     <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
                   </div>
@@ -261,7 +262,7 @@ export default function LoueurMaintenance() {
                       <p className="text-[12.5px] mb-2" style={{ color: '#374151' }}>💬 {req.bailleur_comment}</p>
                     )}
                     {req.resolved_photo_url && (
-                      <img src={req.resolved_photo_url} alt="Résolution" className="mb-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />
+                      <Image src={req.resolved_photo_url} alt="Résolution" width={120} height={90} className="mb-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />
                     )}
 
                     {editingId === req.id ? (

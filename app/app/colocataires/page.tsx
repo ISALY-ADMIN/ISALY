@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
@@ -138,7 +139,7 @@ export default function ColocatairesPage() {
                 >
                   {/* Avatar */}
                   {rm.avatar_url ? (
-                    <img src={rm.avatar_url} alt={name} className="w-[56px] h-[56px] rounded-full object-cover flex-shrink-0" />
+                    <Image src={rm.avatar_url} alt={name} width={56} height={56} className="w-[56px] h-[56px] rounded-full object-cover flex-shrink-0" />
                   ) : (
                     <div
                       className="w-[56px] h-[56px] rounded-full flex items-center justify-center font-extrabold text-lg text-white flex-shrink-0"

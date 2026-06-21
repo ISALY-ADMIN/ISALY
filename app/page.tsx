@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import CompatibilityQuiz from '@/components/landing/CompatibilityQuiz'
 import ScrollReveal from '@/components/animations/ScrollReveal'
@@ -308,7 +309,7 @@ export default function LandingPage() {
                   <div style={{ fontSize: '24px', color: '#10B981', marginBottom: '16px', fontFamily: "'Outfit', sans-serif" }}>&ldquo;</div>
                   <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, margin: '0 0 24px' }}>{t.text}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src={t.photo} alt={t.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                    <Image src={t.photo} alt={t.name} width={40} height={40} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{t.name}</div>
                       <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{t.role}</div>

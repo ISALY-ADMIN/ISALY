@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import { createClient } from '@/lib/supabase/client'
 import { useUserPresence, formatLastSeen } from '@/hooks/usePresence'
@@ -146,7 +147,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
           <>
             <div className="relative flex-shrink-0">
               {conv.avatarUrl ? (
-                <img src={conv.avatarUrl} alt={conv.initials} className="w-10 h-10 rounded-full object-cover" />
+                <Image src={conv.avatarUrl} alt={conv.initials} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
               ) : (
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[13px] text-white"
@@ -260,7 +261,7 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
               <div className="w-8 flex-shrink-0">
                 {showAvatar && conv && (
                   conv.avatarUrl ? (
-                    <img src={conv.avatarUrl} alt={conv.initials} className="w-8 h-8 rounded-full object-cover" />
+                    <Image src={conv.avatarUrl} alt={conv.initials} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
                     <div
                       className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] text-white"

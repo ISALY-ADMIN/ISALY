@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import Topbar from '@/components/layout/Topbar'
 
@@ -285,7 +286,7 @@ export default async function LoueurDashboard({ ownerId }: { ownerId: string }) 
                   style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
                 >
                   <div className="w-[64px] h-[64px] rounded-[10px] flex-shrink-0 overflow-hidden flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6EE7B7, #047857)' }}>
-                    {b.photo ? <img src={b.photo} alt={b.address} className="w-full h-full object-cover" /> : <span className="text-[24px]">🏠</span>}
+                    {b.photo ? <Image src={b.photo} alt={b.address ?? ''} width={64} height={64} className="w-full h-full object-cover" /> : <span className="text-[24px]">🏠</span>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13.5px] font-bold truncate" style={{ color: '#111827' }}>{b.address || b.city || 'Bien'}</div>

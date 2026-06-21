@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 
@@ -350,7 +351,7 @@ function BauxPageInner() {
                   style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
                 >
                   {t.avatarUrl ? (
-                    <img src={t.avatarUrl} alt={t.name} className="w-[48px] h-[48px] rounded-full object-cover flex-shrink-0" />
+                    <Image src={t.avatarUrl} alt={t.name} width={48} height={48} className="w-[48px] h-[48px] rounded-full object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-[48px] h-[48px] rounded-full flex items-center justify-center font-extrabold text-[15px] text-white flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }}>
                       {initials(t.name)}

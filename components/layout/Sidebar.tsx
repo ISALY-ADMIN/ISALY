@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -323,7 +324,7 @@ export default function Sidebar() {
         >
           <div className="relative flex-shrink-0">
             {userData.avatarUrl ? (
-              <img src={userData.avatarUrl} alt={initials} className="w-10 h-10 rounded-full object-cover" />
+              <Image src={userData.avatarUrl} alt={initials} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
             ) : (
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white"

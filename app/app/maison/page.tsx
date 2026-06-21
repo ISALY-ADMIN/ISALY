@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
@@ -33,7 +34,7 @@ function monthsRemaining(end: string | null): number | null {
 }
 
 function Avatar({ name, url }: { name: string; url: string | null }) {
-  if (url) return <img src={url} alt={name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+  if (url) return <Image src={url} alt={name} width={36} height={36} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
   const initials = name.split(' ').map(p => p[0] ?? '').join('').toUpperCase().slice(0, 2)
   return (
     <div

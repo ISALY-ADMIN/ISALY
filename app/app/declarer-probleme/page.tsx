@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Send, Paperclip, X } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
@@ -313,7 +314,7 @@ export default function DeclarerProblemePage() {
                       {photos.length > 0 && (
                         <div className="flex gap-2 mt-2">
                           {photos.map((url, i) => (
-                            <img key={i} src={url} alt={req.title} className="rounded-[10px] object-cover" style={{ width: '90px', height: '70px' }} />
+                            <Image key={i} src={url} alt={req.title} width={90} height={70} className="rounded-[10px] object-cover" style={{ width: '90px', height: '70px' }} />
                           ))}
                         </div>
                       )}
@@ -331,7 +332,7 @@ export default function DeclarerProblemePage() {
                       <div className="text-[10.5px] font-bold uppercase tracking-wider mb-1" style={{ color: '#9CA3AF' }}>Réponse du bailleur</div>
                       <p className="text-[12.5px]" style={{ color: '#374151' }}>{req.bailleur_comment}</p>
                       {req.resolved_photo_url && (
-                        <img src={req.resolved_photo_url} alt="Résolution" className="mt-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />
+                        <Image src={req.resolved_photo_url} alt="Résolution" width={120} height={90} className="mt-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />
                       )}
                     </div>
                   )}
