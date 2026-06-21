@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import SignatureCanvas, { SignatureCanvasHandle } from '@/components/documents/SignatureCanvas'
 
 interface LeaseRow {
   id: string
@@ -183,9 +184,40 @@ const inputStyle = { background: '#F9FAFB', borderColor: '#E5E7EB', color: '#111
 const labelCls = "block text-[11px] font-semibold mb-1"
 const labelStyle = { color: '#6B7280' }
 
+export interface SignerState {
+  approved: boolean
+  signed: boolean
+  signedAt: string | null
+}
+
+function emptySignerState(): SignerState {
+  return { approved: false, signed: false, signedAt: null }
+}
+
 export default function BailNonMeubleForm({ lease, members, onClose }: { lease: LeaseRow; members: Member[]; onClose: () => void }) {
   const [step, setStep] = useState(1)
   const [d, setD] = useState<BailNonMeubleData>(emptyBailNonMeubleData())
+
+  const sigBailleur = useRef<SignatureCanvasHandle>(null)
+  const sigLocataire1 = useRef<SignatureCanvasHandle>(null)
+  const sigLocataire2 = useRef<SignatureCanvasHandle>(null)
+  const [signerBailleur, setSignerBailleur] = useState<SignerState>(emptySignerState())
+  const [signerLocataire1, setSignerLocataire1] = useState<SignerState>(emptySignerState())
+  const [signerLocataire2, setSignerLocataire2] = useState<SignerState>(emptySignerState())
+  const [signaturesValidated, setSignaturesValidated] = useState(false)
+
+  const canValidateSignatures =
+    signerBailleur.approved && signerBailleur.signed &&
+    signerLocataire1.approved && signerLocataire1.signed &&
+    (!d.locataire2Actif || (signerLocataire2.approved && signerLocataire2.signed))
+
+  function handleValidateSignatures() {
+    const now = new Date().toISOString()
+    setSignerBailleur(s => ({ ...s, signedAt: now }))
+    setSignerLocataire1(s => ({ ...s, signedAt: now }))
+    if (d.locataire2Actif) setSignerLocataire2(s => ({ ...s, signedAt: now }))
+    setSignaturesValidated(true)
+  }
 
   useEffect(() => {
     async function prefill() {
@@ -241,10 +273,17 @@ export default function BailNonMeubleForm({ lease, members, onClose }: { lease: 
           {step === 8 && <Step8 d={d} upd={upd} />}
           {step === 9 && <Step9 d={d} upd={upd} />}
           {step === 10 && (
-            <div className="text-center py-10">
-              <div className="text-[32px] mb-2">✍️</div>
-              <p className="text-[13px]" style={{ color: '#9CA3AF' }}>La signature électronique arrive dans une prochaine étape.</p>
-            </div>
+            <SignatureStep
+              d={d}
+              members={members}
+              sigBailleur={sigBailleur}
+              sigLocataire1={sigLocataire1}
+              sigLocataire2={sigLocataire2}
+              signerBailleur={signerBailleur} setSignerBailleur={setSignerBailleur}
+              signerLocataire1={signerLocataire1} setSignerLocataire1={setSignerLocataire1}
+              signerLocataire2={signerLocataire2} setSignerLocataire2={setSignerLocataire2}
+              signaturesValidated={signaturesValidated}
+            />
           )}
         </div>
 
@@ -258,6 +297,21 @@ export default function BailNonMeubleForm({ lease, members, onClose }: { lease: 
             <button onClick={() => setStep(s => s + 1)} className="py-3 rounded-full text-[13.5px] font-semibold text-white border-none cursor-pointer" style={{ background: '#4ECBA0', flex: step > 1 ? 2 : 1 }}>
               Suivant →
             </button>
+          )}
+          {step === TOTAL && !signaturesValidated && (
+            <button
+              onClick={handleValidateSignatures}
+              disabled={!canValidateSignatures}
+              className="py-3 rounded-full text-[13.5px] font-semibold text-white border-none cursor-pointer disabled:opacity-40"
+              style={{ background: '#4ECBA0', flex: 2 }}
+            >
+              Valider les signatures
+            </button>
+          )}
+          {step === TOTAL && signaturesValidated && (
+            <div className="flex-1 py-3 rounded-full text-[13.5px] font-semibold text-center" style={{ background: '#ECFDF5', color: '#2AA87C', flex: 2 }}>
+              ✓ Signatures validées
+            </div>
           )}
         </div>
       </div>
@@ -637,6 +691,56 @@ function Step8({ d, upd }: { d: BailNonMeubleData; upd: Upd }) {
   return (
     <Section title="Conditions particulières">
       <textarea className={inputCls} style={{ ...inputStyle, resize: 'vertical' as const }} rows={6} value={d.conditionsParticulieres} onChange={e => upd('conditionsParticulieres', e.target.value)} />
+    </Section>
+  )
+}
+
+function SignatureZone({
+  label, sigRef, signer, setSigner,
+}: {
+  label: string
+  sigRef: React.RefObject<SignatureCanvasHandle>
+  signer: SignerState
+  setSigner: React.Dispatch<React.SetStateAction<SignerState>>
+}) {
+  return (
+    <div className="p-3.5 rounded-[12px]" style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+      <label className="flex items-center gap-2 cursor-pointer mb-2.5">
+        <input type="checkbox" checked={signer.approved} onChange={e => setSigner(s => ({ ...s, approved: e.target.checked }))} style={{ accentColor: '#4ECBA0', width: 16, height: 16 }} />
+        <span className="text-[12px] font-semibold" style={{ color: '#374151' }}>Lu et approuvé</span>
+      </label>
+      <SignatureCanvas ref={sigRef} label={label} onChange={signed => setSigner(s => ({ ...s, signed }))} />
+      {signer.signedAt && (
+        <p className="text-[10.5px] mt-1.5" style={{ color: '#9CA3AF' }}>Signé le {new Date(signer.signedAt).toLocaleString('fr-FR')}</p>
+      )}
+    </div>
+  )
+}
+
+function SignatureStep({
+  d, members, sigBailleur, sigLocataire1, sigLocataire2,
+  signerBailleur, setSignerBailleur, signerLocataire1, setSignerLocataire1, signerLocataire2, setSignerLocataire2,
+  signaturesValidated,
+}: {
+  d: BailNonMeubleData
+  members: Member[]
+  sigBailleur: React.RefObject<SignatureCanvasHandle>
+  sigLocataire1: React.RefObject<SignatureCanvasHandle>
+  sigLocataire2: React.RefObject<SignatureCanvasHandle>
+  signerBailleur: SignerState; setSignerBailleur: React.Dispatch<React.SetStateAction<SignerState>>
+  signerLocataire1: SignerState; setSignerLocataire1: React.Dispatch<React.SetStateAction<SignerState>>
+  signerLocataire2: SignerState; setSignerLocataire2: React.Dispatch<React.SetStateAction<SignerState>>
+  signaturesValidated: boolean
+}) {
+  return (
+    <Section title="Signatures électroniques">
+      <fieldset disabled={signaturesValidated} className="grid grid-cols-2 gap-3">
+        <SignatureZone label={`Bailleur — ${d.bailleurNomPrenom || 'à renseigner'}`} sigRef={sigBailleur} signer={signerBailleur} setSigner={setSignerBailleur} />
+        <SignatureZone label={`Locataire — ${d.locataire1Nom || members[0]?.name || 'à renseigner'}`} sigRef={sigLocataire1} signer={signerLocataire1} setSigner={setSignerLocataire1} />
+        {d.locataire2Actif && (
+          <SignatureZone label={`Locataire — ${d.locataire2Nom || members[1]?.name || 'à renseigner'}`} sigRef={sigLocataire2} signer={signerLocataire2} setSigner={setSignerLocataire2} />
+        )}
+      </fieldset>
     </Section>
   )
 }

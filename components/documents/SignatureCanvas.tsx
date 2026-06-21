@@ -10,9 +10,10 @@ export interface SignatureCanvasHandle {
 
 interface Props {
   label: string
+  onChange?: (signed: boolean) => void
 }
 
-const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function SignatureCanvas({ label }, ref) {
+const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function SignatureCanvas({ label, onChange }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing = useRef(false)
   const hasDrawn = useRef(false)
@@ -53,21 +54,25 @@ const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function Signat
     ctx.stroke()
     hasDrawn.current = true
     setSigned(true)
+    onChange?.(true)
   }
 
   function end() {
     drawing.current = false
   }
 
+  function clearCanvas() {
+    const canvas = canvasRef.current
+    const ctx = getCtx()
+    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
+    hasDrawn.current = false
+    setSigned(false)
+    onChange?.(false)
+  }
+
   useImperativeHandle(ref, () => ({
     toDataURL: () => (hasDrawn.current ? canvasRef.current?.toDataURL('image/png') ?? null : null),
-    clear: () => {
-      const canvas = canvasRef.current
-      const ctx = getCtx()
-      if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
-      hasDrawn.current = false
-      setSigned(false)
-    },
+    clear: clearCanvas,
     isEmpty: () => !hasDrawn.current,
   }))
 
@@ -94,13 +99,7 @@ const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function Signat
         </span>
         <button
           type="button"
-          onClick={() => {
-            const canvas = canvasRef.current
-            const ctx = getCtx()
-            if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
-            hasDrawn.current = false
-            setSigned(false)
-          }}
+          onClick={clearCanvas}
           className="text-[11px] font-semibold border-none bg-transparent cursor-pointer"
           style={{ color: '#9CA3AF' }}
         >
