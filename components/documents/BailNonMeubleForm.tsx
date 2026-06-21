@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import SignatureCanvas, { SignatureCanvasHandle } from '@/components/documents/SignatureCanvas'
+import { generateBailPdf, type BailSignaturesPayload } from '@/lib/documents/generateBailPdf'
 
 interface LeaseRow {
   id: string
@@ -205,6 +206,8 @@ export default function BailNonMeubleForm({ lease, members, onClose }: { lease: 
   const [signerLocataire1, setSignerLocataire1] = useState<SignerState>(emptySignerState())
   const [signerLocataire2, setSignerLocataire2] = useState<SignerState>(emptySignerState())
   const [signaturesValidated, setSignaturesValidated] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generateResult, setGenerateResult] = useState<string | null>(null)
 
   const canValidateSignatures =
     signerBailleur.approved && signerBailleur.signed &&
@@ -217,6 +220,49 @@ export default function BailNonMeubleForm({ lease, members, onClose }: { lease: 
     setSignerLocataire1(s => ({ ...s, signedAt: now }))
     if (d.locataire2Actif) setSignerLocataire2(s => ({ ...s, signedAt: now }))
     setSignaturesValidated(true)
+  }
+
+  async function handleGenerateAndDownload() {
+    setGenerating(true)
+    setGenerateResult(null)
+    try {
+      const signaturesPayload: BailSignaturesPayload = {
+        bailleur: { name: d.bailleurNomPrenom, dataUrl: sigBailleur.current?.toDataURL() ?? null, signedAt: signerBailleur.signedAt },
+        locataire1: { name: d.locataire1Nom, dataUrl: sigLocataire1.current?.toDataURL() ?? null, signedAt: signerLocataire1.signedAt },
+        ...(d.locataire2Actif ? { locataire2: { name: d.locataire2Nom, dataUrl: sigLocataire2.current?.toDataURL() ?? null, signedAt: signerLocataire2.signedAt } } : {}),
+      }
+      const pdf = generateBailPdf(d, signaturesPayload)
+      const fileName = `bail-${(lease.address || 'document').replace(/\s+/g, '_')}-${new Date().toISOString().slice(0, 10)}.pdf`
+      pdf.save(fileName)
+
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setGenerateResult('Erreur : utilisateur non authentifié.'); setGenerating(false); return }
+
+      const blob = pdf.output('blob')
+      const path = `${lease.id}/bail_genere/${Date.now()}-${fileName}`
+      const { error: upErr } = await supabase.storage.from('documents-bailleur').upload(path, blob, { contentType: 'application/pdf' })
+      if (upErr) { setGenerateResult(`Erreur lors de l'enregistrement : ${upErr.message}`); setGenerating(false); return }
+
+      await supabase.from('lease_documents').insert({
+        lease_id: lease.id,
+        uploaded_by: user.id,
+        document_type: 'bail_genere',
+        file_url: path,
+        file_name: fileName,
+        status: 'signed',
+        bail_data: d,
+        owner_signature: signaturesPayload.bailleur.dataUrl,
+        tenant_signature: signaturesPayload.locataire1.dataUrl,
+        owner_signed_at: signaturesPayload.bailleur.signedAt,
+        tenant_signed_at: signaturesPayload.locataire1.signedAt,
+      })
+
+      setGenerateResult('✓ PDF téléchargé et enregistré dans vos documents.')
+    } catch {
+      setGenerateResult('Erreur lors de la génération du document.')
+    }
+    setGenerating(false)
   }
 
   useEffect(() => {
@@ -309,11 +355,19 @@ export default function BailNonMeubleForm({ lease, members, onClose }: { lease: 
             </button>
           )}
           {step === TOTAL && signaturesValidated && (
-            <div className="flex-1 py-3 rounded-full text-[13.5px] font-semibold text-center" style={{ background: '#ECFDF5', color: '#2AA87C', flex: 2 }}>
-              ✓ Signatures validées
-            </div>
+            <button
+              onClick={handleGenerateAndDownload}
+              disabled={generating}
+              className="py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', flex: 2 }}
+            >
+              {generating ? 'Génération…' : '📄 Générer et télécharger le PDF'}
+            </button>
           )}
         </div>
+        {generateResult && (
+          <p className="text-[12px] mt-2" style={{ color: generateResult.startsWith('✓') ? '#2AA87C' : '#EF4444' }}>{generateResult}</p>
+        )}
       </div>
     </div>
   )
