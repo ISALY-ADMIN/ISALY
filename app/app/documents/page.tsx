@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import DocumentsStorage from '@/components/documents/DocumentsStorage'
-import BailGenerator from '@/components/documents/BailGenerator'
+
+const BailGenerator = dynamic(() => import('@/components/documents/BailGenerator'), { ssr: false })
 
 interface LeaseRow {
   id: string

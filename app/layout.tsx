@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
-import InstallPrompt from '@/components/InstallPrompt'
+import dynamic from 'next/dynamic'
 import './globals.css'
+
+const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false })
 
 export const metadata: Metadata = {
   title: 'Ta coloc idéale existe déjà',
