@@ -10,6 +10,7 @@ import CreateDocumentModal from '@/components/documents/CreateDocumentModal'
 import BlankDocumentEditor from '@/components/documents/BlankDocumentEditor'
 
 const BailGenerator = dynamic(() => import('@/components/documents/BailGenerator'), { ssr: false })
+const BailNonMeubleForm = dynamic(() => import('@/components/documents/BailNonMeubleForm'), { ssr: false })
 
 interface LeaseRow {
   id: string
@@ -143,14 +144,8 @@ export default function DocumentsPage() {
 
       {blankOpen && <BlankDocumentEditor onClose={() => setBlankOpen(false)} />}
 
-      {activeTemplate === 'bail_non_meuble' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-5" style={{ background: 'rgba(0,0,0,.82)' }} onClick={() => setActiveTemplate(null)}>
-          <div className="rounded-[20px] p-7 text-center" style={{ background: '#1A1A1A', border: '1px solid #2D2D2D', maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-            <div className="text-[32px] mb-2">📋</div>
-            <p className="text-[13px] mb-4" style={{ color: '#9CA3AF' }}>Le formulaire du modèle &quot;Bail non meublé&quot; arrive dans une prochaine étape.</p>
-            <button onClick={() => setActiveTemplate(null)} className="px-4 py-2 rounded-full text-[12.5px] font-semibold border-none cursor-pointer" style={{ background: '#4ECBA0', color: '#fff' }}>Fermer</button>
-          </div>
-        </div>
+      {activeTemplate === 'bail_non_meuble' && selectedLease && (
+        <BailNonMeubleForm lease={selectedLease} members={members} onClose={() => setActiveTemplate(null)} />
       )}
     </>
   )
