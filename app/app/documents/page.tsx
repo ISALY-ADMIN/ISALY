@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import DocumentsStorage from '@/components/documents/DocumentsStorage'
+import CreateDocumentModal from '@/components/documents/CreateDocumentModal'
+import BlankDocumentEditor from '@/components/documents/BlankDocumentEditor'
 
 const BailGenerator = dynamic(() => import('@/components/documents/BailGenerator'), { ssr: false })
 
@@ -26,6 +28,9 @@ export default function DocumentsPage() {
   const [selectedLeaseId, setSelectedLeaseId] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [blankOpen, setBlankOpen] = useState(false)
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(null)
 
   const selectedLease = leases.find(l => l.id === selectedLeaseId) ?? null
 
@@ -87,6 +92,14 @@ export default function DocumentsPage() {
         <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Mes documents</h2>
         <p className="text-[13px] mb-5" style={{ color: 'rgba(255,255,255,0.5)' }}>Stockage de documents et création de bail par contrat.</p>
 
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="mb-6 px-5 py-3 rounded-full text-[13px] font-bold text-white border-none cursor-pointer"
+          style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
+        >
+          + Créer un document
+        </button>
+
         {leases.length === 0 ? (
           <div className="text-center py-16 rounded-[18px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
             <div className="text-[52px] mb-4">📁</div>
@@ -119,6 +132,26 @@ export default function DocumentsPage() {
           </>
         )}
       </div>
+
+      {createOpen && (
+        <CreateDocumentModal
+          onClose={() => setCreateOpen(false)}
+          onSelectBlank={() => { setCreateOpen(false); setBlankOpen(true) }}
+          onSelectTemplate={(templateId) => { setCreateOpen(false); setActiveTemplate(templateId) }}
+        />
+      )}
+
+      {blankOpen && <BlankDocumentEditor onClose={() => setBlankOpen(false)} />}
+
+      {activeTemplate === 'bail_non_meuble' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-5" style={{ background: 'rgba(0,0,0,.82)' }} onClick={() => setActiveTemplate(null)}>
+          <div className="rounded-[20px] p-7 text-center" style={{ background: '#1A1A1A', border: '1px solid #2D2D2D', maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div className="text-[32px] mb-2">📋</div>
+            <p className="text-[13px] mb-4" style={{ color: '#9CA3AF' }}>Le formulaire du modèle &quot;Bail non meublé&quot; arrive dans une prochaine étape.</p>
+            <button onClick={() => setActiveTemplate(null)} className="px-4 py-2 rounded-full text-[12.5px] font-semibold border-none cursor-pointer" style={{ background: '#4ECBA0', color: '#fff' }}>Fermer</button>
+          </div>
+        </div>
+      )}
     </>
   )
 }
