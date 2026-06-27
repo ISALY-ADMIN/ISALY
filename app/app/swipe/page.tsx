@@ -203,7 +203,7 @@ export default function SwipePage() {
             </span>
             <button
               onClick={() => setShowFilters(true)}
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ background: 'rgba(78,203,160,0.15)', border: '1px solid #4ECBA0', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, color: '#4ECBA0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               ⚙️ Filtres
             </button>
@@ -214,7 +214,7 @@ export default function SwipePage() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Main swipe area */}
-          <div className="flex flex-col items-center justify-center gap-6 flex-1 overflow-y-auto p-7 bg-[#F0F4F0]">
+          <div className="flex flex-col items-center justify-center gap-3 flex-1 overflow-hidden p-3 bg-[#F0F4F0]">
             {loading ? (
               <div className="text-center">
                 <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>

@@ -112,7 +112,6 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
       className="card-entrance select-none overflow-hidden cursor-grab"
       style={{
         width: 'min(440px, 88vw)',
-        minHeight: '600px',
         borderRadius: '24px',
         transform: cardTransform,
         opacity: flying ? 0 : 1,
@@ -123,7 +122,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
       onTouchEnd={handleTouchEnd}
     >
       {/* ── PHOTO ZONE ────────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ height: '340px' }}>
+      <div className="relative overflow-hidden" style={{ height: '220px' }}>
         <div
           className="absolute inset-0"
           style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}88 100%)` }}
@@ -152,28 +151,6 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           className="absolute bottom-0 inset-x-0"
           style={{ height: '130px', background: 'linear-gradient(to top, rgba(0,0,0,.80) 0%, transparent 100%)' }}
         />
-        {/* Compatibility badge — centered top */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '12px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#4ECBA0',
-            borderRadius: '40px',
-            padding: '8px 22px',
-            textAlign: 'center',
-            boxShadow: '0 4px 20px rgba(78,203,160,0.5)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <div style={{ fontSize: '30px', fontWeight: 800, color: '#0A2015', lineHeight: 1 }}>
-            {profile.match}%
-          </div>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#0A2015', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-            Compatible
-          </div>
-        </div>
         {(profile.certLevel ?? 0) > 0 && (
           <div className="absolute top-3 left-3">
             <CertificationBadge level={profile.certLevel!} size="sm" />
@@ -197,16 +174,19 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
       </div>
 
       {/* ── INFO ZONE ─────────────────────────────────────── */}
-      <div className="px-5 py-5" style={{ background: 'rgba(15,15,15,0.97)' }}>
-        <p className="text-2xl font-bold mb-0.5" style={{ color: '#ffffff' }}>
+      <div className="px-4 py-3" style={{ background: 'rgba(15,15,15,0.97)' }}>
+        <div style={{ fontSize: '13px', color: '#4ECBA0', fontWeight: 600, marginBottom: '4px' }}>
+          ❤ {profile.match}% de compatibilité
+        </div>
+        <p className="text-xl font-bold mb-0.5" style={{ color: '#ffffff' }}>
           {profile.name}{profile.age > 0 ? `, ${profile.age}` : ''}
         </p>
-        <div className="text-sm flex items-center gap-1.5 flex-wrap mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>
+        <div className="text-sm flex items-center gap-1.5 flex-wrap mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
           {profile.job && <span>{profile.job}</span>}
           {profile.city && <><span>·</span><span>📍 {profile.city}</span></>}
           {profile.rent > 0 && <><span>·</span><span>{profile.rent} €/mois</span></>}
         </div>
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="flex flex-wrap gap-1 mb-2">
           {profile.tags.slice(0, 5).map(tag => (
             <Badge key={tag} variant="secondary" className={`text-[11.5px] ${getPillStyle(tag)}`}>
               {tag}
@@ -214,39 +194,32 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           ))}
         </div>
         {/* Compatibility bars */}
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Détail de la compatibilité</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {[
-              { label: 'Mode de vie',  value: Math.min(100, profile.match + 5),                           color: '#10B981' },
-              { label: 'Budget',       value: Math.max(60,  profile.match - 10),                          color: '#6366F1' },
-              { label: 'Personnalité', value: Math.min(100, profile.match - 5),                           color: '#F59E0B' },
-              { label: 'Intérêts',    value: Math.min(100, Math.round(profile.match * 0.9 + 8)),          color: '#EC4899' },
+              { label: 'Mode de vie',  value: Math.min(100, profile.match + 5),                  color: '#10B981' },
+              { label: 'Budget',       value: Math.max(60,  profile.match - 10),                 color: '#6366F1' },
+              { label: 'Personnalité', value: Math.min(100, profile.match - 5),                  color: '#F59E0B' },
+              { label: 'Intérêts',    value: Math.min(100, Math.round(profile.match * 0.9 + 8)), color: '#EC4899' },
             ].map(item => (
               <div key={item.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{item.label}</div>
-                  <div style={{ fontSize: '12px', color: item.color, fontWeight: 700 }}>{item.value}%</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{item.label}</div>
+                  <div style={{ fontSize: '10px', color: item.color, fontWeight: 700 }}>{item.value}%</div>
                 </div>
-                <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${item.value}%`, background: item.color, borderRadius: '6px', transition: 'width 0.6s ease' }} />
+                <div style={{ height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${item.value}%`, background: item.color, borderRadius: '3px', transition: 'width 0.6s ease' }} />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <p
-          className="text-[13px] leading-relaxed mb-1"
-          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', color: 'rgba(255,255,255,0.5)' }}
-        >
-          {profile.bio || 'Aucune description pour l\'instant.'}
-        </p>
         <button
           onClick={toggleFavorite}
           style={{
-            width: '100%', marginBottom: '8px',
-            padding: '10px',
+            width: '100%', marginBottom: '6px',
+            padding: '7px',
             background: saved ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)',
             border: `1px solid ${saved ? '#10B981' : 'rgba(255,255,255,0.1)'}`,
             borderRadius: '12px',
@@ -257,7 +230,7 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         >
           {saved ? '🔖 Sauvegardé' : '🔖 Sauvegarder'}
         </button>
-        <Button className="w-full mt-3" size="lg" onClick={() => onMessage(profile.name)}>
+        <Button className="w-full mt-1" size="sm" onClick={() => onMessage(profile.name)}>
           {profile.isListing ? '💬 Contacter le loueur' : `💬 Écrire à ${firstName}`}
         </Button>
       </div>
