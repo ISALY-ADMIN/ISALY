@@ -4,14 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
-
-type BoostOption = 'standard' | 'featured' | 'priority'
-
-const BOOST_OPTIONS: { id: BoostOption; label: string; price: string }[] = [
-  { id: 'standard', label: 'Standard',      price: 'Gratuit' },
-  { id: 'featured', label: 'Mis en avant',  price: '9,99€/mois' },
-  { id: 'priority', label: 'Prioritaire',   price: '24,99€/mois' },
-]
+import BoostSelector, { type BoostOption } from '@/components/listings/BoostSelector'
 
 interface FormData {
   title: string
@@ -213,8 +206,9 @@ function AnnonceForm() {
         }
         router.push('/app/mes-annonces?updated=1')
       } else {
-        // INSERT
-        const { error } = await supabase.from('listings').insert({
+        // INSERT — actif directement si Standard, en attente de paiement sinon
+        const needsPayment = boost !== 'standard'
+        const { data: inserted, error } = await supabase.from('listings').insert({
           owner_id:        user.id,
           title:           form.title || `Colocation à ${form.city}`,
           description:     form.description,
@@ -227,14 +221,32 @@ function AnnonceForm() {
           photos:          photoUrls,
           boost_type:      boost,
           boost_level:     boost,
-          is_active:       true,
-        })
+          boost_tier:      boost,
+          is_active:       !needsPayment,
+        }).select('id').single()
 
-        if (error) {
+        if (error || !inserted) {
           console.error('Erreur insertion listing:', error)
-          alert('Erreur: ' + error.message)
+          alert('Erreur: ' + (error?.message ?? 'Impossible de créer l\'annonce'))
           return
         }
+
+        if (needsPayment) {
+          const res = await fetch('/api/listings/boost-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ listing_id: inserted.id, boost_tier: boost }),
+          })
+          const json = await res.json()
+          if (!res.ok || !json.url) {
+            alert('Annonce créée mais erreur paiement : ' + (json.error ?? 'Veuillez réessayer depuis Mes annonces.'))
+            router.push('/app/mes-annonces')
+            return
+          }
+          window.location.href = json.url
+          return
+        }
+
         setPublished(true)
       }
     } catch (err) {
@@ -308,9 +320,10 @@ function AnnonceForm() {
 
   const pageTitle = isEditing ? "Modifier l'annonce" : 'Mon annonce'
   const formTitle = isEditing ? 'Modifier mon annonce' : 'Déposer une annonce'
+  const needsPayment = !isEditing && boost !== 'standard'
   const submitLabel = publishing
-    ? (isEditing ? 'Enregistrement…' : 'Publication en cours…')
-    : (isEditing ? 'Enregistrer les modifications →' : "Publier l'annonce →")
+    ? (needsPayment ? 'Redirection vers le paiement…' : isEditing ? 'Enregistrement…' : 'Publication en cours…')
+    : (needsPayment ? 'Continuer vers le paiement →' : isEditing ? 'Enregistrer les modifications →' : "Publier l'annonce →")
 
   return (
     <>
@@ -519,18 +532,16 @@ function AnnonceForm() {
             </div>
 
             {/* Boost */}
-            <div className="rounded-[9px] p-4 mb-4" style={{ background: '#0E2B1E' }}>
-              <div className="font-extrabold text-[13.5px] mb-1.5" style={{ color: '#4ECBA0' }}>
+            <div className="mb-4">
+              <div className="font-extrabold text-[13.5px] mb-3" style={{ color: '#E5E7EB' }}>
                 🚀 Booster l'annonce
               </div>
-              <div className="flex flex-col gap-2 mt-2">
-                {BOOST_OPTIONS.map(opt => (
-                  <label key={opt.id} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: '#E5E7EB' }}>
-                    <input type="radio" name="boost" checked={boost === opt.id} onChange={() => setBoost(opt.id)} style={{ accentColor: '#4ECBA0' }} />
-                    {opt.label} — <span className="font-semibold">{opt.price}</span>
-                  </label>
-                ))}
-              </div>
+              <BoostSelector selected={boost} onSelect={setBoost} disabled={publishing} />
+              {needsPayment && (
+                <p className="text-[11.5px] mt-2.5" style={{ color: '#9CA3AF' }}>
+                  💳 Vous serez redirigé vers Stripe pour finaliser l'abonnement. L'annonce sera activée dès le paiement confirmé.
+                </p>
+              )}
             </div>
 
             {/* Bouton annuler en mode édition */}
