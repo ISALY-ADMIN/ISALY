@@ -323,7 +323,12 @@ function AnnonceForm() {
   const needsPayment = !isEditing && boost !== 'standard'
   const submitLabel = publishing
     ? (needsPayment ? 'Redirection vers le paiement…' : isEditing ? 'Enregistrement…' : 'Publication en cours…')
-    : (needsPayment ? 'Continuer vers le paiement →' : isEditing ? 'Enregistrer les modifications →' : "Publier l'annonce →")
+    : boost === 'featured' && !isEditing ? 'Booster pour 9,99€/mois →'
+    : boost === 'priority' && !isEditing ? 'Booster pour 24,99€/mois →'
+    : isEditing ? 'Enregistrer les modifications →'
+    : "Publier l'annonce →"
+  const submitBg = boost === 'priority' && !isEditing ? '#F59E0B' : '#4ECBA0'
+  const submitBgHover = boost === 'priority' && !isEditing ? '#D97706' : '#2AA87C'
 
   return (
     <>
@@ -561,10 +566,13 @@ function AnnonceForm() {
             <button
               onClick={handleSubmit}
               disabled={publishing}
-              className="w-full py-3.5 rounded-full text-[14.5px] font-semibold text-white border-none cursor-pointer transition-colors disabled:opacity-60"
-              style={{ background: '#4ECBA0' }}
-              onMouseEnter={e => !publishing && (e.currentTarget.style.background = '#2AA87C')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
+              className="w-full py-3.5 rounded-full text-[14.5px] font-semibold border-none cursor-pointer transition-colors disabled:opacity-60"
+              style={{
+                background: submitBg,
+                color: boost === 'priority' && !isEditing ? '#0A0A0A' : '#fff',
+              }}
+              onMouseEnter={e => !publishing && (e.currentTarget.style.background = submitBgHover)}
+              onMouseLeave={e => (e.currentTarget.style.background = submitBg)}
             >
               {submitLabel}
             </button>
