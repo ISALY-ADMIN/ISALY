@@ -498,14 +498,18 @@ export default function LandingPage() {
         </section>
       </ScrollReveal>
 
-      {/* FOOTER */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 40px' }}>
-        {/* Colocation dans les grandes villes */}
-        <div style={{ maxWidth: '1100px', margin: '0 auto 40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.25)', marginBottom: '16px' }}>
-            Colocation dans les grandes villes
+      {/* VILLES */}
+      <section style={{ borderTop: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '80px 40px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 600, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.5px' }}>
+              Trouve ta coloc dans ta ville
+            </h2>
+            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
+              ISALY est disponible dans toutes les grandes villes françaises
+            </p>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
             {[
               ['paris', 'Paris'], ['marseille', 'Marseille'], ['lyon', 'Lyon'], ['toulouse', 'Toulouse'],
               ['nice', 'Nice'], ['nantes', 'Nantes'], ['montpellier', 'Montpellier'], ['strasbourg', 'Strasbourg'],
@@ -513,15 +517,33 @@ export default function LandingPage() {
               ['grenoble', 'Grenoble'], ['dijon', 'Dijon'], ['angers', 'Angers'], ['nimes', 'Nîmes'],
               ['clermont-ferrand', 'Clermont-Ferrand'], ['toulon', 'Toulon'], ['saint-etienne', 'Saint-Étienne'], ['le-havre', 'Le Havre'],
             ].map(([slug, name]) => (
-              <Link key={slug} href={`/colocation/${slug}`} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', textDecoration: 'none', padding: '5px 12px', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', transition: 'color 0.2s, border-color 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#10B981'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}
+              <Link
+                key={slug}
+                href={`/colocation/${slug}`}
+                style={{
+                  display: 'block', textDecoration: 'none',
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
+                  transition: 'background 0.2s, border-color 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(78,203,160,0.1)'; e.currentTarget.style.borderColor = '#4ECBA0' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
               >
-                Colocation {name}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '14px' }}>📍</span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#fff' }}>{name}</span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#4ECBA0' }}>Voir les annonces</div>
               </Link>
             ))}
           </div>
         </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer style={{ padding: '48px 40px' }}>
 
         {/* Liens légaux */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
