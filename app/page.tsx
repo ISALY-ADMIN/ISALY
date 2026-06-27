@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import CompatibilityQuiz from '@/components/landing/CompatibilityQuiz'
 import AnnoncesPreview from '@/components/landing/AnnoncesPreview'
+import MapPreview from '@/components/landing/MapPreview'
 import ScrollReveal from '@/components/animations/ScrollReveal'
 import Marquee from '@/components/animations/Marquee'
 import FloatingCard from '@/components/animations/FloatingCard'
@@ -544,6 +545,21 @@ export default function LandingPage() {
       </section>
 
       <AnnoncesPreview />
+
+      {/* CARTE */}
+      <section style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '80px 40px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 600, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.5px' }}>
+              Toutes les annonces près de chez toi
+            </h2>
+            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
+              Explore les logements disponibles sur la carte
+            </p>
+          </div>
+          <MapPreview />
+        </div>
+      </section>
 
       {/* FOOTER */}
       <footer style={{ padding: '48px 40px' }}>
