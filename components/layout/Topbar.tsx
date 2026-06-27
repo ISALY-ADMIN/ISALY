@@ -133,7 +133,12 @@ export default function Topbar({ title }: TopbarProps) {
               }}
             >
               {avatarUrl ? (
-                <Image src={avatarUrl} alt={initials} width={36} height={36} className="w-full h-full object-cover" />
+                avatarUrl.includes('googleusercontent.com') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt={initials} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                ) : (
+                  <Image src={avatarUrl} alt={initials} width={36} height={36} className="w-full h-full object-cover" />
+                )
               ) : (
                 initials
               )}

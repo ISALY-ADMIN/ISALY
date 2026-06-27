@@ -453,6 +453,7 @@ export default function ProfilPage() {
               <img
                 src={avatarUrl}
                 alt="Avatar"
+                referrerPolicy="no-referrer"
                 className="w-[68px] h-[68px] rounded-full object-cover"
               />
             ) : (

@@ -324,7 +324,12 @@ export default function Sidebar() {
         >
           <div className="relative flex-shrink-0">
             {userData.avatarUrl ? (
-              <Image src={userData.avatarUrl} alt={initials} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+              userData.avatarUrl.includes('googleusercontent.com') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={userData.avatarUrl} alt={initials} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                <Image src={userData.avatarUrl} alt={initials} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+              )
             ) : (
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white"
