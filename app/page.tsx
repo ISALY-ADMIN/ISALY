@@ -77,25 +77,6 @@ export default function LandingPage() {
       {/* HERO */}
       <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '120px 24px 80px', textAlign: 'center', position: 'relative' }}>
 
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            background: 'rgba(16,185,129,0.1)',
-            border: '1px solid rgba(16,185,129,0.2)',
-            borderRadius: '20px', padding: '6px 16px',
-            fontSize: '13px', color: '#10B981', fontWeight: 500,
-            marginBottom: '32px',
-          }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-            ✦ La colocation sans mauvaises surprises
-          </div>
-        </motion.div>
-
         {/* Titre principal */}
         <motion.h1
           initial={{ opacity: 0, y: 32 }}
@@ -110,6 +91,30 @@ export default function LandingPage() {
             existe déjà.
           </span>
         </motion.h1>
+
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          style={{ marginBottom: '24px' }}
+        >
+          <div
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: '#4ECBA0',
+              borderRadius: '7px', padding: '6px 16px',
+              fontSize: '13px', color: '#1A1A1A', fontWeight: 500,
+              boxShadow: '0 2px 8px rgba(78,203,160,0.3)',
+              cursor: 'default',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#3DB890')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
+          >
+            ✦ La colocation sans mauvaises surprises
+          </div>
+        </motion.div>
 
         <motion.p
           initial={{ opacity: 0, y: 24 }}
