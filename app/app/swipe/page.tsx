@@ -196,9 +196,6 @@ export default function SwipePage() {
             <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
               {profiles.length > 0 ? `${profiles.length} profils compatibles trouvés` : 'Recherche en cours...'}
             </span>
-            <span style={{ fontSize: '11px', background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>
-              Près de toi
-            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>

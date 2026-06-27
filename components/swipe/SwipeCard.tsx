@@ -152,11 +152,27 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
           className="absolute bottom-0 inset-x-0"
           style={{ height: '130px', background: 'linear-gradient(to top, rgba(0,0,0,.80) 0%, transparent 100%)' }}
         />
+        {/* Compatibility badge — centered top */}
         <div
-          className="absolute top-3 right-3 flex items-center gap-1 rounded-full px-3 py-1 font-bold"
-          style={{ fontSize: '12px', background: 'rgba(10,10,10,0.7)', color: '#10B981', backdropFilter: 'blur(6px)', border: '1px solid rgba(16,185,129,0.4)' }}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#4ECBA0',
+            borderRadius: '40px',
+            padding: '8px 22px',
+            textAlign: 'center',
+            boxShadow: '0 4px 20px rgba(78,203,160,0.5)',
+            whiteSpace: 'nowrap',
+          }}
         >
-          ❤️ {profile.match}%
+          <div style={{ fontSize: '30px', fontWeight: 800, color: '#0A2015', lineHeight: 1 }}>
+            {profile.match}%
+          </div>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#0A2015', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+            Compatible
+          </div>
         </div>
         {(profile.certLevel ?? 0) > 0 && (
           <div className="absolute top-3 left-3">
@@ -199,19 +215,22 @@ export default function SwipeCard({ profile, onSwipe, onMessage, hint }: SwipeCa
         </div>
         {/* Compatibility bars */}
         <div style={{ marginBottom: '12px' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Compatibilité</div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginBottom: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Détail de la compatibilité</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[
-              { label: 'Mode de vie', value: Math.min(100, profile.match + 5), color: '#10B981' },
-              { label: 'Budget',      value: Math.max(60,  profile.match - 10), color: '#6366F1' },
-              { label: 'Personnalité', value: Math.min(100, profile.match - 5), color: '#F59E0B' },
+              { label: 'Mode de vie',  value: Math.min(100, profile.match + 5),                           color: '#10B981' },
+              { label: 'Budget',       value: Math.max(60,  profile.match - 10),                          color: '#6366F1' },
+              { label: 'Personnalité', value: Math.min(100, profile.match - 5),                           color: '#F59E0B' },
+              { label: 'Intérêts',    value: Math.min(100, Math.round(profile.match * 0.9 + 8)),          color: '#EC4899' },
             ].map(item => (
-              <div key={item.label} style={{ flex: 1 }}>
-                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginBottom: '3px', textAlign: 'center' }}>{item.label}</div>
-                <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${item.value}%`, background: item.color, borderRadius: '4px', transition: 'width 0.6s ease' }} />
+              <div key={item.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{item.label}</div>
+                  <div style={{ fontSize: '12px', color: item.color, fontWeight: 700 }}>{item.value}%</div>
                 </div>
-                <div style={{ fontSize: '10px', color: item.color, fontWeight: 700, textAlign: 'center', marginTop: '2px' }}>{item.value}%</div>
+                <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${item.value}%`, background: item.color, borderRadius: '6px', transition: 'width 0.6s ease' }} />
+                </div>
               </div>
             ))}
           </div>
