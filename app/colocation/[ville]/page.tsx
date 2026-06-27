@@ -127,10 +127,7 @@ export default async function ColocationVillePage({ params }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginBottom: '48px' }}>
             {results.map(l => (
               <Link key={l.id} href={`/annonce/${l.id}`} style={{ textDecoration: 'none' }}>
-                <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden', transition: 'transform 0.15s, border-color 0.15s', cursor: 'pointer' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(16,185,129,0.3)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)' }}
-                >
+                <div className="listing-card" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer' }}>
                   <div style={{ height: '160px', background: 'linear-gradient(135deg, #6EE7B7, #047857)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>
                     {(l.photos as string[] | null)?.[0] ? (
                       <Image src={(l.photos as string[])[0]} alt={l.title ?? ''} fill sizes="280px" style={{ objectFit: 'cover' }} />
@@ -177,16 +174,18 @@ export default async function ColocationVillePage({ params }: Props) {
               .filter(([slug]) => slug !== params.ville)
               .slice(0, 12)
               .map(([slug, name]) => (
-                <Link key={slug} href={`/colocation/${slug}`} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', fontSize: '13px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'color 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#10B981')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
-                >
+                <Link key={slug} href={`/colocation/${slug}`} className="other-city-link" style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', fontSize: '13px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'color 0.15s' }}>
                   {name}
                 </Link>
               ))}
           </div>
         </div>
       </div>
+      <style>{`
+        .listing-card { transition: transform 0.15s, border-color 0.15s; }
+        .listing-card:hover { transform: translateY(-3px); border-color: rgba(16,185,129,0.3) !important; }
+        .other-city-link:hover { color: #10B981 !important; }
+      `}</style>
     </div>
   )
 }

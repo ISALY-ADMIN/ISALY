@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import CompatibilityQuiz from '@/components/landing/CompatibilityQuiz'
+import AnnoncesPreview from '@/components/landing/AnnoncesPreview'
 import ScrollReveal from '@/components/animations/ScrollReveal'
 import Marquee from '@/components/animations/Marquee'
 import FloatingCard from '@/components/animations/FloatingCard'
@@ -541,6 +542,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <AnnoncesPreview />
 
       {/* FOOTER */}
       <footer style={{ padding: '48px 40px' }}>
