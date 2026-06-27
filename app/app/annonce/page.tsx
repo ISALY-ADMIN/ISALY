@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 
@@ -41,8 +41,11 @@ async function uploadPhotosToStorage(files: File[]): Promise<string[]> {
   return urls
 }
 
-export default function AnnoncePage() {
+function AnnonceForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit') ?? null
+  const isEditing = !!editId
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -51,6 +54,7 @@ export default function AnnoncePage() {
   const [photoPreviews, setPhotoPreviews]   = useState<string[]>([])
   const [publishing, setPublishing]         = useState(false)
   const [published, setPublished]           = useState(false)
+  const [loadingEdit, setLoadingEdit]       = useState(isEditing)
 
   const [form, setForm] = useState<FormData>({
     title: '', rent: '', charges: '', city: '', neighborhood: '',
@@ -62,6 +66,47 @@ export default function AnnoncePage() {
   const [importError, setImportError]   = useState('')
   const [importSource, setImportSource] = useState('')
 
+  // Load existing listing in edit mode
+  useEffect(() => {
+    if (!editId) return
+    async function fetchListing() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/auth/login'); return }
+
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', editId)
+        .eq('owner_id', user.id)
+        .single()
+
+      if (error || !data) {
+        alert('Annonce introuvable ou accès non autorisé.')
+        router.push('/app/mes-annonces')
+        return
+      }
+
+      setForm({
+        title:           data.title           ?? '',
+        rent:            data.rent            != null ? String(data.rent)    : '',
+        charges:         data.charges         != null ? String(data.charges) : '',
+        city:            data.city            ?? '',
+        neighborhood:    data.neighborhood    ?? '',
+        surface:         data.surface         != null ? String(data.surface) : '',
+        rooms_available: data.rooms_available != null ? String(data.rooms_available) : '1',
+        description:     data.description     ?? '',
+      })
+      if (data.boost_type) setBoost(data.boost_type as BoostOption)
+      if (Array.isArray(data.photos) && data.photos.length > 0) {
+        setPhotos(data.photos as string[])
+        setPhotoPreviews(data.photos as string[])
+      }
+      setLoadingEdit(false)
+    }
+    fetchListing()
+  }, [editId, router])
+
   function set(field: keyof FormData) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [field]: e.target.value }))
@@ -69,7 +114,8 @@ export default function AnnoncePage() {
 
   function handleSlotClick(i: number) {
     if (photoPreviews[i]) {
-      if (photoPreviews[i].startsWith('blob:')) URL.revokeObjectURL(photoPreviews[i])
+      const preview = photoPreviews[i]
+      if (preview.startsWith('blob:')) URL.revokeObjectURL(preview)
       setPhotoPreviews(p => p.filter((_, idx) => idx !== i))
       setPhotos(p => p.filter((_, idx) => idx !== i))
     } else {
@@ -120,7 +166,7 @@ export default function AnnoncePage() {
     }
   }
 
-  async function handlePublish() {
+  async function handleSubmit() {
     if (!form.title.trim() || !form.rent || !form.city.trim()) {
       alert('Titre, loyer et ville sont obligatoires.')
       return
@@ -136,33 +182,61 @@ export default function AnnoncePage() {
       }
 
       const filePhotos = photos.filter((p): p is File => p instanceof File)
-      const importedUrls = photos.filter((p): p is string => typeof p === 'string')
+      const existingUrls = photos.filter((p): p is string => typeof p === 'string')
       const uploadedUrls = await uploadPhotosToStorage(filePhotos)
-      const photoUrls = [...uploadedUrls, ...importedUrls]
+      const photoUrls = [...existingUrls, ...uploadedUrls]
 
-      const { error } = await supabase.from('listings').insert({
-        owner_id:        user.id,
-        title:           form.title || `Colocation à ${form.city}`,
-        description:     form.description,
-        city:            form.city,
-        neighborhood:    form.neighborhood,
-        rent:            Number(form.rent) || 0,
-        charges:         Number(form.charges) || 0,
-        surface:         Number(form.surface) || 0,
-        rooms_available: Number(form.rooms_available) || 1,
-        photos:          photoUrls,
-        boost_type:      boost,
-        boost_level:     boost,
-        is_active:       true,
-      })
+      if (isEditing && editId) {
+        // UPDATE — ownership already verified at load time, double-check with .eq('owner_id')
+        const { error } = await supabase
+          .from('listings')
+          .update({
+            title:           form.title || `Colocation à ${form.city}`,
+            description:     form.description,
+            city:            form.city,
+            neighborhood:    form.neighborhood,
+            rent:            Number(form.rent) || 0,
+            charges:         Number(form.charges) || 0,
+            surface:         Number(form.surface) || 0,
+            rooms_available: Number(form.rooms_available) || 1,
+            photos:          photoUrls,
+            boost_type:      boost,
+            boost_level:     boost,
+          })
+          .eq('id', editId)
+          .eq('owner_id', user.id)
 
-      if (error) {
-        console.error('Erreur insertion listing:', error)
-        alert('Erreur: ' + error.message)
-        return
+        if (error) {
+          console.error('Erreur mise à jour listing:', error)
+          alert('Erreur: ' + error.message)
+          return
+        }
+        router.push('/app/mes-annonces?updated=1')
+      } else {
+        // INSERT
+        const { error } = await supabase.from('listings').insert({
+          owner_id:        user.id,
+          title:           form.title || `Colocation à ${form.city}`,
+          description:     form.description,
+          city:            form.city,
+          neighborhood:    form.neighborhood,
+          rent:            Number(form.rent) || 0,
+          charges:         Number(form.charges) || 0,
+          surface:         Number(form.surface) || 0,
+          rooms_available: Number(form.rooms_available) || 1,
+          photos:          photoUrls,
+          boost_type:      boost,
+          boost_level:     boost,
+          is_active:       true,
+        })
+
+        if (error) {
+          console.error('Erreur insertion listing:', error)
+          alert('Erreur: ' + error.message)
+          return
+        }
+        setPublished(true)
       }
-
-      router.push('/app/mes-annonces')
     } catch (err) {
       console.error('Erreur publication:', err)
       alert('Erreur inattendue lors de la publication.')
@@ -176,6 +250,20 @@ export default function AnnoncePage() {
     ((e.target as HTMLElement & { style: CSSStyleDeclaration }).style.borderColor = '#4ECBA0')
   const blur = (e: React.FocusEvent<HTMLElement>) =>
     ((e.target as HTMLElement & { style: CSSStyleDeclaration }).style.borderColor = '#2D2D2D')
+
+  if (loadingEdit) {
+    return (
+      <>
+        <Topbar title="Modifier l'annonce" />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+            <div style={{ fontSize: '14px' }}>Chargement de l'annonce…</div>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   if (published) {
     return (
@@ -218,9 +306,15 @@ export default function AnnoncePage() {
     )
   }
 
+  const pageTitle = isEditing ? "Modifier l'annonce" : 'Mon annonce'
+  const formTitle = isEditing ? 'Modifier mon annonce' : 'Déposer une annonce'
+  const submitLabel = publishing
+    ? (isEditing ? 'Enregistrement…' : 'Publication en cours…')
+    : (isEditing ? 'Enregistrer les modifications →' : "Publier l'annonce →")
+
   return (
     <>
-      <Topbar title="Mon annonce" />
+      <Topbar title={pageTitle} />
 
       <input
         ref={fileInputRef}
@@ -234,55 +328,59 @@ export default function AnnoncePage() {
       <div className="flex-1 overflow-y-auto p-8">
         <div style={{ maxWidth: '620px' }}>
           <h1 className="text-[28px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#F1F5F9' }}>
-            Déposer une annonce
+            {formTitle}
           </h1>
           <p className="text-[13.5px] mb-6" style={{ color: '#6B7280' }}>
-            Publiez votre annonce et trouvez des colocataires compatibles.
+            {isEditing
+              ? 'Modifiez les informations de votre annonce puis enregistrez.'
+              : 'Publiez votre annonce et trouvez des colocataires compatibles.'}
           </p>
 
-          {/* ── Import section ──────────────────────────────────── */}
-          <div className="rounded-[14px] p-5 mb-5 border" style={{ background: '#111', borderColor: '#2D2D2D' }}>
-            <div className="text-[13.5px] font-bold mb-1" style={{ color: '#E5E7EB' }}>
-              📎 Importer depuis une annonce existante
-            </div>
-            {importSource && (
-              <div
-                className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full mb-3"
-                style={{ background: '#0E2B1E', color: '#4ECBA0' }}
-              >
-                ✓ Annonce importée depuis {importSource}
+          {/* ── Import section (création uniquement) ────────────── */}
+          {!isEditing && (
+            <div className="rounded-[14px] p-5 mb-5 border" style={{ background: '#111', borderColor: '#2D2D2D' }}>
+              <div className="text-[13.5px] font-bold mb-1" style={{ color: '#E5E7EB' }}>
+                📎 Importer depuis une annonce existante
               </div>
-            )}
-            <div className="flex gap-2 mt-2.5">
-              <input
-                value={importUrl}
-                onChange={e => setImportUrl(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleImport()}
-                placeholder="Colle l'URL de ton annonce SeLoger, Leboncoin, PAP…"
-                className="flex-1 px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13px] outline-none transition-colors"
-                style={inputStyle}
-                onFocus={focus}
-                onBlur={blur}
-              />
-              <button
-                onClick={handleImport}
-                disabled={importing}
-                className="px-4 py-2.5 rounded-[9px] text-[13px] font-semibold text-white border-none cursor-pointer transition-colors disabled:opacity-60 whitespace-nowrap"
-                style={{ background: '#4ECBA0' }}
-                onMouseEnter={e => !importing && (e.currentTarget.style.background = '#2AA87C')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
-              >
-                {importing ? '…' : 'Importer'}
-              </button>
+              {importSource && (
+                <div
+                  className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full mb-3"
+                  style={{ background: '#0E2B1E', color: '#4ECBA0' }}
+                >
+                  ✓ Annonce importée depuis {importSource}
+                </div>
+              )}
+              <div className="flex gap-2 mt-2.5">
+                <input
+                  value={importUrl}
+                  onChange={e => setImportUrl(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleImport()}
+                  placeholder="Colle l'URL de ton annonce SeLoger, Leboncoin, PAP…"
+                  className="flex-1 px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13px] outline-none transition-colors"
+                  style={inputStyle}
+                  onFocus={focus}
+                  onBlur={blur}
+                />
+                <button
+                  onClick={handleImport}
+                  disabled={importing}
+                  className="px-4 py-2.5 rounded-[9px] text-[13px] font-semibold text-white border-none cursor-pointer transition-colors disabled:opacity-60 whitespace-nowrap"
+                  style={{ background: '#4ECBA0' }}
+                  onMouseEnter={e => !importing && (e.currentTarget.style.background = '#2AA87C')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
+                >
+                  {importing ? '…' : 'Importer'}
+                </button>
+              </div>
+              {importError ? (
+                <p className="text-[11.5px] mt-1.5" style={{ color: '#EF4444' }}>{importError}</p>
+              ) : (
+                <p className="text-[11.5px] mt-1.5" style={{ color: '#4B5563' }}>
+                  Les informations publiques de l'annonce seront importées automatiquement
+                </p>
+              )}
             </div>
-            {importError ? (
-              <p className="text-[11.5px] mt-1.5" style={{ color: '#EF4444' }}>{importError}</p>
-            ) : (
-              <p className="text-[11.5px] mt-1.5" style={{ color: '#4B5563' }}>
-                Les informations publiques de l'annonce seront importées automatiquement
-              </p>
-            )}
-          </div>
+          )}
 
           {/* ── Form ────────────────────────────────────────────── */}
           <div className="rounded-[14px] p-7 border" style={{ background: '#1A1A1A', borderColor: '#2D2D2D' }}>
@@ -435,21 +533,49 @@ export default function AnnoncePage() {
               </div>
             </div>
 
+            {/* Bouton annuler en mode édition */}
+            {isEditing && (
+              <button
+                onClick={() => router.push('/app/mes-annonces')}
+                className="w-full py-3 rounded-full text-[13px] font-semibold border cursor-pointer mb-3 transition-colors bg-transparent"
+                style={{ color: 'rgba(255,255,255,0.4)', borderColor: '#2D2D2D' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = '#4B5563')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = '#2D2D2D')}
+              >
+                Annuler
+              </button>
+            )}
+
             {/* Submit */}
             <button
-              onClick={handlePublish}
+              onClick={handleSubmit}
               disabled={publishing}
               className="w-full py-3.5 rounded-full text-[14.5px] font-semibold text-white border-none cursor-pointer transition-colors disabled:opacity-60"
               style={{ background: '#4ECBA0' }}
               onMouseEnter={e => !publishing && (e.currentTarget.style.background = '#2AA87C')}
               onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
             >
-              {publishing ? 'Publication en cours…' : "Publier l'annonce →"}
+              {submitLabel}
             </button>
           </div>
         </div>
       </div>
     </>
+  )
+}
+
+export default function AnnoncePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+          <div style={{ fontSize: '14px' }}>Chargement…</div>
+        </div>
+      </div>
+    }>
+      <AnnonceForm />
+    </Suspense>
   )
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 
@@ -21,10 +21,12 @@ interface Listing {
   description: string
 }
 
-export default function MesAnnoncesPage() {
+function MesAnnoncesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
+  const [successMsg, setSuccessMsg] = useState(searchParams.get('updated') === '1' ? 'Annonce mise à jour avec succès !' : '')
 
   useEffect(() => {
     async function fetchMyListings() {
@@ -66,6 +68,24 @@ export default function MesAnnoncesPage() {
   return (
     <div className="flex flex-col min-h-screen" style={{ background: 'transparent' }}>
       <Topbar title="Mes annonces" />
+
+      {/* Toast succès modification */}
+      {successMsg && (
+        <div style={{
+          position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)',
+          background: '#0E2B1E', color: '#4ECBA0', border: '1px solid #1a4a33',
+          borderRadius: '10px', padding: '10px 20px', fontSize: '13px', fontWeight: 600,
+          zIndex: 999, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}>
+          ✓ {successMsg}
+          <button
+            onClick={() => setSuccessMsg('')}
+            style={{ background: 'none', border: 'none', color: '#4ECBA0', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+          >×</button>
+        </div>
+      )}
+
       <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
 
         {/* Header */}
@@ -295,5 +315,13 @@ export default function MesAnnoncesPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function MesAnnoncesPage() {
+  return (
+    <Suspense fallback={null}>
+      <MesAnnoncesContent />
+    </Suspense>
   )
 }
