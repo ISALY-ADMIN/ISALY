@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createApiClient } from '@/lib/supabase/api-auth'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { maintenanceRequestTemplate } from '@/lib/email-templates'
 
 export async function POST(req: Request) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await createApiClient(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json().catch(() => ({})) as {
