@@ -1,46 +1,402 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
+import { SlidersHorizontal, RefreshCw, X, MessageCircle } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
-import SwipeCard, { SwipeProfile } from '@/components/swipe/SwipeCard'
+import SwipeCard, { SwipeProfile, SwipeCardHandle, SwipeDirection } from '@/components/swipe/SwipeCard'
 import SwipeActions from '@/components/swipe/SwipeActions'
-import MatchList from '@/components/swipe/MatchList'
+import MatchList, { MatchItem } from '@/components/swipe/MatchList'
+import ModeSwitcher from '@/components/ModeSwitcher'
 import { createClient } from '@/lib/supabase/client'
+import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 import PushPermission from '@/components/notifications/PushPermission'
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
+const LIFESTYLE_TAGS = ['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail']
 
-interface MatchItem {
-  name: string
-  initials: string
-  color: string
-  job: string
-  match: number
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'à l’instant'
+  if (min < 60) return `${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} h`
+  const d = Math.floor(h / 24)
+  return d === 1 ? 'hier' : `${d} j`
 }
+
+/* ═══════════════ Panneau de filtres (desktop + drawer mobile) ═══════════════ */
+
+interface FilterPanelProps {
+  count: number
+  budget: number
+  setBudget: (v: number) => void
+  city: string
+  setCity: (v: string) => void
+  sort: string
+  setSort: (v: string) => void
+  lifestyle: Set<string>
+  toggleLifestyle: (tag: string) => void
+  mode: 'locataire' | 'loueur'
+  onModeSwitch: (m: 'locataire' | 'loueur') => void
+}
+
+function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, lifestyle, toggleLifestyle, mode, onModeSwitch }: FilterPanelProps) {
+  const labelStyle: React.CSSProperties = {
+    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px',
+    color: 'rgba(255,255,255,0.35)', marginBottom: '10px',
+  }
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Compteur */}
+      <div>
+        <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '22px', fontWeight: 700, color: '#10B981', lineHeight: 1 }}>
+          {count}
+        </div>
+        <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+          profil{count > 1 ? 's' : ''} compatible{count > 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Mode */}
+      <div>
+        <div style={labelStyle}>Je cherche en tant que</div>
+        <ModeSwitcher currentMode={mode} onSwitch={onModeSwitch} />
+      </div>
+
+      {/* Budget */}
+      <div>
+        <div style={labelStyle}>Budget maximum</div>
+        <div className="flex justify-between mb-2">
+          <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.55)' }}>200€</span>
+          <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981' }}>
+            {budget < 3000 ? `${budget}€/mois` : 'Pas de limite'}
+          </span>
+        </div>
+        <input
+          type="range" min={200} max={3000} step={50} value={budget}
+          className="w-full" style={{ accentColor: '#10B981' }}
+          onChange={e => setBudget(Number(e.target.value))}
+        />
+      </div>
+
+      {/* Ville */}
+      <div>
+        <div style={labelStyle}>Ville</div>
+        <input
+          type="text" placeholder="Lyon, Paris…" value={city}
+          onChange={e => setCity(e.target.value)}
+          className="w-full outline-none transition-colors"
+          style={{
+            padding: '10px 14px', borderRadius: '12px', fontSize: '14px', boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#fff',
+          }}
+          onFocus={e => (e.target.style.borderColor = '#10B981')}
+          onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+        />
+      </div>
+
+      {/* Mode de vie */}
+      <div>
+        <div style={labelStyle}>Mode de vie</div>
+        <div className="flex flex-wrap gap-2">
+          {LIFESTYLE_TAGS.map(tag => {
+            const active = lifestyle.has(tag)
+            return (
+              <button
+                key={tag}
+                onClick={() => toggleLifestyle(tag)}
+                className="cursor-pointer transition-all"
+                style={{
+                  padding: '6px 13px', borderRadius: '20px', fontSize: '12.5px', fontFamily: "'Outfit', sans-serif",
+                  border: `1.5px solid ${active ? '#10B981' : 'rgba(255,255,255,0.12)'}`,
+                  background: active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: active ? '#10B981' : 'rgba(255,255,255,0.55)',
+                }}
+              >
+                {tag}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Tri */}
+      <div>
+        <div style={labelStyle}>Trier par</div>
+        <div className="flex flex-col gap-2">
+          {[
+            { value: 'match', label: '❤️ Meilleur match' },
+            { value: 'recent', label: '🕐 Plus récent' },
+            { value: 'price', label: '💰 Prix croissant' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setSort(opt.value)}
+              className="cursor-pointer text-left transition-all"
+              style={{
+                padding: '10px 14px', borderRadius: '12px', fontSize: '13px', fontFamily: "'Outfit', sans-serif",
+                fontWeight: sort === opt.value ? 600 : 400,
+                border: `1.5px solid ${sort === opt.value ? '#10B981' : 'rgba(255,255,255,0.1)'}`,
+                background: sort === opt.value ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
+                color: sort === opt.value ? '#10B981' : 'rgba(255,255,255,0.65)',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════ Ghost card (pile derrière) ═══════════════ */
+
+function GhostCard({ profile, depth }: { profile: SwipeProfile; depth: 1 | 2 }) {
+  const photo = profile.photos?.[0] ?? profile.photoUrl ?? null
+  return (
+    <motion.div
+      className="absolute inset-0 pointer-events-none"
+      initial={false}
+      animate={{ scale: depth === 1 ? 0.95 : 0.9, y: depth === 1 ? 12 : 24, opacity: depth === 1 ? 0.6 : 0.3 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+      style={{ zIndex: depth === 1 ? 2 : 1 }}
+    >
+      <div
+        className="relative w-full h-full overflow-hidden"
+        style={{ borderRadius: '24px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}66 100%)` }} />
+        {photo && (
+          <Image src={photo} alt="" fill sizes="460px" className="object-cover" draggable={false} />
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+      </div>
+    </motion.div>
+  )
+}
+
+/* ═══════════════ Match celebration ═══════════════ */
+
+function MatchCelebration({ profile, me, onMessage, onClose }: {
+  profile: SwipeProfile
+  me: { initials: string; avatarUrl: string | null }
+  onMessage: () => void
+  onClose: () => void
+}) {
+  const confetti = useMemo(
+    () => Array.from({ length: 22 }, (_, i) => ({
+      left: Math.random() * 100,
+      delay: Math.random() * 0.8,
+      duration: 2 + Math.random() * 1.6,
+      size: 6 + Math.random() * 7,
+      rotate: Math.random() * 360,
+      shade: i % 3 === 0 ? '#10B981' : i % 3 === 1 ? '#34D399' : '#059669',
+    })),
+    [],
+  )
+  const photo = profile.photos?.[0] ?? profile.photoUrl ?? null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-5 overflow-hidden"
+      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)' }}
+      onClick={onClose}
+    >
+      <style>{`
+        @keyframes confetti-fall {
+          0% { transform: translateY(-8vh) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(108vh) rotate(720deg); opacity: 0.2; }
+        }
+      `}</style>
+      {confetti.map((c, i) => (
+        <div
+          key={i}
+          className="absolute pointer-events-none"
+          style={{
+            left: `${c.left}%`, top: 0, width: c.size, height: c.size * 0.45,
+            background: c.shade, borderRadius: '2px',
+            transform: `rotate(${c.rotate}deg)`,
+            animation: `confetti-fall ${c.duration}s ${c.delay}s linear infinite`,
+          }}
+        />
+      ))}
+
+      <div className="flex flex-col items-center text-center" onClick={e => e.stopPropagation()}>
+        {/* Avatars qui se rejoignent */}
+        <div className="relative flex items-center justify-center mb-8" style={{ height: '110px' }}>
+          <motion.div
+            initial={{ x: -110, opacity: 0, scale: 0.6 }}
+            animate={{ x: -28, opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.1 }}
+            className="relative z-10 rounded-full flex items-center justify-center overflow-hidden"
+            style={{
+              width: 96, height: 96, border: '3px solid #10B981',
+              background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)',
+              boxShadow: '0 0 40px rgba(16,185,129,0.45)',
+              fontFamily: "'Outfit', sans-serif", fontSize: '26px', fontWeight: 800, color: '#fff',
+            }}
+          >
+            {me.avatarUrl ? (
+              <Image src={me.avatarUrl} alt="Toi" width={96} height={96} className="w-full h-full object-cover" />
+            ) : (
+              me.initials || 'TOI'
+            )}
+          </motion.div>
+          <motion.div
+            initial={{ x: 110, opacity: 0, scale: 0.6 }}
+            animate={{ x: 28, opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.1 }}
+            className="relative z-20 rounded-full flex items-center justify-center overflow-hidden"
+            style={{
+              width: 96, height: 96, border: '3px solid #10B981',
+              background: `linear-gradient(135deg, ${profile.color}, ${profile.color}99)`,
+              boxShadow: '0 0 40px rgba(16,185,129,0.45)',
+              fontFamily: "'Outfit', sans-serif", fontSize: '34px', fontWeight: 800, color: '#fff',
+            }}
+          >
+            {photo ? (
+              <Image src={photo} alt={profile.name} width={96} height={96} className="w-full h-full object-cover" />
+            ) : (
+              profile.isListing ? '🏠' : profile.name[0]
+            )}
+          </motion.div>
+        </div>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 16, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
+          style={{ fontFamily: "'Outfit', sans-serif", fontSize: '40px', fontWeight: 700, color: '#10B981', marginBottom: '8px' }}
+        >
+          C&apos;est un match !
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.45 }}
+          style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px', maxWidth: '320px' }}
+        >
+          Toi et {profile.name.split(' ')[0]} êtes compatibles — envoyez un premier message !
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className="flex flex-col gap-3 w-full"
+          style={{ maxWidth: '300px' }}
+        >
+          <button
+            onClick={onMessage}
+            className="flex items-center justify-center gap-2 border-none cursor-pointer w-full"
+            style={{
+              padding: '14px', borderRadius: '14px', fontSize: '15px', fontWeight: 700,
+              fontFamily: "'Outfit', sans-serif", color: '#fff',
+              background: 'linear-gradient(135deg, #10B981, #059669)',
+              boxShadow: '0 6px 24px rgba(16,185,129,0.4)',
+            }}
+          >
+            <MessageCircle size={17} /> Envoyer un message
+          </button>
+          <button
+            onClick={onClose}
+            className="cursor-pointer w-full"
+            style={{
+              padding: '13px', borderRadius: '14px', fontSize: '14px', fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif",
+              background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)',
+            }}
+          >
+            Continuer à swiper
+          </button>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════ Empty state ═══════════════ */
+
+function EmptyState({ onExpandFilters, onRestart }: { onExpandFilters: () => void; onRestart: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-5 text-center px-8">
+      <svg width="140" height="140" viewBox="0 0 140 140" fill="none" aria-hidden="true">
+        <rect x="38" y="30" width="64" height="84" rx="12" stroke="rgba(16,185,129,0.4)" strokeWidth="2" fill="rgba(16,185,129,0.05)" transform="rotate(-8 70 72)" />
+        <rect x="38" y="30" width="64" height="84" rx="12" stroke="#10B981" strokeWidth="2" fill="rgba(16,185,129,0.08)" transform="rotate(4 70 72)" />
+        <circle cx="70" cy="62" r="12" stroke="#10B981" strokeWidth="2" transform="rotate(4 70 72)" />
+        <path d="M52 96c4-8 12-12 18-12s14 4 18 12" stroke="#10B981" strokeWidth="2" strokeLinecap="round" transform="rotate(4 70 72)" />
+        <circle cx="112" cy="34" r="3" fill="#10B981" opacity="0.6" />
+        <circle cx="24" cy="52" r="2.5" fill="#10B981" opacity="0.4" />
+        <circle cx="118" cy="96" r="2" fill="#10B981" opacity="0.5" />
+      </svg>
+      <div>
+        <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '24px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>
+          Tu as tout vu pour aujourd&apos;hui
+        </h3>
+        <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, maxWidth: '320px' }}>
+          De nouveaux colocataires arrivent chaque jour. Élargis tes filtres pour découvrir plus de profils.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2.5 w-full" style={{ maxWidth: '280px' }}>
+        <button
+          onClick={onExpandFilters}
+          className="flex items-center justify-center gap-2 border-none cursor-pointer w-full"
+          style={{
+            padding: '13px', borderRadius: '14px', fontSize: '14px', fontWeight: 700,
+            fontFamily: "'Outfit', sans-serif", color: '#fff',
+            background: 'linear-gradient(135deg, #10B981, #059669)',
+            boxShadow: '0 6px 24px rgba(16,185,129,0.35)',
+          }}
+        >
+          <SlidersHorizontal size={16} /> Élargir mes filtres
+        </button>
+        <button
+          onClick={onRestart}
+          className="flex items-center justify-center gap-2 cursor-pointer w-full"
+          style={{
+            padding: '12px', borderRadius: '14px', fontSize: '13.5px', fontWeight: 600,
+            fontFamily: "'Outfit', sans-serif",
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)',
+          }}
+        >
+          <RefreshCw size={15} /> Revoir les profils
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════ Page ═══════════════ */
 
 export default function SwipePage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { mode, setMode } = useLease()
   const [profiles, setProfiles] = useState<SwipeProfile[]>([])
   const [matches, setMatches] = useState<MatchItem[]>([])
   const [index, setIndex] = useState(0)
-  const [matchPopup, setMatchPopup] = useState<SwipeProfile | null>(null)
   const [cardKey, setCardKey] = useState(0)
-  const [swipeHint, setSwipeHint] = useState<'like' | 'nope' | 'super' | null>(null)
+  const [matchPopup, setMatchPopup] = useState<SwipeProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
+  const [highlightFilters, setHighlightFilters] = useState(false)
   const [filterBudget, setFilterBudget] = useState(3000)
   const [filterCity, setFilterCity] = useState('')
   const [filterSort, setFilterSort] = useState('match')
+  const [lifestyle, setLifestyle] = useState<Set<string>>(new Set())
+  const [undoIndex, setUndoIndex] = useState<number | null>(null)
+  const [me, setMe] = useState<{ initials: string; avatarUrl: string | null }>({ initials: '', avatarUrl: null })
 
-  useEffect(() => {
-    fetchProfiles()
-    fetchMatches()
-  }, [])
+  const cardRef = useRef<SwipeCardHandle>(null)
+  const swipeLock = useRef(false)
 
-  async function fetchProfiles() {
+  const fetchProfiles = useCallback(async () => {
     try {
       const profilesList: SwipeProfile[] = []
 
@@ -88,6 +444,7 @@ export default function SwipePage() {
           bio: l.description ?? '',
           certLevel: 0,
           photoUrl: l.photos?.[0] ?? null,
+          photos: (l.photos as string[] | null) ?? [],
           isListing: true,
           ownerId: l.owner_id,
         }))
@@ -102,9 +459,9 @@ export default function SwipePage() {
       setProfiles(filtered)
     } catch {}
     setLoading(false)
-  }
+  }, [filterBudget, filterCity, filterSort])
 
-  async function fetchMatches() {
+  const fetchMatches = useCallback(async () => {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -112,7 +469,7 @@ export default function SwipePage() {
 
       const { data: matchData } = await supabase
         .from('matches')
-        .select('id, user1_id, user2_id')
+        .select('id, user1_id, user2_id, created_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .limit(10)
@@ -125,9 +482,15 @@ export default function SwipePage() {
 
       if (otherIds.length === 0) return
 
+      const createdById = new Map<string, string>()
+      matchData.forEach(m => {
+        const other = m.user1_id === user.id ? m.user2_id : m.user1_id
+        if (other && !createdById.has(other)) createdById.set(other, m.created_at)
+      })
+
       const { data: matchProfiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, city, budget_max')
+        .select('id, first_name, last_name, city, budget_max, avatar_url')
         .in('id', otherIds)
 
       if (!matchProfiles) return
@@ -135,47 +498,109 @@ export default function SwipePage() {
       const mapped: MatchItem[] = matchProfiles.map((p, i) => {
         const fn = p.first_name ?? ''
         const ln = p.last_name ?? ''
+        const created = createdById.get(p.id)
         return {
           name: `${fn} ${ln[0] ?? ''}.`.trim(),
           initials: `${fn[0] ?? ''}${ln[0] ?? ''}`.toUpperCase(),
           color: MATCH_COLORS[i % MATCH_COLORS.length],
           job: 'Colocataire',
           match: 0,
+          avatarUrl: p.avatar_url ?? null,
+          timeAgo: created ? timeAgo(created) : undefined,
+          preview: 'Nouveau match — dis bonjour !',
         }
       })
       setMatches(mapped)
     } catch {}
-  }
+  }, [])
+
+  // Fetch initial + refetch (débouncé) quand les filtres changent
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetchProfiles()
+      setIndex(0)
+      setUndoIndex(null)
+      setCardKey(k => k + 1)
+    }, 350)
+    return () => clearTimeout(t)
+  }, [fetchProfiles])
+
+  // Matchs + profil courant (avatar pour la célébration)
+  useEffect(() => {
+    fetchMatches()
+    ;(async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).single()
+      if (data) {
+        setMe({
+          initials: `${data.first_name?.[0] ?? ''}${data.last_name?.[0] ?? ''}`.toUpperCase(),
+          avatarUrl: data.avatar_url ?? null,
+        })
+      }
+    })()
+  }, [fetchMatches])
+
+  // Realtime : nouveaux matchs
+  useEffect(() => {
+    const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      channel = supabase
+        .channel('swipe-matches')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, (payload) => {
+          const m = payload.new as { user1_id: string; user2_id: string }
+          if (m.user1_id === user.id || m.user2_id === user.id) fetchMatches()
+        })
+        .subscribe()
+    })
+    return () => { if (channel) supabase.removeChannel(channel) }
+  }, [fetchMatches])
 
   const profile = profiles[index]
+  const noMoreProfiles = !loading && index >= profiles.length
 
-  async function handleSwipe(dir: 'left' | 'right' | 'super') {
-    setSwipeHint(null)
-    if (profile) {
+  async function handleSwipe(dir: SwipeDirection) {
+    if (swipeLock.current) return
+    swipeLock.current = true
+    const swiped = profiles[index]
+    const swipedIndex = index
+    if (swiped) {
       try {
         const res = await fetch('/api/swipe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ swipedId: profile.id, direction: dir }),
+          body: JSON.stringify({ swipedId: swiped.id, direction: dir }),
         })
         const json = await res.json()
         if (json.matched) {
           setTimeout(() => {
-            setMatchPopup(profile)
+            setMatchPopup(swiped)
             fetchMatches()
-            toast({ title: 'Match ! 🎉', description: `Tu as un nouveau match avec ${profile.name.split(' ')[0]} !`, duration: 3000 })
+            toast({ title: 'Match ! 🎉', description: `Tu as un nouveau match avec ${swiped.name.split(' ')[0]} !`, duration: 3000 })
           }, 380)
         }
       } catch {}
     }
     setTimeout(() => {
       setIndex(i => i + 1)
+      setUndoIndex(swipedIndex)
       setCardKey(k => k + 1)
-    }, 430)
+      swipeLock.current = false
+    }, 380)
+  }
+
+  function handleUndo() {
+    if (undoIndex === null) return
+    setIndex(undoIndex)
+    setUndoIndex(null)
+    setCardKey(k => k + 1)
   }
 
   function goMessage(name: string) {
-    const current = profiles[index]
+    const current = matchPopup ?? profiles[index]
     if (current?.isListing && current?.ownerId) {
       router.push(`/app/messages?owner=${current.ownerId}`)
     } else {
@@ -183,237 +608,225 @@ export default function SwipePage() {
     }
   }
 
-  const noMoreProfiles = !loading && index >= profiles.length
+  function handleModeSwitch(newMode: 'locataire' | 'loueur') {
+    setMode(newMode)
+    fetch('/api/profile/mode', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: newMode }),
+    }).catch(() => {})
+  }
+
+  function toggleLifestyle(tag: string) {
+    setLifestyle(prev => {
+      const next = new Set(prev)
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
+      return next
+    })
+  }
+
+  function expandFilters() {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setShowFilters(true)
+    } else {
+      setHighlightFilters(true)
+      setTimeout(() => setHighlightFilters(false), 1800)
+    }
+  }
+
+  // Raccourcis clavier desktop
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target.isContentEditable) return
+      if (matchPopup) return
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault(); cardRef.current?.swipe('left'); break
+        case 'ArrowRight':
+          e.preventDefault(); cardRef.current?.swipe('right'); break
+        case 'ArrowUp':
+          e.preventDefault(); cardRef.current?.swipe('super'); break
+        case ' ':
+          e.preventDefault(); cardRef.current?.nextPhoto(); break
+        case 'z':
+        case 'Z':
+        case 'Backspace':
+          e.preventDefault(); handleUndo(); break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchPopup, undoIndex, index])
+
+  const remaining = Math.max(0, profiles.length - index)
+
+  const filterPanelProps: FilterPanelProps = {
+    count: remaining,
+    budget: filterBudget, setBudget: setFilterBudget,
+    city: filterCity, setCity: setFilterCity,
+    sort: filterSort, setSort: setFilterSort,
+    lifestyle, toggleLifestyle,
+    mode, onModeSwitch: handleModeSwitch,
+  }
 
   return (
     <>
       <Topbar title="Trouver" />
-      <div className="flex flex-col flex-1 overflow-hidden bg-[#F0F4F0]">
+      <PushPermission />
 
-        {/* Status bar */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-              {profiles.length > 0 ? `${profiles.length} profils compatibles trouvés` : 'Recherche en cours...'}
-            </span>
+      <div className="flex flex-1 overflow-hidden" style={{ background: '#0A0A0A' }}>
+
+        {/* ── Colonne gauche : filtres (desktop) ── */}
+        <aside className="hidden lg:flex flex-col flex-shrink-0 overflow-y-auto p-4" style={{ width: '260px' }}>
+          <div
+            className="rounded-3xl p-5 transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid ${highlightFilters ? '#10B981' : 'rgba(255,255,255,0.08)'}`,
+              boxShadow: highlightFilters ? '0 0 0 3px rgba(16,185,129,0.25), 0 0 32px rgba(16,185,129,0.2)' : undefined,
+              backdropFilter: 'blur(12px)',
+            }}
+          >
+            <FilterPanel {...filterPanelProps} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
-              {index + 1}/{profiles.length > 0 ? profiles.length : '?'} vus
+        </aside>
+
+        {/* ── Zone centrale ── */}
+        <main className="flex flex-col items-center flex-1 min-w-0 overflow-hidden px-3 pt-2 pb-3">
+          {/* Bouton filtres mobile */}
+          <div className="lg:hidden w-full flex justify-between items-center py-1.5 flex-shrink-0">
+            <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)' }}>
+              {loading ? 'Recherche…' : `${remaining} profil${remaining > 1 ? 's' : ''} compatible${remaining > 1 ? 's' : ''}`}
             </span>
             <button
               onClick={() => setShowFilters(true)}
-              style={{ background: 'rgba(78,203,160,0.15)', border: '1px solid #4ECBA0', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, color: '#4ECBA0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              className="flex items-center gap-1.5 cursor-pointer"
+              style={{
+                background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.4)',
+                borderRadius: '10px', padding: '6px 12px', fontSize: '12.5px', fontWeight: 600, color: '#10B981',
+              }}
             >
-              ⚙️ Filtres
+              <SlidersHorizontal size={13} /> Filtres
             </button>
           </div>
-        </div>
 
-        <PushPermission />
-
-        <div className="flex flex-1 overflow-hidden">
-          {/* Main swipe area */}
-          <div className="flex flex-col items-center justify-center gap-3 flex-1 overflow-hidden p-3 bg-[#F0F4F0]">
-            {loading ? (
-              <div className="text-center">
-                <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
-                <p className="text-sm font-semibold text-gray-500">Recherche de profils compatibles…</p>
-                <p className="text-xs mt-1 text-gray-400">Ça prend quelques secondes</p>
-              </div>
-            ) : noMoreProfiles ? (
-              <div className="flex flex-col items-center justify-center gap-4 text-center bg-white rounded-2xl px-8 py-12 shadow-md" style={{ maxWidth: '340px' }}>
-                <span className="text-6xl" style={{ animation: 'bop 1.4s ease infinite' }}>🏠</span>
-                <h3 className="text-xl font-bold text-gray-900 font-serif">
-                  Tous les profils ont été vus !
-                </h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  Reviens demain, de nouveaux colocataires arrivent chaque jour.
-                </p>
-                <div className="flex flex-col gap-2.5 w-full">
-                  <button
-                    onClick={() => { setIndex(0); setCardKey(k => k + 1) }}
-                    className="w-full px-6 py-2.5 rounded-full text-sm font-semibold text-white border-none cursor-pointer bg-mint hover:bg-mint-dark transition-colors"
-                  >
-                    🔄 Recommencer
-                  </button>
-                  <button
-                    onClick={() => setShowFilters(true)}
-                    className="w-full px-6 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-500 cursor-pointer hover:border-mint hover:text-mint transition-colors bg-transparent"
-                  >
-                    Affiner mes filtres
-                  </button>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center flex-1 text-center">
+              <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>Recherche de profils compatibles…</p>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Ça prend quelques secondes</p>
+            </div>
+          ) : noMoreProfiles ? (
+            <div className="flex items-center justify-center flex-1">
+              <EmptyState
+                onExpandFilters={expandFilters}
+                onRestart={() => { setIndex(0); setUndoIndex(null); setCardKey(k => k + 1) }}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Card stack */}
+              <div
+                className="relative flex-1 min-h-0 my-2"
+                style={{ width: 'min(460px, 92vw)', maxHeight: '78vh' }}
+              >
+                {profiles[index + 2] && <GhostCard profile={profiles[index + 2]} depth={2} />}
+                {profiles[index + 1] && <GhostCard profile={profiles[index + 1]} depth={1} />}
+                <div className="absolute inset-0" style={{ zIndex: 3 }}>
+                  <SwipeCard
+                    key={`${profile.id}-${cardKey}`}
+                    ref={cardRef}
+                    profile={profile}
+                    onSwipe={handleSwipe}
+                    onMessage={goMessage}
+                  />
                 </div>
               </div>
-            ) : (
-              <>
-                {index > 0 && (
-                  <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.7)', padding: '4px 12px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>
-                      {index} profil{index > 1 ? 's' : ''} vu{index > 1 ? 's' : ''} aujourd&apos;hui
-                    </span>
-                  </div>
-                )}
-                <SwipeCard
-                  key={cardKey}
-                  profile={profile}
-                  onSwipe={handleSwipe}
-                  onMessage={goMessage}
-                  hint={swipeHint}
-                />
-                <SwipeActions
-                  onPass={() => handleSwipe('left')}
-                  onSuperLike={() => handleSwipe('super')}
-                  onLike={() => handleSwipe('right')}
-                  onHint={setSwipeHint}
-                />
-              </>
-            )}
-          </div>
 
-          {/* Matches sidebar */}
+              <SwipeActions
+                onUndo={handleUndo}
+                canUndo={undoIndex !== null}
+                onPass={() => cardRef.current?.swipe('left')}
+                onSuperLike={() => cardRef.current?.swipe('super')}
+                onLike={() => cardRef.current?.swipe('right')}
+                onInfo={() => cardRef.current?.toggleDetails()}
+              />
+            </>
+          )}
+        </main>
+
+        {/* ── Colonne droite : matchs récents (desktop large) ── */}
+        <div className="hidden xl:block h-full">
           <MatchList matches={matches} />
         </div>
       </div>
 
-      {/* Filtres drawer */}
-      {showFilters && (
-        <>
-          <div
-            onClick={() => setShowFilters(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40, backdropFilter: 'blur(2px)' }}
-          />
-          <div style={{
-            position: 'fixed', top: 0, right: 0, bottom: 0, width: '320px',
-            background: '#111111', zIndex: 50,
-            boxShadow: '-8px 0 32px rgba(0,0,0,0.15)',
-            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>Filtres</div>
-              <button onClick={() => setShowFilters(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'rgba(255,255,255,0.35)' }}>✕</button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>BUDGET MAXIMUM</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)' }}>0€</span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#10B981' }}>{filterBudget < 3000 ? `${filterBudget}€/mois` : 'Pas de limite'}</span>
-                </div>
-                <input type="range" min={200} max={3000} step={50} value={filterBudget}
-                  style={{ width: '100%', accentColor: '#10B981' }}
-                  onChange={e => setFilterBudget(Number(e.target.value))}
-                />
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>VILLE</div>
-                <input type="text" placeholder="Lyon, Paris..." value={filterCity} onChange={e => setFilterCity(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }}
-                  onFocus={e => (e.target.style.borderColor = '#10B981')}
-                  onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
-                />
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>MODE DE VIE</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
-                  {['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail'].map(tag => (
-                    <button key={tag}
-                      onClick={e => {
-                        const btn = e.currentTarget
-                        const active = btn.dataset.active === 'true'
-                        btn.dataset.active = (!active).toString()
-                        btn.style.background = !active ? '#ECFDF5' : '#F3F4F6'
-                        btn.style.color = !active ? '#059669' : '#6B7280'
-                        btn.style.borderColor = !active ? '#10B981' : '#E5E7EB'
-                      }}
-                      style={{ padding: '7px 14px', borderRadius: '20px', border: '1.5px solid #E5E7EB', background: '#F3F4F6', color: '#6B7280', fontSize: '13px', cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '12px' }}>TRIER PAR</div>
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
-                  {[
-                    { value: 'match', label: '❤️ Meilleur match' },
-                    { value: 'recent', label: '🕐 Plus récent' },
-                    { value: 'price', label: '💰 Prix croissant' },
-                  ].map(opt => (
-                    <button key={opt.value}
-                      onClick={() => setFilterSort(opt.value)}
-                      style={{ padding: '10px 16px', borderRadius: '10px', border: `1.5px solid ${filterSort === opt.value ? '#10B981' : '#E5E7EB'}`, background: filterSort === opt.value ? '#ECFDF5' : '#F9FAFB', color: filterSort === opt.value ? '#059669' : '#374151', fontSize: '13px', fontWeight: filterSort === opt.value ? 600 : 400, cursor: 'pointer', textAlign: 'left' as const, fontFamily: "'Outfit', sans-serif" }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ padding: '16px 24px', borderTop: '1px solid #F3F4F6', flexShrink: 0 }}>
-              <button
-                onClick={() => { setShowFilters(false); fetchProfiles() }}
-                style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Outfit', sans-serif" }}
-              >
-                Appliquer les filtres
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Match popup */}
-      {matchPopup && (
-        <div
-          className="fixed inset-0 flex items-center justify-center p-5 z-50"
-          style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(6px)' }}
-          onClick={() => setMatchPopup(null)}
-        >
-          <div
-            className="rounded-[28px] p-10 text-center animate-pop-in"
-            style={{
-              maxWidth: '360px',
-              width: '100%',
-              background: '#111111',
-              boxShadow: '0 24px 80px rgba(0,0,0,.7)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="text-[56px] mb-3">🎉</div>
-            <h2
-              className="text-[30px] mb-2"
-              style={{ color: '#4ECBA0', fontFamily: "'DM Serif Display', serif" }}
+      {/* ── Drawer filtres mobile ── */}
+      <AnimatePresence>
+        {showFilters && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowFilters(false)}
+              className="fixed inset-0 z-40"
+              style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              className="fixed top-0 right-0 bottom-0 z-50 flex flex-col overflow-hidden"
+              style={{ width: 'min(320px, 88vw)', background: '#111111', boxShadow: '-8px 0 32px rgba(0,0,0,0.4)' }}
             >
-              C&apos;est un match !
-            </h2>
-            <p className="text-[13.5px] mb-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Toi & {matchPopup.name} — envoyez un premier message !
-            </p>
-            <div className="flex gap-2.5">
-              <button
-                onClick={() => { setMatchPopup(null); goMessage(matchPopup.name) }}
-                className="flex-1 py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer transition-all"
-                style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.35)' }}
-              >
-                💬 Message
-              </button>
-              <button
-                onClick={() => setMatchPopup(null)}
-                className="flex-1 py-3 rounded-full text-[13.5px] font-semibold border cursor-pointer transition-colors"
-                style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', borderColor: 'rgba(255,255,255,0.1)' }}
-              >
-                Continuer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex items-center justify-between flex-shrink-0" style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '18px', fontWeight: 700, color: '#fff' }}>Filtres</div>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="flex items-center justify-center border-none cursor-pointer rounded-full"
+                  style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+                  aria-label="Fermer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto" style={{ padding: '20px 24px' }}>
+                <FilterPanel {...filterPanelProps} />
+              </div>
+              <div className="flex-shrink-0" style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="w-full border-none cursor-pointer"
+                  style={{
+                    padding: '14px', borderRadius: '14px', fontSize: '15px', fontWeight: 700,
+                    fontFamily: "'Outfit', sans-serif", color: '#fff',
+                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                  }}
+                >
+                  Appliquer les filtres
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Match celebration ── */}
+      <AnimatePresence>
+        {matchPopup && (
+          <MatchCelebration
+            profile={matchPopup}
+            me={me}
+            onMessage={() => { const p = matchPopup; setMatchPopup(null); goMessage(p.name) }}
+            onClose={() => setMatchPopup(null)}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }
