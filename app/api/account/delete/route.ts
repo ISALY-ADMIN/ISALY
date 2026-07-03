@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createApiClient } from '@/lib/supabase/api-auth'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 
-export async function DELETE() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function DELETE(request: Request) {
+  const { supabase, user } = await createApiClient(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = createAdmin(
