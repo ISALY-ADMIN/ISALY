@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createApiClient } from '@/lib/supabase/api-auth'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -51,20 +51,21 @@ function completionPct(p: Record<string, unknown>, certLevel: number): number {
   return Math.round((steps.filter(Boolean).length / steps.length) * 100)
 }
 
-export async function GET() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function GET(request: Request) {
+  // Auth cookies (site) OU Bearer (app mobile), comme /api/swipe.
+  const { supabase, user } = await createApiClient(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, role, referral_code, referral_count')
+    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, role, active_mode, referral_code, referral_count')
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
-  // role : 'locataire' | 'loueur' | NULL (locataire par défaut)
-  const mode: 'locataire' | 'loueur' = profile.role === 'loueur' ? 'loueur' : 'locataire'
+  // Mode d'interface : le toggle (active_mode) prime sur le type d'inscription (role).
+  const mode: 'locataire' | 'loueur' =
+    (profile.active_mode ?? profile.role) === 'loueur' ? 'loueur' : 'locataire'
 
   // ── Commun : certification, matchs, messages non lus, notifications ──
   const [certRes, matchRes, unreadRes, lastUnreadRes, notifRes] = await Promise.all([
