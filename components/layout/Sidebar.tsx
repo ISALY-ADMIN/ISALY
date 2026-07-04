@@ -99,10 +99,10 @@ export default function Sidebar() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Include active_mode so the switcher is initialised from the persisted value
+      // role initialise le switcher (colonne de référence du mode)
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, avatar_url, is_admin, active_mode')
+        .select('first_name, last_name, role, avatar_url, is_admin')
         .eq('id', user.id)
         .single()
 
@@ -115,7 +115,7 @@ export default function Sidebar() {
           isAdmin:   data.is_admin   === true,
         })
         // Hydrate local mode state + keep LeaseContext in sync
-        const dbMode = data.active_mode === 'loueur' ? 'loueur' : 'locataire'
+        const dbMode = data.role === 'loueur' ? 'loueur' : 'locataire'
         setCurrentMode(dbMode)
         syncContextMode(dbMode)
       }

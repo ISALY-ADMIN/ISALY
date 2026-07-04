@@ -47,15 +47,15 @@ export function LeaseProvider({ children }: { children: React.ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
-      // Fetch active_mode from profile
+      // role = colonne de référence du mode (NULL = locataire)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('active_mode')
+        .select('role')
         .eq('id', user.id)
         .single()
 
-      if (profile?.active_mode === 'locataire' || profile?.active_mode === 'loueur') {
-        setActiveMode(profile.active_mode)
+      if (profile?.role === 'locataire' || profile?.role === 'loueur') {
+        setActiveMode(profile.role)
       }
 
       // Check if user has at least one active listing (enables switcher)

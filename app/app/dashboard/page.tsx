@@ -10,11 +10,11 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('active_mode')
+    .select('role')
     .eq('id', user.id)
     .single()
 
-  if (profile?.active_mode === 'loueur') {
+  if (profile?.role === 'loueur') {
     return <LoueurDashboard ownerId={user.id} />
   }
 

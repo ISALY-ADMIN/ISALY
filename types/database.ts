@@ -61,7 +61,6 @@ export interface Profile {
   last_name: string | null
   avatar_url: string | null
   role: UserRole | null
-  active_mode?: 'locataire' | 'loueur'
   city: string | null
   budget_max: number | null
   schedule: Schedule | null

@@ -13,11 +13,9 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Invalid mode' }, { status: 400 })
   }
 
-  // role est la colonne de référence ; active_mode reste synchronisée pour
-  // les pages qui la lisent encore (dashboard gestion, loyers, Sidebar).
   await supabase
     .from('profiles')
-    .update({ role: mode, active_mode: mode })
+    .update({ role: mode })
     .eq('id', user.id)
 
   return NextResponse.json({ success: true })
