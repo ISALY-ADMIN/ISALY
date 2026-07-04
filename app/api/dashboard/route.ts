@@ -58,13 +58,13 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, active_mode, role, referral_code, referral_count')
+    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, role, referral_code, referral_count')
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
-  const mode: 'locataire' | 'loueur' =
-    (profile.active_mode ?? profile.role) === 'loueur' ? 'loueur' : 'locataire'
+  // role : 'locataire' | 'loueur' | NULL (locataire par défaut)
+  const mode: 'locataire' | 'loueur' = profile.role === 'loueur' ? 'loueur' : 'locataire'
 
   // ── Commun : certification, matchs, messages non lus, notifications ──
   const [certRes, matchRes, unreadRes, lastUnreadRes, notifRes] = await Promise.all([
