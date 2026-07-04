@@ -16,7 +16,16 @@ interface FormData {
   rooms_available: string
   occupants_current: string
   capacity_total: string
+  /** '' = non renseigné, 'oui' | 'non' */
+  meuble: string
+  animaux_ok: string
+  non_fumeur: string
   description: string
+}
+
+/** Convertit le tri-état du formulaire en booléen SQL (NULL = non renseigné). */
+function triState(v: string): boolean | null {
+  return v === 'oui' ? true : v === 'non' ? false : null
 }
 
 async function uploadPhotosToStorage(files: File[]): Promise<string[]> {
@@ -53,7 +62,8 @@ function AnnonceForm() {
 
   const [form, setForm] = useState<FormData>({
     title: '', rent: '', charges: '', city: '', neighborhood: '',
-    surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '', description: '',
+    surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '',
+    meuble: '', animaux_ok: '', non_fumeur: '', description: '',
   })
 
   const [importUrl, setImportUrl]       = useState('')
@@ -92,6 +102,9 @@ function AnnonceForm() {
         rooms_available: data.rooms_available != null ? String(data.rooms_available) : '1',
         occupants_current: data.occupants_current != null ? String(data.occupants_current) : '1',
         capacity_total:  data.capacity_total  != null ? String(data.capacity_total)  : '',
+        meuble:          data.meuble     == null ? '' : data.meuble     ? 'oui' : 'non',
+        animaux_ok:      data.animaux_ok == null ? '' : data.animaux_ok ? 'oui' : 'non',
+        non_fumeur:      data.non_fumeur == null ? '' : data.non_fumeur ? 'oui' : 'non',
         description:     data.description     ?? '',
       })
       if (data.boost_type) setBoost(data.boost_type as BoostOption)
@@ -198,6 +211,9 @@ function AnnonceForm() {
             rooms_available: Number(form.rooms_available) || 1,
             occupants_current: Number(form.occupants_current) || 1,
             capacity_total:  Number(form.capacity_total) || null,
+            meuble:          triState(form.meuble),
+            animaux_ok:      triState(form.animaux_ok),
+            non_fumeur:      triState(form.non_fumeur),
             photos:          photoUrls,
             boost_type:      boost,
             boost_level:     boost,
@@ -226,6 +242,9 @@ function AnnonceForm() {
           rooms_available: Number(form.rooms_available) || 1,
           occupants_current: Number(form.occupants_current) || 1,
           capacity_total:  Number(form.capacity_total) || null,
+          meuble:          triState(form.meuble),
+          animaux_ok:      triState(form.animaux_ok),
+          non_fumeur:      triState(form.non_fumeur),
           photos:          photoUrls,
           boost_type:      boost,
           boost_level:     boost,
@@ -311,7 +330,7 @@ function AnnonceForm() {
               <button
                 onClick={() => {
                   setPublished(false)
-                  setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '', description: '' })
+                  setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '', meuble: '', animaux_ok: '', non_fumeur: '', description: '' })
                   setPhotoPreviews([])
                   setPhotos([])
                 }}
@@ -485,6 +504,24 @@ function AnnonceForm() {
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
                   style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {([
+                { field: 'meuble' as const, label: 'Meublé' },
+                { field: 'animaux_ok' as const, label: 'Animaux OK' },
+                { field: 'non_fumeur' as const, label: 'Non-fumeur' },
+              ]).map(({ field, label }) => (
+                <Field key={field} label={label}>
+                  <select value={form[field]} onChange={set(field)}
+                    className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors cursor-pointer"
+                    style={inputStyle} onFocus={focus} onBlur={blur}>
+                    <option value="">Non renseigné</option>
+                    <option value="oui">Oui</option>
+                    <option value="non">Non</option>
+                  </select>
+                </Field>
+              ))}
             </div>
 
             <Field label="Description">

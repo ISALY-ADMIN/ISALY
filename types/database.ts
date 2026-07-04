@@ -93,6 +93,12 @@ export interface Listing {
   occupants_current: number
   /** Capacité totale de la colocation (null = déduite de rooms_available). */
   capacity_total: number | null
+  /** Critères de vie (null = non renseigné par le loueur). */
+  meuble: boolean | null
+  animaux_ok: boolean | null
+  non_fumeur: boolean | null
+  latitude: number | null
+  longitude: number | null
   photos: string[] | null
   boost_type: BoostType
   is_active: boolean
