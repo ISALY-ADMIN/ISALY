@@ -1,10 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { matchingEngine, profileToVector } from '@/lib/matching'
+import { profilesCompatibility, hasCompletedTest } from '@/lib/matching'
 import type { Profile } from '@/types/database'
-import type { MatchingData } from '@/lib/matching'
-
-type ProfileWithMatchingData = Profile & { matching_data?: MatchingData }
 
 export async function GET() {
   const supabase = createClient()
@@ -46,26 +43,26 @@ export async function GET() {
     return NextResponse.json({ profiles: [] })
   }
 
-  const myVector = profileToVector(myProfile as ProfileWithMatchingData)
-
-  const scored = (candidates as ProfileWithMatchingData[]).map(profile => {
-    const candidateVector = profileToVector(profile)
-    const matchResult = matchingEngine.computeMatchScore(myVector, candidateVector)
-
+  const scored = (candidates as Profile[]).map(profile => {
+    const compat = profilesCompatibility(myProfile as Profile, profile)
     return {
       ...profile,
-      compatibilityScore: matchResult.score,
-      matchBreakdown: matchResult.breakdown,
-      strengths: matchResult.strengths,
-      risks: matchResult.risks,
-      hard_filtered: matchResult.hard_filtered,
+      // null = test non complété (le mien ou le sien) — jamais de faux %
+      compatibilityScore: compat?.score ?? null,
+      matchBreakdown: compat?.breakdown ?? null,
+      dimensions: compat?.dimensions ?? null,
+      conflicts: compat?.conflicts ?? [],
+      testCompleted: hasCompletedTest(profile.matching_data),
     }
   })
 
+  // Scores réels d'abord (décroissant), tests non complétés à la fin
   const ranked = scored
-    .filter(p => !p.hard_filtered)
-    .sort((a, b) => b.compatibilityScore - a.compatibilityScore)
+    .sort((a, b) => (b.compatibilityScore ?? -1) - (a.compatibilityScore ?? -1))
     .slice(0, 20)
 
-  return NextResponse.json({ profiles: ranked })
+  return NextResponse.json({
+    profiles: ranked,
+    myTestCompleted: hasCompletedTest((myProfile as Profile).matching_data),
+  })
 }

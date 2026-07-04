@@ -14,6 +14,8 @@ interface FormData {
   neighborhood: string
   surface: string
   rooms_available: string
+  occupants_current: string
+  capacity_total: string
   description: string
 }
 
@@ -51,7 +53,7 @@ function AnnonceForm() {
 
   const [form, setForm] = useState<FormData>({
     title: '', rent: '', charges: '', city: '', neighborhood: '',
-    surface: '', rooms_available: '1', description: '',
+    surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '', description: '',
   })
 
   const [importUrl, setImportUrl]       = useState('')
@@ -88,6 +90,8 @@ function AnnonceForm() {
         neighborhood:    data.neighborhood    ?? '',
         surface:         data.surface         != null ? String(data.surface) : '',
         rooms_available: data.rooms_available != null ? String(data.rooms_available) : '1',
+        occupants_current: data.occupants_current != null ? String(data.occupants_current) : '1',
+        capacity_total:  data.capacity_total  != null ? String(data.capacity_total)  : '',
         description:     data.description     ?? '',
       })
       if (data.boost_type) setBoost(data.boost_type as BoostOption)
@@ -192,6 +196,8 @@ function AnnonceForm() {
             charges:         Number(form.charges) || 0,
             surface:         Number(form.surface) || 0,
             rooms_available: Number(form.rooms_available) || 1,
+            occupants_current: Number(form.occupants_current) || 1,
+            capacity_total:  Number(form.capacity_total) || null,
             photos:          photoUrls,
             boost_type:      boost,
             boost_level:     boost,
@@ -218,6 +224,8 @@ function AnnonceForm() {
           charges:         Number(form.charges) || 0,
           surface:         Number(form.surface) || 0,
           rooms_available: Number(form.rooms_available) || 1,
+          occupants_current: Number(form.occupants_current) || 1,
+          capacity_total:  Number(form.capacity_total) || null,
           photos:          photoUrls,
           boost_type:      boost,
           boost_level:     boost,
@@ -303,7 +311,7 @@ function AnnonceForm() {
               <button
                 onClick={() => {
                   setPublished(false)
-                  setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', description: '' })
+                  setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '', description: '' })
                   setPhotoPreviews([])
                   setPhotos([])
                 }}
@@ -463,6 +471,19 @@ function AnnonceForm() {
                   <option value="2">2</option>
                   <option value="3">3</option>
                 </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <Field label="Colocataires actuels">
+                <input type="number" min="0" value={form.occupants_current} onChange={set('occupants_current')} placeholder="1"
+                  className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
+              </Field>
+              <Field label="Places au total">
+                <input type="number" min="1" value={form.capacity_total} onChange={set('capacity_total')} placeholder="4"
+                  className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
             </div>
 

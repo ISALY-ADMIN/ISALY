@@ -11,6 +11,8 @@ import SwipeActions from '@/components/swipe/SwipeActions'
 import MatchList, { MatchItem } from '@/components/swipe/MatchList'
 import ModeSwitcher from '@/components/ModeSwitcher'
 import { createClient } from '@/lib/supabase/client'
+import { profilesCompatibility } from '@/lib/matching'
+import { listingOccupancy } from '@/lib/utils'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 import PushPermission from '@/components/notifications/PushPermission'
@@ -411,7 +413,9 @@ export default function SwipePage() {
             job: 'Colocataire',
             city: (p.city as string) ?? 'Ville non renseignée',
             rent: (p.budget_max as number) ?? 0,
-            match: Math.round((p.compatibilityScore as number) ?? 0),
+            // null = test non complété → l'UI affiche « ? », jamais un faux %
+            match: p.compatibilityScore != null ? Math.round(p.compatibilityScore as number) : null,
+            subScores: (p.matchBreakdown as SwipeProfile['subScores']) ?? null,
             emoji: '👤',
             color: MATCH_COLORS[i % MATCH_COLORS.length],
             tags: (p.passions as string[]) ?? [],
@@ -422,40 +426,68 @@ export default function SwipePage() {
       }
 
       const supabase = createClient()
-      const { data: listingsData } = await supabase
-        .from('listings')
-        .select('id, title, city, neighborhood, rent, rooms_available, photos, owner_id, description')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(20)
+      const [{ data: listingsData }, { data: { user } }] = await Promise.all([
+        supabase
+          .from('listings')
+          .select('id, title, city, neighborhood, rent, rooms_available, occupants_current, capacity_total, photos, owner_id, description')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase.auth.getUser(),
+      ])
 
       if (listingsData && listingsData.length > 0) {
-        const listingProfiles: SwipeProfile[] = listingsData.map((l, i) => ({
-          id: l.id,
-          name: l.title || `Colocation à ${l.city}`,
-          age: 0,
-          job: `${l.rooms_available ?? 1} chambre${(l.rooms_available ?? 1) > 1 ? 's' : ''} disponible${(l.rooms_available ?? 1) > 1 ? 's' : ''}`,
-          city: l.neighborhood ? `${l.city} · ${l.neighborhood}` : l.city,
-          rent: l.rent ?? 0,
-          match: Math.floor(Math.random() * 20) + 75,
-          emoji: '🏠',
-          color: MATCH_COLORS[i % MATCH_COLORS.length],
-          tags: [],
-          bio: l.description ?? '',
-          certLevel: 0,
-          photoUrl: l.photos?.[0] ?? null,
-          photos: (l.photos as string[] | null) ?? [],
-          isListing: true,
-          ownerId: l.owner_id,
-        }))
+        // Compatibilité réelle : mon profil vs celui du loueur de chaque annonce
+        let myMatchProfile: { budget_max: number | null; matching_data: unknown } | null = null
+        const ownerById = new Map<string, { budget_max: number | null; matching_data: unknown }>()
+        const ownerIds = Array.from(new Set(listingsData.map(l => l.owner_id).filter(Boolean))) as string[]
+        if (user) {
+          const { data: matchProfiles } = await supabase
+            .from('profiles')
+            .select('id, budget_max, matching_data')
+            .in('id', [user.id, ...ownerIds])
+          for (const p of matchProfiles ?? []) {
+            if (p.id === user.id) myMatchProfile = p
+            else ownerById.set(p.id, p)
+          }
+        }
+
+        const listingProfiles: SwipeProfile[] = listingsData.map((l, i) => {
+          const owner = l.owner_id ? ownerById.get(l.owner_id) : undefined
+          const compat = myMatchProfile && owner ? profilesCompatibility(myMatchProfile, owner) : null
+          const { current, total } = listingOccupancy(l)
+          return {
+            id: l.id,
+            name: l.title || `Colocation à ${l.city}`,
+            age: 0,
+            job: 'Colocation',
+            city: l.neighborhood ? `${l.city} · ${l.neighborhood}` : l.city,
+            rent: l.rent ?? 0,
+            match: compat?.score ?? null,
+            subScores: compat?.breakdown ?? null,
+            emoji: '🏠',
+            color: MATCH_COLORS[i % MATCH_COLORS.length],
+            tags: [],
+            bio: l.description ?? '',
+            certLevel: 0 as const,
+            photoUrl: l.photos?.[0] ?? null,
+            photos: (l.photos as string[] | null) ?? [],
+            isListing: true,
+            ownerId: l.owner_id,
+            occupancy: { current, total },
+          }
+        })
         profilesList.push(...listingProfiles)
       }
 
       let filtered = [...profilesList]
       if (filterBudget < 3000) filtered = filtered.filter(p => p.rent <= filterBudget || p.rent === 0)
       if (filterCity.trim()) filtered = filtered.filter(p => p.city.toLowerCase().includes(filterCity.toLowerCase()))
+      const isFull = (p: SwipeProfile) => !!p.occupancy && p.occupancy.total - p.occupancy.current <= 0
       if (filterSort === 'price') filtered.sort((a, b) => a.rent - b.rent)
-      else filtered.sort((a, b) => b.match - a.match)
+      else filtered.sort((a, b) => (b.match ?? -1) - (a.match ?? -1))
+      // Annonces complètes dépriorisées : toujours en fin de pile
+      filtered.sort((a, b) => Number(isFull(a)) - Number(isFull(b)))
       setProfiles(filtered)
     } catch {}
     setLoading(false)
@@ -504,7 +536,6 @@ export default function SwipePage() {
           initials: `${fn[0] ?? ''}${ln[0] ?? ''}`.toUpperCase(),
           color: MATCH_COLORS[i % MATCH_COLORS.length],
           job: 'Colocataire',
-          match: 0,
           avatarUrl: p.avatar_url ?? null,
           timeAgo: created ? timeAgo(created) : undefined,
           preview: 'Nouveau match — dis bonjour !',

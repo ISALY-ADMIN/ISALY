@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import { listingOccupancy } from '@/lib/utils'
 
 // ── Types ──────────────────────────────────────────────────────
 interface Listing {
@@ -14,6 +15,8 @@ interface Listing {
   rent: number
   surface: number
   rooms_available: number
+  occupants_current: number | null
+  capacity_total: number | null
   photos: string[]
   owner_id: string
   description: string
@@ -85,6 +88,14 @@ function ListingCard({ listing }: { listing: Listing }) {
               · {listing.rooms_available} chambre{listing.rooms_available > 1 ? 's' : ''}
             </span>
           )}
+          {(() => {
+            const { current, total } = listingOccupancy(listing)
+            return (
+              <span className="text-[11px] font-normal ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                · 👥 {current}/{total} place{total > 1 ? 's' : ''}
+              </span>
+            )
+          })()}
         </div>
         {listing.description && (
           <p className="text-[12px] mb-3" style={{ color: 'rgba(255,255,255,0.35)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
@@ -143,7 +154,7 @@ export default function RecherchePage() {
       const supabase = createClient()
       let q = supabase
         .from('listings')
-        .select('id, title, city, neighborhood, rent, surface, rooms_available, photos, owner_id, description, created_at, boost_type')
+        .select('id, title, city, neighborhood, rent, surface, rooms_available, occupants_current, capacity_total, photos, owner_id, description, created_at, boost_type')
         .eq('is_active', true)
 
       if (filters.budget_max < 3000) q = q.lte('rent', filters.budget_max)

@@ -8,7 +8,6 @@ export interface MatchItem {
   initials: string
   color: string
   job: string
-  match: number
   avatarUrl?: string | null
   timeAgo?: string
   preview?: string

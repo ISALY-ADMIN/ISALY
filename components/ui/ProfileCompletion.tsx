@@ -20,7 +20,7 @@ export default function ProfileCompletion({ profile }: ProfileCompletionProps) {
     { label: 'Ville renseignée',  done: !!profile.city },
     { label: 'Bio rédigée',       done: !!(profile.bio && profile.bio.length > 20) },
     { label: 'Budget défini',     done: !!(profile.budget_max && profile.budget_max > 0) },
-    { label: 'Questionnaire',     done: !!(profile.matching_data && Object.keys(profile.matching_data).length > 3) },
+    { label: 'Questionnaire',     done: !!(profile.matching_data && typeof profile.matching_data.completed_at === 'string') },
     { label: 'Identité vérifiée', done: !!(profile.cert_level && profile.cert_level >= 1) },
   ]
   const done = steps.filter(s => s.done).length

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
-import { matchingEngine, profileToVector } from '@/lib/matching'
+import { profilesCompatibility } from '@/lib/matching'
 import type { Profile } from '@/types/database'
 
 export const runtime = 'nodejs'
@@ -44,8 +44,6 @@ export async function GET(req: Request) {
 
   for (const user of users) {
     try {
-      const userVector = profileToVector(user as Profile)
-
       // Find compatible new profiles not yet alerted
       const { data: alreadyAlerted } = await supabase
         .from('match_alert_log')
@@ -57,10 +55,10 @@ export async function GET(req: Request) {
       const compatible = newProfiles
         .filter(p => p.id !== user.id && !alertedIds.has(p.id))
         .map(p => {
-          const score = matchingEngine.computeMatchScore(userVector, profileToVector(p as Profile))
-          return { profile: p, score: score.score }
+          const compat = profilesCompatibility(user as Profile, p as Profile)
+          return { profile: p, score: compat?.score ?? null }
         })
-        .filter(c => c.score >= 80)
+        .filter((c): c is { profile: (typeof newProfiles)[number]; score: number } => c.score !== null && c.score >= 80)
         .sort((a, b) => b.score - a.score)
         .slice(0, 5)
 

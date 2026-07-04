@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cache } from 'react'
+import { listingOccupancy } from '@/lib/utils'
 import ShareButtons from './ShareButtons'
 
 interface Props {
@@ -16,7 +17,7 @@ const getListing = cache(async (id: string) => {
     .from('listings')
     .select(`
       id, title, description, city, neighborhood, rent, charges, surface,
-      rooms_available, photos, boost_type, is_active, created_at,
+      rooms_available, occupants_current, capacity_total, photos, boost_type, is_active, created_at,
       owner_id,
       profiles:owner_id (
         first_name, avatar_url
@@ -141,6 +142,7 @@ export default async function AnnoncePubliquePage({ params }: Props) {
                 ...(listing.charges ? [{ icon: '⚡', label: `${listing.charges}€ charges` }] : []),
                 ...(listing.surface ? [{ icon: '📐', label: `${listing.surface}m²` }] : []),
                 ...(listing.rooms_available ? [{ icon: '🚪', label: `${listing.rooms_available} chambre${listing.rooms_available > 1 ? 's' : ''} dispo` }] : []),
+                { icon: '👥', label: `${listingOccupancy(listing).current}/${listingOccupancy(listing).total} places` },
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 16px', fontSize: '14px', fontWeight: 600 }}>
                   <span>{s.icon}</span>

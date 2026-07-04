@@ -1,447 +1,373 @@
-import type { Profile, Schedule, Vibe } from '@/types/database'
+/**
+ * Moteur de compatibilité ISALY — modèle 5 dimensions.
+ *
+ * Chaque utilisateur répond à 15 questions (3 par dimension, options mappées
+ * 0/33/66/100) + 2 questions dealbreakers. Les scores sont stockés dans
+ * profiles.matching_data (JSONB). computeCompatibility est une fonction pure :
+ * elle retourne null si l'un des deux profils n'a pas complété le test —
+ * jamais de faux pourcentage.
+ */
 
-// ─── Vector Types ──────────────────────────────────────────────────────────────
+// ─── Dimensions ────────────────────────────────────────────────────────────────
 
-export interface LifestyleVector {
-  proprete: number          // 0=peu propre → 1=très propre
-  bruit: number             // 0=silence total → 1=très bruyant
-  heure_coucher: number     // 0=21h → 1=4h+
-  frequence_soirees: number // 0=jamais → 1=tous les weekends
-  frequence_invites: number // 0=jamais → 1=souvent
-  cuisine: number           // 0=jamais → 1=passionné culinaire
-  teletravail: number       // 0=jamais → 1=full remote
-  temps_domicile: number    // 0=rarement présent → 1=toujours
+export type Dimension = 'rythme' | 'proprete' | 'sociabilite' | 'calme' | 'partage'
+
+export const DIMENSIONS: Dimension[] = ['rythme', 'proprete', 'sociabilite', 'calme', 'partage']
+
+export const DIMENSION_LABELS: Record<Dimension, string> = {
+  rythme: 'Rythme de vie',
+  proprete: 'Propreté & organisation',
+  sociabilite: 'Sociabilité',
+  calme: 'Calme',
+  partage: 'Partage & valeurs',
 }
 
-export interface PersonalityVector {
-  introversion: number      // 0=très extraverti → 1=très introverti
-  sociabilite: number       // 0=solitaire → 1=très sociable
-  tolerance_conflit: number // 0=conflictuel → 1=très tolérant
-  communication: number     // 0=peu communicatif → 1=très communicatif
-  besoin_espace: number     // 0=peu d'espace requis → 1=beaucoup
+/** Pondération du score global. */
+export const DIMENSION_WEIGHTS: Record<Dimension, number> = {
+  proprete: 0.25,
+  rythme: 0.20,
+  calme: 0.20,
+  sociabilite: 0.20,
+  partage: 0.15,
 }
 
-export interface ConstraintVector {
-  fumeur: boolean
-  accepte_fumeurs: boolean
-  animaux: boolean
-  accepte_animaux: boolean
-  alcool: boolean
-  regime: 'omnivore' | 'vegetarien' | 'vegan' | 'autre'
-}
+// ─── Questionnaire ─────────────────────────────────────────────────────────────
 
-export interface InterestVector {
-  sport: number
-  musique: number
-  gaming: number
-  voyages: number
-  culture: number
-}
-
-/** Full normalized user vector. All numeric fields are 0–1. */
-export interface UserVector {
+export interface QuizQuestion {
   id: string
-  ville: string
-  budget_min: number
-  budget_max: number
-  genre?: 'homme' | 'femme' | 'autre'
-  genre_preference?: 'homme' | 'femme' | 'mixte'
-  duree_recherche?: number
-  lifestyle: Partial<LifestyleVector>
-  personality: Partial<PersonalityVector>
-  constraints: Partial<ConstraintVector>
-  interests: Partial<InterestVector>
-  non_negociables: string[]
+  dimension: Dimension
+  question: string
+  /** 4 options, jamais de neutre du milieu. */
+  options: [string, string, string, string]
+  /** Valeur 0-100 de chaque option (l'ordre d'affichage reste naturel). */
+  values: [number, number, number, number]
 }
 
-/**
- * Extended matching data stored as JSONB in profiles.matching_data.
- * Populated from the full questionnaire; optional on all fields for graceful fallback.
- */
+export const QUIZ_QUESTIONS: QuizQuestion[] = [
+  // ── Rythme de vie ──
+  {
+    id: 'q1', dimension: 'rythme',
+    question: 'Un mardi soir type ?',
+    options: ['Couché avant 22h', '22h – minuit', 'Minuit – 2h', "La nuit, c'est la vie"],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q2', dimension: 'rythme',
+    question: 'Ton réveil le week-end ?',
+    options: ['Avant 8h, comme en semaine', 'Entre 8h et 10h', 'Entre 10h et midi', 'On se voit au déjeuner'],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q3', dimension: 'rythme',
+    question: 'Tes journées en semaine ?',
+    options: ['Dehors du matin au soir', 'Dehors, mais je rentre tôt', 'Télétravail 2-3 jours', 'À la maison quasi tout le temps'],
+    values: [0, 33, 66, 100],
+  },
+  // ── Propreté & organisation ──
+  {
+    id: 'q4', dimension: 'proprete',
+    question: 'La vaisselle après le repas ?',
+    options: ['Immédiatement', 'Le soir même', 'Le lendemain', 'Quand la pile menace de tomber'],
+    values: [100, 66, 33, 0],
+  },
+  {
+    id: 'q5', dimension: 'proprete',
+    question: 'Le ménage des espaces communs ?',
+    options: ['Planning fixe, chacun son tour', 'Chaque semaine, au feeling', "Quand c'est visiblement sale", 'Le ménage, quel ménage ?'],
+    values: [100, 66, 33, 0],
+  },
+  {
+    id: 'q6', dimension: 'proprete',
+    question: 'Un truc qui traîne dans le salon ?',
+    options: ["Je le range direct, même si c'est pas à moi", 'Je le signale gentiment', 'Je laisse couler quelques jours', 'Chacun vit sa vie'],
+    values: [100, 66, 33, 0],
+  },
+  // ── Sociabilité ──
+  {
+    id: 'q7', dimension: 'sociabilite',
+    question: "Des amis à l'appart ?",
+    options: ["Rarement, c'est mon cocon", '1-2 fois par mois', 'Chaque semaine', 'Porte ouverte en continu'],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q8', dimension: 'sociabilite',
+    question: 'Ta relation idéale avec tes colocs ?',
+    options: ['On se croise poliment', 'On papote dans la cuisine', 'Repas et sorties ensemble', 'Une deuxième famille'],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q9', dimension: 'sociabilite',
+    question: 'Un samedi soir idéal ?',
+    options: ['Tranquille dans ma chambre', 'Film canapé avec les colocs', 'Dîner à la maison avec des amis', 'Grosse soirée, tout le monde est invité'],
+    values: [0, 33, 66, 100],
+  },
+  // ── Calme ──
+  {
+    id: 'q10', dimension: 'calme',
+    question: 'De la musique dans le salon ?',
+    options: ['Enceintes à fond', 'Volume normal', 'Volume doux', 'Toujours au casque'],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q11', dimension: 'calme',
+    question: 'Du bruit après 22h ?',
+    options: ['Aucun souci, je dors avec', 'Ok le week-end', 'Seulement exceptionnellement', 'Silence complet, impératif'],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q12', dimension: 'calme',
+    question: 'Pour te concentrer chez toi ?',
+    options: ['Le bruit ne me dérange jamais', 'Un fond sonore me va', "J'ai besoin de calme relatif", 'Silence total obligatoire'],
+    values: [0, 33, 66, 100],
+  },
+  // ── Partage & valeurs ──
+  {
+    id: 'q13', dimension: 'partage',
+    question: 'Les courses ?',
+    options: ['Chacun son étagère', 'Base commune (sel, huile…)', "50/50 sur l'essentiel", 'Tout en commun'],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q14', dimension: 'partage',
+    question: 'Les repas ?',
+    options: ['Chacun cuisine pour soi', 'Ensemble de temps en temps', 'Plusieurs fois par semaine', 'On cuisine et mange ensemble par défaut'],
+    values: [0, 33, 66, 100],
+  },
+  {
+    id: 'q15', dimension: 'partage',
+    question: 'Prêter tes affaires (aspirateur, poêle, chargeur) ?',
+    options: ['Je préfère éviter', 'Sur demande uniquement', "Oui pour l'essentiel", "Ce qui est à moi est à nous"],
+    values: [0, 33, 66, 100],
+  },
+]
+
+export interface DealbreakerQuestion {
+  id: 'd_fumeur' | 'd_animaux'
+  question: string
+  options: [string, string, string, string]
+  /** Effet de chaque option sur les dealbreakers. */
+  effects: [Partial<Dealbreakers>, Partial<Dealbreakers>, Partial<Dealbreakers>, Partial<Dealbreakers>]
+}
+
+export const DEALBREAKER_QUESTIONS: DealbreakerQuestion[] = [
+  {
+    id: 'd_fumeur',
+    question: 'Le tabac ?',
+    options: [
+      'Je fume',
+      'Je fume occasionnellement',
+      'Je ne fume pas, mais ça ne me dérange pas',
+      'Non-fumeur, et je veux une coloc non-fumeur',
+    ],
+    effects: [
+      { fumeur: true, fumeur_ok: true },
+      { fumeur: true, fumeur_ok: true },
+      { fumeur: false, fumeur_ok: true },
+      { fumeur: false, fumeur_ok: false },
+    ],
+  },
+  {
+    id: 'd_animaux',
+    question: 'Les animaux ?',
+    options: [
+      "J'ai un animal",
+      "Pas d'animal, mais j'aimerais en adopter",
+      "Pas d'animal, mais les colocs peuvent",
+      "Pas d'animaux dans la coloc",
+    ],
+    effects: [
+      { animaux: true, animaux_ok: true },
+      { animaux: false, animaux_ok: true },
+      { animaux: false, animaux_ok: true },
+      { animaux: false, animaux_ok: false },
+    ],
+  },
+]
+
+export const QUIZ_TOTAL_STEPS = QUIZ_QUESTIONS.length + DEALBREAKER_QUESTIONS.length
+
+// ─── Types stockés dans profiles.matching_data ─────────────────────────────────
+
+export type DimensionScores = Record<Dimension, number>
+
+export interface Dealbreakers {
+  /** L'utilisateur fume. */
+  fumeur: boolean
+  /** Accepte un coloc fumeur. */
+  fumeur_ok: boolean
+  /** L'utilisateur a un animal. */
+  animaux: boolean
+  /** Accepte les animaux dans la coloc. */
+  animaux_ok: boolean
+}
+
 export interface MatchingData {
+  /** questionId → valeur choisie (0/33/66/100), + index d'option pour les dealbreakers. */
+  answers: Record<string, number>
+  scores: DimensionScores
+  dealbreakers: Dealbreakers
+  completed_at: string
+  /** Conservé pour le calcul de chevauchement budget. */
   budget_min?: number
-  genre?: 'homme' | 'femme' | 'autre'
-  genre_preference?: 'homme' | 'femme' | 'mixte'
-  duree_recherche?: number
-  lifestyle?: Partial<LifestyleVector>
-  personality?: Partial<PersonalityVector>
-  constraints?: Partial<ConstraintVector>
-  interests?: Partial<InterestVector>
-  non_negociables?: string[]
 }
 
-// ─── Result Types ──────────────────────────────────────────────────────────────
-
-export interface ScoreBreakdown {
-  lifestyle: number
-  personality: number
-  interests: number
-  budget: number
-  constraints_compatible: boolean
+/** Le test est-il réellement complété (ancienne structure vectorielle → false) ? */
+export function hasCompletedTest(md: unknown): md is MatchingData {
+  if (!md || typeof md !== 'object') return false
+  const m = md as Partial<MatchingData>
+  return (
+    typeof m.completed_at === 'string' &&
+    !!m.scores &&
+    DIMENSIONS.every(d => typeof (m.scores as Record<string, unknown>)[d] === 'number')
+  )
 }
 
-export interface MatchScore {
+/** Score d'une dimension = moyenne des 3 réponses. */
+export function computeScoresFromAnswers(answers: Record<string, number>): DimensionScores {
+  const scores = {} as DimensionScores
+  for (const dim of DIMENSIONS) {
+    const qs = QUIZ_QUESTIONS.filter(q => q.dimension === dim)
+    const vals = qs.map(q => answers[q.id]).filter((v): v is number => typeof v === 'number')
+    scores[dim] = vals.length > 0 ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : 50
+  }
+  return scores
+}
+
+/** Construit le matching_data complet à partir des réponses du quiz. */
+export function buildMatchingData(
+  answers: Record<string, number>,
+  dealbreakerChoices: { d_fumeur: number; d_animaux: number },
+  budget_min?: number
+): MatchingData {
+  const dealbreakers: Dealbreakers = { fumeur: false, fumeur_ok: true, animaux: false, animaux_ok: true }
+  for (const q of DEALBREAKER_QUESTIONS) {
+    const idx = dealbreakerChoices[q.id]
+    if (idx >= 0 && idx <= 3) Object.assign(dealbreakers, q.effects[idx])
+  }
+  return {
+    answers: { ...answers, d_fumeur: dealbreakerChoices.d_fumeur, d_animaux: dealbreakerChoices.d_animaux },
+    scores: computeScoresFromAnswers(answers),
+    dealbreakers,
+    completed_at: new Date().toISOString(),
+    ...(budget_min != null ? { budget_min } : {}),
+  }
+}
+
+// ─── Calcul de compatibilité ───────────────────────────────────────────────────
+
+const MALUS_FUMEUR = 25
+const MALUS_ANIMAUX = 15
+
+export interface CompatibilityResult {
+  /** Score global 0-100 (pondéré + malus dealbreakers). */
   score: number
-  breakdown: ScoreBreakdown
-  strengths: string[]
-  risks: string[]
-  hard_filtered: boolean
-  filter_reasons?: string[]
-}
-
-export interface RankedCandidate {
-  profile: Profile
-  match: MatchScore
-}
-
-// ─── Category Weights ─────────────────────────────────────────────────────────
-
-const WEIGHTS = {
-  lifestyle: 0.40,
-  rules: 0.30,    // blends lifestyle + budget
-  personality: 0.20,
-  interests: 0.10,
-} as const
-
-const NON_NEGOCIABLE_MULTIPLIER = 4
-
-// ─── Enum → Vector Mappings ───────────────────────────────────────────────────
-
-const SCHEDULE_MAP: Record<Schedule, Partial<LifestyleVector>> = {
-  'leve-tot':    { heure_coucher: 0.05, temps_domicile: 0.65 },
-  'couche-tard': { heure_coucher: 0.90, temps_domicile: 0.55 },
-  'variable':    { heure_coucher: 0.50, temps_domicile: 0.50 },
-  'flexible':    { heure_coucher: 0.50, temps_domicile: 0.40 },
-}
-
-const VIBE_MAP: Record<Vibe, { lifestyle: Partial<LifestyleVector>; personality: Partial<PersonalityVector> }> = {
-  'calme':    {
-    lifestyle:    { bruit: 0.10, frequence_soirees: 0.10, frequence_invites: 0.15 },
-    personality:  { introversion: 0.70, sociabilite: 0.30 },
-  },
-  'festif':   {
-    lifestyle:    { bruit: 0.80, frequence_soirees: 0.85, frequence_invites: 0.75 },
-    personality:  { introversion: 0.20, sociabilite: 0.85 },
-  },
-  'studieux': {
-    lifestyle:    { bruit: 0.15, frequence_soirees: 0.15, frequence_invites: 0.20 },
-    personality:  { introversion: 0.60, sociabilite: 0.35 },
-  },
-  'detendu':  {
-    lifestyle:    { bruit: 0.40, frequence_soirees: 0.40, frequence_invites: 0.45 },
-    personality:  { introversion: 0.45, sociabilite: 0.55 },
-  },
-}
-
-const PASSION_MAP: Partial<Record<string, keyof InterestVector>> = {
-  'Sport': 'sport',
-  'Musique': 'musique',
-  'Gaming': 'gaming',
-  'Voyages': 'voyages',
-  'Culture': 'culture',
-  'Cinéma': 'culture',
-  'Art': 'culture',
-  'Cuisine': 'culture',
-  'Lecture': 'culture',
-}
-
-// ─── Similarity Functions ──────────────────────────────────────────────────────
-
-/**
- * Proximity: optimal when preferences should be identical.
- * similarity(0.2, 0.2) = 1 ; similarity(0, 1) = 0
- */
-function proximitySim(a: number, b: number): number {
-  return 1 - Math.abs(a - b)
+  /** Similarité par dimension, 0-100. */
+  dimensions: DimensionScores
+  /** Conflits de dealbreakers détectés. */
+  conflicts: string[]
 }
 
 /**
- * Complementarity: optimal when opposites coexist well (introvert + extravert).
- * Peaks when a + b ≈ 1 ; symmetrically ok at (0,0) and (1,1).
+ * Fonction pure. Retourne null si l'un des deux n'a pas complété le test —
+ * l'UI doit alors afficher « Test non complété », jamais un faux %.
  */
-function complementaritySim(a: number, b: number): number {
-  return 1 - Math.abs(1 - (a + b)) * 0.5
-}
+export function computeCompatibility(a: unknown, b: unknown): CompatibilityResult | null {
+  if (!hasCompletedTest(a) || !hasCompletedTest(b)) return null
 
-// ─── Profile → UserVector ──────────────────────────────────────────────────────
+  const dimensions = {} as DimensionScores
+  let weighted = 0
+  for (const dim of DIMENSIONS) {
+    const sim = 100 - Math.abs(a.scores[dim] - b.scores[dim])
+    dimensions[dim] = Math.round(sim)
+    weighted += sim * DIMENSION_WEIGHTS[dim]
+  }
 
-export function profileToVector(profile: Profile): UserVector {
-  const ext = (profile.matching_data ?? {}) as MatchingData
-  const sched = SCHEDULE_MAP[profile.schedule ?? 'flexible'] ?? {}
-  const vibe = VIBE_MAP[profile.vibe ?? 'detendu'] ?? { lifestyle: {}, personality: {} }
-
-  const baseInterests: Partial<InterestVector> = { sport: 0, musique: 0, gaming: 0, voyages: 0, culture: 0 }
-  for (const passion of (profile.passions ?? [])) {
-    const key = PASSION_MAP[passion]
-    if (key) baseInterests[key] = 1
+  const conflicts: string[] = []
+  const da = a.dealbreakers, db = b.dealbreakers
+  if ((da?.fumeur && db && !db.fumeur_ok) || (db?.fumeur && da && !da.fumeur_ok)) {
+    conflicts.push('fumeur')
+    weighted -= MALUS_FUMEUR
+  }
+  if ((da?.animaux && db && !db.animaux_ok) || (db?.animaux && da && !da.animaux_ok)) {
+    conflicts.push('animaux')
+    weighted -= MALUS_ANIMAUX
   }
 
   return {
-    id: profile.id,
-    ville: profile.city ?? '',
-    budget_min: ext.budget_min ?? Math.round((profile.budget_max ?? 800) * 0.70),
-    budget_max: profile.budget_max ?? 800,
-    genre: ext.genre,
-    genre_preference: ext.genre_preference,
-    duree_recherche: ext.duree_recherche,
-    lifestyle: {
-      ...sched,
-      ...vibe.lifestyle,
-      ...ext.lifestyle,
-    },
-    personality: {
-      tolerance_conflit: 0.65,
-      communication: 0.65,
-      besoin_espace: 0.50,
-      ...vibe.personality,
-      ...ext.personality,
-    },
-    constraints: {
-      fumeur: false,
-      accepte_fumeurs: false,
-      animaux: false,
-      accepte_animaux: true,
-      alcool: true,
-      regime: 'omnivore',
-      ...ext.constraints,
-    },
-    interests: {
-      ...baseInterests,
-      ...ext.interests,
-    },
-    non_negociables: ext.non_negociables ?? [],
+    score: Math.round(Math.min(100, Math.max(0, weighted))),
+    dimensions,
+    conflicts,
   }
 }
 
-// ─── Hard Filters ──────────────────────────────────────────────────────────────
+// ─── Budget : % de chevauchement des fourchettes ──────────────────────────────
 
-function runHardFilters(a: UserVector, b: UserVector): { passed: boolean; reasons: string[] } {
-  const reasons: string[] = []
-
-  if (a.budget_max < b.budget_min || b.budget_max < a.budget_min) {
-    reasons.push('budget incompatible')
+/**
+ * Chevauchement des fourchettes budget, 0-100.
+ * 100 = la plus petite fourchette est entièrement couverte ; sans
+ * chevauchement, décroît avec l'écart (0 à partir de 500 € d'écart).
+ */
+export function computeBudgetOverlap(
+  aMin: number | null | undefined, aMax: number | null | undefined,
+  bMin: number | null | undefined, bMax: number | null | undefined
+): number | null {
+  if (aMax == null || bMax == null) return null
+  const loA = aMin ?? Math.round(aMax * 0.7)
+  const loB = bMin ?? Math.round(bMax * 0.7)
+  const lo = Math.max(loA, loB)
+  const hi = Math.min(aMax, bMax)
+  if (hi >= lo) {
+    const smallest = Math.max(1, Math.min(aMax - loA, bMax - loB))
+    return Math.min(100, Math.round(((hi - lo) / smallest) * 100))
   }
-
-  if (a.ville && b.ville && a.ville.toLowerCase() !== b.ville.toLowerCase()) {
-    reasons.push('villes différentes')
-  }
-
-  if ((a.constraints.fumeur ?? false) && !(b.constraints.accepte_fumeurs ?? true)) {
-    reasons.push('A est fumeur · B n\'accepte pas les fumeurs')
-  }
-  if ((b.constraints.fumeur ?? false) && !(a.constraints.accepte_fumeurs ?? true)) {
-    reasons.push('B est fumeur · A n\'accepte pas les fumeurs')
-  }
-
-  if ((a.constraints.animaux ?? false) && !(b.constraints.accepte_animaux ?? true)) {
-    reasons.push('A a des animaux · B n\'en accepte pas')
-  }
-  if ((b.constraints.animaux ?? false) && !(a.constraints.accepte_animaux ?? true)) {
-    reasons.push('B a des animaux · A n\'en accepte pas')
-  }
-
-  if (a.genre_preference && a.genre_preference !== 'mixte' && b.genre && a.genre_preference !== b.genre) {
-    reasons.push('préférence de genre incompatible')
-  }
-  if (b.genre_preference && b.genre_preference !== 'mixte' && a.genre && b.genre_preference !== a.genre) {
-    reasons.push('préférence de genre incompatible')
-  }
-
-  return { passed: reasons.length === 0, reasons }
+  const gap = lo - hi
+  return Math.max(0, Math.round(100 - (gap / 500) * 100))
 }
 
-// ─── Weighted Category Scorers ────────────────────────────────────────────────
+// ─── Mapping vers les 4 barres UI existantes ──────────────────────────────────
 
-type SimFn = 'proximity' | 'complementarity'
-
-function weightedCategoryScore<T extends object>(
-  a: Partial<T>,
-  b: Partial<T>,
-  fields: Array<{ key: keyof T; fn: SimFn }>,
-  nonNeg: string[]
-): number {
-  let totalWeight = 0
-  let weightedSum = 0
-
-  for (const { key, fn } of fields) {
-    const aVal = a[key] as number | undefined
-    const bVal = b[key] as number | undefined
-    if (aVal == null || bVal == null) continue
-
-    const mult = nonNeg.includes(key as string) ? NON_NEGOCIABLE_MULTIPLIER : 1
-    const sim = fn === 'proximity' ? proximitySim(aVal, bVal) : complementaritySim(aVal, bVal)
-    weightedSum += sim * mult
-    totalWeight += mult
-  }
-
-  return totalWeight > 0 ? weightedSum / totalWeight : 0.5
+export interface UiBreakdown {
+  modeDeVie: number
+  budget: number | null
+  personnalite: number
+  interets: number
 }
 
-const LIFESTYLE_FIELDS: Array<{ key: keyof LifestyleVector; fn: SimFn }> = [
-  { key: 'proprete', fn: 'proximity' },
-  { key: 'bruit', fn: 'proximity' },
-  { key: 'heure_coucher', fn: 'proximity' },
-  { key: 'frequence_soirees', fn: 'proximity' },
-  { key: 'frequence_invites', fn: 'proximity' },
-  { key: 'cuisine', fn: 'proximity' },
-  { key: 'teletravail', fn: 'proximity' },
-  { key: 'temps_domicile', fn: 'proximity' },
-]
-
-const PERSONALITY_FIELDS: Array<{ key: keyof PersonalityVector; fn: SimFn }> = [
-  { key: 'introversion', fn: 'complementarity' },
-  { key: 'sociabilite', fn: 'complementarity' },
-  { key: 'tolerance_conflit', fn: 'proximity' },
-  { key: 'communication', fn: 'proximity' },
-  { key: 'besoin_espace', fn: 'proximity' },
-]
-
-const INTEREST_FIELDS: Array<{ key: keyof InterestVector; fn: SimFn }> = [
-  { key: 'sport', fn: 'proximity' },
-  { key: 'musique', fn: 'proximity' },
-  { key: 'gaming', fn: 'proximity' },
-  { key: 'voyages', fn: 'proximity' },
-  { key: 'culture', fn: 'proximity' },
-]
-
-function scoreBudget(a: UserVector, b: UserVector): number {
-  const diff = Math.abs(a.budget_max - b.budget_max)
-  if (diff <= 100) return 1.00
-  if (diff <= 200) return 0.80
-  if (diff <= 300) return 0.60
-  if (diff <= 400) return 0.40
-  return Math.max(0, 1 - diff / 1000)
-}
-
-// ─── Match Explanation ─────────────────────────────────────────────────────────
-
-function buildExplanation(
-  a: UserVector,
-  b: UserVector,
-  scores: { lifestyle: number; personality: number; interests: number; budget: number }
-): { strengths: string[]; risks: string[] } {
-  const strengths: string[] = []
-  const risks: string[] = []
-
-  const heureDiff = Math.abs((a.lifestyle.heure_coucher ?? 0.5) - (b.lifestyle.heure_coucher ?? 0.5))
-  if (heureDiff < 0.20) strengths.push('rythmes de vie similaires')
-  else if (heureDiff > 0.55) risks.push('horaires de sommeil très différents')
-
-  const proprDiff = Math.abs((a.lifestyle.proprete ?? 0.5) - (b.lifestyle.proprete ?? 0.5))
-  if (proprDiff < 0.15) strengths.push('même niveau de propreté')
-  else if (proprDiff > 0.40) risks.push('attentes de propreté différentes')
-
-  const bruitDiff = Math.abs((a.lifestyle.bruit ?? 0.5) - (b.lifestyle.bruit ?? 0.5))
-  if (bruitDiff < 0.15) strengths.push('ambiance sonore compatible')
-  else if (bruitDiff > 0.40) risks.push('tolérance au bruit différente')
-
-  const soireesDiff = Math.abs((a.lifestyle.frequence_soirees ?? 0.5) - (b.lifestyle.frequence_soirees ?? 0.5))
-  if (soireesDiff < 0.20) strengths.push('mode de vie social compatible')
-  else if (soireesDiff > 0.50) risks.push('fréquence de soirées très différente')
-
-  const ttvA = a.lifestyle.teletravail ?? 0.5
-  const ttvB = b.lifestyle.teletravail ?? 0.5
-  if (Math.abs(ttvA - ttvB) < 0.20) strengths.push('modes de travail compatibles')
-  else if ((ttvA > 0.7 && ttvB < 0.3) || (ttvB > 0.7 && ttvA < 0.3)) {
-    risks.push('présence à domicile très asymétrique')
-  }
-
-  if (scores.budget > 0.80) strengths.push('budgets bien alignés')
-  else if (scores.budget < 0.45) risks.push('budgets peu compatibles')
-
-  const introA = a.personality.introversion ?? 0.5
-  const introB = b.personality.introversion ?? 0.5
-  if (complementaritySim(introA, introB) > 0.80) strengths.push('personnalités complémentaires')
-
-  const tolA = a.personality.tolerance_conflit ?? 0.65
-  const tolB = b.personality.tolerance_conflit ?? 0.65
-  if (tolA > 0.70 && tolB > 0.70) strengths.push('bonne capacité de gestion des conflits')
-  else if (tolA < 0.35 || tolB < 0.35) risks.push('gestion des conflits potentiellement difficile')
-
-  if (scores.interests > 0.70) strengths.push('nombreux intérêts communs')
-  else if (scores.interests < 0.30) risks.push('peu de centres d\'intérêt partagés')
-
+export function toUiBreakdown(result: CompatibilityResult, budgetOverlap: number | null): UiBreakdown {
+  const d = result.dimensions
   return {
-    strengths: Array.from(new Set(strengths)),
-    risks: Array.from(new Set(risks)),
+    modeDeVie: Math.round((d.rythme + d.calme) / 2),
+    budget: budgetOverlap,
+    personnalite: Math.round((d.proprete + d.sociabilite) / 2),
+    interets: d.partage,
   }
 }
 
-// ─── MatchingEngine ────────────────────────────────────────────────────────────
+// ─── Helper haut niveau sur deux profils ──────────────────────────────────────
 
-export class MatchingEngine {
-  computeMatchScore(a: UserVector, b: UserVector): MatchScore {
-    const filterResult = this.applyHardFilters(a, b)
-    if (!filterResult.passed) {
-      return {
-        score: 0,
-        breakdown: { lifestyle: 0, personality: 0, interests: 0, budget: 0, constraints_compatible: false },
-        strengths: [],
-        risks: filterResult.reasons,
-        hard_filtered: true,
-        filter_reasons: filterResult.reasons,
-      }
-    }
-
-    const allNonNeg = [...(a.non_negociables ?? []), ...(b.non_negociables ?? [])]
-
-    const lifestyle = weightedCategoryScore<LifestyleVector>(a.lifestyle, b.lifestyle, LIFESTYLE_FIELDS, allNonNeg)
-    const personality = weightedCategoryScore<PersonalityVector>(a.personality, b.personality, PERSONALITY_FIELDS, allNonNeg)
-    const interests = weightedCategoryScore<InterestVector>(a.interests, b.interests, INTEREST_FIELDS, allNonNeg)
-    const budget = scoreBudget(a, b)
-
-    // "rules" category = mode de vie + budget
-    const rules = lifestyle * 0.60 + budget * 0.40
-
-    const rawScore =
-      lifestyle  * WEIGHTS.lifestyle  +
-      rules      * WEIGHTS.rules      +
-      personality * WEIGHTS.personality +
-      interests  * WEIGHTS.interests
-
-    const explanation = buildExplanation(a, b, { lifestyle, personality, interests, budget })
-
-    return {
-      score: Math.round(Math.min(100, Math.max(0, rawScore * 100))),
-      breakdown: {
-        lifestyle: Math.round(lifestyle * 100),
-        personality: Math.round(personality * 100),
-        interests: Math.round(interests * 100),
-        budget: Math.round(budget * 100),
-        constraints_compatible: true,
-      },
-      strengths: explanation.strengths,
-      risks: explanation.risks,
-      hard_filtered: false,
-    }
-  }
-
-  applyHardFilters(a: UserVector, b: UserVector): { passed: boolean; reasons: string[] } {
-    return runHardFilters(a, b)
-  }
-
-  rankCandidates(
-    user: UserVector,
-    candidates: Array<{ profile: Profile; vector: UserVector }>
-  ): RankedCandidate[] {
-    return candidates
-      .map(({ profile, vector }) => ({
-        profile,
-        match: this.computeMatchScore(user, vector),
-      }))
-      .filter(c => !c.match.hard_filtered)
-      .sort((a, b) => b.match.score - a.match.score)
-  }
-
-  explainMatch(a: UserVector, b: UserVector): { score: number; strengths: string[]; risks: string[] } {
-    const result = this.computeMatchScore(a, b)
-    return { score: result.score, strengths: result.strengths, risks: result.risks }
-  }
+interface ProfileLike {
+  matching_data?: unknown
+  budget_max?: number | null
 }
 
-export const matchingEngine = new MatchingEngine()
+export interface ProfileCompatibility {
+  score: number
+  breakdown: UiBreakdown
+  dimensions: DimensionScores
+  conflicts: string[]
+}
 
-/** Backward-compatible helper used by existing code. */
-export function calculateCompatibility(profileA: Profile, profileB: Profile): number {
-  return matchingEngine.computeMatchScore(profileToVector(profileA), profileToVector(profileB)).score
+/** Compatibilité complète entre deux profils, ou null si test manquant. */
+export function profilesCompatibility(a: ProfileLike, b: ProfileLike): ProfileCompatibility | null {
+  const result = computeCompatibility(a.matching_data, b.matching_data)
+  if (!result) return null
+  const mdA = a.matching_data as MatchingData
+  const mdB = b.matching_data as MatchingData
+  const budget = computeBudgetOverlap(mdA.budget_min, a.budget_max, mdB.budget_min, b.budget_max)
+  return {
+    score: result.score,
+    breakdown: toUiBreakdown(result, budget),
+    dimensions: result.dimensions,
+    conflicts: result.conflicts,
+  }
 }

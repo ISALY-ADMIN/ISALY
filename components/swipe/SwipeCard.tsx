@@ -3,8 +3,9 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Bookmark, MessageCircle, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Bookmark, MessageCircle, MapPin, Users } from 'lucide-react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import type { UiBreakdown } from '@/lib/matching'
 
 export interface SwipeProfile {
   id: string
@@ -13,7 +14,10 @@ export interface SwipeProfile {
   job: string
   city: string
   rent: number
-  match: number
+  /** Score de compatibilité réel — null si l'un des deux tests n'est pas complété. */
+  match: number | null
+  /** Sous-scores réels (Mode de vie / Budget / Personnalité / Intérêts). */
+  subScores?: UiBreakdown | null
   emoji: string
   color: string
   tags: string[]
@@ -23,6 +27,8 @@ export interface SwipeProfile {
   photos?: string[]
   isListing?: boolean
   ownerId?: string
+  /** Places sur l'annonce : X déjà sur place / Y capacité totale. */
+  occupancy?: { current: number; total: number } | null
 }
 
 export type SwipeDirection = 'left' | 'right' | 'super'
@@ -65,24 +71,30 @@ function Stamp({ label, color, rotate, style }: { label: string; color: string; 
   )
 }
 
-/** Cercle SVG de progression pour le score de compatibilité */
-function MatchRing({ value }: { value: number }) {
+/** Cercle SVG de progression pour le score de compatibilité (null = test non complété) */
+function MatchRing({ value }: { value: number | null }) {
   const r = 24
   const c = 2 * Math.PI * r
   return (
-    <div className="relative flex-shrink-0" style={{ width: 60, height: 60 }}>
+    <div
+      className="relative flex-shrink-0"
+      style={{ width: 60, height: 60 }}
+      title={value === null ? 'Test de compatibilité non complété' : `${Math.round(value)}% de compatibilité`}
+    >
       <svg width={60} height={60} viewBox="0 0 60 60" style={{ transform: 'rotate(-90deg)' }}>
         <circle cx={30} cy={30} r={r} fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.18)" strokeWidth={4} />
-        <circle
-          cx={30} cy={30} r={r}
-          fill="none" stroke="#10B981" strokeWidth={4} strokeLinecap="round"
-          strokeDasharray={c} strokeDashoffset={c - (c * Math.min(100, Math.max(0, value))) / 100}
-          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
-        />
+        {value !== null && (
+          <circle
+            cx={30} cy={30} r={r}
+            fill="none" stroke="#10B981" strokeWidth={4} strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={c - (c * Math.min(100, Math.max(0, value))) / 100}
+            style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+          />
+        )}
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span style={{ fontSize: '15px', fontWeight: 800, color: '#fff', fontFamily: "'Outfit', sans-serif" }}>
-          {Math.round(value)}%
+        <span style={{ fontSize: value === null ? '17px' : '15px', fontWeight: 800, color: value === null ? 'rgba(255,255,255,0.5)' : '#fff', fontFamily: "'Outfit', sans-serif" }}>
+          {value === null ? '?' : `${Math.round(value)}%`}
         </span>
       </div>
     </div>
@@ -163,12 +175,15 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
 
   const firstName = profile.isListing ? 'le loueur' : profile.name.split(' ')[0]
 
-  const subScores = [
-    { label: 'Mode de vie', value: Math.min(100, profile.match + 5), color: '#10B981' },
-    { label: 'Budget', value: Math.max(60, profile.match - 10), color: '#6366F1' },
-    { label: 'Personnalité', value: Math.min(100, profile.match - 5), color: '#F59E0B' },
-    { label: 'Intérêts', value: Math.min(100, Math.round(profile.match * 0.9 + 8)), color: '#EC4899' },
-  ]
+  // Sous-scores réels issus du moteur de compatibilité — jamais dérivés artificiellement
+  const subScores = profile.subScores
+    ? ([
+        { label: 'Mode de vie', value: profile.subScores.modeDeVie, color: '#10B981' },
+        { label: 'Budget', value: profile.subScores.budget, color: '#6366F1' },
+        { label: 'Personnalité', value: profile.subScores.personnalite, color: '#F59E0B' },
+        { label: 'Intérêts', value: profile.subScores.interets, color: '#EC4899' },
+      ] as Array<{ label: string; value: number | null; color: string }>).filter(s => s.value !== null)
+    : null
 
   return (
     <motion.div
@@ -305,7 +320,29 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
                 <MapPin size={13} className="flex-shrink-0" />
                 <span className="truncate">{profile.city}</span>
                 {profile.rent > 0 && <><span>·</span><span className="font-semibold" style={{ color: '#10B981' }}>{profile.rent}€/mois</span></>}
-                {profile.job && <><span>·</span><span>{profile.job}</span></>}
+                {profile.occupancy ? (
+                  <>
+                    <span>·</span>
+                    <span
+                      className="flex items-center gap-1"
+                      title={`${profile.occupancy.current} colocataire${profile.occupancy.current > 1 ? 's' : ''} sur ${profile.occupancy.total} place${profile.occupancy.total > 1 ? 's' : ''}`}
+                    >
+                      <Users size={13} /> {profile.occupancy.current} / {profile.occupancy.total}
+                    </span>
+                    {profile.occupancy.total - profile.occupancy.current <= 0 && (
+                      <span
+                        style={{
+                          fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
+                          background: 'rgba(156,163,175,0.25)', color: '#D1D5DB', border: '1px solid rgba(156,163,175,0.4)',
+                        }}
+                      >
+                        Complet
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  profile.job && <><span>·</span><span>{profile.job}</span></>
+                )}
               </div>
             </div>
             <MatchRing value={profile.match} />
@@ -340,19 +377,25 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
                   className="mt-3 p-3.5 rounded-2xl"
                   style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}
                 >
-                  <div className="flex flex-col gap-2 mb-3">
-                    {subScores.map(item => (
-                      <div key={item.label}>
-                        <div className="flex justify-between items-center mb-0.5">
-                          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>{item.label}</span>
-                          <span style={{ fontSize: '11px', color: item.color, fontWeight: 700 }}>{item.value}%</span>
+                  {subScores && subScores.length > 0 ? (
+                    <div className="flex flex-col gap-2 mb-3">
+                      {subScores.map(item => (
+                        <div key={item.label}>
+                          <div className="flex justify-between items-center mb-0.5">
+                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>{item.label}</span>
+                            <span style={{ fontSize: '11px', color: item.color, fontWeight: 700 }}>{item.value}%</span>
+                          </div>
+                          <div className="rounded-full overflow-hidden" style={{ height: '3px', background: 'rgba(255,255,255,0.12)' }}>
+                            <div style={{ height: '100%', width: `${item.value}%`, background: item.color, transition: 'width 0.6s ease' }} />
+                          </div>
                         </div>
-                        <div className="rounded-full overflow-hidden" style={{ height: '3px', background: 'rgba(255,255,255,0.12)' }}>
-                          <div style={{ height: '100%', width: `${item.value}%`, background: item.color, transition: 'width 0.6s ease' }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mb-3" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+                      Test de compatibilité non complété — les scores s&apos;afficheront quand vous aurez tous les deux répondu au questionnaire.
+                    </p>
+                  )}
                   {profile.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {profile.tags.slice(0, 5).map(tag => (

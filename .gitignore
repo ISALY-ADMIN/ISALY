@@ -30,3 +30,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Graphify knowledge graph (generated)
+graphify-out/

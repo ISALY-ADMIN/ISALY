@@ -38,3 +38,15 @@ export function getAvatarColor(name: string): string {
   }
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
+
+/** Places occupées / capacité totale d'une annonce. Si la capacité n'est pas
+ *  renseignée, elle est déduite des chambres disponibles. */
+export function listingOccupancy(l: {
+  occupants_current?: number | null
+  capacity_total?: number | null
+  rooms_available?: number | null
+}): { current: number; total: number } {
+  const current = l.occupants_current ?? 1
+  const total = l.capacity_total ?? Math.max(current + (l.rooms_available ?? 1), current)
+  return { current, total }
+}

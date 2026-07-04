@@ -684,9 +684,21 @@ export default function ProfilPage() {
           ) : (
             <p className="text-[12.5px] mb-3.5" style={{ color: '#9CA3AF' }}>Aucune préférence renseignée — complétez votre profil.</p>
           )}
-          <Link href="/onboarding">
-            <OutlineBtn>Modifier mes préférences</OutlineBtn>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/app/quiz">
+              <button
+                className="px-4 py-2 rounded-full text-[13px] font-bold text-white border-none cursor-pointer transition-colors"
+                style={{ background: '#10B981' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#059669')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#10B981')}
+              >
+                🧪 Refaire mon test de compatibilité
+              </button>
+            </Link>
+            <Link href="/onboarding">
+              <OutlineBtn>Modifier mes préférences</OutlineBtn>
+            </Link>
+          </div>
         </div>
 
         {/* ── Ma situation ─────────────────────────────────── */}

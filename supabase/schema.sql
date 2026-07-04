@@ -40,11 +40,15 @@ CREATE TABLE IF NOT EXISTS listings (
   charges INTEGER,
   surface INTEGER,
   rooms_available INTEGER,
+  occupants_current INTEGER NOT NULL DEFAULT 1,
+  capacity_total INTEGER,
   photos TEXT[],
   boost_type TEXT CHECK (boost_type IN ('standard', 'featured', 'priority')) DEFAULT 'standard',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS occupants_current INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS capacity_total INTEGER;
 
 -- Swipes
 CREATE TABLE IF NOT EXISTS swipes (

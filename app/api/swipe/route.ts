@@ -1,5 +1,7 @@
 import { createApiClient } from '@/lib/supabase/api-auth'
 import { NextResponse } from 'next/server'
+import { profilesCompatibility } from '@/lib/matching'
+import type { Profile } from '@/types/database'
 
 export async function POST(request: Request) {
   const { supabase, user } = await createApiClient(request)
@@ -21,6 +23,7 @@ export async function POST(request: Request) {
 
   // Check for mutual like → create match
   let matched = false
+  let compatibility: ReturnType<typeof profilesCompatibility> = null
   if (direction === 'right' || direction === 'super') {
     const { data: mutualSwipe } = await supabase
       .from('swipes')
@@ -41,6 +44,15 @@ export async function POST(request: Request) {
       if (match) {
         await supabase.from('conversations').insert({ match_id: match.id })
         matched = true
+
+        // Score de compatibilité réel entre les deux profils (null si test non complété)
+        const { data: pair } = await supabase
+          .from('profiles')
+          .select('id, budget_max, matching_data')
+          .in('id', [user.id, swipedId])
+        if (pair && pair.length === 2) {
+          compatibility = profilesCompatibility(pair[0] as Profile, pair[1] as Profile)
+        }
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'
         await fetch(`${appUrl}/api/push/send`, {
@@ -69,5 +81,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ success: true, matched })
+  return NextResponse.json({ success: true, matched, compatibility })
 }

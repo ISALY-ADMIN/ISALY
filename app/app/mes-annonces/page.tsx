@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import { listingOccupancy } from '@/lib/utils'
 import BoostSelector, { type BoostOption } from '@/components/listings/BoostSelector'
 
 interface Listing {
@@ -14,6 +15,8 @@ interface Listing {
   rent: number
   surface: number
   rooms_available: number
+  occupants_current: number | null
+  capacity_total: number | null
   photos: string[]
   is_active: boolean
   boost_type: string
@@ -264,6 +267,7 @@ function MesAnnoncesContent() {
                           <span>💰 <strong>{listing.rent}€</strong>/mois</span>
                           {listing.surface > 0 && <span>📐 {listing.surface}m²</span>}
                           {listing.rooms_available > 0 && <span>🚪 {listing.rooms_available} chambre{listing.rooms_available > 1 ? 's' : ''}</span>}
+                          <span>👥 {listingOccupancy(listing).current}/{listingOccupancy(listing).total} places</span>
                         </div>
 
                         {/* Badge boost actif */}

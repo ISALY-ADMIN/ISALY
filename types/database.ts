@@ -90,6 +90,10 @@ export interface Listing {
   charges: number | null
   surface: number | null
   rooms_available: number | null
+  /** Personnes actuellement dans l'appart. */
+  occupants_current: number
+  /** Capacité totale de la colocation (null = déduite de rooms_available). */
+  capacity_total: number | null
   photos: string[] | null
   boost_type: BoostType
   is_active: boolean
