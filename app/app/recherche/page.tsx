@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import Topbar from '@/components/layout/Topbar'
+import { createClient } from '@/lib/supabase/client'
 import type { SearchResponse, SearchResult } from '@/app/api/recherche/route'
 
 const SearchMap = dynamic(() => import('@/components/map/SearchMap'), { ssr: false })
@@ -16,6 +17,8 @@ const DEFAULTS = {
   surface_min: 0, surface_max: 0,
   meuble: false, animaux: false, non_fumeur: false,
   dispo: false, boost_only: false, compat_only: false,
+  /** Personnes par chambre : 0 = off, 1 = 1 seul, 2 = 2 max, 3 = 3+ */
+  ppr: 0,
   sort: 'pertinence',
 }
 type Filters = typeof DEFAULTS
@@ -34,6 +37,7 @@ function filtersFromParams(p: URLSearchParams): Filters {
     dispo: p.get('dispo') === '1',
     boost_only: p.get('boost_only') === '1',
     compat_only: p.get('compat_only') === '1',
+    ppr: Number(p.get('ppr')) || 0,
     sort: p.get('sort') ?? 'pertinence',
   }
 }
@@ -49,6 +53,7 @@ function filtersToParams(f: Filters): URLSearchParams {
   for (const k of ['meuble', 'animaux', 'non_fumeur', 'dispo', 'boost_only', 'compat_only'] as const) {
     if (f[k]) p.set(k, '1')
   }
+  if (f.ppr > 0) p.set('ppr', String(f.ppr))
   if (f.sort !== 'pertinence') p.set('sort', f.sort)
   return p
 }
@@ -105,26 +110,34 @@ function CompatBadge({ score }: { score: number }) {
   )
 }
 
-function Chip({ active, label, onClick, onClear }: {
-  active: boolean; label: string; onClick: () => void; onClear?: () => void
-}) {
+/** Case à cocher custom : coche = l'annonce matchante REMONTE dans le tri (pas d'exclusion). */
+function CheckItem({ checked, label, onToggle }: { checked: boolean; label: string; onToggle: () => void }) {
   return (
     <button
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 flex-shrink-0 rounded-full cursor-pointer transition-all text-[12.5px] font-semibold px-3.5 py-1.5"
-      style={active
-        ? { background: 'rgba(16,185,129,0.1)', border: '1.5px solid #10B981', color: '#10B981' }
-        : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)' }}
+      onClick={onToggle}
+      role="checkbox"
+      aria-checked={checked}
+      className="check-item inline-flex items-center gap-2.5 cursor-pointer bg-transparent border-none p-1.5 text-left"
     >
-      {label}
-      {active && onClear && (
-        <span
-          role="button"
-          aria-label="Retirer le filtre"
-          onClick={e => { e.stopPropagation(); onClear() }}
-          style={{ fontSize: '11px', opacity: 0.8 }}
-        >✕</span>
-      )}
+      <span
+        aria-hidden
+        className="flex items-center justify-center flex-shrink-0"
+        style={{
+          width: 18, height: 18, borderRadius: '5px',
+          background: checked ? '#10B981' : 'transparent',
+          border: `1.5px solid ${checked ? '#10B981' : 'rgba(255,255,255,0.2)'}`,
+          transition: 'all 150ms ease',
+        }}
+      >
+        {checked && (
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6.2 4.8 9 10 3.4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+      <span style={{ fontSize: '13px', fontWeight: 600, color: checked ? '#10B981' : 'rgba(255,255,255,0.65)', transition: 'color 150ms ease', whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
     </button>
   )
 }
@@ -286,6 +299,36 @@ function RechercheInner() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const firstLoad = useRef(true)
 
+  // Recherche libre : état local, committé dans filters.q après 400 ms
+  const [freeText, setFreeText] = useState(filters.q)
+  const freeTextRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Autocomplete villes depuis les annonces réelles en base
+  const [citySuggestions, setCitySuggestions] = useState<string[] | null>(null)
+  const cityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (freeTextRef.current) clearTimeout(freeTextRef.current)
+    freeTextRef.current = setTimeout(() => set('q', freeText.trim()), 400)
+    return () => { if (freeTextRef.current) clearTimeout(freeTextRef.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freeText])
+
+  useEffect(() => {
+    const input = filters.city.trim()
+    if (input.length < 2) { setCitySuggestions(null); return }
+    if (cityDebounceRef.current) clearTimeout(cityDebounceRef.current)
+    cityDebounceRef.current = setTimeout(async () => {
+      try {
+        const supabase = createClient()
+        const { data } = await supabase.from('listings').select('city').ilike('city', `${input}%`).limit(50)
+        const distinct = Array.from(new Set((data ?? []).map(r => (r.city as string) ?? '').filter(Boolean)))
+          .sort((a, b) => a.localeCompare(b, 'fr')).slice(0, 8)
+        setCitySuggestions(distinct)
+      } catch { setCitySuggestions([]) }
+    }, 250)
+    return () => { if (cityDebounceRef.current) clearTimeout(cityDebounceRef.current) }
+  }, [filters.city])
+
   const set = useCallback(<K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters(f => ({ ...f, [key]: value }))
   }, [])
@@ -408,24 +451,37 @@ function RechercheInner() {
 
           {/* Dropdowns inline */}
           {openPanel === 'city' && (
-            <div style={{ ...panelStyle, left: 0 }}>
+            <div style={{ ...panelStyle, left: 0, background: '#111', border: '1px solid rgba(255,255,255,0.08)' }}>
               <input
                 autoFocus
                 value={filters.city}
                 onChange={e => set('city', e.target.value)}
-                placeholder="Lyon, Paris, Marseille…"
+                placeholder="Tape une ville…"
                 className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] outline-none"
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#fff' }}
               />
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Lille', 'Toulouse'].map(c => (
-                  <button key={c} onClick={() => { set('city', c); setOpenPanel(null) }}
-                    className="text-[12px] font-semibold px-3 py-1.5 rounded-full cursor-pointer"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: 'rgba(255,255,255,0.7)' }}>
-                    {c}
-                  </button>
-                ))}
-              </div>
+              {citySuggestions !== null && (
+                <div className="mt-2 flex flex-col">
+                  {citySuggestions.length === 0 ? (
+                    <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.4)', padding: '8px 6px' }}>
+                      Aucune ville correspondante
+                    </div>
+                  ) : (
+                    citySuggestions.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => { set('city', c); setOpenPanel(null) }}
+                        className="flex items-center gap-2 text-left px-2.5 py-2 rounded-[8px] cursor-pointer border-none text-[13px] font-semibold"
+                        style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.1)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        📍 {c}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
           {openPanel === 'budget' && (
@@ -468,22 +524,83 @@ function RechercheInner() {
           )}
         </div>
 
-        {/* ── Chips filtres ── */}
-        <div className="relative flex gap-2 mt-4 pb-1 overflow-x-auto" style={{ scrollbarWidth: 'none', zIndex: 44 }}>
-          <Chip
-            active={filters.surface_min > 0 || filters.surface_max > 0}
-            label={filters.surface_min > 0 || filters.surface_max > 0
-              ? `📐 ${filters.surface_min > 0 ? `${filters.surface_min}` : '0'}–${filters.surface_max > 0 ? `${filters.surface_max}` : '∞'} m²`
-              : '📐 Superficie'}
-            onClick={() => setOpenPanel(p => p === 'surface' ? null : 'surface')}
-            onClear={() => { set('surface_min', 0); set('surface_max', 0) }}
-          />
-          <Chip active={filters.meuble} label="🛋 Meublé" onClick={() => set('meuble', !filters.meuble)} onClear={() => set('meuble', false)} />
-          <Chip active={filters.dispo} label="✅ Disponible maintenant" onClick={() => set('dispo', !filters.dispo)} onClear={() => set('dispo', false)} />
-          <Chip active={filters.boost_only} label="🚀 Boost uniquement" onClick={() => set('boost_only', !filters.boost_only)} onClear={() => set('boost_only', false)} />
-          <Chip active={filters.compat_only} label="🎯 Score compatibilité" onClick={() => set('compat_only', !filters.compat_only)} onClear={() => set('compat_only', false)} />
-          <Chip active={filters.animaux} label="🐾 Animaux OK" onClick={() => set('animaux', !filters.animaux)} onClear={() => set('animaux', false)} />
-          <Chip active={filters.non_fumeur} label="🚭 Non-fumeur" onClick={() => set('non_fumeur', !filters.non_fumeur)} onClear={() => set('non_fumeur', false)} />
+        {/* ── Barre de recherche libre ── */}
+        <div className="max-w-[780px] mt-3">
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ fontSize: '14px' }}>✨</span>
+            <input
+              value={freeText}
+              onChange={e => setFreeText(e.target.value)}
+              placeholder="Recherche libre : quartier, proximité métro, calme, lumineux…"
+              aria-label="Recherche libre"
+              className="w-full pl-11 pr-4 py-3 rounded-[14px] text-[13.5px] outline-none transition-colors"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)', color: '#fff' }}
+              onFocus={e => (e.currentTarget.style.borderColor = '#10B981')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
+            />
+          </div>
+          {filters.q && data && (
+            <div className="mt-2 inline-flex items-center gap-1.5" style={{
+              fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '14px',
+              background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10B981',
+            }}>
+              {data.textMatches} résultat{data.textMatches > 1 ? 's' : ''} pour « {filters.q} »
+              <button onClick={() => setFreeText('')} aria-label="Effacer la recherche libre"
+                className="border-none bg-transparent cursor-pointer p-0" style={{ color: '#10B981', fontSize: '11px' }}>✕</button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Critères (cases à cocher = TRI, pas exclusion) ── */}
+        <div className="relative mt-4" style={{ zIndex: 44 }}>
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-3 gap-y-1.5 items-center">
+            <CheckItem checked={filters.meuble} label="🛋 Meublé" onToggle={() => set('meuble', !filters.meuble)} />
+            <CheckItem checked={filters.dispo} label="✅ Disponible maintenant" onToggle={() => set('dispo', !filters.dispo)} />
+            <CheckItem checked={filters.boost_only} label="🚀 Boost uniquement" onToggle={() => set('boost_only', !filters.boost_only)} />
+            <CheckItem checked={filters.compat_only} label="🎯 Score compatibilité" onToggle={() => set('compat_only', !filters.compat_only)} />
+            <CheckItem checked={filters.animaux} label="🐾 Animaux OK" onToggle={() => set('animaux', !filters.animaux)} />
+            <CheckItem checked={filters.non_fumeur} label="🚭 Non-fumeur" onToggle={() => set('non_fumeur', !filters.non_fumeur)} />
+
+            {/* Personnes par chambre */}
+            <div className="col-span-2 sm:col-span-1 inline-flex items-center gap-2 p-1.5">
+              <span style={{ fontSize: '13px', fontWeight: 600, color: filters.ppr > 0 ? '#10B981' : 'rgba(255,255,255,0.65)', whiteSpace: 'nowrap' }}>
+                👥 Personnes/chambre
+              </span>
+              <div className="inline-flex rounded-[8px] overflow-hidden" style={{ border: '1.5px solid rgba(255,255,255,0.15)' }}>
+                {([[1, '1 seul'], [2, '2 max'], [3, '3+']] as const).map(([v, lab]) => (
+                  <button key={v}
+                    onClick={() => set('ppr', filters.ppr === v ? 0 : v)}
+                    aria-pressed={filters.ppr === v}
+                    className="check-item border-none cursor-pointer px-2.5 py-1 text-[11.5px] font-bold"
+                    style={{
+                      background: filters.ppr === v ? '#10B981' : 'transparent',
+                      color: filters.ppr === v ? '#fff' : 'rgba(255,255,255,0.55)',
+                      transition: 'all 150ms ease',
+                    }}>
+                    {lab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Superficie (popover valeur) */}
+            <button
+              onClick={() => setOpenPanel(p => p === 'surface' ? null : 'surface')}
+              className="check-item inline-flex items-center gap-1.5 rounded-full cursor-pointer text-[12.5px] font-semibold px-3.5 py-1.5"
+              style={(filters.surface_min > 0 || filters.surface_max > 0)
+                ? { background: 'rgba(16,185,129,0.1)', border: '1.5px solid #10B981', color: '#10B981' }
+                : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)' }}
+            >
+              {filters.surface_min > 0 || filters.surface_max > 0
+                ? `📐 ${filters.surface_min || 0}–${filters.surface_max > 0 ? filters.surface_max : '∞'} m²`
+                : '📐 Superficie'}
+              {(filters.surface_min > 0 || filters.surface_max > 0) && (
+                <span role="button" aria-label="Réinitialiser la superficie"
+                  onClick={e => { e.stopPropagation(); set('surface_min', 0); set('surface_max', 0) }}
+                  style={{ fontSize: '11px', opacity: 0.8 }}>✕</span>
+              )}
+            </button>
+          </div>
 
           {openPanel === 'surface' && (
             <div style={{ ...panelStyle, left: 0, top: 'calc(100% + 6px)' }}>
@@ -565,7 +682,7 @@ function RechercheInner() {
                 Essaie d&apos;élargir ta zone ou d&apos;assouplir tes critères.
               </p>
               <button
-                onClick={() => setFilters(DEFAULTS)}
+                onClick={() => { setFilters(DEFAULTS); setFreeText('') }}
                 className="px-6 py-2.5 rounded-full text-[13px] font-bold text-white border-none cursor-pointer"
                 style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
               >
@@ -631,6 +748,8 @@ function RechercheInner() {
       <style>{`
         .search-shimmer { animation: searchShimmer 1.4s ease-in-out infinite; }
         @keyframes searchShimmer { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .check-item { transition: transform 150ms ease; }
+        .check-item:active { transform: scale(0.95); }
       `}</style>
     </div>
   )
