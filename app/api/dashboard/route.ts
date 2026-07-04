@@ -58,14 +58,14 @@ export async function GET(request: Request) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, role, active_mode, referral_code, referral_count')
+    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, role, referral_code, referral_count')
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
-  // Mode d'interface : le toggle (active_mode) prime sur le type d'inscription (role).
-  const mode: 'locataire' | 'loueur' =
-    (profile.active_mode ?? profile.role) === 'loueur' ? 'loueur' : 'locataire'
+  // role est LA colonne de référence du mode (NULL = locataire) — active_mode
+  // est supprimée par la migration 27.
+  const mode: 'locataire' | 'loueur' = profile.role === 'loueur' ? 'loueur' : 'locataire'
 
   // ── Commun : certification, matchs, messages non lus, notifications ──
   const [certRes, matchRes, unreadRes, lastUnreadRes, notifRes] = await Promise.all([
