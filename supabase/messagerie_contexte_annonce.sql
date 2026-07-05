@@ -13,11 +13,8 @@ CREATE INDEX IF NOT EXISTS idx_conversations_listing ON conversations(listing_id
 CREATE OR REPLACE FUNCTION public.has_active_lease(uid UUID)
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
-    SELECT 1 FROM leases WHERE tenant_id = uid AND status = 'active'
-  ) OR EXISTS (
-    SELECT 1 FROM lease_roommates lr
-    JOIN leases l ON l.id = lr.lease_id
-    WHERE lr.profile_id = uid AND l.status = 'active'
+    SELECT 1 FROM public.leases
+    WHERE tenant_id = uid AND status = 'active'
   );
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 

@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TenantDashboardClient from './TenantDashboardClient'
-import LoueurDashboard from './LoueurDashboard'
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -14,9 +13,9 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  if (profile?.role === 'loueur') {
-    return <LoueurDashboard ownerId={user.id} />
-  }
+  // Le bento loueur vit sur /app/dashboard-home — cette page reste la gestion
+  // locative du locataire (liens « Mon bail » du bento, retour /app/bail…).
+  if (profile?.role === 'loueur') redirect('/app/dashboard-home')
 
   return <TenantDashboardClient />
 }
