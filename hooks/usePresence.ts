@@ -103,9 +103,10 @@ export function usePresence(currentUserId: string | null) {
     }
 
     updateLastSeen()
-    const interval = setInterval(updateLastSeen, 30000)
+    const interval = setInterval(updateLastSeen, 60000)
     window.addEventListener('focus', updateLastSeen)
     window.addEventListener('blur', updateLastSeen)
+    window.addEventListener('beforeunload', updateLastSeen)
 
     const detach = attachPresence(currentUserId)
 
@@ -113,6 +114,7 @@ export function usePresence(currentUserId: string | null) {
       clearInterval(interval)
       window.removeEventListener('focus', updateLastSeen)
       window.removeEventListener('blur', updateLastSeen)
+      window.removeEventListener('beforeunload', updateLastSeen)
       detach()
     }
   }, [currentUserId])
@@ -220,11 +222,21 @@ export function useUserPresence(userId: string | null) {
   return { isOnline, lastSeen, avgResponseTime }
 }
 
+/**
+ * Formatage relatif français du last_seen.
+ * null (jamais tracké) → chaîne vide : n'affiche rien.
+ */
 export function formatLastSeen(lastSeen: string | null): string {
-  if (!lastSeen) return 'Hors ligne'
-  const diff = (Date.now() - new Date(lastSeen).getTime()) / 60000
-  if (diff < 5) return 'En ligne'
-  if (diff < 60) return `Vu il y a ${Math.round(diff)} min`
-  if (diff < 1440) return `Vu il y a ${Math.round(diff / 60)}h`
-  return `Vu il y a ${Math.round(diff / 1440)}j`
+  if (!lastSeen) return ''
+  const d = new Date(lastSeen)
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  const diffMin = (now.getTime() - d.getTime()) / 60000
+  if (diffMin < 5) return 'En ligne'
+  if (diffMin < 60) return `Vu il y a ${Math.round(diffMin)} min`
+  if (d.toDateString() === now.toDateString()) return `Vu il y a ${Math.round(diffMin / 60)} h`
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) return 'Vu hier'
+  return `Vu le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
 }

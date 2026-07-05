@@ -15,6 +15,8 @@ interface ActionsPanelProps {
   otherName: string
   onClose: () => void
   onSendRich: (type: RichType, payload: Record<string, unknown>, content: string) => void
+  /** Ouvre directement une action (depuis les icônes du header) au lieu du menu */
+  initialView?: RichType
 }
 
 const DOC_LABELS: Record<string, string> = {
@@ -33,8 +35,8 @@ const ACTIONS: { key: RichType; label: string; desc: string; icon: typeof Home; 
   { key: 'document', label: 'Envoyer un document', desc: 'Depuis ton dossier', icon: FileText, grad: 'linear-gradient(135deg,#3B82F6,#2563EB)' },
 ]
 
-export default function ActionsPanel({ currentUserId, otherUserId, otherName, onClose, onSendRich }: ActionsPanelProps) {
-  const [view, setView] = useState<'menu' | RichType>('menu')
+export default function ActionsPanel({ currentUserId, otherUserId, otherName, onClose, onSendRich, initialView }: ActionsPanelProps) {
+  const [view, setView] = useState<'menu' | RichType>(initialView ?? 'menu')
   const [myListings, setMyListings] = useState<Listing[]>([])
   const [otherListings, setOtherListings] = useState<Listing[]>([])
   const [docs, setDocs] = useState<Doc[]>([])

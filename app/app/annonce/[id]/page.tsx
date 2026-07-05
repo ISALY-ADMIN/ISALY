@@ -266,7 +266,7 @@ export default function AnnonceDetailPage() {
         {/* Actions */}
         <div className="flex gap-3 mb-8">
           <button
-            onClick={() => listing.owner_id && router.push(`/app/messages?owner=${listing.owner_id}`)}
+            onClick={() => listing.owner_id && router.push(`/app/messages?owner=${listing.owner_id}&listing=${listing.id}`)}
             className="flex-1 sm:flex-none sm:px-10 py-3 rounded-full text-[14px] font-extrabold text-white border-none cursor-pointer"
             style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.35)', fontFamily: "'Outfit', sans-serif" }}
           >

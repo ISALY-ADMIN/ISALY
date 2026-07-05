@@ -2,11 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { Plus, Paperclip, ArrowUp, MoreHorizontal, ChevronLeft, User, Reply, Pencil, Trash2, SmilePlus } from 'lucide-react'
-import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import { Paperclip, ArrowUp, MoreHorizontal, ChevronLeft, ChevronRight, Reply, Pencil, Trash2, SmilePlus, CalendarClock, KeyRound, Home, FileText } from 'lucide-react'
+import { CertLevel } from '@/components/ui/CertificationBadge'
 import { createClient } from '@/lib/supabase/client'
 import { useUserPresence, formatLastSeen } from '@/hooks/usePresence'
-import ColocRequestModal from '@/components/messages/ColocRequestModal'
 import ActionsPanel, { RichType } from '@/components/messages/ActionsPanel'
 import RichMessage from '@/components/messages/RichMessage'
 
@@ -32,6 +31,8 @@ interface Conv {
   otherUserId?: string | null
 }
 
+interface ListingCtx { id: string; title: string | null; city: string | null; rent: number | null; photo: string | null }
+
 interface ChatAreaProps {
   conv: Conv | null
   onSend: (text: string, replyTo?: { text: string; from: 'me' | 'them' }) => void
@@ -40,6 +41,7 @@ interface ChatAreaProps {
   conversationId?: string | null
   currentUserId?: string | null
   otherUserId?: string | null
+  listingId?: string | null
   onViewProfile?: (userId: string) => void
   onBack?: () => void
 }
@@ -49,20 +51,46 @@ interface Reaction { emoji: string; userId: string }
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥']
 const RICH_TYPES = ['visite', 'reservation', 'annonce', 'document']
 
-export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, conversationId, currentUserId, otherUserId, onViewProfile, onBack }: ChatAreaProps) {
+const HEADER_ACTIONS: { key: RichType; label: string; icon: typeof Home }[] = [
+  { key: 'visite', label: 'Proposer une visite', icon: CalendarClock },
+  { key: 'reservation', label: 'Demander à réserver', icon: KeyRound },
+  { key: 'annonce', label: 'Partager une annonce', icon: Home },
+  { key: 'document', label: 'Envoyer un document', icon: FileText },
+]
+
+// ── Séparateur temporel façon iMessage ──────────────────────────
+const GROUP_GAP_MS = 20 * 60 * 1000
+
+function timeSeparatorLabel(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  if (d.toDateString() === now.toDateString()) return time
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) return `Hier ${time}`
+  const diffDays = (now.getTime() - d.getTime()) / 86400000
+  if (diffDays < 7) return `${d.toLocaleDateString('fr-FR', { weekday: 'long' })} ${time}`
+  return `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${time}`
+}
+
+export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, conversationId, currentUserId, otherUserId, listingId, onViewProfile, onBack }: ChatAreaProps) {
   const [input, setInput] = useState('')
   const [realtimeMessages, setRealtimeMessages] = useState<Msg[]>([])
   const msgsRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const taRef = useRef<HTMLTextAreaElement>(null)
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({})
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editText, setEditText] = useState('')
   const [replyTo, setReplyTo] = useState<Msg | null>(null)
   const [showActionsFor, setShowActionsFor] = useState<number | null>(null)
-  const [showColocModal, setShowColocModal] = useState(false)
   const [showActionsPanel, setShowActionsPanel] = useState(false)
+  const [actionsView, setActionsView] = useState<RichType | undefined>(undefined)
   const [sendPressed, setSendPressed] = useState(false)
+  const [listing, setListing] = useState<ListingCtx | null>(null)
 
   const { isOnline, lastSeen } = useUserPresence(otherUserId ?? null)
 
@@ -75,6 +103,21 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
     document.addEventListener('click', handleClick)
     return () => document.removeEventListener('click', handleClick)
   }, [])
+
+  // ── Contexte annonce (bandeau façon Leboncoin) ───────────────────────────
+  useEffect(() => {
+    setListing(null)
+    if (!listingId) return
+    const supabase = createClient()
+    ;(async () => {
+      const { data } = await supabase
+        .from('listings')
+        .select('id, title, city, rent, photos')
+        .eq('id', listingId)
+        .single()
+      if (data) setListing({ id: data.id, title: data.title, city: data.city, rent: data.rent, photo: data.photos?.[0] ?? null })
+    })()
+  }, [listingId])
 
   // ── Chargement messages + Realtime (INSERT + UPDATE) ────────────────────
   useEffect(() => {
@@ -176,11 +219,24 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
     if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight
   }, [displayMsgs])
 
+  function autoResize() {
+    const el = taRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+  }
+
   function send() {
     if (!input.trim() || !conv) return
     onSend(input.trim(), replyTo ?? undefined)
     setInput('')
     setReplyTo(null)
+    requestAnimationFrame(() => { if (taRef.current) taRef.current.style.height = 'auto' })
+  }
+
+  function openAction(view?: RichType) {
+    setActionsView(view)
+    setShowActionsPanel(true)
   }
 
   // ── Réactions ───────────────────────────────────────────────────────────
@@ -208,48 +264,67 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
   }
 
   const firstName = conv?.name.split(' ')[0] ?? ''
+  const statusLabel = isOnline ? 'En ligne' : formatLastSeen(lastSeen)
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative" style={{ background: 'transparent' }}>
 
       {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-4 md:px-5 py-3 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
+      <div className="flex items-center gap-2 px-3 md:px-4 py-2.5 flex-shrink-0" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
         {conv ? (
           <>
             {onBack && (
-              <button onClick={onBack} className="md:hidden flex items-center justify-center rounded-full flex-shrink-0" style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.06)' }}>
+              <button onClick={onBack} className="md:hidden flex items-center justify-center rounded-full flex-shrink-0 border-none cursor-pointer" style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.06)' }}>
                 <ChevronLeft size={20} color="#fff" />
               </button>
             )}
-            <div className="relative flex-shrink-0">
-              {conv.avatarUrl ? (
-                <Image src={conv.avatarUrl} alt={conv.initials} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[13px] text-white" style={{ background: conv.color }}>{conv.initials}</div>
-              )}
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2" style={{ background: isOnline ? '#10B981' : '#6B7280', borderColor: '#0A0A0A' }} />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[14.5px] truncate" style={{ color: '#fff' }}>{conv.name}</span>
-                {conv.certLevel ? <CertificationBadge level={conv.certLevel} size="sm" /> : null}
+
+            {/* Avatar + prénom + statut → profil public */}
+            <button
+              onClick={() => { if (conv.otherUserId) onViewProfile?.(conv.otherUserId) }}
+              className="flex items-center gap-3 min-w-0 border-none bg-transparent cursor-pointer text-left p-1 rounded-[12px] transition-colors"
+              title="Voir le profil"
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <div className="relative flex-shrink-0">
+                {conv.avatarUrl ? (
+                  <Image src={conv.avatarUrl} alt={conv.initials} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[13px] text-white" style={{ background: conv.color }}>{conv.initials}</div>
+                )}
+                {isOnline && (
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2" style={{ background: '#10B981', borderColor: '#0A0A0A' }} />
+                )}
               </div>
-              <div className="text-[11.5px] font-semibold" style={{ color: isOnline ? '#10B981' : 'rgba(255,255,255,0.4)' }}>
-                {isOnline ? 'En ligne' : formatLastSeen(lastSeen)}
+              <div className="min-w-0">
+                <div className="font-bold text-[14.5px] truncate" style={{ color: '#fff' }}>{conv.name}</div>
+                {statusLabel && (
+                  <div className="text-[11.5px] font-medium flex items-center gap-1.5" style={{ color: isOnline ? '#10B981' : 'rgba(255,255,255,0.38)' }}>
+                    {isOnline && <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#10B981' }} />}
+                    {statusLabel}
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="ml-auto flex gap-2 items-center">
-              {!conv.id.startsWith('owner_') && (
-                <button
-                  onClick={() => setShowColocModal(true)}
-                  className="hidden sm:flex items-center gap-1.5 transition-transform active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: 10, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' }}
-                >
-                  🏠 Coloc
-                </button>
-              )}
-              <HeaderBtn title="Voir le profil" onClick={() => { if (conv.otherUserId) onViewProfile?.(conv.otherUserId) }}><User size={17} /></HeaderBtn>
-              <HeaderBtn title="Plus d'options"><MoreHorizontal size={17} /></HeaderBtn>
+            </button>
+
+            {/* Actions : icônes fines (desktop) / bottom sheet via ⋯ (mobile) */}
+            <div className="ml-auto flex items-center gap-0.5">
+              <div className="hidden md:flex items-center gap-0.5">
+                {HEADER_ACTIONS.map(a => {
+                  const Icon = a.icon
+                  return (
+                    <HeaderBtn key={a.key} title={a.label} disabled={isVirtual} onClick={() => openAction(a.key)}>
+                      <Icon size={20} strokeWidth={1.8} />
+                    </HeaderBtn>
+                  )
+                })}
+              </div>
+              <div className="md:hidden">
+                <HeaderBtn title="Actions" disabled={isVirtual} onClick={() => openAction(undefined)}>
+                  <MoreHorizontal size={20} strokeWidth={1.8} />
+                </HeaderBtn>
+              </div>
             </div>
           </>
         ) : (
@@ -263,146 +338,180 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
         )}
       </div>
 
+      {/* ── Bandeau contexte annonce ── */}
+      {conv && listing && (
+        <a
+          href={`/app/annonce/${listing.id}`}
+          className="flex items-center gap-3 mx-3 md:mx-4 mt-2.5 px-3 py-2 rounded-[14px] no-underline transition-colors flex-shrink-0"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+        >
+          <div className="w-9 h-9 rounded-[8px] flex-shrink-0" style={{ background: listing.photo ? `url(${listing.photo}) center/cover` : 'rgba(255,255,255,0.08)' }} />
+          <div className="flex-1 min-w-0">
+            <div className="text-[12.5px] font-bold truncate" style={{ color: '#fff' }}>{listing.title ?? 'Annonce'}</div>
+            <div className="text-[11px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              {listing.city ? `${listing.city} · ` : ''}{listing.rent ? `${listing.rent} €/mois` : ''}
+            </div>
+          </div>
+          <ChevronRight size={16} color="rgba(255,255,255,0.35)" className="flex-shrink-0" />
+        </a>
+      )}
+
       {/* ── Messages ── */}
-      <div ref={msgsRef} className="flex-1 overflow-y-auto px-4 md:px-5 py-4 flex flex-col gap-1">
+      <div ref={msgsRef} className="flex-1 overflow-y-auto px-4 md:px-5 py-4 flex flex-col">
         {!conv && <EmptyChat />}
 
         {displayMsgs.map((m, i) => {
           const isMe = m.from === 'me'
           const prev = displayMsgs[i - 1]
           const next = displayMsgs[i + 1]
-          const isFirst = !prev || prev.from !== m.from
-          const isLast = !next || next.from !== m.from
+
+          // Séparateur temporel : premier message ou gap > 20 min
+          const gapPrev = m.created_at && prev?.created_at
+            ? new Date(m.created_at).getTime() - new Date(prev.created_at).getTime()
+            : 0
+          const showSeparator = !!m.created_at && (!prev || !prev.created_at || gapPrev > GROUP_GAP_MS)
+
+          // Groupage : nouveau groupe si expéditeur différent ou séparateur
+          const gapNext = next?.created_at && m.created_at
+            ? new Date(next.created_at).getTime() - new Date(m.created_at).getTime()
+            : 0
+          const isFirst = showSeparator || !prev || prev.from !== m.from
+          const isLast = !next || next.from !== m.from || gapNext > GROUP_GAP_MS
           const showAvatar = !isMe && isLast
           const isRich = !!m.type && RICH_TYPES.includes(m.type)
           const msgReactions = m.id ? reactions[m.id] ?? [] : []
 
           return (
-            <div
-              key={m.id ?? i}
-              className={`flex items-end gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
-              style={{ marginBottom: isLast ? '8px' : '2px' }}
-              onContextMenu={(e) => { e.preventDefault(); setShowActionsFor(i); setShowReactionPicker(null) }}
-            >
-              {/* Avatar slot */}
-              <div className="w-8 flex-shrink-0">
-                {showAvatar && conv && (
-                  conv.avatarUrl ? (
-                    <Image src={conv.avatarUrl} alt={conv.initials} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] text-white" style={{ background: conv.color }}>{conv.initials}</div>
-                  )
-                )}
-              </div>
+            <div key={m.id ?? i}>
+              {showSeparator && (
+                <div className="text-center py-3 text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  {timeSeparatorLabel(m.created_at!)}
+                </div>
+              )}
+              <div
+                className={`flex items-end gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
+                style={{ marginBottom: isLast ? '10px' : '2px' }}
+                onContextMenu={(e) => { e.preventDefault(); setShowActionsFor(i); setShowReactionPicker(null) }}
+              >
+                {/* Avatar slot */}
+                <div className="w-8 flex-shrink-0">
+                  {showAvatar && conv && (
+                    conv.avatarUrl ? (
+                      <Image src={conv.avatarUrl} alt={conv.initials} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] text-white" style={{ background: conv.color }}>{conv.initials}</div>
+                    )
+                  )}
+                </div>
 
-              <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`} style={{ maxWidth: '78%' }}>
-                <div className="relative">
+                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`} style={{ maxWidth: '78%' }}>
+                  <div className="relative">
 
-                  {/* Context menu (clic droit) */}
-                  <div
-                    style={{ position: 'absolute', right: isMe ? 0 : undefined, left: isMe ? undefined : 0, top: -8, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', padding: 4, zIndex: 20, minWidth: 170, display: showActionsFor === i ? 'block' : 'none' }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <CtxBtn onClick={() => { setReplyTo(m); setShowActionsFor(null) }} icon={<Reply size={15} />}>Répondre</CtxBtn>
-                    {isMe && !isRich && (() => {
-                      const msgTime = m.created_at ? new Date(m.created_at).getTime() : 0
-                      return Date.now() - msgTime < 30 * 60 * 1000 ? (
-                        <CtxBtn onClick={() => { setEditingIndex(i); setEditText(m.text); setShowActionsFor(null) }} icon={<Pencil size={15} />}>Modifier</CtxBtn>
-                      ) : null
-                    })()}
-                    <CtxBtn onClick={() => { setRealtimeMessages(p => p.filter((_, idx) => idx !== i)); setShowActionsFor(null) }} icon={<Trash2 size={15} />} danger>Supprimer pour moi</CtxBtn>
-                  </div>
-
-                  {/* Déclencheur de réactions (hover) */}
-                  <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: isMe ? -34 : undefined, right: isMe ? undefined : -34, top: '50%', transform: 'translateY(-50%)' }}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setShowReactionPicker(showReactionPicker === m.id ? null : (m.id ?? null)); setShowActionsFor(null) }}
-                      className="flex items-center justify-center rounded-full transition-transform hover:scale-110"
-                      style={{ width: 28, height: 28, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer' }}
+                    {/* Context menu (clic droit) */}
+                    <div
+                      style={{ position: 'absolute', right: isMe ? 0 : undefined, left: isMe ? undefined : 0, top: -8, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', padding: 4, zIndex: 20, minWidth: 170, display: showActionsFor === i ? 'block' : 'none' }}
+                      onClick={e => e.stopPropagation()}
                     >
-                      <SmilePlus size={15} color="rgba(255,255,255,0.7)" />
-                    </button>
-                    {showReactionPicker === m.id && m.id && (
-                      <div
-                        style={{ position: 'absolute', bottom: 34, left: isMe ? 0 : undefined, right: isMe ? undefined : 0, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, padding: '6px 8px', display: 'flex', gap: 2, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 30 }}
-                        onClick={e => e.stopPropagation()}
+                      <CtxBtn onClick={() => { setReplyTo(m); setShowActionsFor(null) }} icon={<Reply size={15} />}>Répondre</CtxBtn>
+                      {isMe && !isRich && (() => {
+                        const msgTime = m.created_at ? new Date(m.created_at).getTime() : 0
+                        return Date.now() - msgTime < 30 * 60 * 1000 ? (
+                          <CtxBtn onClick={() => { setEditingIndex(i); setEditText(m.text); setShowActionsFor(null) }} icon={<Pencil size={15} />}>Modifier</CtxBtn>
+                        ) : null
+                      })()}
+                      <CtxBtn onClick={() => { setRealtimeMessages(p => p.filter((_, idx) => idx !== i)); setShowActionsFor(null) }} icon={<Trash2 size={15} />} danger>Supprimer pour moi</CtxBtn>
+                    </div>
+
+                    {/* Déclencheur de réactions (hover) */}
+                    <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: isMe ? -34 : undefined, right: isMe ? undefined : -34, top: '50%', transform: 'translateY(-50%)' }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowReactionPicker(showReactionPicker === m.id ? null : (m.id ?? null)); setShowActionsFor(null) }}
+                        className="flex items-center justify-center rounded-full transition-transform hover:scale-110"
+                        style={{ width: 28, height: 28, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer' }}
                       >
-                        {REACTION_EMOJIS.map(emoji => (
-                          <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} className="transition-transform hover:scale-125" style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '2px 4px' }}>{emoji}</button>
-                        ))}
+                        <SmilePlus size={15} color="rgba(255,255,255,0.7)" />
+                      </button>
+                      {showReactionPicker === m.id && m.id && (
+                        <div
+                          style={{ position: 'absolute', bottom: 34, left: isMe ? 0 : undefined, right: isMe ? undefined : 0, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, padding: '6px 8px', display: 'flex', gap: 2, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 30 }}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {REACTION_EMOJIS.map(emoji => (
+                            <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} className="transition-transform hover:scale-125" style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '2px 4px' }}>{emoji}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bulle : édition / rich / texte */}
+                    {editingIndex === i ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input
+                          value={editText}
+                          onChange={e => setEditText(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') { setRealtimeMessages(p => p.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg)); setEditingIndex(null) }
+                            if (e.key === 'Escape') setEditingIndex(null)
+                          }}
+                          autoFocus
+                          style={{ padding: '8px 12px', borderRadius: 12, border: '1.5px solid #10B981', fontSize: 13.5, outline: 'none', minWidth: 160, background: '#1c1c1c', color: '#fff' }}
+                        />
+                        <button onClick={() => { setRealtimeMessages(p => p.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg)); setEditingIndex(null) }} style={{ background: '#10B981', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}>✓</button>
+                      </div>
+                    ) : isRich ? (
+                      <RichMessage
+                        type={m.type!}
+                        payload={m.payload ?? null}
+                        isMe={isMe}
+                        onRespond={(status) => respondRich(m.id, m.payload, status)}
+                        onCounter={() => openAction('visite')}
+                      />
+                    ) : (
+                      <div
+                        className="px-3.5 py-2.5 text-[13.5px] leading-relaxed"
+                        style={{
+                          borderRadius: 18,
+                          borderTopLeftRadius: !isMe && !isFirst ? 6 : 18,
+                          borderTopRightRadius: isMe && !isFirst ? 6 : 18,
+                          borderBottomLeftRadius: !isMe && !isLast ? 6 : 18,
+                          borderBottomRightRadius: isMe && !isLast ? 6 : 18,
+                          background: isMe ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.07)',
+                          color: '#fff',
+                          boxShadow: isMe ? '0 2px 12px rgba(16,185,129,.25)' : 'none',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {m.replyTo && (
+                          <div style={{ background: isMe ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)', borderLeft: `3px solid ${isMe ? 'rgba(255,255,255,0.6)' : '#10B981'}`, borderRadius: 6, padding: '4px 8px', marginBottom: 6, fontSize: 12, opacity: 0.9 }}>
+                            <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 11 }}>{m.replyTo.from === 'me' ? 'Toi' : firstName}</div>
+                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{m.replyTo.text}</div>
+                          </div>
+                        )}
+                        {m.text}
                       </div>
                     )}
                   </div>
 
-                  {/* Bulle : édition / rich / texte */}
-                  {editingIndex === i ? (
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <input
-                        value={editText}
-                        onChange={e => setEditText(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') { setRealtimeMessages(p => p.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg)); setEditingIndex(null) }
-                          if (e.key === 'Escape') setEditingIndex(null)
-                        }}
-                        autoFocus
-                        style={{ padding: '8px 12px', borderRadius: 12, border: '1.5px solid #10B981', fontSize: 13.5, outline: 'none', minWidth: 160, background: '#1c1c1c', color: '#fff' }}
-                      />
-                      <button onClick={() => { setRealtimeMessages(p => p.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg)); setEditingIndex(null) }} style={{ background: '#10B981', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}>✓</button>
-                    </div>
-                  ) : isRich ? (
-                    <RichMessage
-                      type={m.type!}
-                      payload={m.payload ?? null}
-                      isMe={isMe}
-                      onRespond={(status) => respondRich(m.id, m.payload, status)}
-                      onCounter={() => setShowActionsPanel(true)}
-                    />
-                  ) : (
-                    <div
-                      className="px-3.5 py-2.5 text-[13.5px] leading-relaxed"
-                      style={{
-                        borderRadius: 18,
-                        borderTopLeftRadius: !isMe && !isFirst ? 6 : 18,
-                        borderTopRightRadius: isMe && !isFirst ? 6 : 18,
-                        borderBottomLeftRadius: !isMe && !isLast ? 6 : 18,
-                        borderBottomRightRadius: isMe && !isLast ? 6 : 18,
-                        background: isMe ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.07)',
-                        color: '#fff',
-                        boxShadow: isMe ? '0 2px 12px rgba(16,185,129,.28)' : 'none',
-                        border: isMe ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                      }}
-                    >
-                      {m.replyTo && (
-                        <div style={{ background: isMe ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)', borderLeft: `3px solid ${isMe ? 'rgba(255,255,255,0.6)' : '#10B981'}`, borderRadius: 6, padding: '4px 8px', marginBottom: 6, fontSize: 12, opacity: 0.9 }}>
-                          <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 11 }}>{m.replyTo.from === 'me' ? 'Toi' : firstName}</div>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{m.replyTo.text}</div>
-                        </div>
-                      )}
-                      {m.text}
+                  {/* Réactions affichées sous la bulle */}
+                  {msgReactions.length > 0 && (
+                    <div style={{ display: 'flex', gap: 3, marginTop: -6, marginBottom: 2, flexWrap: 'wrap', zIndex: 5 }}>
+                      {Object.entries(msgReactions.reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji] ?? 0) + 1; return acc }, {} as Record<string, number>)).map(([emoji, count]) => {
+                        const mine = msgReactions.some(r => r.emoji === emoji && r.userId === currentUserId)
+                        return (
+                          <button
+                            key={emoji}
+                            onClick={() => toggleReaction(m.id, emoji)}
+                            style={{ background: mine ? 'rgba(16,185,129,0.2)' : '#1c1c1c', border: `1px solid ${mine ? '#10B981' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '1px 7px', fontSize: 12, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 3 }}
+                          >
+                            {emoji}{count > 1 ? <span style={{ fontSize: 10.5, fontWeight: 700 }}>{count}</span> : ''}
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
-                </div>
-
-                {/* Réactions affichées sous la bulle */}
-                {msgReactions.length > 0 && (
-                  <div style={{ display: 'flex', gap: 3, marginTop: -6, marginBottom: 2, flexWrap: 'wrap', zIndex: 5 }}>
-                    {Object.entries(msgReactions.reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji] ?? 0) + 1; return acc }, {} as Record<string, number>)).map(([emoji, count]) => {
-                      const mine = msgReactions.some(r => r.emoji === emoji && r.userId === currentUserId)
-                      return (
-                        <button
-                          key={emoji}
-                          onClick={() => toggleReaction(m.id, emoji)}
-                          style={{ background: mine ? 'rgba(16,185,129,0.2)' : '#1c1c1c', border: `1px solid ${mine ? '#10B981' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '1px 7px', fontSize: 12, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 3 }}
-                        >
-                          {emoji}{count > 1 ? <span style={{ fontSize: 10.5, fontWeight: 700 }}>{count}</span> : ''}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                <div className="text-[10.5px] mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ color: 'rgba(255,255,255,0.35)', textAlign: isMe ? 'right' : 'left' }}>
-                  {m.time}
                 </div>
               </div>
             </div>
@@ -422,9 +531,8 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
       )}
 
       {/* ── Barre de saisie ── */}
-      <div className="px-3 md:px-4 py-3 flex gap-2 items-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.03)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
-        <InputBtn title="Actions" onClick={() => conv && setShowActionsPanel(true)} disabled={!conv || isVirtual}><Plus size={20} /></InputBtn>
-        <InputBtn title="Pièce jointe" onClick={() => fileRef.current?.click()} disabled={!conv}><Paperclip size={19} /></InputBtn>
+      <div className="px-3 md:px-4 py-3 flex gap-2 items-end flex-shrink-0" style={{ borderTop: '0.5px solid rgba(255,255,255,0.07)' }}>
+        <InputBtn title="Pièce jointe" onClick={() => fileRef.current?.click()} disabled={!conv}><Paperclip size={19} strokeWidth={1.8} /></InputBtn>
         <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
           onChange={async (e) => {
             const file = e.target.files?.[0]
@@ -439,16 +547,18 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
           }}
         />
 
-        <input
+        <textarea
+          ref={taRef}
+          rows={1}
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && send()}
+          onChange={e => { setInput(e.target.value); autoResize() }}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+          }}
           placeholder={conv ? `Message à ${firstName}…` : 'Sélectionne une conversation…'}
           disabled={!conv}
-          className="flex-1 px-4 py-3 rounded-full text-[14px] border outline-none transition-colors"
-          style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
-          onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
-          onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+          className="flex-1 px-4 py-3 rounded-[22px] text-[14px] border-none outline-none resize-none transition-colors"
+          style={{ background: 'rgba(255,255,255,0.06)', color: '#fff', maxHeight: 120, lineHeight: 1.45 }}
         />
 
         <button
@@ -472,15 +582,13 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
         </button>
       </div>
 
-      {showColocModal && conv && otherUserId && currentUserId && (
-        <ColocRequestModal onClose={() => setShowColocModal(false)} otherUserId={otherUserId} otherName={firstName} currentUserId={currentUserId} conversationId={conv.id} />
-      )}
-
       {showActionsPanel && conv && otherUserId && currentUserId && onSendRich && (
         <ActionsPanel
+          key={actionsView ?? 'menu'}
           currentUserId={currentUserId}
           otherUserId={otherUserId}
           otherName={firstName}
+          initialView={actionsView}
           onClose={() => setShowActionsPanel(false)}
           onSendRich={onSendRich}
         />
@@ -490,11 +598,13 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
 }
 
 // ── Sous-composants boutons épurés ──────────────────────────────────────────
-function HeaderBtn({ children, title, onClick }: { children: React.ReactNode; title?: string; onClick?: () => void }) {
+function HeaderBtn({ children, title, onClick, disabled }: { children: React.ReactNode; title?: string; onClick?: () => void; disabled?: boolean }) {
   return (
-    <button title={title} onClick={onClick} className="flex items-center justify-center rounded-[11px] border-none cursor-pointer transition-colors" style={{ width: 38, height: 38, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)' }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}>
+    <button title={title} onClick={onClick} disabled={disabled}
+      className="flex items-center justify-center rounded-[12px] border-none transition-colors flex-shrink-0"
+      style={{ width: 40, height: 40, background: 'transparent', color: disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.65)', cursor: disabled ? 'not-allowed' : 'pointer' }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
       {children}
     </button>
   )

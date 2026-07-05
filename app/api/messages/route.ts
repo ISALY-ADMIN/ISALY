@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { conversation_id, content, receiver_id, type, payload } = body
+  const { conversation_id, content, receiver_id, type, payload, listing_id } = body
 
   let convId = conversation_id
 
@@ -50,12 +50,21 @@ export async function POST(req: Request) {
     if (existing) {
       convId = existing.id
     } else {
-      const { data: newConv, error: convError } = await supabase
+      // Contexte annonce : lie la conversation à l'annonce d'origine.
+      // Fallback sans listing_id si la colonne n'existe pas encore (migration).
+      let { data: newConv, error: convError } = await supabase
         .from('conversations')
-        .insert({ user1_id: user.id, user2_id: receiver_id })
+        .insert({ user1_id: user.id, user2_id: receiver_id, ...(listing_id ? { listing_id } : {}) })
         .select('id')
         .single()
-      if (convError) return NextResponse.json({ error: convError.message }, { status: 500 })
+      if (convError && listing_id) {
+        ;({ data: newConv, error: convError } = await supabase
+          .from('conversations')
+          .insert({ user1_id: user.id, user2_id: receiver_id })
+          .select('id')
+          .single())
+      }
+      if (convError || !newConv) return NextResponse.json({ error: convError?.message ?? 'insert failed' }, { status: 500 })
       convId = newConv.id
     }
   }

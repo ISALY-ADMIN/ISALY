@@ -32,15 +32,35 @@ interface Conv {
   otherUserId?: string | null
   sectionLabel?: string
   unread?: number
+  listingId?: string | null
 }
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 
+// Timestamp intelligent pour la liste : heure si aujourd'hui, "Hier", jour si < 7j, date sinon
+function formatConvTime(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  }
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) return 'Hier'
+  if ((now.getTime() - d.getTime()) / 86400000 < 7) {
+    return d.toLocaleDateString('fr-FR', { weekday: 'short' })
+  }
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+}
+
 function MessagesContent() {
   const searchParams = useSearchParams()
   const router     = useRouter()
-  const withName   = searchParams.get('with')
-  const ownerParam = searchParams.get('owner')
+  const withName     = searchParams.get('with')
+  const ownerParam   = searchParams.get('owner')
+  const listingParam = searchParams.get('listing')
 
   const [convs, setConvs] = useState<Conv[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -118,13 +138,15 @@ function MessagesContent() {
         msgs: [],
         avatarUrl: null,
         otherUserId: ownerParam,
+        listingId: listingParam ?? null,
       }
       setConvs(prev => prev.some(c => c.id === virtualConv.id) ? prev : [virtualConv, ...prev])
       setActiveId(virtualConv.id)
       setOwnerDraft('Bonjour, je suis intéressé(e) par votre annonce.')
     }
     openOwnerConversation()
-  }, [ownerParam])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerParam, listingParam])
 
   async function loadConversations() {
     try {
@@ -133,11 +155,20 @@ function MessagesContent() {
       if (!user) { setLoading(false); return }
       setCurrentUserId(user.id)
 
-      const { data } = await supabase
+      // listing_id peut ne pas encore exister en prod (migration) → fallback défensif
+      let { data } = await supabase
         .from('conversations')
-        .select('id, user1_id, user2_id, created_at, lease_id, conversation_type')
+        .select('id, user1_id, user2_id, created_at, lease_id, conversation_type, listing_id')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
+      if (!data) {
+        const { data: d2 } = await supabase
+          .from('conversations')
+          .select('id, user1_id, user2_id, created_at, lease_id, conversation_type')
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+        data = d2 ? d2.map(c => ({ ...c, listing_id: null })) : null
+      }
 
       if (!data || data.length === 0) { setLoading(false); return }
 
@@ -192,12 +223,13 @@ function MessagesContent() {
           initials,
           color: MATCH_COLORS[i % MATCH_COLORS.length],
           preview: lastMsg?.content ?? 'Nouvelle conversation',
-          time: lastMsg ? new Date(lastMsg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '',
+          time: formatConvTime(lastMsg?.created_at),
           msgs: [],
           avatarUrl: (otherProfile as { avatar_url?: string | null } | undefined)?.avatar_url ?? null,
           otherUserId: otherId,
           sectionLabel,
           unread: activeId === conv.id ? 0 : (unreadByConv[conv.id as string] ?? 0),
+          listingId: (conv as { listing_id?: string | null }).listing_id ?? null,
           _isBail: isBail,
         } as Conv & { _isBail: boolean }
       })
@@ -257,7 +289,7 @@ function MessagesContent() {
         const res = await fetch('/api/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ receiver_id: receiverId, content: text }),
+          body: JSON.stringify({ receiver_id: receiverId, content: text, ...(listingParam ? { listing_id: listingParam } : {}) }),
         })
         const json = await res.json()
         if (json.message?.conversation_id) {
@@ -303,7 +335,13 @@ function MessagesContent() {
         ) : (
           <>
             <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex flex-shrink-0`}>
-              <ConversationList convs={convs} activeId={activeId} onSelect={handleSelect} onlineIds={onlineIds} />
+              <ConversationList
+                convs={convs}
+                activeId={activeId}
+                onSelect={handleSelect}
+                onlineIds={onlineIds}
+                onViewProfile={(userId) => router.push(`/app/profil-public/${userId}`)}
+              />
             </div>
             <div className={`${mobileView === 'list' ? 'hidden' : 'flex'} md:flex flex-1 flex-col overflow-hidden`}>
               <ChatArea
@@ -314,7 +352,8 @@ function MessagesContent() {
                 conversationId={activeId}
                 currentUserId={currentUserId}
                 otherUserId={activeConv?.otherUserId ?? null}
-                onViewProfile={(userId) => router.push(`/app/profil?user=${userId}`)}
+                listingId={activeConv?.listingId ?? null}
+                onViewProfile={(userId) => router.push(`/app/profil-public/${userId}`)}
                 onBack={() => setMobileView('list')}
               />
             </div>
