@@ -7,8 +7,9 @@ import ConversationList from '@/components/messages/ConversationList'
 import ChatArea from '@/components/messages/ChatArea'
 import { createClient } from '@/lib/supabase/client'
 import { CertLevel } from '@/components/ui/CertificationBadge'
-import { usePresence } from '@/hooks/usePresence'
+import { usePresence, useOnlineUsers } from '@/hooks/usePresence'
 import { useLease } from '@/contexts/LeaseContext'
+import type { RichType } from '@/components/messages/ActionsPanel'
 
 interface Msg {
   from: 'me' | 'them'
@@ -30,6 +31,7 @@ interface Conv {
   avatarUrl?: string | null
   otherUserId?: string | null
   sectionLabel?: string
+  unread?: number
 }
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
@@ -44,9 +46,11 @@ function MessagesContent() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list')
   const { mode } = useLease()
 
   usePresence(currentUserId)
+  const onlineIds = useOnlineUsers(currentUserId)
   const [ownerDraft, setOwnerDraft] = useState('')
 
   useEffect(() => {
@@ -149,9 +153,16 @@ function MessagesContent() {
       const convIds = data.map(c => c.id)
       const { data: lastMsgs } = await supabase
         .from('messages')
-        .select('conversation_id, content, created_at')
+        .select('conversation_id, content, created_at, sender_id, read')
         .in('conversation_id', convIds)
         .order('created_at', { ascending: false })
+
+      const unreadByConv: Record<string, number> = {}
+      lastMsgs?.forEach(m => {
+        if (m.sender_id !== user.id && m.read === false) {
+          unreadByConv[m.conversation_id] = (unreadByConv[m.conversation_id] ?? 0) + 1
+        }
+      })
 
       const leaseIds = Array.from(new Set(data.map(c => c.lease_id).filter(Boolean))) as string[]
       let leases: { id: string; address: string }[] = []
@@ -186,6 +197,7 @@ function MessagesContent() {
           avatarUrl: (otherProfile as { avatar_url?: string | null } | undefined)?.avatar_url ?? null,
           otherUserId: otherId,
           sectionLabel,
+          unread: activeId === conv.id ? 0 : (unreadByConv[conv.id as string] ?? 0),
           _isBail: isBail,
         } as Conv & { _isBail: boolean }
       })
@@ -204,7 +216,28 @@ function MessagesContent() {
 
   function handleSelect(id: string) {
     setActiveId(id)
+    setMobileView('chat')
+    setConvs(cs => cs.map(c => c.id === id ? { ...c, unread: 0 } : c))
   }
+
+  async function handleSendRich(type: RichType, payload: Record<string, unknown>, content: string) {
+    if (!activeId || activeId.startsWith('owner_')) return
+    try {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation_id: activeId, content, type, payload }),
+      })
+    } catch {}
+    setConvs(cs => cs.map(c => c.id === activeId ? { ...c, preview: content } : c))
+  }
+
+  useEffect(() => {
+    function onRead() { loadConversations() }
+    window.addEventListener('messages-read', onRead)
+    return () => window.removeEventListener('messages-read', onRead)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSend(text: string, replyTo?: { text: string; from: 'me' | 'them' }) {
     if (!activeId) return
@@ -269,16 +302,22 @@ function MessagesContent() {
           </div>
         ) : (
           <>
-            <ConversationList convs={convs} activeId={activeId} onSelect={handleSelect} />
-            <ChatArea
-              conv={activeConv}
-              onSend={handleSend}
-              defaultMessage={activeConv?.id.startsWith('owner_') ? ownerDraft : undefined}
-              conversationId={activeId}
-              currentUserId={currentUserId}
-              otherUserId={activeConv?.otherUserId ?? null}
-              onViewProfile={(userId) => router.push(`/app/profil?user=${userId}`)}
-            />
+            <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex flex-shrink-0`}>
+              <ConversationList convs={convs} activeId={activeId} onSelect={handleSelect} onlineIds={onlineIds} />
+            </div>
+            <div className={`${mobileView === 'list' ? 'hidden' : 'flex'} md:flex flex-1 flex-col overflow-hidden`}>
+              <ChatArea
+                conv={activeConv}
+                onSend={handleSend}
+                onSendRich={handleSendRich}
+                defaultMessage={activeConv?.id.startsWith('owner_') ? ownerDraft : undefined}
+                conversationId={activeId}
+                currentUserId={currentUserId}
+                otherUserId={activeConv?.otherUserId ?? null}
+                onViewProfile={(userId) => router.push(`/app/profil?user=${userId}`)}
+                onBack={() => setMobileView('list')}
+              />
+            </div>
           </>
         )}
       </div>
