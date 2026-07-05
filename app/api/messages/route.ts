@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { conversation_id, content, receiver_id } = body
+  const { conversation_id, content, receiver_id, type, payload } = body
 
   let convId = conversation_id
 
@@ -69,6 +69,8 @@ export async function POST(req: Request) {
       sender_id: user.id,
       content,
       read: false,
+      ...(type ? { type } : {}),
+      ...(payload !== undefined ? { payload } : {}),
     })
     .select()
     .single()

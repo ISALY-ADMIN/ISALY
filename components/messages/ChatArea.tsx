@@ -2,16 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
+import { Plus, Paperclip, ArrowUp, MoreHorizontal, ChevronLeft, User, Reply, Pencil, Trash2, SmilePlus } from 'lucide-react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import { createClient } from '@/lib/supabase/client'
 import { useUserPresence, formatLastSeen } from '@/hooks/usePresence'
 import ColocRequestModal from '@/components/messages/ColocRequestModal'
+import ActionsPanel, { RichType } from '@/components/messages/ActionsPanel'
+import RichMessage from '@/components/messages/RichMessage'
 
 interface Msg {
+  id?: string
   from: 'me' | 'them'
   text: string
   time: string
   created_at?: string
+  type?: string
+  payload?: Record<string, unknown> | null
   replyTo?: { text: string; from: 'me' | 'them' }
 }
 
@@ -29,30 +35,36 @@ interface Conv {
 interface ChatAreaProps {
   conv: Conv | null
   onSend: (text: string, replyTo?: { text: string; from: 'me' | 'them' }) => void
+  onSendRich?: (type: RichType, payload: Record<string, unknown>, content: string) => void
   defaultMessage?: string
   conversationId?: string | null
   currentUserId?: string | null
   otherUserId?: string | null
   onViewProfile?: (userId: string) => void
+  onBack?: () => void
 }
 
-const REACTION_EMOJIS = ['❤️', '😂', '👍', '🔥', '😮', '😢']
+interface Reaction { emoji: string; userId: string }
 
-export default function ChatArea({ conv, onSend, defaultMessage, conversationId, currentUserId, otherUserId, onViewProfile }: ChatAreaProps) {
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥']
+const RICH_TYPES = ['visite', 'reservation', 'annonce', 'document']
+
+export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, conversationId, currentUserId, otherUserId, onViewProfile, onBack }: ChatAreaProps) {
   const [input, setInput] = useState('')
   const [realtimeMessages, setRealtimeMessages] = useState<Msg[]>([])
   const msgsRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const [reactions, setReactions] = useState<Record<number, string[]>>({})
-  const [showReactionPicker, setShowReactionPicker] = useState<number | null>(null)
+  const [reactions, setReactions] = useState<Record<string, Reaction[]>>({})
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editText, setEditText] = useState('')
   const [replyTo, setReplyTo] = useState<Msg | null>(null)
   const [showActionsFor, setShowActionsFor] = useState<number | null>(null)
   const [showColocModal, setShowColocModal] = useState(false)
-  const [showEmojis, setShowEmojis] = useState(false)
+  const [showActionsPanel, setShowActionsPanel] = useState(false)
+  const [sendPressed, setSendPressed] = useState(false)
 
-  const { isOnline, lastSeen, avgResponseTime } = useUserPresence(otherUserId ?? null)
+  const { isOnline, lastSeen } = useUserPresence(otherUserId ?? null)
 
   useEffect(() => {
     if (defaultMessage) setInput(defaultMessage)
@@ -64,8 +76,10 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
     return () => document.removeEventListener('click', handleClick)
   }, [])
 
+  // ── Chargement messages + Realtime (INSERT + UPDATE) ────────────────────
   useEffect(() => {
     setRealtimeMessages([])
+    setReactions({})
     if (!conversationId || conversationId.startsWith('owner_')) return
 
     const supabase = createClient()
@@ -73,25 +87,38 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
     async function loadMessages() {
       const { data, error } = await supabase
         .from('messages')
-        .select('id, content, sender_id, created_at')
+        .select('id, content, sender_id, created_at, type, payload')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
-
       if (error || !data) return
 
       setRealtimeMessages(data.map(m => ({
+        id: m.id,
         from: m.sender_id === currentUserId ? 'me' : 'them',
         text: m.content ?? '',
         time: new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         created_at: m.created_at,
+        type: m.type ?? 'text',
+        payload: m.payload ?? null,
       })))
 
-      await supabase
-        .from('messages')
-        .update({ read: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', currentUserId)
+      // Réactions
+      const ids = data.map(m => m.id)
+      if (ids.length) {
+        const { data: reacts } = await supabase
+          .from('message_reactions')
+          .select('message_id, user_id, emoji')
+          .in('message_id', ids)
+        if (reacts) {
+          const map: Record<string, Reaction[]> = {}
+          reacts.forEach(r => {
+            ;(map[r.message_id] ??= []).push({ emoji: r.emoji, userId: r.user_id })
+          })
+          setReactions(map)
+        }
+      }
 
+      await supabase.from('messages').update({ read: true }).eq('conversation_id', conversationId).neq('sender_id', currentUserId)
       window.dispatchEvent(new CustomEvent('messages-read'))
     }
 
@@ -99,31 +126,54 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
 
     const channel = supabase
       .channel(`messages:${conversationId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
-          const m = payload.new as { id: string; content: string; sender_id: string; created_at: string }
-          setRealtimeMessages(prev => [...prev, {
-            from: m.sender_id === currentUserId ? 'me' : 'them',
-            text: m.content ?? '',
-            time: new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-            created_at: m.created_at,
-          }])
-        }
-      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+        const m = payload.new as { id: string; content: string; sender_id: string; created_at: string; type?: string; payload?: Record<string, unknown> | null }
+        setRealtimeMessages(prev => prev.some(x => x.id === m.id) ? prev : [...prev, {
+          id: m.id,
+          from: m.sender_id === currentUserId ? 'me' : 'them',
+          text: m.content ?? '',
+          time: new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          created_at: m.created_at,
+          type: m.type ?? 'text',
+          payload: m.payload ?? null,
+        }])
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+        const m = payload.new as { id: string; content: string; type?: string; payload?: Record<string, unknown> | null }
+        setRealtimeMessages(prev => prev.map(x => x.id === m.id ? { ...x, text: m.content ?? x.text, type: m.type ?? x.type, payload: m.payload ?? x.payload } : x))
+      })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Réactions realtime (non filtrable par conversation → on filtre côté client)
+    const reactChannel = supabase
+      .channel(`reactions:${conversationId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'message_reactions' }, (payload) => {
+        const r = payload.new as { message_id: string; user_id: string; emoji: string }
+        setReactions(prev => {
+          const list = prev[r.message_id]
+          if (list === undefined) return prev // pas un message de cette conv
+          if (list.some(x => x.userId === r.user_id && x.emoji === r.emoji)) return prev
+          return { ...prev, [r.message_id]: [...list, { emoji: r.emoji, userId: r.user_id }] }
+        })
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'message_reactions' }, (payload) => {
+        const r = payload.old as { message_id: string; user_id: string; emoji: string }
+        setReactions(prev => {
+          const list = prev[r.message_id]
+          if (!list) return prev
+          return { ...prev, [r.message_id]: list.filter(x => !(x.userId === r.user_id && x.emoji === r.emoji)) }
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel); supabase.removeChannel(reactChannel) }
   }, [conversationId, currentUserId])
 
   const isVirtual = conv?.id.startsWith('owner_') ?? false
   const displayMsgs = isVirtual ? (conv?.msgs ?? []) : realtimeMessages
 
   useEffect(() => {
-    if (msgsRef.current) {
-      msgsRef.current.scrollTop = msgsRef.current.scrollHeight
-    }
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight
   }, [displayMsgs])
 
   function send() {
@@ -133,126 +183,103 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
     setReplyTo(null)
   }
 
+  // ── Réactions ───────────────────────────────────────────────────────────
+  async function toggleReaction(messageId: string | undefined, emoji: string) {
+    setShowReactionPicker(null)
+    if (!messageId || !currentUserId) return
+    const supabase = createClient()
+    const mine = reactions[messageId]?.some(r => r.userId === currentUserId && r.emoji === emoji)
+    if (mine) {
+      setReactions(prev => ({ ...prev, [messageId]: (prev[messageId] ?? []).filter(r => !(r.userId === currentUserId && r.emoji === emoji)) }))
+      await supabase.from('message_reactions').delete().eq('message_id', messageId).eq('user_id', currentUserId).eq('emoji', emoji)
+    } else {
+      setReactions(prev => ({ ...prev, [messageId]: [...(prev[messageId] ?? []), { emoji, userId: currentUserId }] }))
+      await supabase.from('message_reactions').insert({ message_id: messageId, user_id: currentUserId, emoji })
+    }
+  }
+
+  // ── Réponse à visite/réservation (accept/refuse) ─────────────────────────
+  async function respondRich(messageId: string | undefined, current: Record<string, unknown> | null | undefined, status: 'accepted' | 'refused') {
+    if (!messageId) return
+    const supabase = createClient()
+    const newPayload = { ...(current ?? {}), status }
+    setRealtimeMessages(prev => prev.map(m => m.id === messageId ? { ...m, payload: newPayload } : m))
+    await supabase.from('messages').update({ payload: newPayload }).eq('id', messageId)
+  }
+
   const firstName = conv?.name.split(' ')[0] ?? ''
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden" style={{ background: 'transparent' }}>
+    <div className="flex flex-col flex-1 overflow-hidden relative" style={{ background: 'transparent' }}>
 
-      {/* Header */}
-      <div
-        className="flex items-center gap-3 px-5 py-3 flex-shrink-0"
-        style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}
-      >
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 px-4 md:px-5 py-3 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
         {conv ? (
           <>
+            {onBack && (
+              <button onClick={onBack} className="md:hidden flex items-center justify-center rounded-full flex-shrink-0" style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.06)' }}>
+                <ChevronLeft size={20} color="#fff" />
+              </button>
+            )}
             <div className="relative flex-shrink-0">
               {conv.avatarUrl ? (
                 <Image src={conv.avatarUrl} alt={conv.initials} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
               ) : (
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[13px] text-white"
-                  style={{ background: conv.color }}
-                >
-                  {conv.initials}
-                </div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[13px] text-white" style={{ background: conv.color }}>{conv.initials}</div>
               )}
-              <span
-                className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
-                style={{ background: isOnline ? '#4ECBA0' : '#9CA3AF', borderColor: '#FFFFFF' }}
-              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2" style={{ background: isOnline ? '#10B981' : '#6B7280', borderColor: '#0A0A0A' }} />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[14px]" style={{ color: '#fff' }}>{conv.name}</span>
+                <span className="font-bold text-[14.5px] truncate" style={{ color: '#fff' }}>{conv.name}</span>
                 {conv.certLevel ? <CertificationBadge level={conv.certLevel} size="sm" /> : null}
               </div>
-              <div className="text-[11.5px] font-semibold" style={{ color: isOnline ? '#4ECBA0' : '#9CA3AF' }}>
-                {formatLastSeen(lastSeen)}
+              <div className="text-[11.5px] font-semibold" style={{ color: isOnline ? '#10B981' : 'rgba(255,255,255,0.4)' }}>
+                {isOnline ? 'En ligne' : formatLastSeen(lastSeen)}
               </div>
-              {avgResponseTime !== null && (
-                <div style={{ fontSize: '10.5px', color: '#9CA3AF', marginTop: '1px' }}>
-                  ⚡ Répond en ~{avgResponseTime < 60 ? `${avgResponseTime} min` : `${Math.round(avgResponseTime / 60)}h`} en moyenne
-                </div>
-              )}
             </div>
             <div className="ml-auto flex gap-2 items-center">
-              {conv && !conv.id.startsWith('owner_') && (
+              {!conv.id.startsWith('owner_') && (
                 <button
                   onClick={() => setShowColocModal(true)}
-                  style={{
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 2px 8px rgba(16,185,129,0.3)',
-                  }}
+                  className="hidden sm:flex items-center gap-1.5 transition-transform active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: 10, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' }}
                 >
-                  🏠 Demander une coloc
+                  🏠 Coloc
                 </button>
               )}
-              <IconAction title="Voir le profil" onClick={() => { if (conv.otherUserId) onViewProfile?.(conv.otherUserId) }}>👤</IconAction>
-              <IconAction title="Appel vidéo">📹</IconAction>
-              <IconAction title="Plus d'options">⋯</IconAction>
+              <HeaderBtn title="Voir le profil" onClick={() => { if (conv.otherUserId) onViewProfile?.(conv.otherUserId) }}><User size={17} /></HeaderBtn>
+              <HeaderBtn title="Plus d'options"><MoreHorizontal size={17} /></HeaderBtn>
             </div>
           </>
         ) : (
           <>
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[13px] flex-shrink-0"
-              style={{ background: '#F3F4F6', color: '#9CA3AF' }}
-            >
-              💬
-            </div>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>💬</div>
             <div>
               <div className="font-bold text-[14px]" style={{ color: '#fff' }}>Tes messages</div>
-              <div className="text-[11.5px]" style={{ color: '#9CA3AF' }}>Sélectionne une conversation</div>
+              <div className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Sélectionne une conversation</div>
             </div>
           </>
         )}
       </div>
 
-      {/* Messages */}
-      <div ref={msgsRef} className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1">
-        {!conv && (
-          <div className="flex flex-col items-center justify-center flex-1 text-center py-20">
-            <div className="text-[60px] mb-5" style={{ animation: 'bop 1.8s ease infinite' }}>💬</div>
-            <h3
-              className="text-[20px] mb-2"
-              style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}
-            >
-              Tes conversations ici
-            </h3>
-            <p className="text-[13.5px] mb-6" style={{ color: '#9CA3AF', maxWidth: '260px', lineHeight: 1.6 }}>
-              Sélectionne une conversation à gauche ou commence à swiper pour trouver ton coloc !
-            </p>
-            <a
-              href="/app/swipe"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-bold text-white no-underline transition-all"
-              style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.35)' }}
-            >
-              🔥 Aller swiper
-            </a>
-          </div>
-        )}
+      {/* ── Messages ── */}
+      <div ref={msgsRef} className="flex-1 overflow-y-auto px-4 md:px-5 py-4 flex flex-col gap-1">
+        {!conv && <EmptyChat />}
 
         {displayMsgs.map((m, i) => {
-          const isMe    = m.from === 'me'
-          const prev    = displayMsgs[i - 1]
-          const next    = displayMsgs[i + 1]
+          const isMe = m.from === 'me'
+          const prev = displayMsgs[i - 1]
+          const next = displayMsgs[i + 1]
           const isFirst = !prev || prev.from !== m.from
-          const isLast  = !next || next.from !== m.from
+          const isLast = !next || next.from !== m.from
           const showAvatar = !isMe && isLast
+          const isRich = !!m.type && RICH_TYPES.includes(m.type)
+          const msgReactions = m.id ? reactions[m.id] ?? [] : []
 
           return (
             <div
-              key={i}
+              key={m.id ?? i}
               className={`flex items-end gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
               style={{ marginBottom: isLast ? '8px' : '2px' }}
               onContextMenu={(e) => { e.preventDefault(); setShowActionsFor(i); setShowReactionPicker(null) }}
@@ -263,214 +290,118 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
                   conv.avatarUrl ? (
                     <Image src={conv.avatarUrl} alt={conv.initials} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] text-white"
-                      style={{ background: conv.color }}
-                    >
-                      {conv.initials}
-                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[11px] text-white" style={{ background: conv.color }}>{conv.initials}</div>
                   )
                 )}
               </div>
 
-              <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`} style={{ maxWidth: '66%' }}>
+              <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`} style={{ maxWidth: '78%' }}>
                 <div className="relative">
 
-                  {/* Context menu (right-click) */}
+                  {/* Context menu (clic droit) */}
                   <div
-                    style={{
-                      position: 'absolute',
-                      right: isMe ? '0' : undefined,
-                      left: isMe ? undefined : '0',
-                      top: '-8px',
-                      background: '#fff',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                      padding: '4px',
-                      zIndex: 20,
-                      minWidth: '160px',
-                      display: showActionsFor === i ? 'block' : 'none',
-                    }}
+                    style={{ position: 'absolute', right: isMe ? 0 : undefined, left: isMe ? undefined : 0, top: -8, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', padding: 4, zIndex: 20, minWidth: 170, display: showActionsFor === i ? 'block' : 'none' }}
                     onClick={e => e.stopPropagation()}
                   >
-                    <button
-                      onClick={() => { setReplyTo(m); setShowActionsFor(null) }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#374151', borderRadius: '8px' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                    >
-                      ↩️ Répondre
-                    </button>
-                    {isMe && (() => {
+                    <CtxBtn onClick={() => { setReplyTo(m); setShowActionsFor(null) }} icon={<Reply size={15} />}>Répondre</CtxBtn>
+                    {isMe && !isRich && (() => {
                       const msgTime = m.created_at ? new Date(m.created_at).getTime() : 0
-                      const canEdit = Date.now() - msgTime < 30 * 60 * 1000
-                      return canEdit ? (
-                        <button
-                          onClick={() => { setEditingIndex(i); setEditText(m.text); setShowActionsFor(null) }}
-                          style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#374151', borderRadius: '8px' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                        >
-                          ✏️ Modifier
-                        </button>
+                      return Date.now() - msgTime < 30 * 60 * 1000 ? (
+                        <CtxBtn onClick={() => { setEditingIndex(i); setEditText(m.text); setShowActionsFor(null) }} icon={<Pencil size={15} />}>Modifier</CtxBtn>
                       ) : null
                     })()}
-                    <button
-                      onClick={() => { setRealtimeMessages(prev => prev.filter((_, idx) => idx !== i)); setShowActionsFor(null) }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#EF4444', borderRadius: '8px' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#FEF2F2')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                    >
-                      🗑 Supprimer pour moi
-                    </button>
+                    <CtxBtn onClick={() => { setRealtimeMessages(p => p.filter((_, idx) => idx !== i)); setShowActionsFor(null) }} icon={<Trash2 size={15} />} danger>Supprimer pour moi</CtxBtn>
                   </div>
 
-                  {/* Reaction picker trigger (hover) */}
-                  <div
-                    className="absolute opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{
-                      left:  isMe ? '-32px' : undefined,
-                      right: isMe ? undefined : '-32px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                    }}
-                  >
+                  {/* Déclencheur de réactions (hover) */}
+                  <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: isMe ? -34 : undefined, right: isMe ? undefined : -34, top: '50%', transform: 'translateY(-50%)' }}>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setShowReactionPicker(showReactionPicker === i ? null : i); setShowActionsFor(null) }}
-                      style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '50%', width: '26px', height: '26px', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      onClick={(e) => { e.stopPropagation(); setShowReactionPicker(showReactionPicker === m.id ? null : (m.id ?? null)); setShowActionsFor(null) }}
+                      className="flex items-center justify-center rounded-full transition-transform hover:scale-110"
+                      style={{ width: 28, height: 28, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer' }}
                     >
-                      😊
+                      <SmilePlus size={15} color="rgba(255,255,255,0.7)" />
                     </button>
-                    {showReactionPicker === i && (
+                    {showReactionPicker === m.id && m.id && (
                       <div
-                        style={{
-                          position: 'absolute',
-                          bottom: '30px',
-                          left: isMe ? '0' : undefined,
-                          right: isMe ? undefined : '0',
-                          background: '#fff',
-                          borderRadius: '20px',
-                          padding: '6px 8px',
-                          display: 'flex',
-                          gap: '4px',
-                          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                          zIndex: 10,
-                        }}
+                        style={{ position: 'absolute', bottom: 34, left: isMe ? 0 : undefined, right: isMe ? undefined : 0, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, padding: '6px 8px', display: 'flex', gap: 2, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 30 }}
                         onClick={e => e.stopPropagation()}
                       >
                         {REACTION_EMOJIS.map(emoji => (
-                          <button
-                            key={emoji}
-                            onClick={() => {
-                              setReactions(prev => ({
-                                ...prev,
-                                [i]: [...(prev[i] ?? []).filter(r => r !== emoji), emoji],
-                              }))
-                              setShowReactionPicker(null)
-                            }}
-                            style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '2px', borderRadius: '6px', transition: 'transform 0.1s' }}
-                            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.3)')}
-                            onMouseLeave={e => (e.currentTarget.style.transform = '')}
-                          >
-                            {emoji}
-                          </button>
+                          <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} className="transition-transform hover:scale-125" style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '2px 4px' }}>{emoji}</button>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Bubble (edit mode or normal) */}
+                  {/* Bulle : édition / rich / texte */}
                   {editingIndex === i ? (
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       <input
                         value={editText}
                         onChange={e => setEditText(e.target.value)}
                         onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            setRealtimeMessages(prev => prev.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg))
-                            setEditingIndex(null)
-                          }
+                          if (e.key === 'Enter') { setRealtimeMessages(p => p.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg)); setEditingIndex(null) }
                           if (e.key === 'Escape') setEditingIndex(null)
                         }}
                         autoFocus
-                        style={{ padding: '8px 12px', borderRadius: '12px', border: '1.5px solid #4ECBA0', fontSize: '13.5px', outline: 'none', minWidth: '160px' }}
+                        style={{ padding: '8px 12px', borderRadius: 12, border: '1.5px solid #10B981', fontSize: 13.5, outline: 'none', minWidth: 160, background: '#1c1c1c', color: '#fff' }}
                       />
-                      <button
-                        onClick={() => { setRealtimeMessages(prev => prev.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg)); setEditingIndex(null) }}
-                        style={{ background: '#4ECBA0', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px' }}
-                      >
-                        ✓
-                      </button>
+                      <button onClick={() => { setRealtimeMessages(p => p.map((msg, idx) => idx === i ? { ...msg, text: editText } : msg)); setEditingIndex(null) }} style={{ background: '#10B981', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}>✓</button>
                     </div>
+                  ) : isRich ? (
+                    <RichMessage
+                      type={m.type!}
+                      payload={m.payload ?? null}
+                      isMe={isMe}
+                      onRespond={(status) => respondRich(m.id, m.payload, status)}
+                      onCounter={() => setShowActionsPanel(true)}
+                    />
                   ) : (
                     <div
                       className="px-3.5 py-2.5 text-[13.5px] leading-relaxed"
                       style={{
-                        borderRadius: '18px',
-                        borderTopLeftRadius:     !isMe && !isFirst ? '6px' : '18px',
-                        borderTopRightRadius:    isMe  && !isFirst ? '6px' : '18px',
-                        borderBottomLeftRadius:  !isMe && !isLast  ? '6px' : isLast && !isMe ? '4px' : '18px',
-                        borderBottomRightRadius: isMe  && !isLast  ? '6px' : isLast && isMe  ? '4px' : '18px',
-                        background: isMe ? 'linear-gradient(135deg, #4ECBA0, #2AA87C)' : 'rgba(255,255,255,0.08)',
-                        color: isMe ? '#FFFFFF' : '#ffffff',
-                        boxShadow: isMe ? '0 2px 12px rgba(78,203,160,.3)' : 'none',
+                        borderRadius: 18,
+                        borderTopLeftRadius: !isMe && !isFirst ? 6 : 18,
+                        borderTopRightRadius: isMe && !isFirst ? 6 : 18,
+                        borderBottomLeftRadius: !isMe && !isLast ? 6 : 18,
+                        borderBottomRightRadius: isMe && !isLast ? 6 : 18,
+                        background: isMe ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.07)',
+                        color: '#fff',
+                        boxShadow: isMe ? '0 2px 12px rgba(16,185,129,.28)' : 'none',
+                        border: isMe ? 'none' : '1px solid rgba(255,255,255,0.06)',
                       }}
                     >
                       {m.replyTo && (
-                        <div style={{
-                          background: isMe ? 'rgba(255,255,255,0.2)' : '#F0F4F0',
-                          borderLeft: `3px solid ${isMe ? 'rgba(255,255,255,0.6)' : '#4ECBA0'}`,
-                          borderRadius: '6px',
-                          padding: '4px 8px',
-                          marginBottom: '6px',
-                          fontSize: '12px',
-                          opacity: 0.9,
-                        }}>
-                          <div style={{ fontWeight: 600, marginBottom: '2px', fontSize: '11px' }}>
-                            {m.replyTo.from === 'me' ? 'Toi' : conv?.name.split(' ')[0]}
-                          </div>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                            {m.replyTo.text}
-                          </div>
+                        <div style={{ background: isMe ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)', borderLeft: `3px solid ${isMe ? 'rgba(255,255,255,0.6)' : '#10B981'}`, borderRadius: 6, padding: '4px 8px', marginBottom: 6, fontSize: 12, opacity: 0.9 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 11 }}>{m.replyTo.from === 'me' ? 'Toi' : firstName}</div>
+                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{m.replyTo.text}</div>
                         </div>
                       )}
                       {m.text}
                     </div>
                   )}
-
-                  {isLast && editingIndex !== i && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        ...(isMe
-                          ? { right: '-6px', borderWidth: '6px 0 0 8px', borderColor: 'transparent transparent transparent #2AA87C' }
-                          : { left: '-6px', borderWidth: '6px 8px 0 0', borderColor: 'transparent #FFFFFF transparent transparent' }),
-                        width: 0,
-                        height: 0,
-                        borderStyle: 'solid',
-                      }}
-                    />
-                  )}
                 </div>
 
-                {/* Reactions display */}
-                {reactions[i] && reactions[i].length > 0 && (
-                  <div style={{ display: 'flex', gap: '2px', marginTop: '2px', flexWrap: 'wrap' }}>
-                    {Object.entries(
-                      reactions[i].reduce((acc, r) => ({ ...acc, [r]: (acc[r] || 0) + 1 }), {} as Record<string, number>)
-                    ).map(([emoji, count]) => (
-                      <span key={emoji} style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1px 6px', fontSize: '12px', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                        {emoji}{count > 1 ? ` ${count}` : ''}
-                      </span>
-                    ))}
+                {/* Réactions affichées sous la bulle */}
+                {msgReactions.length > 0 && (
+                  <div style={{ display: 'flex', gap: 3, marginTop: -6, marginBottom: 2, flexWrap: 'wrap', zIndex: 5 }}>
+                    {Object.entries(msgReactions.reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji] ?? 0) + 1; return acc }, {} as Record<string, number>)).map(([emoji, count]) => {
+                      const mine = msgReactions.some(r => r.emoji === emoji && r.userId === currentUserId)
+                      return (
+                        <button
+                          key={emoji}
+                          onClick={() => toggleReaction(m.id, emoji)}
+                          style={{ background: mine ? 'rgba(16,185,129,0.2)' : '#1c1c1c', border: `1px solid ${mine ? '#10B981' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '1px 7px', fontSize: 12, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 3 }}
+                        >
+                          {emoji}{count > 1 ? <span style={{ fontSize: 10.5, fontWeight: 700 }}>{count}</span> : ''}
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
 
-                <div
-                  className="text-[10.5px] mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  style={{ color: '#9CA3AF', textAlign: isMe ? 'right' : 'left' }}
-                >
+                <div className="text-[10.5px] mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ color: 'rgba(255,255,255,0.35)', textAlign: isMe ? 'right' : 'left' }}>
                   {m.time}
                 </div>
               </div>
@@ -479,48 +410,34 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
         })}
       </div>
 
-      {/* Reply preview */}
+      {/* Aperçu réponse */}
       {replyTo && (
-        <div style={{ background: 'rgba(16,185,129,0.1)', borderLeft: '3px solid #10B981', padding: '8px 12px', margin: '0 16px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: 'rgba(16,185,129,0.1)', borderLeft: '3px solid #10B981', padding: '8px 12px', margin: '0 16px 8px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, marginBottom: '2px' }}>
-              Réponse à {replyTo.from === 'me' ? 'toi-même' : conv?.name.split(' ')[0]}
-            </div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
-              {replyTo.text}
-            </div>
+            <div style={{ fontSize: 11, color: '#10B981', fontWeight: 600, marginBottom: 2 }}>Réponse à {replyTo.from === 'me' ? 'toi-même' : firstName}</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>{replyTo.text}</div>
           </div>
-          <button
-            onClick={() => setReplyTo(null)}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '16px', padding: '0 4px' }}
-          >
-            ✕
-          </button>
+          <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>✕</button>
         </div>
       )}
 
-      {/* Input */}
-      <div
-        className="px-4 py-3 flex gap-2.5 items-center flex-shrink-0"
-        style={{ background: 'rgba(255,255,255,0.03)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}
-      >
-        <>
-          <button onClick={() => fileRef.current?.click()} className="w-9 h-9 rounded-full border-none cursor-pointer text-lg flex items-center justify-center flex-shrink-0" style={{ background: '#F3F4F6', color: '#6B7280' }} title="Pièce jointe">📎</button>
-          <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
-            onChange={async (e) => {
-              const file = e.target.files?.[0]
-              if (!file || !conv) return
-              const { createClient } = await import('@/lib/supabase/client')
-              const supabase = createClient()
-              const path = `messages/${Date.now()}-${file.name.replace(/\s/g, '_')}`
-              const { error } = await supabase.storage.from('documents').upload(path, file)
-              if (!error) {
-                const { data } = supabase.storage.from('documents').getPublicUrl(path)
-                onSend(`📎 [${file.name}](${data.publicUrl})`)
-              }
-            }}
-          />
-        </>
+      {/* ── Barre de saisie ── */}
+      <div className="px-3 md:px-4 py-3 flex gap-2 items-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.03)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
+        <InputBtn title="Actions" onClick={() => conv && setShowActionsPanel(true)} disabled={!conv || isVirtual}><Plus size={20} /></InputBtn>
+        <InputBtn title="Pièce jointe" onClick={() => fileRef.current?.click()} disabled={!conv}><Paperclip size={19} /></InputBtn>
+        <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
+          onChange={async (e) => {
+            const file = e.target.files?.[0]
+            if (!file || !conv) return
+            const supabase = createClient()
+            const path = `messages/${Date.now()}-${file.name.replace(/\s/g, '_')}`
+            const { error } = await supabase.storage.from('documents').upload(path, file)
+            if (!error) {
+              const { data } = supabase.storage.from('documents').getPublicUrl(path)
+              onSend(`📎 [${file.name}](${data.publicUrl})`)
+            }
+          }}
+        />
 
         <input
           value={input}
@@ -528,67 +445,95 @@ export default function ChatArea({ conv, onSend, defaultMessage, conversationId,
           onKeyDown={e => e.key === 'Enter' && send()}
           placeholder={conv ? `Message à ${firstName}…` : 'Sélectionne une conversation…'}
           disabled={!conv}
-          className="flex-1 px-4 py-2.5 rounded-full text-[13.5px] border-[1.5px] outline-none transition-colors"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            borderColor: 'rgba(255,255,255,0.1)',
-            color: '#ffffff',
-          }}
+          className="flex-1 px-4 py-3 rounded-full text-[14px] border outline-none transition-colors"
+          style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
           onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
           onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
         />
 
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowEmojis(!showEmojis)} className="w-9 h-9 rounded-full border-none cursor-pointer text-base flex items-center justify-center flex-shrink-0" style={{ background: '#F3F4F6', color: '#6B7280' }}>😊</button>
-          {showEmojis && (
-            <div style={{ position: 'absolute', bottom: '44px', right: 0, background: '#fff', borderRadius: '12px', padding: '10px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', zIndex: 20, width: '200px' }}>
-              {['😊','😂','❤️','👍','🔥','😍','🙏','😅','👏','🥰','😎','🤔','😢','😮','🎉','✨','💪','🏠','🤝','✅'].map(em => (
-                <button key={em} onClick={() => { setInput(prev => prev + em); setShowEmojis(false) }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', padding: '4px', borderRadius: '6px' }} onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>{em}</button>
-              ))}
-            </div>
-          )}
-        </div>
-
         <button
           onClick={send}
+          onMouseDown={() => setSendPressed(true)}
+          onMouseUp={() => setSendPressed(false)}
+          onMouseLeave={() => setSendPressed(false)}
           disabled={!input.trim() || !conv}
-          className="w-10 h-10 rounded-full border-none cursor-pointer text-white text-base flex-shrink-0 flex items-center justify-center transition-all"
+          title="Envoyer"
+          className="rounded-full border-none flex-shrink-0 flex items-center justify-center transition-all duration-150"
           style={{
-            background: input.trim() && conv
-              ? 'linear-gradient(135deg, #4ECBA0, #2AA87C)'
-              : '#E5E7EB',
-            boxShadow: input.trim() && conv ? '0 4px 16px rgba(78,203,160,.35)' : 'none',
-            color: input.trim() && conv ? '#FFFFFF' : '#9CA3AF',
+            width: 44, height: 44,
+            background: input.trim() && conv ? 'linear-gradient(135deg, #10B981, #059669)' : 'rgba(255,255,255,0.08)',
+            boxShadow: input.trim() && conv ? '0 4px 18px rgba(16,185,129,.45)' : 'none',
+            color: input.trim() && conv ? '#fff' : 'rgba(255,255,255,0.3)',
+            cursor: input.trim() && conv ? 'pointer' : 'not-allowed',
+            transform: sendPressed && input.trim() ? 'scale(0.95)' : 'scale(1)',
           }}
         >
-          ➤
+          <ArrowUp size={20} strokeWidth={2.5} />
         </button>
       </div>
 
       {showColocModal && conv && otherUserId && currentUserId && (
-        <ColocRequestModal
-          onClose={() => setShowColocModal(false)}
-          otherUserId={otherUserId}
-          otherName={conv.name.split(' ')[0]}
+        <ColocRequestModal onClose={() => setShowColocModal(false)} otherUserId={otherUserId} otherName={firstName} currentUserId={currentUserId} conversationId={conv.id} />
+      )}
+
+      {showActionsPanel && conv && otherUserId && currentUserId && onSendRich && (
+        <ActionsPanel
           currentUserId={currentUserId}
-          conversationId={conv.id}
+          otherUserId={otherUserId}
+          otherName={firstName}
+          onClose={() => setShowActionsPanel(false)}
+          onSendRich={onSendRich}
         />
       )}
     </div>
   )
 }
 
-function IconAction({ children, title, onClick }: { children: React.ReactNode; title?: string; onClick?: () => void }) {
+// ── Sous-composants boutons épurés ──────────────────────────────────────────
+function HeaderBtn({ children, title, onClick }: { children: React.ReactNode; title?: string; onClick?: () => void }) {
   return (
-    <button
-      title={title}
-      onClick={onClick}
-      className="w-9 h-9 rounded-[10px] border-none cursor-pointer text-sm flex items-center justify-center transition-colors"
-      style={{ background: '#F3F4F6' }}
-      onMouseEnter={e => (e.currentTarget.style.background = '#E5E7EB')}
-      onMouseLeave={e => (e.currentTarget.style.background = '#F3F4F6')}
-    >
+    <button title={title} onClick={onClick} className="flex items-center justify-center rounded-[11px] border-none cursor-pointer transition-colors" style={{ width: 38, height: 38, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)' }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}>
       {children}
     </button>
+  )
+}
+
+function InputBtn({ children, title, onClick, disabled }: { children: React.ReactNode; title?: string; onClick?: () => void; disabled?: boolean }) {
+  return (
+    <button title={title} onClick={onClick} disabled={disabled}
+      className="flex items-center justify-center rounded-full border-none transition-colors flex-shrink-0"
+      style={{ width: 44, height: 44, background: 'transparent', color: disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)', cursor: disabled ? 'not-allowed' : 'pointer' }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+      {children}
+    </button>
+  )
+}
+
+function CtxBtn({ children, onClick, icon, danger }: { children: React.ReactNode; onClick: () => void; icon: React.ReactNode; danger?: boolean }) {
+  return (
+    <button onClick={onClick}
+      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: danger ? '#EF4444' : 'rgba(255,255,255,0.85)', borderRadius: 8 }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+      {icon}{children}
+    </button>
+  )
+}
+
+function EmptyChat() {
+  return (
+    <div className="flex flex-col items-center justify-center flex-1 text-center py-20">
+      <div className="text-[60px] mb-5" style={{ animation: 'bop 1.8s ease infinite' }}>💬</div>
+      <h3 className="text-[20px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Tes conversations ici</h3>
+      <p className="text-[13.5px] mb-6" style={{ color: 'rgba(255,255,255,0.4)', maxWidth: 260, lineHeight: 1.6 }}>
+        Sélectionne une conversation à gauche ou commence à swiper pour trouver ton coloc !
+      </p>
+      <a href="/app/swipe" className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-bold text-white no-underline transition-all" style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 4px 16px rgba(16,185,129,.35)' }}>
+        🔥 Aller swiper
+      </a>
+    </div>
   )
 }
