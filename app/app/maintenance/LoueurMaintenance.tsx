@@ -38,6 +38,14 @@ const STATUS_FILTERS = [
   { id: 'resolved', label: 'Résolus' },
 ]
 
+const URGENCY_BADGE: Record<string, { label: string; bg: string; color: string }> = {
+  low: { label: 'Basse', bg: '#F3F4F6', color: '#6B7280' },
+  normal: { label: 'Moyenne', bg: '#FFFBEB', color: '#D97706' },
+  urgent: { label: '🔴 Urgent', bg: '#FEF2F2', color: '#DC2626' },
+}
+
+const URGENCY_RANK: Record<string, number> = { urgent: 0, normal: 1, low: 2 }
+
 const STATUS_BADGE: Record<string, { label: string; bg: string; color: string }> = {
   sent: { label: '🔴 Ouvert', bg: '#FEF2F2', color: '#DC2626' },
   received: { label: '🟡 Reçu', bg: '#FFFBEB', color: '#D97706' },
@@ -91,7 +99,15 @@ export default function LoueurMaintenance() {
       .eq('lease_id', selectedLeaseId)
       .order('created_at', { ascending: false })
 
-    const rows = (data ?? []) as MaintenanceRequest[]
+    const rows = ((data ?? []) as MaintenanceRequest[]).sort((a, b) => {
+      const ar = a.status === 'resolved' ? 1 : 0
+      const br = b.status === 'resolved' ? 1 : 0
+      if (ar !== br) return ar - br
+      const au = URGENCY_RANK[a.urgency ?? 'normal'] ?? 1
+      const bu = URGENCY_RANK[b.urgency ?? 'normal'] ?? 1
+      if (au !== bu) return au - bu
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
     setRequests(rows)
 
     const tenantIds = Array.from(new Set(rows.map(r => r.tenant_id).filter(Boolean))) as string[]
@@ -228,9 +244,12 @@ export default function LoueurMaintenance() {
                 <div key={req.id} className="rounded-[14px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-[18px]">{cat.icon}</span>
                         <span className="text-[14px] font-bold" style={{ color: '#111827' }}>{req.title}</span>
+                        {(() => { const u = URGENCY_BADGE[req.urgency ?? 'normal']; return u ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: u.bg, color: u.color }}>{u.label}</span>
+                        ) : null })()}
                       </div>
                       <p className="text-[12.5px]" style={{ color: '#6B7280' }}>{req.description}</p>
                       <p className="text-[11.5px] mt-1" style={{ color: '#9CA3AF' }}>

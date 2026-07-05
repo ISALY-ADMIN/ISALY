@@ -11,11 +11,13 @@ export async function POST(req: Request) {
     category?: string
     title?: string
     description?: string
+    urgency?: 'low' | 'normal' | 'urgent'
     photos?: string[]
   }
   if (!body.category || !body.title || !body.description) {
     return NextResponse.json({ error: 'Champs manquants' }, { status: 400 })
   }
+  const urgency = ['low', 'normal', 'urgent'].includes(body.urgency ?? '') ? body.urgency! : 'normal'
 
   const { data: lease } = await supabase
     .from('leases')
@@ -37,6 +39,7 @@ export async function POST(req: Request) {
       category: body.category,
       title: body.title,
       description: body.description,
+      urgency,
       status: 'sent',
       photo_url: photos[0] ?? null,
       photos,
@@ -45,6 +48,17 @@ export async function POST(req: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notification in-app au loueur
+  const urgencyLabel = urgency === 'urgent' ? '🔴 Urgent' : urgency === 'low' ? 'Basse' : 'Moyenne'
+  await supabase.from('notifications').insert({
+    user_id: lease.owner_id,
+    type: 'maintenance',
+    title: 'Nouveau signalement',
+    body: `${body.title} · ${urgencyLabel}`,
+    link: '/app/maintenance',
+    read: false,
+  })
 
   const { data: owner } = await supabase
     .from('profiles')

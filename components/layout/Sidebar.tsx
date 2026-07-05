@@ -81,6 +81,7 @@ export default function Sidebar() {
 
   const [collapsed, setCollapsed]   = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [maintenanceCount, setMaintenanceCount] = useState(0)
   const [currentMode, setCurrentMode] = useState<'locataire' | 'loueur'>('locataire')
   const [userData, setUserData]     = useState<UserData>({
     firstName: '', lastName: '', role: '', avatarUrl: null, isAdmin: false,
@@ -127,6 +128,21 @@ export default function Sidebar() {
         .eq('read', false)
         .neq('sender_id', user.id)
       setUnreadCount(count ?? 0)
+
+      // Signalements de maintenance non traités (loueur)
+      const { data: ownedLeases } = await supabase
+        .from('leases')
+        .select('id')
+        .eq('owner_id', user.id)
+      const ownedLeaseIds = (ownedLeases ?? []).map(l => l.id)
+      if (ownedLeaseIds.length > 0) {
+        const { count: mCount } = await supabase
+          .from('maintenance_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('lease_id', ownedLeaseIds)
+          .neq('status', 'resolved')
+        setMaintenanceCount(mCount ?? 0)
+      }
 
       // Real-time badge update
       channel = supabase
@@ -248,7 +264,7 @@ export default function Sidebar() {
           <>
             {!collapsed && <NavSection label="Gestion" />}
             {loueurGestionItems.map(item => (
-              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
+              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={item.id === 'maintenance' ? maintenanceCount : 0} />
             ))}
 
             {!collapsed && <NavSection label="Communication" />}

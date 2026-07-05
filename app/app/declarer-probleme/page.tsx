@@ -13,6 +13,7 @@ interface MaintenanceRequest {
   title: string
   category: string
   description: string
+  urgency?: 'low' | 'normal' | 'urgent'
   status: 'sent' | 'received' | 'in_progress' | 'resolved'
   created_at: string
   resolved_at: string | null
@@ -30,6 +31,12 @@ const CATEGORIES = [
   { id: 'nuisibles',   icon: '🐛', label: 'Nuisibles' },
   { id: 'autre',       icon: '📦', label: 'Autre' },
 ]
+
+const URGENCIES = [
+  { id: 'low',    label: 'Basse',   hint: 'Peut attendre',     bg: '#F3F4F6', color: '#6B7280', dot: '#9CA3AF' },
+  { id: 'normal', label: 'Moyenne', hint: 'À traiter bientôt', bg: '#FFFBEB', color: '#D97706', dot: '#F59E0B' },
+  { id: 'urgent', label: 'Urgente', hint: 'Intervention rapide', bg: '#FEF2F2', color: '#DC2626', dot: '#EF4444' },
+] as const
 
 const STATUS_STEPS = ['sent', 'received', 'in_progress', 'resolved'] as const
 const STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
@@ -55,7 +62,7 @@ export default function DeclarerProblemePage() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
-  const [form, setForm] = useState({ title: '', category: '', description: '' })
+  const [form, setForm] = useState({ title: '', category: '', description: '', urgency: 'normal' })
 
   useEffect(() => {
     if (!leaseLoading && !lease) router.replace('/app/swipe')
@@ -111,6 +118,7 @@ export default function DeclarerProblemePage() {
           category: form.category,
           title: form.title,
           description: form.description,
+          urgency: form.urgency,
           photos: photoUrls,
         }),
       })
@@ -118,7 +126,7 @@ export default function DeclarerProblemePage() {
       if (!res.ok) throw new Error(json.error ?? 'Erreur lors de l\'envoi')
 
       setRequests(r => [json.request as MaintenanceRequest, ...r])
-      setForm({ title: '', category: '', description: '' })
+      setForm({ title: '', category: '', description: '', urgency: 'normal' })
       setPhotoFiles([])
       setSent(true)
       setTimeout(() => setSent(false), 3000)
@@ -175,19 +183,51 @@ export default function DeclarerProblemePage() {
 
             <div className="mb-4">
               <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>Catégorie</label>
-              <select
-                value={form.category}
-                onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] border outline-none"
-                style={{ background: '#F9FAFB', borderColor: '#E5E7EB', color: '#111827' }}
-                onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-                onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
-              >
-                <option value="">Sélectionner une catégorie…</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
-                ))}
-              </select>
+              <div className="grid grid-cols-3 gap-2">
+                {CATEGORIES.map(cat => {
+                  const active = form.category === cat.id
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, category: cat.id }))}
+                      className="flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-[12px] border-[1.5px] cursor-pointer transition-all"
+                      style={active
+                        ? { background: '#ECFDF5', borderColor: '#4ECBA0', boxShadow: '0 2px 10px rgba(78,203,160,.18)' }
+                        : { background: '#F9FAFB', borderColor: '#E5E7EB' }}
+                    >
+                      <span className="text-[22px] leading-none">{cat.icon}</span>
+                      <span className="text-[11.5px] font-semibold text-center leading-tight" style={{ color: active ? '#2AA87C' : '#6B7280' }}>{cat.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>Niveau d&apos;urgence</label>
+              <div className="grid grid-cols-3 gap-2">
+                {URGENCIES.map(u => {
+                  const active = form.urgency === u.id
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, urgency: u.id }))}
+                      className="flex flex-col items-center gap-1 py-2.5 rounded-[12px] border-[1.5px] cursor-pointer transition-all"
+                      style={active
+                        ? { background: u.bg, borderColor: u.color, boxShadow: `0 2px 10px ${u.color}22` }
+                        : { background: '#F9FAFB', borderColor: '#E5E7EB' }}
+                    >
+                      <span className="flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: active ? u.color : '#6B7280' }}>
+                        <span className="w-2 h-2 rounded-full" style={{ background: u.dot }} />
+                        {u.label}
+                      </span>
+                      <span className="text-[10px]" style={{ color: '#9CA3AF' }}>{u.hint}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div className="mb-4">
@@ -257,6 +297,21 @@ export default function DeclarerProblemePage() {
               )}
             </div>
 
+            {canSubmit && (
+              <div className="mb-4 p-3.5 rounded-[12px] flex items-center gap-3" style={{ background: '#F0FDF9', border: '1px solid #C6F0DE' }}>
+                <span className="text-[20px]">{CATEGORIES.find(c => c.id === form.category)?.icon ?? '📦'}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12.5px] font-bold truncate" style={{ color: '#111827' }}>{form.title}</span>
+                    {(() => { const u = URGENCIES.find(x => x.id === form.urgency)!; return (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: u.bg, color: u.color }}>{u.label}</span>
+                    ) })()}
+                  </div>
+                  <p className="text-[11px]" style={{ color: '#6B7280' }}>Prêt à être envoyé à votre bailleur</p>
+                </div>
+              </div>
+            )}
+
             {error && (
               <p className="text-[12.5px] mb-3" style={{ color: '#DC2626' }}>{error}</p>
             )}
@@ -306,9 +361,12 @@ export default function DeclarerProblemePage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-[18px]">{cat?.icon ?? '📦'}</span>
                         <span className="text-[14px] font-bold" style={{ color: '#111827' }}>{req.title}</span>
+                        {(() => { const u = URGENCIES.find(x => x.id === (req.urgency ?? 'normal')); return u && u.id !== 'normal' ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: u.bg, color: u.color }}>{u.label}</span>
+                        ) : null })()}
                       </div>
                       <p className="text-[12.5px]" style={{ color: '#6B7280' }}>{req.description}</p>
                       {photos.length > 0 && (
