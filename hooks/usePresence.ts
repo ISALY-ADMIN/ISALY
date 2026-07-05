@@ -4,10 +4,91 @@ import { createClient } from '@/lib/supabase/client'
 
 const ONLINE_CHANNEL = 'presence:online'
 
+type SupabaseClient = ReturnType<typeof createClient>
+type Channel = ReturnType<SupabaseClient['channel']>
+
+// ════════════════════════════════════════════════════════════════
+// Canal de présence PARTAGÉ (singleton)
+// ----------------------------------------------------------------
+// createBrowserClient() renvoie un client singleton et realtime-js
+// déduplique les canaux par topic : si plusieurs hooks appellent
+// supabase.channel('presence:online'), ils récupèrent le MÊME canal.
+// Ajouter .on(...) sur ce canal déjà souscrit lève :
+//   "cannot add 'presence' callbacks ... after 'subscribe()'".
+// → On centralise : un seul canal, tous les .on() liés AVANT un
+//   unique .subscribe(), et un registre de listeners pour les lecteurs.
+// ════════════════════════════════════════════════════════════════
+let presenceChannel: Channel | null = null
+let presenceKey: string | null = null
+let presenceRefCount = 0
+let currentOnline: Set<string> = new Set()
+const onlineListeners = new Set<(online: Set<string>) => void>()
+
+function notifyOnline() {
+  onlineListeners.forEach(l => l(currentOnline))
+}
+
+function ensurePresenceChannel(supabase: SupabaseClient, uid: string): Channel {
+  if (presenceChannel && presenceKey === uid) return presenceChannel
+
+  // Changement d'utilisateur (nouvelle session) → on repart proprement
+  if (presenceChannel) {
+    supabase.removeChannel(presenceChannel)
+    presenceChannel = null
+    currentOnline = new Set()
+  }
+
+  presenceKey = uid
+  const channel = supabase.channel(ONLINE_CHANNEL, {
+    config: { presence: { key: uid } },
+  })
+
+  function sync() {
+    const state = channel.presenceState() as Record<string, unknown[]>
+    currentOnline = new Set(Object.keys(state ?? {}))
+    notifyOnline()
+  }
+
+  // Tous les callbacks AVANT subscribe()
+  channel
+    .on('presence', { event: 'sync' }, sync)
+    .on('presence', { event: 'join' }, sync)
+    .on('presence', { event: 'leave' }, sync)
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({ user_id: uid, online_at: new Date().toISOString() })
+      }
+    })
+
+  presenceChannel = channel
+  return channel
+}
+
+/** Attache un conscommateur au canal partagé ; renvoie la fonction de détachement. */
+function attachPresence(uid: string, listener?: (online: Set<string>) => void): () => void {
+  const supabase = createClient()
+  ensurePresenceChannel(supabase, uid)
+  presenceRefCount++
+  if (listener) {
+    onlineListeners.add(listener)
+    listener(currentOnline) // état courant immédiat
+  }
+  return () => {
+    if (listener) onlineListeners.delete(listener)
+    presenceRefCount = Math.max(0, presenceRefCount - 1)
+    if (presenceRefCount === 0 && presenceChannel) {
+      supabase.removeChannel(presenceChannel)
+      presenceChannel = null
+      presenceKey = null
+      currentOnline = new Set()
+    }
+  }
+}
+
 /**
  * Track la présence de l'utilisateur courant :
- *  - Supabase Realtime Presence (canal partagé) → statut "en ligne" instantané
- *  - last_seen dans profiles (update focus/blur + périodique) → "Vu il y a X"
+ *  - Presence Realtime (canal partagé) → statut "en ligne" instantané
+ *  - last_seen dans profiles (focus/blur + périodique) → "Vu il y a X"
  */
 export function usePresence(currentUserId: string | null) {
   useEffect(() => {
@@ -18,7 +99,7 @@ export function usePresence(currentUserId: string | null) {
       await supabase
         .from('profiles')
         .update({ last_seen: new Date().toISOString() })
-        .eq('id', currentUserId)
+        .eq('id', currentUserId!)
     }
 
     updateLastSeen()
@@ -26,51 +107,28 @@ export function usePresence(currentUserId: string | null) {
     window.addEventListener('focus', updateLastSeen)
     window.addEventListener('blur', updateLastSeen)
 
-    // Presence channel partagé : on s'annonce en ligne
-    const channel = supabase.channel(ONLINE_CHANNEL, {
-      config: { presence: { key: currentUserId } },
-    })
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({ user_id: currentUserId, online_at: new Date().toISOString() })
-      }
-    })
+    const detach = attachPresence(currentUserId)
 
     return () => {
       clearInterval(interval)
       window.removeEventListener('focus', updateLastSeen)
       window.removeEventListener('blur', updateLastSeen)
-      supabase.removeChannel(channel)
+      detach()
     }
   }, [currentUserId])
 }
 
 /**
- * Ensemble des user_id actuellement en ligne (via le canal Presence partagé).
- * Utilisé pour les pastilles vertes dans la liste des conversations.
+ * Ensemble des user_id actuellement en ligne (canal Presence partagé).
+ * Pastilles vertes dans la liste des conversations.
  */
 export function useOnlineUsers(currentUserId: string | null): Set<string> {
   const [online, setOnline] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!currentUserId) return
-    const supabase = createClient()
-    const channel = supabase.channel(ONLINE_CHANNEL, {
-      config: { presence: { key: currentUserId } },
-    })
-
-    function sync() {
-      const state = channel.presenceState() as Record<string, unknown[]>
-      setOnline(new Set(Object.keys(state)))
-    }
-
-    channel
-      .on('presence', { event: 'sync' }, sync)
-      .on('presence', { event: 'join' }, sync)
-      .on('presence', { event: 'leave' }, sync)
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+    const detach = attachPresence(currentUserId, setOnline)
+    return detach
   }, [currentUserId])
 
   return online
@@ -78,13 +136,13 @@ export function useOnlineUsers(currentUserId: string | null): Set<string> {
 
 /**
  * Présence d'un utilisateur précis (header du chat) :
- * combine le canal Presence (instantané) + last_seen (fallback "Vu il y a X").
+ * Presence partagée (instantané) + last_seen (fallback "Vu il y a X").
  */
 export function useUserPresence(userId: string | null) {
   const [presenceOnline, setPresenceOnline] = useState(false)
   const [lastSeen, setLastSeen] = useState<string | null>(null)
   const [avgResponseTime, setAvgResponseTime] = useState<number | null>(null)
-  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
+  const mountId = useRef(Math.random().toString(36).slice(2))
 
   useEffect(() => {
     if (!userId) return
@@ -94,7 +152,7 @@ export function useUserPresence(userId: string | null) {
       const { data } = await supabase
         .from('profiles')
         .select('last_seen')
-        .eq('id', userId)
+        .eq('id', userId!)
         .single()
 
       if (data?.last_seen) setLastSeen(data.last_seen)
@@ -117,7 +175,7 @@ export function useUserPresence(userId: string | null) {
         if (msgs && msgs.length > 1) {
           const responseTimes: number[] = []
           for (let i = 1; i < msgs.length; i++) {
-            if (msgs[i].sender_id === userId && msgs[i - 1].sender_id !== userId) {
+            if (msgs[i]?.sender_id === userId && msgs[i - 1]?.sender_id !== userId) {
               const diff = new Date(msgs[i].created_at).getTime() - new Date(msgs[i - 1].created_at).getTime()
               if (diff < 24 * 60 * 60 * 1000) responseTimes.push(diff / 60000)
             }
@@ -132,31 +190,25 @@ export function useUserPresence(userId: string | null) {
     fetchPresence()
     const interval = setInterval(fetchPresence, 60000)
 
-    // Presence instantanée sur le canal partagé
-    const channel = supabase.channel(ONLINE_CHANNEL)
-    channelRef.current = channel
+    // Présence instantanée via le canal partagé (listener, pas de nouveau canal)
     const uid = userId
-    function sync() {
-      const state = channel.presenceState() as Record<string, unknown[]>
-      setPresenceOnline(uid in state)
-    }
-    channel
-      .on('presence', { event: 'sync' }, sync)
-      .on('presence', { event: 'join' }, sync)
-      .on('presence', { event: 'leave' }, sync)
-      .subscribe()
+    const onOnline = (set: Set<string>) => setPresenceOnline(set.has(uid))
+    const detach = attachPresence(uid, onOnline)
 
-    // Fallback : update de last_seen
+    // Fallback last_seen : canal postgres_changes propre à ce montage (topic unique)
     const lsChannel = supabase
-      .channel(`presence:${userId}`)
+      .channel(`presence-user:${userId}:${mountId.current}`)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}`,
-      }, (payload) => setLastSeen((payload.new as { last_seen: string }).last_seen))
+      }, (payload) => {
+        const ls = (payload?.new as { last_seen?: string } | null)?.last_seen
+        if (ls) setLastSeen(ls)
+      })
       .subscribe()
 
     return () => {
       clearInterval(interval)
-      supabase.removeChannel(channel)
+      detach()
       supabase.removeChannel(lsChannel)
     }
   }, [userId])

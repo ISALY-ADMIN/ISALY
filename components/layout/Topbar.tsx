@@ -43,10 +43,13 @@ export default function Topbar({ title }: TopbarProps) {
     loadUnread()
 
     const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    let active = true
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      const channel = supabase
-        .channel('notif-count')
+      if (!user || !active) return
+      // topic unique par montage → évite la réutilisation d'un canal déjà souscrit
+      channel = supabase
+        .channel(`notif-count:${user.id}:${Math.random().toString(36).slice(2)}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
@@ -54,8 +57,9 @@ export default function Topbar({ title }: TopbarProps) {
           filter: `user_id=eq.${user.id}`,
         }, () => setNotifCount(c => c + 1))
         .subscribe()
-      return () => { supabase.removeChannel(channel) }
     })
+    // cleanup réel de l'effet (le return dans .then() n'était jamais appelé par React)
+    return () => { active = false; if (channel) supabase.removeChannel(channel) }
   }, [])
 
   useEffect(() => {
