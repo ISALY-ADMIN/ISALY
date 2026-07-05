@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 export interface DashboardData {
   mode: 'locataire' | 'loueur'
   profile: {
+    id: string
     firstName: string
     avatarUrl: string | null
     completion: number
@@ -28,10 +29,14 @@ export interface DashboardData {
     total: number
     items: {
       id: string; title: string; city: string; isActive: boolean
-      current: number; total: number; boostTier: string
+      current: number; total: number; boostTier: string; photo: string | null
     }[]
   }
-  likesReceived?: { count: number }
+  likesReceived?: { count: number; latest: { name: string; avatarUrl: string | null }[] }
+  maintenance?: {
+    unresolved: number
+    latest: { title: string; urgency: 'low' | 'normal' | 'urgent'; createdAt: string } | null
+  }
   performance?: { days: { label: string; likes: number }[] }
   boost?: { tier: 'standard' | 'featured' | 'priority'; expiresAt: string | null }
   reviews?: { count: number; average: number | null }
@@ -105,6 +110,7 @@ export async function GET(request: Request) {
   const base: DashboardData = {
     mode,
     profile: {
+      id: user.id,
       firstName: (profile.first_name as string) ?? '',
       avatarUrl: (profile.avatar_url as string) ?? null,
       completion: completionPct(profile as Record<string, unknown>, certLevel),
@@ -184,18 +190,22 @@ export async function GET(request: Request) {
     base.favorites = { count: favs.length, photos: favPhotos }
   } else {
     const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
-    const [myListingsRes, likesRes, recentLikesRes, reviewsRes] = await Promise.all([
+    const [myListingsRes, likesRes, lastCandidatesRes, recentLikesRes, reviewsRes, myLeasesRes] = await Promise.all([
       supabase.from('listings')
-        .select('id, title, city, is_active, rooms_available, occupants_current, capacity_total, boost_tier, boost_expires_at', { count: 'exact' })
+        .select('id, title, city, photos, is_active, rooms_available, occupants_current, capacity_total, boost_tier, boost_expires_at', { count: 'exact' })
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5),
       supabase.from('swipes').select('id', { count: 'exact', head: true })
         .eq('swiped_id', user.id).in('direction', ['right', 'super']),
+      supabase.from('swipes').select('swiper_id')
+        .eq('swiped_id', user.id).in('direction', ['right', 'super'])
+        .order('created_at', { ascending: false }).limit(3),
       supabase.from('swipes').select('created_at')
         .eq('swiped_id', user.id).in('direction', ['right', 'super'])
         .gte('created_at', since).limit(1000),
       supabase.from('user_reviews').select('rating').eq('reviewed_id', user.id),
+      supabase.from('leases').select('id').eq('owner_id', user.id),
     ])
 
     const items = (myListingsRes.data ?? []).map(l => {
@@ -209,10 +219,48 @@ export async function GET(request: Request) {
         current,
         total,
         boostTier: (l.boost_tier as string) ?? 'standard',
+        photo: (l.photos as string[] | null)?.[0] ?? null,
       }
     })
     base.listings = { total: myListingsRes.count ?? items.length, items }
-    base.likesReceived = { count: likesRes.count ?? 0 }
+
+    // 3 derniers candidats (avatars empilés) — ordre des swipes préservé
+    const candidateIds = (lastCandidatesRes.data ?? []).map(s => s.swiper_id as string).filter(Boolean)
+    let latestCandidates: { name: string; avatarUrl: string | null }[] = []
+    if (candidateIds.length > 0) {
+      const { data: candidates } = await supabase
+        .from('profiles')
+        .select('id, first_name, avatar_url')
+        .in('id', candidateIds)
+      const byId = new Map((candidates ?? []).map(c => [c.id as string, c]))
+      latestCandidates = candidateIds
+        .map(id => byId.get(id))
+        .filter((c): c is NonNullable<typeof c> => !!c)
+        .map(c => ({ name: (c.first_name as string) ?? '', avatarUrl: (c.avatar_url as string) ?? null }))
+    }
+    base.likesReceived = { count: likesRes.count ?? 0, latest: latestCandidates }
+
+    // Signalements non résolus sur les baux du loueur (RLS: owner via leases)
+    const leaseIds = (myLeasesRes.data ?? []).map(l => l.id as string)
+    base.maintenance = { unresolved: 0, latest: null }
+    if (leaseIds.length > 0) {
+      const [unresolvedRes, latestReqRes] = await Promise.all([
+        supabase.from('maintenance_requests').select('id', { count: 'exact', head: true })
+          .in('lease_id', leaseIds).neq('status', 'resolved'),
+        supabase.from('maintenance_requests').select('title, urgency, created_at')
+          .in('lease_id', leaseIds).neq('status', 'resolved')
+          .order('created_at', { ascending: false }).limit(1),
+      ])
+      const latest = latestReqRes.data?.[0] ?? null
+      base.maintenance = {
+        unresolved: unresolvedRes.count ?? 0,
+        latest: latest ? {
+          title: latest.title as string,
+          urgency: (latest.urgency as 'low' | 'normal' | 'urgent') ?? 'normal',
+          createdAt: latest.created_at as string,
+        } : null,
+      }
+    }
 
     // 7 jours glissants, du plus ancien au plus récent
     const buckets: { label: string; likes: number }[] = []

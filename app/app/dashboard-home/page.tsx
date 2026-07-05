@@ -233,7 +233,7 @@ export default function DashboardHomePage() {
             <span style={{
               fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '20px',
               background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.35)',
-            }}>🏠 Loueur</span>
+            }}>🏠 Mode Loueur</span>
           ) : (
             <Link href="/app/profil" aria-label="Compléter mon profil" style={{ textDecoration: 'none' }}>
               <CompletionRing pct={data.profile.completion} />
@@ -427,53 +427,66 @@ function LocataireGrid({ d }: { d: DashboardData }) {
 
 function LoueurGrid({ d }: { d: DashboardData }) {
   const listings = d.listings ?? { total: 0, items: [] }
-  const perfMax = Math.max(1, ...(d.performance?.days ?? []).map(x => x.likes))
-  const hasPerfData = (d.performance?.days ?? []).some(x => x.likes > 0)
+  const maintenance = d.maintenance ?? { unresolved: 0, latest: null }
   return (
     <>
       {/* MES ANNONCES — 2x2 */}
       <BentoCard href="/app/mes-annonces" ariaLabel={`Mes ${listings.total} annonces`} className="md:col-span-2 md:row-span-2">
         <ModuleTitle icon="📢" label="MES ANNONCES" />
-        {listings.items.length === 0 ? (
-          <EmptyState text="Aucune annonce publiée. Dépose ta première annonce pour recevoir des candidatures." cta="Déposer une annonce" />
-        ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-            {listings.items.map(l => (
-              <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: l.isActive ? '#10B981' : 'rgba(255,255,255,0.22)' }} />
-                <span style={{ flex: 1, fontSize: '13.5px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {l.title}
-                </span>
-                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>👥 {l.current}/{l.total}</span>
-                {l.boostTier !== 'standard' && (
-                  <span style={{
-                    fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', flexShrink: 0,
-                    background: l.boostTier === 'priority' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)',
-                    color: l.boostTier === 'priority' ? '#F59E0B' : '#818CF8',
-                  }}>
-                    {l.boostTier === 'priority' ? '⚡ Prioritaire' : '✨ Essentiel'}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
+          {listings.items.length === 0 ? (
+            <EmptyState text="Aucune annonce en ligne pour le moment." cta="Publie ta première annonce" />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+              {listings.items.map(l => (
+                <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ width: 44, height: 34, borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
+                    {l.photo
+                      ? <Image src={l.photo} alt={l.title} width={44} height={34} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : '🏠'}
+                  </div>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: l.isActive ? '#10B981' : 'rgba(255,255,255,0.22)' }} title={l.isActive ? 'Active' : 'Inactive'} />
+                  <span style={{ flex: 1, fontSize: '13.5px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {l.title}
                   </span>
-                )}
-              </div>
-            ))}
-            {listings.total > listings.items.length && (
-              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981', paddingTop: '8px' }}>
-                + {listings.total - listings.items.length} autre{listings.total - listings.items.length > 1 ? 's' : ''} →
-              </div>
-            )}
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>👥 {l.current}/{l.total}</span>
+                  {l.boostTier !== 'standard' && (
+                    <span style={{
+                      fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', flexShrink: 0,
+                      background: l.boostTier === 'priority' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)',
+                      color: l.boostTier === 'priority' ? '#F59E0B' : '#818CF8',
+                    }}>
+                      {l.boostTier === 'priority' ? '⚡ Prioritaire' : '✨ Essentiel'}
+                    </span>
+                  )}
+                </div>
+              ))}
+              {listings.total > listings.items.length && (
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981', paddingTop: '8px' }}>
+                  + {listings.total - listings.items.length} autre{listings.total - listings.items.length > 1 ? 's' : ''} →
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{
+            alignSelf: 'flex-start', padding: '10px 22px', borderRadius: '24px', marginTop: '12px',
+            background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff',
+            fontSize: '14px', fontWeight: 800, fontFamily: "'Outfit', sans-serif",
+          }}>
+            Publier une annonce →
           </div>
-        )}
+        </div>
       </BentoCard>
 
       {/* CANDIDATURES — 1x1 */}
-      <BentoCard href="/app/messages" ariaLabel={`${d.likesReceived?.count ?? 0} candidatures reçues`}>
+      <BentoCard href="/app/messages" ariaLabel={`${d.likesReceived?.count ?? 0} candidatures reçues — voir les candidats`}>
         <ModuleTitle icon="💚" label="CANDIDATURES" />
         {(d.likesReceived?.count ?? 0) === 0 ? (
-          <EmptyState text="Aucun like reçu pour l'instant." cta="Booster mon annonce" />
+          <EmptyState text="Aucune candidature pour l'instant." cta="Boost ton annonce pour plus de visibilité" />
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <CountUp value={d.likesReceived!.count} style={{ fontFamily: "'Outfit', sans-serif", fontSize: '32px', fontWeight: 800, color: '#fff', lineHeight: 1 }} />
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>likes reçus sur tes annonces</div>
+            <AvatarStack people={d.likesReceived!.latest ?? []} />
           </div>
         )}
       </BentoCard>
@@ -481,24 +494,44 @@ function LoueurGrid({ d }: { d: DashboardData }) {
       {/* MESSAGES — 1x1 */}
       <UnreadCard unread={d.unread} />
 
-      {/* PERFORMANCE — 2x1 */}
-      <BentoCard href="/app/mes-annonces" ariaLabel="Performance des 7 derniers jours" className="md:col-span-2">
-        <ModuleTitle icon="📊" label="PERFORMANCE · 7 JOURS" />
-        {!hasPerfData ? (
-          <EmptyState text="Pas encore d'activité cette semaine." cta="Booster la visibilité" />
+      {/* SIGNALEMENTS — 2x1 */}
+      <BentoCard href="/app/maintenance" ariaLabel={`${maintenance.unresolved} signalements non traités`} className="md:col-span-2">
+        <ModuleTitle icon="🛠️" label="SIGNALEMENTS REÇUS" />
+        {maintenance.unresolved === 0 ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <span aria-hidden style={{
+              width: 40, height: 40, borderRadius: '50%', flexShrink: 0, fontSize: '18px',
+              background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>✅</span>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>Aucun problème signalé</div>
+              <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>Tes locataires n&apos;ont rien remonté — tout roule.</div>
+            </div>
+          </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '10px', paddingBottom: '4px' }}>
-            {(d.performance?.days ?? []).map((day, i) => (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', height: '100%', justifyContent: 'flex-end' }}>
-                {day.likes > 0 && <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#10B981' }}>{day.likes}</span>}
-                <div style={{
-                  width: '100%', maxWidth: '34px', borderRadius: '6px 6px 2px 2px',
-                  height: `${Math.max(6, (day.likes / perfMax) * 58)}px`,
-                  background: day.likes > 0 ? 'linear-gradient(180deg, #10B981, #059669)' : 'rgba(255,255,255,0.07)',
-                }} />
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>{day.label}</span>
-              </div>
-            ))}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <CountUp value={maintenance.unresolved} style={{ fontFamily: "'Outfit', sans-serif", fontSize: '26px', fontWeight: 800, color: '#fff', lineHeight: 1 }} />
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>non traité{maintenance.unresolved > 1 ? 's' : ''}</span>
+            </div>
+            {maintenance.latest && (
+              <>
+                <span style={{
+                  fontSize: '11.5px', fontWeight: 800, padding: '5px 12px', borderRadius: '20px',
+                  ...(maintenance.latest.urgency === 'urgent'
+                    ? { background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)' }
+                    : maintenance.latest.urgency === 'normal'
+                      ? { background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }
+                      : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.12)' }),
+                }}>
+                  {maintenance.latest.urgency === 'urgent' ? '● Urgent' : maintenance.latest.urgency === 'normal' ? '● Normal' : '● Mineur'}
+                </span>
+                <span style={{ flex: 1, minWidth: '140px', fontSize: '12.5px', color: 'rgba(255,255,255,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  « {maintenance.latest.title} » · {timeAgo(maintenance.latest.createdAt)}
+                </span>
+              </>
+            )}
           </div>
         )}
       </BentoCard>
@@ -532,7 +565,7 @@ function LoueurGrid({ d }: { d: DashboardData }) {
       </BentoCard>
 
       {/* AVIS — 1x1 */}
-      <BentoCard href="/app/profil" ariaLabel={`${d.reviews?.count ?? 0} avis reçus`}>
+      <BentoCard href={`/app/profil-public/${d.profile.id}`} ariaLabel={`${d.reviews?.count ?? 0} avis reçus — voir mon profil public`}>
         <ModuleTitle icon="⭐" label="AVIS REÇUS" />
         {(d.reviews?.count ?? 0) === 0 ? (
           <EmptyState text="Pas encore d'avis." cta="Voir mon profil" />
