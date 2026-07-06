@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Send, Paperclip, X } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
+import Button from '@/components/ui/Button'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
@@ -34,18 +35,32 @@ const CATEGORIES = [
 ]
 
 const URGENCIES = [
-  { id: 'low',    label: 'Basse',   hint: 'Peut attendre',     bg: '#F3F4F6', color: '#6B7280', dot: '#9CA3AF' },
-  { id: 'normal', label: 'Moyenne', hint: 'À traiter bientôt', bg: '#FFFBEB', color: '#D97706', dot: '#F59E0B' },
-  { id: 'urgent', label: 'Urgente', hint: 'Intervention rapide', bg: '#FEF2F2', color: '#DC2626', dot: '#EF4444' },
+  { id: 'low',    label: 'Basse',   hint: 'Peut attendre',       color: 'rgba(255,255,255,0.6)', bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.2)', dot: 'rgba(255,255,255,0.4)' },
+  { id: 'normal', label: 'Moyenne', hint: 'À traiter bientôt',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.4)', dot: '#F59E0B' },
+  { id: 'urgent', label: 'Urgente', hint: 'Intervention rapide', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.4)', dot: '#EF4444' },
 ] as const
 
 const STATUS_STEPS = ['sent', 'received', 'in_progress', 'resolved'] as const
 const STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
-  sent:        { label: '📤 Ouvert',   bg: '#FEF2F2', color: '#DC2626' },
-  received:    { label: '📬 Reçu',     bg: '#FFFBEB', color: '#D97706' },
-  in_progress: { label: '🔧 En cours', bg: '#FFFBEB', color: '#D97706' },
-  resolved:    { label: '✅ Résolu',   bg: '#ECFDF5', color: '#059669' },
+  sent:        { label: '📤 Ouvert',   bg: 'rgba(239,68,68,0.12)',   color: '#EF4444' },
+  received:    { label: '📬 Reçu',     bg: 'rgba(245,158,11,0.12)',  color: '#F59E0B' },
+  in_progress: { label: '🔧 En cours', bg: 'rgba(245,158,11,0.12)',  color: '#F59E0B' },
+  resolved:    { label: '✅ Résolu',   bg: 'rgba(16,185,129,0.12)',  color: '#10B981' },
 }
+
+const darkCard: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.08)',
+}
+
+const darkInput: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  color: '#fff',
+}
+
+const labelCls = 'block text-[11.5px] font-extrabold uppercase tracking-wider mb-2'
+const labelColor = { color: 'rgba(255,255,255,0.4)' }
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -72,6 +87,7 @@ export default function DeclarerProblemePage() {
   useEffect(() => {
     if (!lease) return
     loadRequests()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lease])
 
   async function loadRequests() {
@@ -153,37 +169,31 @@ export default function DeclarerProblemePage() {
   return (
     <>
       <Topbar title="Déclarer un problème" />
-      <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '760px' }}>
+      <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '760px', fontFamily: "'Outfit', sans-serif" }}>
 
-        {/* MODULE A — Envoyer un message */}
-        <div
-          className="rounded-[18px] mb-7 overflow-hidden"
-          style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}
-        >
-          <div
-            className="px-6 py-4 flex items-center gap-2"
-            style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}
-          >
+        {/* MODULE A — Nouveau signalement */}
+        <div className="rounded-[20px] mb-7 overflow-hidden" style={darkCard}>
+          <div className="px-6 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <span className="text-[16px]"><Emoji native="✉️" /></span>
-            <h2 className="text-[15px] font-bold" style={{ color: '#111827' }}>Nouveau signalement</h2>
+            <h2 className="text-[15px] font-bold" style={{ color: '#fff' }}>Nouveau signalement</h2>
           </div>
 
           <div className="p-6">
             <div className="mb-4">
-              <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>Objet</label>
+              <label className={labelCls} style={labelColor}>Objet</label>
               <input
                 value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                 placeholder="Ex: Fuite sous l'évier de la cuisine"
-                className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] border outline-none"
-                style={{ background: '#F9FAFB', borderColor: '#E5E7EB', color: '#111827' }}
-                onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-                onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none"
+                style={darkInput}
+                onFocus={e => (e.target.style.borderColor = '#10B981')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
               />
             </div>
 
             <div className="mb-4">
-              <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>Catégorie</label>
+              <label className={labelCls} style={labelColor}>Catégorie</label>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.map(cat => {
                   const active = form.category === cat.id
@@ -192,13 +202,13 @@ export default function DeclarerProblemePage() {
                       key={cat.id}
                       type="button"
                       onClick={() => setForm(f => ({ ...f, category: cat.id }))}
-                      className="flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-[12px] border-[1.5px] cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-[12px] cursor-pointer transition-all"
                       style={active
-                        ? { background: '#ECFDF5', borderColor: '#4ECBA0', boxShadow: '0 2px 10px rgba(78,203,160,.18)' }
-                        : { background: '#F9FAFB', borderColor: '#E5E7EB' }}
+                        ? { background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.5)', boxShadow: '0 2px 14px rgba(16,185,129,.12)' }
+                        : { background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}
                     >
                       <span className="text-[22px] leading-none"><Emoji native={cat.icon} size="22px" /></span>
-                      <span className="text-[11.5px] font-semibold text-center leading-tight" style={{ color: active ? '#2AA87C' : '#6B7280' }}>{cat.label}</span>
+                      <span className="text-[11.5px] font-semibold text-center leading-tight" style={{ color: active ? '#10B981' : 'rgba(255,255,255,0.55)' }}>{cat.label}</span>
                     </button>
                   )
                 })}
@@ -206,7 +216,7 @@ export default function DeclarerProblemePage() {
             </div>
 
             <div className="mb-4">
-              <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>Niveau d&apos;urgence</label>
+              <label className={labelCls} style={labelColor}>Niveau d&apos;urgence</label>
               <div className="grid grid-cols-3 gap-2">
                 {URGENCIES.map(u => {
                   const active = form.urgency === u.id
@@ -215,16 +225,16 @@ export default function DeclarerProblemePage() {
                       key={u.id}
                       type="button"
                       onClick={() => setForm(f => ({ ...f, urgency: u.id }))}
-                      className="flex flex-col items-center gap-1 py-2.5 rounded-[12px] border-[1.5px] cursor-pointer transition-all"
+                      className="flex flex-col items-center gap-1 py-2.5 rounded-[12px] cursor-pointer transition-all"
                       style={active
-                        ? { background: u.bg, borderColor: u.color, boxShadow: `0 2px 10px ${u.color}22` }
-                        : { background: '#F9FAFB', borderColor: '#E5E7EB' }}
+                        ? { background: u.bg, border: `1.5px solid ${u.border}` }
+                        : { background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}
                     >
-                      <span className="flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: active ? u.color : '#6B7280' }}>
+                      <span className="flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: active ? u.color : 'rgba(255,255,255,0.55)' }}>
                         <span className="w-2 h-2 rounded-full" style={{ background: u.dot }} />
                         {u.label}
                       </span>
-                      <span className="text-[10px]" style={{ color: '#9CA3AF' }}>{u.hint}</span>
+                      <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{u.hint}</span>
                     </button>
                   )
                 })}
@@ -232,38 +242,36 @@ export default function DeclarerProblemePage() {
             </div>
 
             <div className="mb-4">
-              <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>Détail du problème</label>
+              <label className={labelCls} style={labelColor}>Détail du problème</label>
               <textarea
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 placeholder="Décrivez le problème en détail…"
                 rows={4}
-                className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] border outline-none resize-none"
-                style={{ background: '#F9FAFB', borderColor: '#E5E7EB', color: '#111827' }}
-                onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-                onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none resize-none"
+                style={darkInput}
+                onFocus={e => (e.target.style.borderColor = '#10B981')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
               />
             </div>
 
             <div className="mb-6">
-              <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>
-                Photos (optionnel, max 3)
-              </label>
+              <label className={labelCls} style={labelColor}>Photos (optionnel, max 3)</label>
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true) }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files) addFiles(e.dataTransfer.files) }}
                 onClick={() => photoFiles.length < 3 && fileInputRef.current?.click()}
-                className="rounded-[12px] border-[2px] border-dashed flex flex-col items-center justify-center gap-1.5 py-6 cursor-pointer transition-all"
+                className="rounded-[12px] flex flex-col items-center justify-center gap-1.5 py-6 cursor-pointer transition-all"
                 style={{
-                  borderColor: dragOver ? '#4ECBA0' : '#E5E7EB',
-                  background: dragOver ? '#ECFDF5' : '#F9FAFB',
+                  border: `2px dashed ${dragOver ? '#10B981' : 'rgba(255,255,255,0.12)'}`,
+                  background: dragOver ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
                   opacity: photoFiles.length >= 3 ? 0.6 : 1,
                   pointerEvents: photoFiles.length >= 3 ? 'none' : 'auto',
                 }}
               >
-                <Paperclip size={20} strokeWidth={1.75} style={{ color: '#9CA3AF' }} />
-                <span className="text-[12.5px] font-semibold" style={{ color: '#6B7280' }}>
+                <Paperclip size={20} strokeWidth={1.75} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                <span className="text-[12.5px] font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
                   Glissez-déposez ou cliquez pour ajouter des photos
                 </span>
                 <input
@@ -279,6 +287,7 @@ export default function DeclarerProblemePage() {
                 <div className="flex gap-2 mt-3">
                   {photoFiles.map((file, idx) => (
                     <div key={idx} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={URL.createObjectURL(file)}
                         alt={file.name}
@@ -288,7 +297,7 @@ export default function DeclarerProblemePage() {
                       <button
                         onClick={() => removeFile(idx)}
                         className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center border-none cursor-pointer"
-                        style={{ background: '#111827', color: '#fff' }}
+                        style={{ background: '#fff', color: '#111827' }}
                       >
                         <X size={11} />
                       </button>
@@ -299,33 +308,28 @@ export default function DeclarerProblemePage() {
             </div>
 
             {canSubmit && (
-              <div className="mb-4 p-3.5 rounded-[12px] flex items-center gap-3" style={{ background: '#F0FDF9', border: '1px solid #C6F0DE' }}>
+              <div className="mb-4 p-3.5 rounded-[12px] flex items-center gap-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
                 <span className="text-[20px]"><Emoji native={CATEGORIES.find(c => c.id === form.category)?.icon ?? '📦'} size="20px" /></span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[12.5px] font-bold truncate" style={{ color: '#111827' }}>{form.title}</span>
+                    <span className="text-[12.5px] font-bold truncate" style={{ color: '#fff' }}>{form.title}</span>
                     {(() => { const u = URGENCIES.find(x => x.id === form.urgency)!; return (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: u.bg, color: u.color }}>{u.label}</span>
                     ) })()}
                   </div>
-                  <p className="text-[11px]" style={{ color: '#6B7280' }}>Prêt à être envoyé à votre bailleur</p>
+                  <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.45)' }}>Prêt à être envoyé à votre bailleur</p>
                 </div>
               </div>
             )}
 
             {error && (
-              <p className="text-[12.5px] mb-3" style={{ color: '#DC2626' }}>{error}</p>
+              <p className="text-[12.5px] mb-3" style={{ color: '#EF4444' }}>{error}</p>
             )}
 
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 16px rgba(78,203,160,.3)' }}
-            >
+            <Button onClick={handleSubmit} disabled={!canSubmit} loading={submitting} className="w-full">
               <Send size={16} strokeWidth={2} />
               {submitting ? 'Envoi en cours…' : sent ? 'Envoyé !' : 'Envoyer au bailleur'}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -342,10 +346,10 @@ export default function DeclarerProblemePage() {
             <div className="text-[40px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🔧" /></div>
           </div>
         ) : requests.length === 0 ? (
-          <div className="text-center py-16 rounded-[18px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+          <div className="text-center py-16 rounded-[20px]" style={darkCard}>
             <div className="text-[48px] mb-4"><Emoji native="✅" /></div>
-            <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Tout est en ordre !</h3>
-            <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucun signalement envoyé pour l'instant.</p>
+            <h3 className="text-[17px] mb-2 font-bold" style={{ color: '#fff' }}>Tout est en ordre !</h3>
+            <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Aucun signalement envoyé pour l&apos;instant.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -355,21 +359,17 @@ export default function DeclarerProblemePage() {
               const cat = CATEGORIES.find(c => c.id === req.category)
               const photos = req.photos && req.photos.length > 0 ? req.photos : (req.photo_url ? [req.photo_url] : [])
               return (
-                <div
-                  key={req.id}
-                  className="rounded-[14px] p-5"
-                  style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
-                >
+                <div key={req.id} className="rounded-[16px] p-5" style={darkCard}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-[18px]"><Emoji native={cat?.icon ?? '📦'} size="18px" /></span>
-                        <span className="text-[14px] font-bold" style={{ color: '#111827' }}>{req.title}</span>
+                        <span className="text-[14px] font-bold" style={{ color: '#fff' }}>{req.title}</span>
                         {(() => { const u = URGENCIES.find(x => x.id === (req.urgency ?? 'normal')); return u && u.id !== 'normal' ? (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: u.bg, color: u.color }}>{u.label}</span>
                         ) : null })()}
                       </div>
-                      <p className="text-[12.5px]" style={{ color: '#6B7280' }}>{req.description}</p>
+                      <p className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{req.description}</p>
                       {photos.length > 0 && (
                         <div className="flex gap-2 mt-2">
                           {photos.map((url, i) => (
@@ -382,14 +382,14 @@ export default function DeclarerProblemePage() {
                       <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: badge.bg, color: badge.color }}>
                         <EmojiText text={badge.label} size="11px" />
                       </span>
-                      <span className="text-[10.5px]" style={{ color: '#9CA3AF' }}>{formatDate(req.created_at)}</span>
+                      <span className="text-[10.5px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{formatDate(req.created_at)}</span>
                     </div>
                   </div>
 
                   {req.bailleur_comment && (
-                    <div className="mt-3 p-3 rounded-[10px]" style={{ background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
-                      <div className="text-[10.5px] font-bold uppercase tracking-wider mb-1" style={{ color: '#9CA3AF' }}>Réponse du bailleur</div>
-                      <p className="text-[12.5px]" style={{ color: '#374151' }}>{req.bailleur_comment}</p>
+                    <div className="mt-3 p-3 rounded-[10px]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div className="text-[10.5px] font-bold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Réponse du bailleur</div>
+                      <p className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{req.bailleur_comment}</p>
                       {req.resolved_photo_url && (
                         <Image src={req.resolved_photo_url} alt="Résolution" width={120} height={90} className="mt-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />
                       )}
@@ -398,7 +398,7 @@ export default function DeclarerProblemePage() {
 
                   <div className="flex items-center gap-1 mt-3">
                     {STATUS_STEPS.map((s, i) => (
-                      <div key={s} className="flex-1 h-1.5 rounded-full" style={{ background: i <= statusIdx ? '#4ECBA0' : '#F3F4F6' }} />
+                      <div key={s} className="flex-1 h-1.5 rounded-full" style={{ background: i <= statusIdx ? '#10B981' : 'rgba(255,255,255,0.08)' }} />
                     ))}
                   </div>
                 </div>

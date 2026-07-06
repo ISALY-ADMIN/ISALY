@@ -52,7 +52,16 @@ export interface DossierShare {
 export type Schedule = 'leve-tot' | 'couche-tard' | 'variable' | 'flexible'
 export type Vibe = 'calme' | 'festif' | 'studieux' | 'detendu'
 export type BoostType = 'standard' | 'featured' | 'priority'
-export type LeaseStatus = 'active' | 'ended' | 'pending'
+export type LeaseStatus = 'draft' | 'pending_signature' | 'active' | 'ended'
+
+/** Preuve de consentement d'une signature électronique simple (eIDAS). */
+export interface LeaseSignature {
+  signed_at: string
+  /** dataURL PNG du tracé manuscrit (canvas natif). */
+  signature_data: string
+  ip: string | null
+  consent: boolean
+}
 export type PaymentStatus = 'pending' | 'succeeded' | 'failed'
 export type PlanType = 'assurance' | 'featured' | 'priority'
 export type SwipeDirection = 'left' | 'right' | 'super'
@@ -166,6 +175,13 @@ export interface Lease {
   nb_roommates: number
   lease_doc_url: string | null
   status: LeaseStatus
+  charges_amount: number | null
+  deposit_amount: number | null
+  listing_id: string | null
+  document_url: string | null
+  tenant_signature: LeaseSignature | null
+  owner_signature: LeaseSignature | null
+  house_rules: string | null
   created_at: string
 }
 

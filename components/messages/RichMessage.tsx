@@ -14,6 +14,8 @@ interface RichMessageProps {
   isMe: boolean
   onRespond?: (status: 'accepted' | 'refused') => void
   onCounter?: () => void
+  /** Lien vers le formulaire "Établir le bail" (affiché côté loueur quand la réservation est acceptée). */
+  establishLeaseHref?: string | null
 }
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
@@ -22,7 +24,7 @@ const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }>
   pending: { label: '⏳ En attente', color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
 }
 
-export default function RichMessage({ type, payload, isMe, onRespond, onCounter }: RichMessageProps) {
+export default function RichMessage({ type, payload, isMe, onRespond, onCounter, establishLeaseHref }: RichMessageProps) {
   const p = payload ?? {}
   const status = (p.status as string) ?? 'pending'
   const cardBase: React.CSSProperties = {
@@ -100,6 +102,14 @@ export default function RichMessage({ type, payload, isMe, onRespond, onCounter 
           {p.listing_title ? <div style={{ fontWeight: 700, color: '#fff', marginBottom: 4 }}>{String(p.listing_title)}</div> : null}
           {String(p.message ?? '')}
         </div>
+      )}
+
+      {type === 'reservation' && status === 'accepted' && !isMe && establishLeaseHref && (
+        <a href={establishLeaseHref}
+          className="flex items-center justify-center gap-1.5 mt-3 py-2 px-3 rounded-[10px] text-[12px] font-bold no-underline transition-transform active:scale-[0.96]"
+          style={{ background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff' }}>
+          <FileText size={14} /> Établir le bail
+        </a>
       )}
 
       {canRespond && (

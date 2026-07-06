@@ -22,7 +22,15 @@ export interface DashboardData {
     newListings: number
     preview: { id: string; title: string; city: string; rent: number; photo: string | null }[]
   }
-  lease?: { monthlyRent: number; nextDue: string | null; paymentStatus: 'paid' | 'pending' | 'late' } | null
+  lease?: {
+    id: string
+    monthlyRent: number
+    nextDue: string | null
+    paymentStatus: 'paid' | 'pending' | 'late'
+    status: 'active' | 'pending_signature'
+    /** Le loueur a signé, c'est au locataire de signer. */
+    awaitingMySignature: boolean
+  } | null
   favorites?: { count: number; photos: string[] }
   // Loueur
   listings?: {
@@ -40,6 +48,13 @@ export interface DashboardData {
   performance?: { days: { label: string; likes: number }[] }
   boost?: { tier: 'standard' | 'featured' | 'priority'; expiresAt: string | null }
   reviews?: { count: number; average: number | null }
+  leases?: {
+    active: number
+    pendingSignature: number
+    latestPendingId: string | null
+    /** Baux en attente où le loueur n'a pas encore signé. */
+    awaitingMySignature: number
+  }
 }
 
 function completionPct(p: Record<string, unknown>, certLevel: number): number {
@@ -140,7 +155,9 @@ export async function GET(request: Request) {
         .neq('owner_id', user.id)
         .order('created_at', { ascending: false })
         .limit(100),
-      supabase.from('leases').select('id, monthly_rent').eq('tenant_id', user.id).eq('status', 'active').limit(1),
+      supabase.from('leases').select('id, monthly_rent, status, owner_signature, tenant_signature')
+        .eq('tenant_id', user.id).in('status', ['active', 'pending_signature'])
+        .order('created_at', { ascending: false }).limit(2),
       supabase.from('favorites').select('target_id, target_type').eq('user_id', user.id)
         .order('created_at', { ascending: false }),
     ])
@@ -158,20 +175,31 @@ export async function GET(request: Request) {
       })),
     }
 
-    const lease = leaseRes.data?.[0] ?? null
+    // Bail actif prioritaire, sinon bail en attente de signature
+    const leaseRows = leaseRes.data ?? []
+    const lease = leaseRows.find(l => l.status === 'active') ?? leaseRows[0] ?? null
     if (lease) {
-      const { data: nextPayment } = await supabase
-        .from('rent_payments')
-        .select('month, status')
-        .eq('lease_id', lease.id)
-        .in('status', ['pending', 'late'])
-        .order('month', { ascending: true })
-        .limit(1)
-      const due = nextPayment?.[0] ?? null
+      let nextDue: string | null = null
+      let paymentStatus: 'paid' | 'pending' | 'late' = 'paid'
+      if (lease.status === 'active') {
+        const { data: nextPayment } = await supabase
+          .from('rent_payments')
+          .select('month, status')
+          .eq('lease_id', lease.id)
+          .in('status', ['pending', 'late'])
+          .order('month', { ascending: true })
+          .limit(1)
+        const due = nextPayment?.[0] ?? null
+        nextDue = (due?.month as string) ?? null
+        paymentStatus = due ? (due.status as 'pending' | 'late') : 'paid'
+      }
       base.lease = {
+        id: lease.id as string,
         monthlyRent: (lease.monthly_rent as number) ?? 0,
-        nextDue: (due?.month as string) ?? null,
-        paymentStatus: due ? (due.status as 'pending' | 'late') : 'paid',
+        nextDue,
+        paymentStatus,
+        status: lease.status as 'active' | 'pending_signature',
+        awaitingMySignature: lease.status === 'pending_signature' && !!lease.owner_signature && !lease.tenant_signature,
       }
     } else {
       base.lease = null
@@ -205,7 +233,8 @@ export async function GET(request: Request) {
         .eq('swiped_id', user.id).in('direction', ['right', 'super'])
         .gte('created_at', since).limit(1000),
       supabase.from('user_reviews').select('rating').eq('reviewed_id', user.id),
-      supabase.from('leases').select('id').eq('owner_id', user.id),
+      supabase.from('leases').select('id, status, owner_signature, created_at')
+        .eq('owner_id', user.id).order('created_at', { ascending: false }),
     ])
 
     const items = (myListingsRes.data ?? []).map(l => {
@@ -239,6 +268,16 @@ export async function GET(request: Request) {
         .map(c => ({ name: (c.first_name as string) ?? '', avatarUrl: (c.avatar_url as string) ?? null }))
     }
     base.likesReceived = { count: likesRes.count ?? 0, latest: latestCandidates }
+
+    // Baux du loueur : actifs / en attente de signature
+    const ownerLeases = myLeasesRes.data ?? []
+    const pendingLeases = ownerLeases.filter(l => l.status === 'pending_signature')
+    base.leases = {
+      active: ownerLeases.filter(l => l.status === 'active').length,
+      pendingSignature: pendingLeases.length,
+      latestPendingId: (pendingLeases[0]?.id as string) ?? null,
+      awaitingMySignature: pendingLeases.filter(l => !l.owner_signature).length,
+    }
 
     // Signalements non résolus sur les baux du loueur (RLS: owner via leases)
     const leaseIds = (myLeasesRes.data ?? []).map(l => l.id as string)

@@ -147,6 +147,32 @@ export function bailSignatureRequestTemplate(firstName: string, signUrl: string)
   return BASE.replace('{{BODY}}', body)
 }
 
+export function bailActiveTemplate(firstName: string, address: string, rent: number, bailUrl: string): string {
+  const body = `
+    <div style="padding:36px 40px">
+      <h2 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700">Votre bail est actif 🎉</h2>
+      <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.6">
+        Bonjour ${firstName || 'toi'}, les deux parties ont signé électroniquement le contrat de location.
+        Le bail est désormais actif — vous pouvez consulter et télécharger votre exemplaire signé à tout moment.
+      </p>
+      <div style="background:#f0fdf9;border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid #c6f0de">
+        <p style="margin:0 0 4px;font-size:14px;color:#111827;font-weight:700">${address}</p>
+        <p style="margin:0;font-size:13px;color:#6b7280">Loyer mensuel : ${rent} €</p>
+      </div>
+      <p style="margin:0 0 20px;font-size:12px;color:#9ca3af;line-height:1.5">
+        Signature électronique simple au sens du règlement eIDAS. Une copie signée est conservée pour chaque partie.
+      </p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="${bailUrl}"
+          style="display:inline-block;background:linear-gradient(135deg,#4ECBA0,#2AA87C);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 36px;border-radius:50px;box-shadow:0 4px 16px rgba(78,203,160,.35)">
+          📄 Voir mon bail signé
+        </a>
+      </div>
+    </div>
+  `
+  return BASE.replace('{{BODY}}', body)
+}
+
 export function resetPasswordTemplate(resetUrl: string): string {
   const body = `
     <div style="padding:36px 40px">

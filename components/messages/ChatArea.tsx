@@ -468,6 +468,11 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
                         isMe={isMe}
                         onRespond={(status) => respondRich(m.id, m.payload, status)}
                         onCounter={() => openAction('visite')}
+                        establishLeaseHref={
+                          !isMe && m.type === 'reservation' && otherUserId
+                            ? `/app/baux/nouveau?tenant=${otherUserId}${(m.payload?.listing_id ?? listingId) ? `&listing=${m.payload?.listing_id ?? listingId}` : ''}`
+                            : null
+                        }
                       />
                     ) : (
                       <div
