@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useImperativeHandle, forwardRef } from 'react'
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react'
 
 export interface SignatureCanvasHandle {
   toDataURL: () => string | null
@@ -18,6 +18,18 @@ const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function Signat
   const drawing = useRef(false)
   const hasDrawn = useRef(false)
   const [signed, setSigned] = useState(false)
+
+  // Le bitmap doit correspondre à la taille affichée (× devicePixelRatio), sinon le
+  // canvas 320×120 étiré par `w-full` grossit et floute le trait, et décale les coordonnées.
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = rect.width * dpr
+    canvas.height = rect.height * dpr
+    canvas.getContext('2d')?.scale(dpr, dpr)
+  }, [])
 
   function getCtx() {
     const canvas = canvasRef.current
@@ -49,8 +61,9 @@ const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function Signat
     const { x, y } = getPos(e)
     ctx.lineTo(x, y)
     ctx.strokeStyle = '#111827'
-    ctx.lineWidth = 2
+    ctx.lineWidth = 1.5
     ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
     ctx.stroke()
     hasDrawn.current = true
     setSigned(true)
@@ -81,10 +94,8 @@ const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function Signat
       <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>{label}</label>
       <canvas
         ref={canvasRef}
-        width={320}
-        height={120}
         className="rounded-[10px] cursor-crosshair w-full"
-        style={{ background: '#F9FAFB', border: `1.5px dashed ${signed ? '#4ECBA0' : '#E5E7EB'}`, touchAction: 'none' }}
+        style={{ height: '120px', background: '#F9FAFB', border: `1.5px dashed ${signed ? '#4ECBA0' : '#E5E7EB'}`, touchAction: 'none' }}
         onMouseDown={start}
         onMouseMove={move}
         onMouseUp={end}
