@@ -35,12 +35,9 @@ const locataireSpaceItems: NavItem[] = [
   { icon: Building2,     label: 'Ma maison',             href: '/app/maison',             id: 'maison' },
   { icon: AlertTriangle, label: 'Déclarer un problème',  href: '/app/declarer-probleme',  id: 'declarer-probleme' },
   { icon: User,          label: 'Mon profil',            href: '/app/profil',             id: 'profil' },
-  { icon: Megaphone,     label: 'Mon annonce',           href: '/app/annonce',            id: 'annonce' },
-  { icon: FileText,      label: 'Mes annonces',          href: '/app/mes-annonces',       id: 'mes-annonces' },
   { icon: Bookmark,      label: 'Favoris',                href: '/app/favoris',           id: 'favoris' },
 ]
 const locataireAccountItems: NavItem[] = [
-  { icon: Folder,     label: 'Mon dossier',  href: '/app/dossier',    id: 'dossier' },
   { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
   { icon: Gift,       label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
   { icon: Settings,   label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },

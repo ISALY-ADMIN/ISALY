@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { MapPin, MessageCircle, Home, Star, ChevronRight, Users } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
 
 interface PublicProfile {
@@ -21,7 +22,6 @@ interface PublicProfile {
 }
 
 interface Listing { id: string; title: string | null; city: string | null; rent: number | null; photos: string[] | null }
-interface Review { id: string; rating: number; comment: string | null; created_at: string; reviewer?: { first_name?: string } }
 
 const CARD: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
@@ -51,8 +51,6 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
   const [profile, setProfile] = useState<PublicProfile | null>(null)
   const [listings, setListings] = useState<Listing[]>([])
   const [inColoc, setInColoc] = useState(false)
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [avgRating, setAvgRating] = useState<number | null>(null)
   const [hasConversation, setHasConversation] = useState(false)
   const [isMe, setIsMe] = useState(false)
 
@@ -64,12 +62,11 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.id === userId) setIsMe(true)
 
-      const [{ data: p }, { data: ls }, leaseRes, reviewsRes, convRes] = await Promise.all([
+      const [{ data: p }, { data: ls }, leaseRes, convRes] = await Promise.all([
         supabase.from('profiles').select('id, first_name, last_name, avatar_url, city, bio, cert_level, role').eq('id', userId).single(),
         supabase.from('listings').select('id, title, city, rent, photos').eq('owner_id', userId).eq('is_active', true).limit(6),
         // Booléen via SECURITY DEFINER — les RLS leases restent owner/tenant-only
         supabase.rpc('has_active_lease', { uid: userId }).then(r => r, () => ({ data: null, error: true })),
-        fetch(`/api/reviews?user_id=${userId}`).then(r => r.json()).catch(() => null),
         user
           ? supabase.from('conversations').select('id')
               .or(`and(user1_id.eq.${user.id},user2_id.eq.${userId}),and(user1_id.eq.${userId},user2_id.eq.${user.id})`)
@@ -80,10 +77,6 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
       if (p) setProfile(p as PublicProfile)
       setListings((ls ?? []) as Listing[])
       setInColoc(leaseRes?.data === true)
-      if (reviewsRes) {
-        setReviews((reviewsRes.reviews ?? []) as Review[])
-        setAvgRating(typeof reviewsRes.average === 'number' ? reviewsRes.average : null)
-      }
       setHasConversation(!!(convRes?.data && convRes.data.length > 0))
       setLoaded(true)
     }
@@ -202,41 +195,12 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
           </Card>
         )}
 
-        {/* ── Avis reçus ── */}
+        {/* ── Avis reçus (dépôt inclus si relation réelle) ── */}
         <Card delay={0.15}>
           <h2 className="flex items-center gap-2 text-[13px] font-bold mb-3 uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>
             <Star size={14} /> Avis reçus
           </h2>
-          {reviews.length === 0 ? (
-            <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Aucun avis pour le moment.</p>
-          ) : (
-            <>
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <Star key={i} size={16} fill={avgRating !== null && i <= Math.round(avgRating) ? '#F59E0B' : 'none'} color={avgRating !== null && i <= Math.round(avgRating) ? '#F59E0B' : 'rgba(255,255,255,0.2)'} />
-                  ))}
-                </div>
-                {avgRating !== null && <span className="text-[15px] font-extrabold" style={{ color: '#fff' }}>{avgRating.toFixed(1)}</span>}
-                <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.4)' }}>· {reviews.length} avis</span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {reviews.slice(0, 5).map(r => (
-                  <div key={r.id} className="p-3 rounded-[14px]" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[12.5px] font-bold" style={{ color: '#fff' }}>{r.reviewer?.first_name ?? 'Colocataire'}</span>
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map(i => (
-                          <Star key={i} size={11} fill={i <= r.rating ? '#F59E0B' : 'none'} color={i <= r.rating ? '#F59E0B' : 'rgba(255,255,255,0.15)'} />
-                        ))}
-                      </div>
-                    </div>
-                    {r.comment && <p className="text-[12.5px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>{r.comment}</p>}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <ReviewStars userId={userId} profileFirstName={firstName} />
         </Card>
       </div>
     </>

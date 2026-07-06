@@ -4,22 +4,27 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MapPin, Camera, Pencil } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
+import Button from '@/components/ui/Button'
 import CertificationBadge, { CertLevel, CertStatus } from '@/components/ui/CertificationBadge'
 import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 
-// ── Design tokens ─────────────────────────────────────────────
+// ── Design tokens (signature dashboard-home) ──────────────────
 const MINT = '#10B981'
 const MINT_D = '#059669'
-const CARD = '#FFFFFF'
-const BORDER = '#E5E7EB'
-const SHADOW = '0 2px 16px rgba(0,0,0,.06)'
-const INK = '#111827'
-const MUTED = '#6B7280'
-const SERIF = "'DM Serif Display', serif"
+const CARD_BG = 'rgba(255,255,255,0.04)'
+const CARD_BORDER = 'rgba(255,255,255,0.08)'
+const TXT_HI = '#fff'
+const TXT_MID = 'rgba(255,255,255,0.65)'
+const TXT_LOW = 'rgba(255,255,255,0.4)'
+const TXT_FAINT = 'rgba(255,255,255,0.3)'
+const INPUT_BG = 'rgba(255,255,255,0.05)'
+const INPUT_BORDER = 'rgba(255,255,255,0.12)'
+const DIVIDER = '1px solid rgba(255,255,255,0.06)'
 
 // ── Reference data ────────────────────────────────────────────
 const SCHEDULE_OPTS = [
@@ -57,41 +62,38 @@ const INCOME_DOCS: { type: DocType; label: string; required: boolean }[] = [
 type DocInfo = { path: string; status: CertStatus; url: string | null; isImage: boolean; name: string }
 type Docs = Partial<Record<DocType, DocInfo>>
 
-// ── Small UI primitives ───────────────────────────────────────
-function Card({ children, accent, delay = 0 }: { children: React.ReactNode; accent?: string; delay?: number }) {
+// ── UI primitives ─────────────────────────────────────────────
+function Section({ title, action, children, accent, delay = 0 }: {
+  title: string; action?: React.ReactNode; children: React.ReactNode; accent?: boolean; delay?: number
+}) {
   return (
-    <motion.div
+    <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay, ease: 'easeOut' }}
-      className="rounded-[18px] p-5 border mb-4"
-      style={{ background: CARD, borderColor: accent ?? BORDER, boxShadow: SHADOW }}
+      className="rounded-[20px] p-5 md:p-6 mb-4"
+      style={{ background: CARD_BG, border: `1px solid ${accent ? 'rgba(16,185,129,0.4)' : CARD_BORDER}` }}
     >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-[12px] font-bold uppercase tracking-[1.5px] m-0" style={{ color: TXT_LOW, fontFamily: "'Outfit', sans-serif" }}>
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
-    </motion.div>
+    </motion.section>
   )
 }
 
-function SectionTitle({ icon, children, action }: { icon: string; children: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between mb-3">
-      <h3 className="flex items-center gap-2 text-[15px] font-bold" style={{ color: INK }}>
-        <span>{icon}</span>{children}
-      </h3>
-      {action}
-    </div>
-  )
-}
-
-function ProgressRing({ pct, size = 78, stroke = 7 }: { pct: number; size?: number; stroke?: number }) {
+function ProgressRing({ pct, size = 84, stroke = 6 }: { pct: number; size?: number; stroke?: number }) {
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   const off = c - (pct / 100) * c
   const color = pct < 40 ? '#EF4444' : pct < 75 ? '#F59E0B' : MINT
   return (
-    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }} title={`Profil complété à ${pct}%`}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#F3F4F6" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
         <motion.circle
           cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeLinecap="round" strokeDasharray={c}
@@ -101,41 +103,10 @@ function ProgressRing({ pct, size = 78, stroke = 7 }: { pct: number; size?: numb
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[19px] font-extrabold leading-none" style={{ color }}>{pct}%</span>
+        <span className="text-[18px] font-extrabold leading-none" style={{ color }}>{pct}%</span>
+        <span className="text-[9px] mt-0.5" style={{ color: TXT_FAINT }}>complété</span>
       </div>
     </div>
-  )
-}
-
-function PrimaryBtn({ children, onClick, disabled, loading, small }: {
-  children: React.ReactNode; onClick?: () => void; disabled?: boolean; loading?: boolean; small?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={`rounded-full font-bold text-white border-none cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed ${small ? 'px-3.5 py-1.5 text-[12px]' : 'px-5 py-2.5 text-[13.5px]'}`}
-      style={{ background: `linear-gradient(135deg, ${MINT}, ${MINT_D})`, boxShadow: '0 4px 14px rgba(16,185,129,.25)' }}
-    >
-      {loading ? '⏳ …' : children}
-    </button>
-  )
-}
-
-function GhostBtn({ children, onClick, danger, small }: {
-  children: React.ReactNode; onClick?: () => void; danger?: boolean; small?: boolean
-}) {
-  const c = danger ? '#EF4444' : MUTED
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full font-semibold border-[1.5px] bg-transparent cursor-pointer transition-all ${small ? 'px-3 py-1.5 text-[12px]' : 'px-4 py-2 text-[12.5px]'}`}
-      style={{ borderColor: danger ? '#FECACA' : BORDER, color: c }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = danger ? '#EF4444' : MINT; e.currentTarget.style.color = danger ? '#EF4444' : MINT }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = danger ? '#FECACA' : BORDER; e.currentTarget.style.color = c }}
-    >
-      {children}
-    </button>
   )
 }
 
@@ -144,16 +115,16 @@ function TextField({ label, value, onChange, placeholder, type = 'text' }: {
 }) {
   return (
     <div>
-      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: MUTED }}>{label}</label>
+      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: TXT_LOW }}>{label}</label>
       <input
         type={type}
         value={value}
         placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] border outline-none transition-colors"
-        style={{ background: '#F9FAFB', borderColor: BORDER, color: INK }}
+        className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] outline-none transition-colors"
+        style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TXT_HI, colorScheme: 'dark' }}
         onFocus={e => (e.target.style.borderColor = MINT)}
-        onBlur={e => (e.target.style.borderColor = BORDER)}
+        onBlur={e => (e.target.style.borderColor = INPUT_BORDER)}
       />
     </div>
   )
@@ -163,13 +134,30 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button
       onClick={onClick}
-      className="px-3 py-1.5 rounded-full text-[12.5px] font-semibold border-[1.5px] cursor-pointer transition-all"
+      className="px-3 py-1.5 rounded-[8px] text-[12.5px] font-medium cursor-pointer transition-all duration-150 active:scale-[0.98]"
       style={active
-        ? { background: '#ECFDF5', borderColor: MINT, color: MINT_D }
-        : { background: '#F9FAFB', borderColor: BORDER, color: MUTED }}
+        ? { background: 'rgba(16,185,129,0.15)', border: `1px solid rgba(16,185,129,0.5)`, color: MINT }
+        : { background: 'rgba(255,255,255,0.04)', border: `1px solid ${INPUT_BORDER}`, color: TXT_MID }}
     >
       {children}
     </button>
+  )
+}
+
+function Tag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-[11.5px] font-medium px-2.5 py-1 rounded-[8px]" style={{ background: 'rgba(16,185,129,0.12)', color: MINT }}>
+      {children}
+    </span>
+  )
+}
+
+function InfoRow({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
+  return (
+    <div className="flex justify-between items-center py-2.5 text-[13.5px]" style={last ? {} : { borderBottom: DIVIDER }}>
+      <span style={{ color: TXT_LOW }}>{label}</span>
+      <span className="font-medium text-right" style={{ color: TXT_HI }}>{value}</span>
+    </div>
   )
 }
 
@@ -192,7 +180,7 @@ async function compressImage(file: File, maxSize = 512, quality = 0.85): Promise
 }
 
 // ════════════════════════════════════════════════════════════
-// Bail modal (préservé)
+// Bail modal (préservé — thème dark)
 // ════════════════════════════════════════════════════════════
 function BailModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ address: '', city: '', monthly_rent: '', start_date: '', end_date: '', nb_roommates: '1' })
@@ -220,17 +208,18 @@ function BailModal({ onClose, onCreated }: { onClose: () => void; onCreated: () 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-5" style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-5" style={{ background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="rounded-[20px] p-6 w-full" style={{ background: CARD, maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,.2)', maxHeight: '90vh', overflowY: 'auto' }}
+        className="rounded-[20px] p-6 w-full"
+        style={{ background: '#111214', border: `1px solid ${CARD_BORDER}`, maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,.5)', maxHeight: '90vh', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[18px]" style={{ fontFamily: SERIF, color: INK }}>Entrer les infos de mon bail</h3>
-          <button onClick={onClose} className="border-none bg-transparent cursor-pointer text-lg" style={{ color: '#9CA3AF' }}>✕</button>
+          <h3 className="text-[17px] font-bold m-0" style={{ color: TXT_HI, fontFamily: "'Outfit', sans-serif" }}>Entrer les infos de mon bail</h3>
+          <button onClick={onClose} className="border-none bg-transparent cursor-pointer text-lg" style={{ color: TXT_LOW }}>✕</button>
         </div>
-        {error && <p className="text-[12.5px] mb-4 px-3 py-2 rounded-[8px]" style={{ background: '#FEF2F2', color: '#DC2626' }}>{error}</p>}
+        {error && <p className="text-[12.5px] mb-4 px-3 py-2 rounded-[8px]" style={{ background: 'rgba(239,68,68,0.1)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' }}>{error}</p>}
         <div className="flex flex-col gap-3.5">
           <TextField label="Adresse *" value={form.address} onChange={v => setForm(p => ({ ...p, address: v }))} placeholder="12 Rue de la Roquette" />
           <TextField label="Ville" value={form.city} onChange={v => setForm(p => ({ ...p, city: v }))} placeholder="Paris 11e" />
@@ -239,14 +228,14 @@ function BailModal({ onClose, onCreated }: { onClose: () => void; onCreated: () 
           <TextField label="Date de fin (optionnel)" type="date" value={form.end_date} onChange={v => setForm(p => ({ ...p, end_date: v }))} />
           <TextField label="Nombre de colocataires" type="number" value={form.nb_roommates} onChange={v => setForm(p => ({ ...p, nb_roommates: v }))} placeholder="1" />
         </div>
-        <div className="mt-5"><PrimaryBtn onClick={handleCreate} loading={saving}>🏠 Activer le mode locataire</PrimaryBtn></div>
+        <div className="mt-5"><Button onClick={handleCreate} loading={saving}>🏠 Activer le mode locataire</Button></div>
       </motion.div>
     </div>
   )
 }
 
 // ════════════════════════════════════════════════════════════
-// Document row — upload / preview / delete
+// Document row — upload / preview / delete (thème dark)
 // ════════════════════════════════════════════════════════════
 function DocRow({ label, required, doc, uploading, onUpload, onDelete }: {
   label: string; required: boolean; doc?: DocInfo; uploading: boolean
@@ -255,46 +244,49 @@ function DocRow({ label, required, doc, uploading, onUpload, onDelete }: {
   const inputRef = useRef<HTMLInputElement>(null)
   const has = !!doc
   return (
-    <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid #F3F4F6' }}>
+    <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: DIVIDER }}>
       <input ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = '' }} />
       {/* Thumbnail / icon */}
-      <div className="w-11 h-11 rounded-[9px] flex items-center justify-center overflow-hidden flex-shrink-0"
-        style={{ background: has ? '#ECFDF5' : '#F3F4F6', border: `1px solid ${has ? '#A7F3D0' : BORDER}` }}>
+      <div className="w-11 h-11 rounded-[10px] flex items-center justify-center overflow-hidden flex-shrink-0"
+        style={{ background: has ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${has ? 'rgba(16,185,129,0.35)' : INPUT_BORDER}` }}>
         {has && doc!.isImage && doc!.url
+          // eslint-disable-next-line @next/next/no-img-element
           ? <img src={doc!.url} alt="" className="w-full h-full object-cover" />
           : <span className="text-[18px]">{has ? '📄' : required ? '📎' : '➕'}</span>}
       </div>
       {/* Label + status */}
       <div className="flex-1 min-w-0">
-        <div className="text-[12.5px] font-semibold truncate" style={{ color: INK }}>
-          {label}{!required && <span className="font-normal" style={{ color: '#9CA3AF' }}> · optionnel</span>}
+        <div className="text-[12.5px] font-semibold truncate" style={{ color: TXT_HI }}>
+          {label}{!required && <span className="font-normal" style={{ color: TXT_FAINT }}> · optionnel</span>}
         </div>
         {has ? (
           <div className="flex items-center gap-1.5 mt-0.5">
             {doc!.status === 'verified'
-              ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#ECFDF5', color: MINT_D }}>✓ Validé</span>
+              ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(16,185,129,0.15)', color: MINT }}>✓ Validé</span>
               : doc!.status === 'rejected'
-              ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEF2F2', color: '#DC2626' }}>✕ Refusé — à remplacer</span>
-              : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFFBEB', color: '#D97706' }}>⏳ En attente de validation</span>}
-            <span className="text-[10.5px] truncate" style={{ color: '#9CA3AF' }}>{doc!.name}</span>
+              ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(239,68,68,0.12)', color: '#F87171' }}>✕ Refusé — à remplacer</span>
+              : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>⏳ En attente de validation</span>}
+            <span className="text-[10.5px] truncate" style={{ color: TXT_FAINT }}>{doc!.name}</span>
           </div>
         ) : (
-          <div className="text-[10.5px] mt-0.5" style={{ color: '#9CA3AF' }}>Aucun fichier</div>
+          <div className="text-[10.5px] mt-0.5" style={{ color: TXT_FAINT }}>Aucun fichier</div>
         )}
       </div>
       {/* Actions */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {has && doc!.url && (
-          <a href={doc!.url} target="_blank" rel="noreferrer" className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full border-[1.5px]" style={{ borderColor: BORDER, color: MUTED }}>Voir</a>
+          <a href={doc!.url} target="_blank" rel="noreferrer"
+            className="text-[11px] font-semibold px-2.5 py-1.5 rounded-[8px] no-underline transition-colors"
+            style={{ border: `1px solid ${INPUT_BORDER}`, color: TXT_MID }}>
+            Voir
+          </a>
         )}
-        <button onClick={() => inputRef.current?.click()} disabled={uploading}
-          className="text-[11px] font-bold px-3 py-1.5 rounded-full border-none cursor-pointer text-white disabled:opacity-60"
-          style={{ background: has ? '#F59E0B' : `linear-gradient(135deg, ${MINT}, ${MINT_D})` }}>
-          {uploading ? '⏳' : has ? 'Remplacer' : 'Uploader'}
-        </button>
+        <Button size="sm" variant={has ? 'secondary' : 'primary'} onClick={() => inputRef.current?.click()} loading={uploading} className="!px-3 !py-1.5 !text-[11px]">
+          {has ? 'Remplacer' : 'Uploader'}
+        </Button>
         {has && (
-          <button onClick={onDelete} className="text-[13px] px-1.5 py-1 rounded-full border-none bg-transparent cursor-pointer" style={{ color: '#EF4444' }} title="Supprimer">🗑</button>
+          <button onClick={onDelete} className="text-[13px] px-1.5 py-1 rounded-[8px] border-none bg-transparent cursor-pointer" style={{ color: '#F87171' }} title="Supprimer">🗑</button>
         )}
       </div>
     </div>
@@ -577,9 +569,9 @@ export default function ProfilPage() {
     return (
       <>
         <Topbar title="Mon profil" />
-        <div className="flex-1 overflow-y-auto p-8" style={{ maxWidth: '720px' }}>
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 w-full mx-auto" style={{ maxWidth: '760px' }}>
           {[0, 1, 2, 3].map(i => (
-            <div key={i} className="rounded-[18px] mb-4 animate-pulse" style={{ background: '#F3F4F6', height: i === 0 ? 120 : 160 }} />
+            <div key={i} className="rounded-[20px] mb-4 animate-pulse" style={{ background: 'rgba(255,255,255,0.05)', height: i === 0 ? 140 : 160 }} />
           ))}
         </div>
       </>
@@ -591,326 +583,342 @@ export default function ProfilPage() {
       <Topbar title="Mon profil" />
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
 
-      <div className="flex-1 overflow-y-auto p-6 md:p-8" style={{ maxWidth: '720px' }}>
+      <div className="flex-1 overflow-y-auto w-full">
+        <div className="mx-auto p-6 md:p-8" style={{ maxWidth: '760px' }}>
 
-        {/* ── HEADER ─────────────────────────────────────────── */}
-        <Card>
-          <div className="flex items-center gap-5">
-            <div className="relative flex-shrink-0">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" referrerPolicy="no-referrer" className="w-[76px] h-[76px] rounded-full object-cover" style={{ border: `2px solid ${MINT}` }} />
-              ) : (
-                <div className="w-[76px] h-[76px] rounded-full flex items-center justify-center text-2xl font-extrabold text-white" style={{ background: `linear-gradient(135deg, ${MINT}, ${MINT_D})` }}>
-                  {initials || '👤'}
+          {/* ── HEADER PROFIL — bandeau large ─────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: -14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="rounded-[24px] p-6 md:p-7 mb-4"
+            style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}
+          >
+            <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
+              {/* Avatar — upload au clic + preview */}
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="relative flex-shrink-0 border-none bg-transparent p-0 cursor-pointer group disabled:cursor-wait"
+                title="Changer la photo"
+              >
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="Avatar" referrerPolicy="no-referrer" className="w-[88px] h-[88px] rounded-full object-cover" style={{ border: `2px solid rgba(16,185,129,0.5)` }} />
+                ) : (
+                  <div className="w-[88px] h-[88px] rounded-full flex items-center justify-center text-[26px] font-extrabold text-white" style={{ background: `linear-gradient(135deg, ${MINT}, ${MINT_D})` }}>
+                    {initials || '👤'}
+                  </div>
+                )}
+                <span
+                  className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  style={{ background: 'rgba(0,0,0,0.5)' }}
+                >
+                  <Camera size={20} color="#fff" />
+                </span>
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ background: MINT, border: '2px solid #0A0A0A' }}
+                >
+                  {uploadingAvatar
+                    ? <span className="inline-block w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    : <Camera size={13} color="#fff" />}
+                </span>
+              </button>
+
+              <div className="flex-1 min-w-0">
+                <h1 className="text-[26px] font-bold leading-tight m-0 mb-1 truncate" style={{ color: TXT_HI, fontFamily: "'Outfit', sans-serif" }}>
+                  {displayName}
+                </h1>
+                <div className="flex items-center gap-1.5 text-[13px] mb-2.5" style={{ color: TXT_LOW }}>
+                  <MapPin size={13} /> {city || 'Ville non renseignée'}
                 </div>
+                {certLevel > 0
+                  ? <CertificationBadge level={certLevel} status={levelStatus(certLevel)} size="md" />
+                  : <span className="text-[11.5px] font-semibold px-2.5 py-1 rounded-[8px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_LOW }}>Non vérifié</span>}
+              </div>
+
+              <ProgressRing pct={completionPct} />
+            </div>
+
+            {nextStep && (
+              <div className="mt-5 flex items-center gap-2 px-3.5 py-2.5 rounded-[12px]" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                <span className="text-[13px]">✨</span>
+                <span className="text-[12.5px] font-medium" style={{ color: MINT }}>{dynamicPhrase}</span>
+              </div>
+            )}
+          </motion.div>
+
+          {/* ── CHECKLIST DE COMPLÉTION ────────────────────────── */}
+          <Section title="Complétion du dossier" delay={0.04}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {completion.map(c => (
+                <div key={c.key} className="flex items-center gap-2 text-[12.5px] py-1">
+                  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                    style={c.done ? { background: MINT, color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: TXT_FAINT, border: `1px solid ${INPUT_BORDER}` }}>
+                    {c.done ? '✓' : ''}
+                  </span>
+                  <span style={{ color: c.done ? TXT_LOW : TXT_HI, fontWeight: c.done ? 400 : 500 }}>{c.label}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* ── INFOS PERSONNELLES ─────────────────────────────── */}
+          <Section
+            title="Infos personnelles"
+            accent={editInfo}
+            delay={0.08}
+            action={!editInfo ? <Button variant="ghost" size="sm" onClick={openEditInfo}><Pencil size={13} /> Modifier</Button> : undefined}
+          >
+            <AnimatePresence mode="wait">
+              {editInfo ? (
+                <motion.div key="edit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3.5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <TextField label="Prénom" value={dInfo.firstName} onChange={v => setDInfo(p => ({ ...p, firstName: v }))} />
+                    <TextField label="Nom" value={dInfo.lastName} onChange={v => setDInfo(p => ({ ...p, lastName: v }))} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: TXT_LOW }}>Bio</label>
+                    <textarea value={dInfo.bio} onChange={e => setDInfo(p => ({ ...p, bio: e.target.value.slice(0, 300) }))} rows={3}
+                      placeholder="Présentez-vous en quelques mots…"
+                      className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] outline-none resize-none"
+                      style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TXT_HI }}
+                      onFocus={e => (e.target.style.borderColor = MINT)} onBlur={e => (e.target.style.borderColor = INPUT_BORDER)} />
+                    <div className="text-right text-[11px] mt-1" style={{ color: dInfo.bio.length > 20 ? MINT : TXT_FAINT }}>{dInfo.bio.length}/300</div>
+                  </div>
+                  <TextField label="Téléphone" value={dInfo.phone} onChange={v => setDInfo(p => ({ ...p, phone: v }))} placeholder="+33 6 …" />
+                  <div className="flex gap-2 mt-1">
+                    <Button onClick={saveInfo} loading={savingInfo}>Enregistrer</Button>
+                    <Button variant="secondary" onClick={() => setEditInfo(false)}>Annuler</Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <InfoRow label="Prénom & nom" value={displayName} />
+                  <InfoRow label="Email" value={email || '—'} />
+                  <InfoRow label="Téléphone" value={phone || '—'} last />
+                  <div className="pt-2.5 mt-1" style={{ borderTop: DIVIDER }}>
+                    <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: TXT_LOW }}>Bio</span>
+                    <p className="text-[13px] mt-1 mb-0 leading-relaxed" style={{ color: bio ? TXT_MID : TXT_FAINT }}>{bio || 'Aucune bio — ajoutez quelques mots pour vous présenter.'}</p>
+                  </div>
+                </motion.div>
               )}
-              <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}
-                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[12px] cursor-pointer disabled:opacity-60"
-                style={{ background: MINT, color: '#fff' }} title="Changer la photo">
-                {uploadingAvatar ? '…' : '📷'}
+            </AnimatePresence>
+          </Section>
+
+          {/* ── PRÉFÉRENCES COLOC ──────────────────────────────── */}
+          <Section
+            title="Préférences coloc"
+            accent={editPrefs}
+            delay={0.12}
+            action={!editPrefs ? <Button variant="ghost" size="sm" onClick={openEditPrefs}><Pencil size={13} /> Modifier</Button> : undefined}
+          >
+            <AnimatePresence mode="wait">
+              {editPrefs ? (
+                <motion.div key="edit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: TXT_LOW }}>Ville recherchée</label>
+                    <input list="city-list" value={dPrefs.city} onChange={e => setDPrefs(p => ({ ...p, city: e.target.value }))}
+                      placeholder="Ex. Paris 11e" className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] outline-none"
+                      style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TXT_HI }}
+                      onFocus={e => (e.target.style.borderColor = MINT)} onBlur={e => (e.target.style.borderColor = INPUT_BORDER)} />
+                    <datalist id="city-list">{cityOptions.map(c => <option key={c} value={c} />)}</datalist>
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: TXT_LOW }}>Budget max</label>
+                      <span className="text-[14px] font-extrabold" style={{ color: MINT }}>{dPrefs.budgetMax} €/mois</span>
+                    </div>
+                    <input type="range" min={300} max={2000} step={50} value={dPrefs.budgetMax}
+                      onChange={e => setDPrefs(p => ({ ...p, budgetMax: parseInt(e.target.value) }))}
+                      className="w-full cursor-pointer" style={{ accentColor: MINT }} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Rythme</label>
+                    <div className="flex flex-wrap gap-2">
+                      {SCHEDULE_OPTS.map(o => <Chip key={o.v} active={dPrefs.schedule === o.v} onClick={() => setDPrefs(p => ({ ...p, schedule: p.schedule === o.v ? null : o.v }))}>{o.label}</Chip>)}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Ambiance</label>
+                    <div className="flex flex-wrap gap-2">
+                      {VIBE_OPTS.map(o => <Chip key={o.v} active={dPrefs.vibe === o.v} onClick={() => setDPrefs(p => ({ ...p, vibe: p.vibe === o.v ? null : o.v }))}>{o.label}</Chip>)}
+                    </div>
+                  </div>
+                  <div className="flex gap-6">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Fumeur</label>
+                      <div className="flex gap-2">
+                        <Chip active={dPrefs.smoker === false} onClick={() => setDPrefs(p => ({ ...p, smoker: false }))}>🚭 Non</Chip>
+                        <Chip active={dPrefs.smoker === true} onClick={() => setDPrefs(p => ({ ...p, smoker: true }))}>🚬 Oui</Chip>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Animaux</label>
+                      <div className="flex gap-2">
+                        <Chip active={dPrefs.petsOk === true} onClick={() => setDPrefs(p => ({ ...p, petsOk: true }))}>🐾 OK</Chip>
+                        <Chip active={dPrefs.petsOk === false} onClick={() => setDPrefs(p => ({ ...p, petsOk: false }))}>🚫 Non</Chip>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Passions</label>
+                    <div className="flex flex-wrap gap-2">
+                      {PASSIONS.map(p => (
+                        <Chip key={p} active={dPrefs.passions.includes(p)}
+                          onClick={() => setDPrefs(pr => ({ ...pr, passions: pr.passions.includes(p) ? pr.passions.filter(x => x !== p) : [...pr.passions, p] }))}>
+                          {PASSION_EMOJI[p]} {p}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <Button onClick={savePrefs} loading={savingPrefs}>Enregistrer</Button>
+                    <Button variant="secondary" onClick={() => setEditPrefs(false)}>Annuler</Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <InfoRow label="Ville" value={city || '—'} />
+                  <InfoRow label="Budget max" value={<span style={{ color: MINT, fontWeight: 700 }}>{budgetMax ? `${budgetMax} €/mois` : '—'}</span>} last />
+                  <div className="flex flex-wrap gap-1.5 pt-3">
+                    {[
+                      SCHEDULE_OPTS.find(o => o.v === schedule)?.label,
+                      VIBE_OPTS.find(o => o.v === vibe)?.label,
+                      smoker === false ? '🚭 Non-fumeur' : smoker === true ? '🚬 Fumeur' : null,
+                      petsOk === true ? '🐾 Animaux OK' : petsOk === false ? '🚫 Sans animaux' : null,
+                      ...passions.map(p => `${PASSION_EMOJI[p]} ${p}`),
+                    ].filter(Boolean).map((t, i) => <Tag key={i}>{t}</Tag>)}
+                    {!schedule && !vibe && passions.length === 0 && smoker === null && petsOk === null && (
+                      <span className="text-[12.5px]" style={{ color: TXT_FAINT }}>Aucune préférence renseignée.</span>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Section>
+
+          {/* ── DOSSIER & VÉRIFICATION ─────────────────────────── */}
+          <Section title="Dossier & vérification" delay={0.16}>
+            <p className="text-[12.5px] mb-4 mt-0" style={{ color: TXT_LOW }}>
+              Vos documents sont <span className="font-semibold" style={{ color: TXT_HI }}>privés</span> et ne sont jamais rendus publics.
+            </p>
+
+            {/* Niveau 1 */}
+            <div className="rounded-[14px] p-4 mb-2.5" style={{ background: l1Done ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${l1Done ? 'rgba(16,185,129,0.35)' : CARD_BORDER}` }}>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[13px] font-bold" style={{ color: TXT_HI }}>Niveau 1 — Profil vérifié</span>
+                {l1Done ? <CertificationBadge level={1} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>À compléter</span>}
+              </div>
+              <p className="text-[11.5px] m-0" style={{ color: TXT_LOW }}>
+                {l1Done ? '✓ Email confirmé, photo, bio et infos de base complétés.' : 'Complétez photo, bio (20+ car.), nom, ville et budget pour valider ce niveau.'}
+              </p>
+            </div>
+
+            {/* Niveau 2 */}
+            <div className="rounded-[14px] p-4 mb-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${idDone ? 'rgba(96,165,250,0.35)' : CARD_BORDER}` }}>
+              <div className="flex justify-between items-center mb-2.5">
+                <span className="text-[13px] font-bold" style={{ color: TXT_HI }}>Niveau 2 — Identité certifiée</span>
+                {idDone ? <CertificationBadge level={2} status={levelStatus(2)} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_LOW }}>Pièce d'identité requise</span>}
+              </div>
+              {ID_DOCS.map(d => (
+                <DocRow key={d.type} label={d.label} required={d.required} doc={docs[d.type]} uploading={docUploading === d.type}
+                  onUpload={f => uploadDoc(d.type, f)} onDelete={() => deleteDoc(d.type)} />
+              ))}
+              {!idDone && <p className="text-[11.5px] mt-2.5 mb-0" style={{ color: TXT_FAINT }}>➜ Ajoutez le recto ET le verso de votre pièce d'identité pour atteindre le niveau 2.</p>}
+            </div>
+
+            {/* Niveau 3 */}
+            <div className="rounded-[14px] p-4" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${incomeDone ? 'rgba(245,158,11,0.35)' : CARD_BORDER}`, opacity: idDone ? 1 : 0.6 }}>
+              <div className="flex justify-between items-center mb-2.5">
+                <span className="text-[13px] font-bold" style={{ color: TXT_HI }}>Niveau 3 — Dossier complet</span>
+                {!idDone
+                  ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_FAINT }}>🔒 Niveau 2 requis</span>
+                  : incomeDone ? <CertificationBadge level={3} status={levelStatus(3)} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>Justificatifs requis</span>}
+              </div>
+              {idDone ? (
+                <>
+                  {INCOME_DOCS.map(d => (
+                    <DocRow key={d.type} label={d.label} required={d.required} doc={docs[d.type]} uploading={docUploading === d.type}
+                      onUpload={f => uploadDoc(d.type, f)} onDelete={() => deleteDoc(d.type)} />
+                  ))}
+                  {!incomeDone && <p className="text-[11.5px] mt-2.5 mb-0" style={{ color: TXT_FAINT }}>➜ Ajoutez un justificatif de revenus et un justificatif de domicile.</p>}
+                </>
+              ) : (
+                <p className="text-[12px] m-0" style={{ color: TXT_FAINT }}>Validez d'abord votre identité (Niveau 2) pour débloquer le dossier complet.</p>
+              )}
+            </div>
+          </Section>
+
+          {/* ── TEST DE COMPATIBILITÉ ──────────────────────────── */}
+          <Section title="Test de compatibilité" delay={0.2}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-[12.5px] m-0" style={{ color: TXT_MID }}>
+                {quizDone ? '✓ Test complété — il alimente votre score de matching.' : 'Passez le test pour améliorer la qualité de vos matchs.'}
+              </p>
+              <Link href="/app/quiz" className="flex-shrink-0 no-underline">
+                <Button variant={quizDone ? 'secondary' : 'primary'} size="sm">{quizDone ? 'Refaire le test' : 'Passer le test'}</Button>
+              </Link>
+            </div>
+          </Section>
+
+          {/* ── MES AVIS REÇUS ─────────────────────────────────── */}
+          <Section title="Mes avis reçus" delay={0.24}>
+            <ReviewStars userId={userId} profileFirstName={firstName} />
+          </Section>
+
+          {/* ── MA SITUATION ───────────────────────────────────── */}
+          <Section title="Ma situation" delay={0.28}>
+            <div className="flex gap-3">
+              <button className="flex-1 py-3 rounded-[12px] cursor-pointer transition-all duration-150 text-[13px] font-semibold active:scale-[0.98]"
+                style={mode === 'locataire'
+                  ? { background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.5)`, color: MINT }
+                  : { background: 'rgba(255,255,255,0.03)', border: `1px solid ${INPUT_BORDER}`, color: TXT_LOW }}>
+                🔍 Je cherche une coloc
+                {mode === 'locataire' && <div className="text-[10px] mt-0.5" style={{ color: MINT }}>Mode actuel</div>}
+              </button>
+              <button onClick={() => { if (mode === 'locataire') setShowBailModal(true) }}
+                className="flex-1 py-3 rounded-[12px] cursor-pointer transition-all duration-150 text-[13px] font-semibold active:scale-[0.98]"
+                style={mode === 'loueur'
+                  ? { background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.5)`, color: MINT }
+                  : { background: 'rgba(255,255,255,0.03)', border: `1px solid ${INPUT_BORDER}`, color: TXT_LOW }}>
+                🏠 Je suis dans un bail
+                {mode === 'loueur' && <div className="text-[10px] mt-0.5" style={{ color: MINT }}>Mode actuel</div>}
               </button>
             </div>
-
-            <div className="flex-1 min-w-0">
-              <h2 className="text-[22px] leading-tight mb-0.5 truncate" style={{ fontFamily: SERIF, color: INK }}>{displayName}</h2>
-              <p className="text-[13px] mb-2" style={{ color: MUTED }}>{city || 'Ville non renseignée'}</p>
-              {certLevel > 0
-                ? <CertificationBadge level={certLevel} status={levelStatus(certLevel)} size="md" />
-                : <span className="text-[11.5px] font-semibold px-2.5 py-1 rounded-full" style={{ background: '#F3F4F6', color: MUTED }}>Non vérifié</span>}
-            </div>
-
-            <ProgressRing pct={completionPct} />
-          </div>
-
-          {nextStep && (
-            <div className="mt-4 flex items-center gap-2 px-3.5 py-2.5 rounded-[12px]" style={{ background: '#ECFDF5' }}>
-              <span className="text-[13px]">✨</span>
-              <span className="text-[12.5px] font-semibold" style={{ color: MINT_D }}>{dynamicPhrase}</span>
-            </div>
-          )}
-        </Card>
-
-        {/* ── CHECKLIST DE COMPLÉTION ────────────────────────── */}
-        <Card delay={0.04}>
-          <SectionTitle icon="✅">Complétion du dossier</SectionTitle>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {completion.map(c => (
-              <div key={c.key} className="flex items-center gap-2 text-[12.5px] py-1">
-                <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                  style={c.done ? { background: MINT, color: '#fff' } : { background: '#F3F4F6', color: '#9CA3AF', border: `1px solid ${BORDER}` }}>
-                  {c.done ? '✓' : ''}
-                </span>
-                <span style={{ color: c.done ? MUTED : INK, fontWeight: c.done ? 400 : 600 }}>{c.label}</span>
+            {mode === 'loueur' && lease && (
+              <div className="mt-3 px-3 py-2.5 rounded-[10px] text-[12.5px]" style={{ background: 'rgba(16,185,129,0.08)', color: MINT, border: '1px solid rgba(16,185,129,0.25)' }}>
+                📍 {lease.address}{lease.city ? `, ${lease.city}` : ''} · {lease.monthly_rent} €/mois
               </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* ── INFOS PERSONNELLES ─────────────────────────────── */}
-        <Card accent={editInfo ? MINT : undefined} delay={0.08}>
-          <SectionTitle icon="👤" action={!editInfo ? <GhostBtn small onClick={openEditInfo}>✏️ Modifier</GhostBtn> : undefined}>
-            Infos personnelles
-          </SectionTitle>
-          <AnimatePresence mode="wait">
-            {editInfo ? (
-              <motion.div key="edit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3.5">
-                <div className="grid grid-cols-2 gap-3">
-                  <TextField label="Prénom" value={dInfo.firstName} onChange={v => setDInfo(p => ({ ...p, firstName: v }))} />
-                  <TextField label="Nom" value={dInfo.lastName} onChange={v => setDInfo(p => ({ ...p, lastName: v }))} />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: MUTED }}>Bio</label>
-                  <textarea value={dInfo.bio} onChange={e => setDInfo(p => ({ ...p, bio: e.target.value.slice(0, 300) }))} rows={3}
-                    placeholder="Présentez-vous en quelques mots…"
-                    className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] border outline-none resize-none"
-                    style={{ background: '#F9FAFB', borderColor: BORDER, color: INK }}
-                    onFocus={e => (e.target.style.borderColor = MINT)} onBlur={e => (e.target.style.borderColor = BORDER)} />
-                  <div className="text-right text-[11px] mt-1" style={{ color: dInfo.bio.length > 20 ? MINT_D : '#9CA3AF' }}>{dInfo.bio.length}/300</div>
-                </div>
-                <TextField label="Téléphone" value={dInfo.phone} onChange={v => setDInfo(p => ({ ...p, phone: v }))} placeholder="+33 6 …" />
-                <div className="flex gap-2 mt-1">
-                  <PrimaryBtn onClick={saveInfo} loading={savingInfo}>✓ Enregistrer</PrimaryBtn>
-                  <GhostBtn onClick={() => setEditInfo(false)}>Annuler</GhostBtn>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {[
-                  { l: 'Prénom & nom', v: displayName },
-                  { l: 'Email', v: email || '—' },
-                  { l: 'Téléphone', v: phone || '—' },
-                ].map((r, i) => (
-                  <div key={r.l} className="flex justify-between items-center py-2 text-[13.5px]" style={i < 2 ? { borderBottom: '1px solid #F3F4F6' } : {}}>
-                    <span style={{ color: MUTED }}>{r.l}</span>
-                    <span className="font-semibold text-right" style={{ color: INK }}>{r.v}</span>
-                  </div>
-                ))}
-                <div className="pt-2.5 mt-1" style={{ borderTop: '1px solid #F3F4F6' }}>
-                  <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: MUTED }}>Bio</span>
-                  <p className="text-[13px] mt-1" style={{ color: bio ? '#374151' : '#9CA3AF' }}>{bio || 'Aucune bio — ajoutez quelques mots pour vous présenter.'}</p>
-                </div>
-              </motion.div>
             )}
-          </AnimatePresence>
-        </Card>
+          </Section>
 
-        {/* ── PRÉFÉRENCES COLOC ──────────────────────────────── */}
-        <Card accent={editPrefs ? MINT : undefined} delay={0.12}>
-          <SectionTitle icon="🏡" action={!editPrefs ? <GhostBtn small onClick={openEditPrefs}>✏️ Modifier</GhostBtn> : undefined}>
-            Préférences coloc
-          </SectionTitle>
-          <AnimatePresence mode="wait">
-            {editPrefs ? (
-              <motion.div key="edit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: MUTED }}>Ville recherchée</label>
-                  <input list="city-list" value={dPrefs.city} onChange={e => setDPrefs(p => ({ ...p, city: e.target.value }))}
-                    placeholder="Ex. Paris 11e" className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] border outline-none"
-                    style={{ background: '#F9FAFB', borderColor: BORDER, color: INK }}
-                    onFocus={e => (e.target.style.borderColor = MINT)} onBlur={e => (e.target.style.borderColor = BORDER)} />
-                  <datalist id="city-list">{cityOptions.map(c => <option key={c} value={c} />)}</datalist>
-                </div>
-                <div>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: MUTED }}>Budget max</label>
-                    <span className="text-[14px] font-extrabold" style={{ color: MINT_D }}>{dPrefs.budgetMax} €/mois</span>
-                  </div>
-                  <input type="range" min={300} max={2000} step={50} value={dPrefs.budgetMax}
-                    onChange={e => setDPrefs(p => ({ ...p, budgetMax: parseInt(e.target.value) }))}
-                    className="w-full cursor-pointer" style={{ accentColor: MINT }} />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: MUTED }}>Rythme</label>
-                  <div className="flex flex-wrap gap-2">
-                    {SCHEDULE_OPTS.map(o => <Chip key={o.v} active={dPrefs.schedule === o.v} onClick={() => setDPrefs(p => ({ ...p, schedule: p.schedule === o.v ? null : o.v }))}>{o.label}</Chip>)}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: MUTED }}>Ambiance</label>
-                  <div className="flex flex-wrap gap-2">
-                    {VIBE_OPTS.map(o => <Chip key={o.v} active={dPrefs.vibe === o.v} onClick={() => setDPrefs(p => ({ ...p, vibe: p.vibe === o.v ? null : o.v }))}>{o.label}</Chip>)}
-                  </div>
-                </div>
-                <div className="flex gap-6">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: MUTED }}>Fumeur</label>
-                    <div className="flex gap-2">
-                      <Chip active={dPrefs.smoker === false} onClick={() => setDPrefs(p => ({ ...p, smoker: false }))}>🚭 Non</Chip>
-                      <Chip active={dPrefs.smoker === true} onClick={() => setDPrefs(p => ({ ...p, smoker: true }))}>🚬 Oui</Chip>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: MUTED }}>Animaux</label>
-                    <div className="flex gap-2">
-                      <Chip active={dPrefs.petsOk === true} onClick={() => setDPrefs(p => ({ ...p, petsOk: true }))}>🐾 OK</Chip>
-                      <Chip active={dPrefs.petsOk === false} onClick={() => setDPrefs(p => ({ ...p, petsOk: false }))}>🚫 Non</Chip>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: MUTED }}>Passions</label>
-                  <div className="flex flex-wrap gap-2">
-                    {PASSIONS.map(p => (
-                      <Chip key={p} active={dPrefs.passions.includes(p)}
-                        onClick={() => setDPrefs(pr => ({ ...pr, passions: pr.passions.includes(p) ? pr.passions.filter(x => x !== p) : [...pr.passions, p] }))}>
-                        {PASSION_EMOJI[p]} {p}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-1">
-                  <PrimaryBtn onClick={savePrefs} loading={savingPrefs}>✓ Enregistrer</PrimaryBtn>
-                  <GhostBtn onClick={() => setEditPrefs(false)}>Annuler</GhostBtn>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="flex justify-between items-center py-2 text-[13.5px]" style={{ borderBottom: '1px solid #F3F4F6' }}>
-                  <span style={{ color: MUTED }}>Ville</span><span className="font-semibold" style={{ color: INK }}>{city || '—'}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 text-[13.5px]" style={{ borderBottom: '1px solid #F3F4F6' }}>
-                  <span style={{ color: MUTED }}>Budget max</span><span className="font-bold" style={{ color: MINT_D }}>{budgetMax ? `${budgetMax} €/mois` : '—'}</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 pt-3">
-                  {[
-                    SCHEDULE_OPTS.find(o => o.v === schedule)?.label,
-                    VIBE_OPTS.find(o => o.v === vibe)?.label,
-                    smoker === false ? '🚭 Non-fumeur' : smoker === true ? '🚬 Fumeur' : null,
-                    petsOk === true ? '🐾 Animaux OK' : petsOk === false ? '🚫 Sans animaux' : null,
-                    ...passions.map(p => `${PASSION_EMOJI[p]} ${p}`),
-                  ].filter(Boolean).map((t, i) => (
-                    <span key={i} className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#ECFDF5', color: MINT_D }}>{t}</span>
-                  ))}
-                  {!schedule && !vibe && passions.length === 0 && smoker === null && petsOk === null && (
-                    <span className="text-[12.5px]" style={{ color: '#9CA3AF' }}>Aucune préférence renseignée.</span>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Card>
-
-        {/* ── DOSSIER & VÉRIFICATION ─────────────────────────── */}
-        <Card delay={0.16}>
-          <SectionTitle icon="🛡️">Dossier & vérification</SectionTitle>
-          <p className="text-[12.5px] mb-4" style={{ color: MUTED }}>
-            Vos documents sont <span className="font-semibold" style={{ color: INK }}>privés</span> et ne sont jamais rendus publics.
-          </p>
-
-          {/* Niveau 1 */}
-          <div className="rounded-[14px] p-4 mb-2.5" style={{ background: l1Done ? '#F0FDF4' : '#F9FAFB', border: `1px solid ${l1Done ? '#A7F3D0' : BORDER}` }}>
-            <div className="flex justify-between items-center mb-1.5">
-              <span className="text-[13px] font-bold" style={{ color: INK }}>Niveau 1 — Profil vérifié</span>
-              {l1Done ? <CertificationBadge level={1} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFFBEB', color: '#D97706' }}>À compléter</span>}
+          {/* ── PARAMÈTRES ─────────────────────────────────────── */}
+          <Section title="Paramètres" delay={0.32}>
+            <div className="flex justify-between items-center py-2.5 text-[13.5px]" style={{ borderBottom: DIVIDER }}>
+              <span style={{ color: TXT_MID }}>Notifications</span>
+              <input type="checkbox" checked={notifs} onChange={e => setNotifs(e.target.checked)} className="w-[17px] h-[17px] cursor-pointer" style={{ accentColor: MINT }} />
             </div>
-            <p className="text-[11.5px]" style={{ color: MUTED }}>
-              {l1Done ? '✓ Email confirmé, photo, bio et infos de base complétés.' : 'Complétez photo, bio (20+ car.), nom, ville et budget pour valider ce niveau.'}
-            </p>
-          </div>
-
-          {/* Niveau 2 */}
-          <div className="rounded-[14px] p-4 mb-2.5" style={{ background: CARD, border: `1px solid ${idDone ? '#93C5FD' : BORDER}` }}>
-            <div className="flex justify-between items-center mb-2.5">
-              <span className="text-[13px] font-bold" style={{ color: INK }}>Niveau 2 — Identité certifiée</span>
-              {idDone ? <CertificationBadge level={2} status={levelStatus(2)} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#F3F4F6', color: MUTED }}>Pièce d'identité requise</span>}
+            <div className="flex justify-between items-center py-2.5 text-[13.5px]" style={{ borderBottom: DIVIDER }}>
+              <div>
+                <span style={{ color: TXT_MID }}>Profil visible</span>
+                <span className="block text-[11px]" style={{ color: TXT_FAINT }}>Apparaître dans les recherches</span>
+              </div>
+              <input type="checkbox" checked={isVisible}
+                onChange={async e => {
+                  const v = e.target.checked; setIsVisible(v)
+                  const { error } = await createClient().from('profiles').update({ is_visible: v }).eq('id', userId)
+                  if (error) { setIsVisible(!v); toast({ title: 'Échec', description: error.message, variant: 'destructive' }) }
+                  else toast({ title: v ? 'Profil visible' : 'Profil masqué', duration: 2000 })
+                }}
+                className="w-[17px] h-[17px] cursor-pointer" style={{ accentColor: MINT }} />
             </div>
-            {ID_DOCS.map(d => (
-              <DocRow key={d.type} label={d.label} required={d.required} doc={docs[d.type]} uploading={docUploading === d.type}
-                onUpload={f => uploadDoc(d.type, f)} onDelete={() => deleteDoc(d.type)} />
-            ))}
-            {!idDone && <p className="text-[11.5px] mt-2.5" style={{ color: '#9CA3AF' }}>➜ Ajoutez le recto ET le verso de votre pièce d'identité pour atteindre le niveau 2.</p>}
-          </div>
-
-          {/* Niveau 3 */}
-          <div className="rounded-[14px] p-4" style={{ background: CARD, border: `1px solid ${incomeDone ? '#FDE68A' : BORDER}`, opacity: idDone ? 1 : 0.65 }}>
-            <div className="flex justify-between items-center mb-2.5">
-              <span className="text-[13px] font-bold" style={{ color: INK }}>Niveau 3 — Dossier complet</span>
-              {!idDone
-                ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#F3F4F6', color: '#9CA3AF' }}>🔒 Niveau 2 requis</span>
-                : incomeDone ? <CertificationBadge level={3} status={levelStatus(3)} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFFBEB', color: '#D97706' }}>Justificatifs requis</span>}
+            <div className="pt-3">
+              <Button variant="danger" size="sm" onClick={handleSignOut}>Déconnexion</Button>
             </div>
-            {idDone ? (
-              <>
-                {INCOME_DOCS.map(d => (
-                  <DocRow key={d.type} label={d.label} required={d.required} doc={docs[d.type]} uploading={docUploading === d.type}
-                    onUpload={f => uploadDoc(d.type, f)} onDelete={() => deleteDoc(d.type)} />
-                ))}
-                {!incomeDone && <p className="text-[11.5px] mt-2.5" style={{ color: '#9CA3AF' }}>➜ Ajoutez un justificatif de revenus et un justificatif de domicile.</p>}
-              </>
-            ) : (
-              <p className="text-[12px]" style={{ color: '#9CA3AF' }}>Validez d'abord votre identité (Niveau 2) pour débloquer le dossier complet.</p>
-            )}
-          </div>
-        </Card>
-
-        {/* ── TEST DE COMPATIBILITÉ ──────────────────────────── */}
-        <Card delay={0.2}>
-          <SectionTitle icon="🧪">Test de compatibilité</SectionTitle>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[12.5px]" style={{ color: MUTED }}>
-              {quizDone ? '✓ Test complété — il alimente votre score de matching.' : 'Passez le test pour améliorer la qualité de vos matchs.'}
-            </p>
-            <Link href="/app/quiz" className="flex-shrink-0">
-              <PrimaryBtn small>{quizDone ? '🔄 Refaire' : '🧪 Passer le test'}</PrimaryBtn>
-            </Link>
-          </div>
-        </Card>
-
-        {/* ── AVIS REÇUS ─────────────────────────────────────── */}
-        <Card delay={0.24}>
-          <SectionTitle icon="⭐">Avis reçus</SectionTitle>
-          <ReviewStars userId={userId} canReview={false} />
-        </Card>
-
-        {/* ── MA SITUATION ───────────────────────────────────── */}
-        <Card delay={0.28}>
-          <SectionTitle icon="📍">Ma situation</SectionTitle>
-          <div className="flex gap-3">
-            <button className="flex-1 py-3 rounded-[12px] border-[2px] cursor-pointer transition-all text-[13px] font-semibold"
-              style={mode === 'locataire' ? { background: '#ECFDF5', borderColor: MINT, color: MINT_D } : { background: '#F9FAFB', borderColor: BORDER, color: MUTED }}>
-              🔍 Je cherche une coloc
-              {mode === 'locataire' && <div className="text-[10px] mt-0.5" style={{ color: MINT }}>Mode actuel</div>}
-            </button>
-            <button onClick={() => { if (mode === 'locataire') setShowBailModal(true) }}
-              className="flex-1 py-3 rounded-[12px] border-[2px] cursor-pointer transition-all text-[13px] font-semibold"
-              style={mode === 'loueur' ? { background: '#ECFDF5', borderColor: MINT, color: MINT_D } : { background: '#F9FAFB', borderColor: BORDER, color: MUTED }}>
-              🏠 Je suis dans un bail
-              {mode === 'loueur' && <div className="text-[10px] mt-0.5" style={{ color: MINT }}>Mode actuel</div>}
-            </button>
-          </div>
-          {mode === 'loueur' && lease && (
-            <div className="mt-3 px-3 py-2.5 rounded-[10px] text-[12.5px]" style={{ background: '#F0FDF4', color: MINT_D }}>
-              📍 {lease.address}{lease.city ? `, ${lease.city}` : ''} · {lease.monthly_rent} €/mois
-            </div>
-          )}
-        </Card>
-
-        {/* ── PARAMÈTRES ─────────────────────────────────────── */}
-        <Card delay={0.32}>
-          <SectionTitle icon="⚙️">Paramètres</SectionTitle>
-          <div className="flex justify-between items-center py-2 text-[13.5px]" style={{ borderBottom: '1px solid #F3F4F6' }}>
-            <span style={{ color: '#374151' }}>Notifications</span>
-            <input type="checkbox" checked={notifs} onChange={e => setNotifs(e.target.checked)} className="w-[17px] h-[17px] cursor-pointer" style={{ accentColor: MINT }} />
-          </div>
-          <div className="flex justify-between items-center py-2 text-[13.5px]" style={{ borderBottom: '1px solid #F3F4F6' }}>
-            <div>
-              <span style={{ color: '#374151' }}>Profil visible</span>
-              <span className="block text-[11px]" style={{ color: '#9CA3AF' }}>Apparaître dans les recherches</span>
-            </div>
-            <input type="checkbox" checked={isVisible}
-              onChange={async e => {
-                const v = e.target.checked; setIsVisible(v)
-                const { error } = await createClient().from('profiles').update({ is_visible: v }).eq('id', userId)
-                if (error) { setIsVisible(!v); toast({ title: 'Échec', description: error.message, variant: 'destructive' }) }
-                else toast({ title: v ? 'Profil visible' : 'Profil masqué', duration: 2000 })
-              }}
-              className="w-[17px] h-[17px] cursor-pointer" style={{ accentColor: MINT }} />
-          </div>
-          <div className="flex justify-between items-center py-2 text-[13.5px]">
-            <button onClick={handleSignOut} className="font-semibold border-none bg-transparent cursor-pointer text-[13.5px] p-0" style={{ color: '#EF4444' }}>Déconnexion</button>
-            <span style={{ color: '#D1D5DB' }}>›</span>
-          </div>
-        </Card>
+          </Section>
+        </div>
       </div>
 
       {showBailModal && (

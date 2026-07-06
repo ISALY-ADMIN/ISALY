@@ -26,6 +26,9 @@ export interface UserReview {
   reviewed_id: string
   rating: 1 | 2 | 3 | 4 | 5
   comment: string | null
+  reply: string | null
+  replied_at: string | null
+  reported: boolean
   created_at: string
 }
 
