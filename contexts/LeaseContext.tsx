@@ -66,11 +66,22 @@ export function LeaseProvider({ children }: { children: React.ReactNode }) {
         .eq('is_active', true)
       setHasActiveListing((listingCount ?? 0) > 0)
 
-      // Fetch active lease (used by lease-detail pages)
+      // Fetch active lease (used by lease-detail pages).
+      // Le locataire peut être partie principale (tenant_id) OU colocataire (lease_roommates).
+      const { data: roommateRows } = await supabase
+        .from('lease_roommates')
+        .select('lease_id')
+        .eq('profile_id', user.id)
+
+      const roommateLeaseIds = (roommateRows ?? []).map(r => r.lease_id)
+      const partyFilter = roommateLeaseIds.length > 0
+        ? `tenant_id.eq.${user.id},id.in.(${roommateLeaseIds.join(',')})`
+        : `tenant_id.eq.${user.id}`
+
       const { data } = await supabase
         .from('leases')
         .select('*')
-        .eq('tenant_id', user.id)
+        .or(partyFilter)
         .eq('status', 'active')
         .limit(1)
         .maybeSingle()

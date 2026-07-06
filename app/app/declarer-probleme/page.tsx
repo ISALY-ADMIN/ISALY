@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Image from 'next/image'
 import { Send, Paperclip, X } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
@@ -67,7 +67,6 @@ function formatDate(iso: string) {
 }
 
 export default function DeclarerProblemePage() {
-  const router = useRouter()
   const { lease, loading: leaseLoading } = useLease()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -79,10 +78,6 @@ export default function DeclarerProblemePage() {
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
   const [form, setForm] = useState({ title: '', category: '', description: '', urgency: 'normal' })
-
-  useEffect(() => {
-    if (!leaseLoading && !lease) router.replace('/app/swipe')
-  }, [lease, leaseLoading, router])
 
   useEffect(() => {
     if (!lease) return
@@ -153,12 +148,35 @@ export default function DeclarerProblemePage() {
     setSubmitting(false)
   }
 
-  if (leaseLoading || !lease) {
+  if (leaseLoading) {
     return (
       <>
         <Topbar title="Déclarer un problème" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🔧" /></div>
+        </div>
+      </>
+    )
+  }
+
+  if (!lease) {
+    return (
+      <>
+        <Topbar title="Déclarer un problème" />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-7 text-center" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          <span className="text-[44px]"><Emoji native="🏠" /></span>
+          <h2 className="text-[17px] font-bold" style={{ color: '#fff' }}>Aucun bail actif</h2>
+          <p className="text-[13.5px] max-w-[380px]" style={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
+            Vous pourrez déclarer un problème dès qu&apos;un bail actif sera lié à votre compte.
+            Si votre bail est en attente de signature, il apparaîtra ici une fois signé par les deux parties.
+          </p>
+          <Link
+            href="/app/swipe"
+            className="mt-2 px-5 py-2.5 rounded-[10px] text-[12.5px] font-extrabold"
+            style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none' }}
+          >
+            Chercher un logement →
+          </Link>
         </div>
       </>
     )
