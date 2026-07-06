@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 export default function SuspenduPage() {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function SuspenduPage() {
       }}
     >
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: '56px', marginBottom: '20px' }}>🚫</div>
+        <div style={{ fontSize: '56px', marginBottom: '20px' }}><Emoji native="🚫" /></div>
 
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.5px' }}>
           Compte suspendu

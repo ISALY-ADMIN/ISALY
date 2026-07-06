@@ -1,6 +1,7 @@
 "use client"
 
 import { useToast } from "@/hooks/use-toast"
+import { EmojiText } from "@/components/ui/Emoji"
 import {
   Toast,
   ToastClose,
@@ -19,9 +20,9 @@ export function Toaster() {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
+              {title && <ToastTitle>{typeof title === "string" ? <EmojiText text={title} /> : title}</ToastTitle>}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <ToastDescription>{typeof description === "string" ? <EmojiText text={description} /> : description}</ToastDescription>
               )}
             </div>
             {action}

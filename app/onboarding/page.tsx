@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import MatchingQuiz from '@/components/quiz/MatchingQuiz'
 import type { MatchingData } from '@/lib/matching'
+import Emoji from '@/components/ui/Emoji'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ function Step1({ d, upd }: { d: OnboardingData; upd: Upd }) {
             className="p-4 rounded-[11px] border-2 cursor-pointer transition-all text-center"
             style={{ borderColor: d.role === r.val ? '#4ECBA0' : '#E5E7EB', background: d.role === r.val ? '#ECFDF5' : '#fff' }}
           >
-            <div className="text-[26px] mb-1">{r.em}</div>
+            <div className="text-[26px] mb-1"><Emoji native={r.em} size="26px" /></div>
             <div className="text-[13px] font-bold">{r.lbl}</div>
           </button>
         ))}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 interface RentPayment {
   id: string
@@ -58,7 +59,7 @@ export default function TenantLoyersClient() {
       <>
         <Topbar title="Mes loyers" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>💳</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="💳" /></div>
         </div>
       </>
     )
@@ -90,7 +91,7 @@ export default function TenantLoyersClient() {
             { icon: '⚠️', label: 'Retards', value: `${lateCount}`, color: lateCount > 0 ? '#EF4444' : '#111827' },
           ].map(s => (
             <div key={s.label} className="rounded-[14px] p-5 text-center" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
-              <div className="text-[24px] mb-1">{s.icon}</div>
+              <div className="text-[24px] mb-1"><Emoji native={s.icon} size="24px" /></div>
               <div className="text-[24px] font-extrabold" style={{ color: s.color, fontFamily: "'DM Serif Display', serif" }}>{s.value}</div>
               <div className="text-[11px] mt-0.5" style={{ color: '#9CA3AF' }}>{s.label}</div>
             </div>
@@ -132,13 +133,13 @@ export default function TenantLoyersClient() {
               className="px-4 py-2 rounded-full text-[12px] font-semibold border cursor-pointer"
               style={{ background: '#F9FAFB', borderColor: '#E5E7EB', color: '#374151' }}
             >
-              📥 Exporter PDF
+              <Emoji native="📥" /> Exporter PDF
             </button>
           </div>
 
           {payments.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-[40px] mb-3">📭</div>
+              <div className="text-[40px] mb-3"><Emoji native="📭" /></div>
               <p className="text-[14px] font-semibold mb-1" style={{ color: '#111827' }}>Aucun paiement enregistré</p>
               <p className="text-[12.5px]" style={{ color: '#9CA3AF' }}>Les loyers payés apparaîtront ici.</p>
             </div>
@@ -164,14 +165,14 @@ export default function TenantLoyersClient() {
                       <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#ECFDF5', color: '#059669' }}>✓ Payé</span>
                     )}
                     {p.status === 'pending' && (
-                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFFBEB', color: '#D97706' }}>⏳ En attente</span>
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFFBEB', color: '#D97706' }}><Emoji native="⏳" /> En attente</span>
                     )}
                     {p.status === 'late' && (
-                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FEF2F2', color: '#DC2626' }}>❌ En retard</span>
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FEF2F2', color: '#DC2626' }}><Emoji native="❌" /> En retard</span>
                     )}
                     {p.receipt_url && (
                       <a href={p.receipt_url} target="_blank" rel="noreferrer" className="text-[11px] font-semibold px-2.5 py-1 rounded-full no-underline" style={{ background: '#F3F4F6', color: '#374151' }}>
-                        📄 Reçu
+                        <Emoji native="📄" /> Reçu
                       </a>
                     )}
                   </div>

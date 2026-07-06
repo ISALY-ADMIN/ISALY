@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 interface Roommate {
   id: string
@@ -79,7 +80,7 @@ export default function ColocatairesPage() {
       <>
         <Topbar title="Mes colocataires" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>👥</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="👥" /></div>
         </div>
       </>
     )
@@ -103,14 +104,14 @@ export default function ColocatairesPage() {
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="text-[40px]" style={{ animation: 'bop 1s ease infinite' }}>👥</div>
+            <div className="text-[40px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="👥" /></div>
           </div>
         ) : roommates.length === 0 ? (
           <div
             className="text-center py-16 rounded-[18px]"
             style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
           >
-            <div className="text-[52px] mb-4">🏠</div>
+            <div className="text-[52px] mb-4"><Emoji native="🏠" /></div>
             <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
               Pas encore de colocataires ajoutés
             </h3>
@@ -121,7 +122,7 @@ export default function ColocatairesPage() {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[12.5px]"
               style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#6B7280' }}
             >
-              💡 Le propriétaire gère les membres du bail
+              <Emoji native="💡" /> Le propriétaire gère les membres du bail
             </div>
           </div>
         ) : (
@@ -170,7 +171,7 @@ export default function ColocatairesPage() {
                       className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer"
                       style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
                     >
-                      💬 Message
+                      <Emoji native="💬" /> Message
                     </button>
                   </div>
                 </div>

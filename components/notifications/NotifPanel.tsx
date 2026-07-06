@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface Notif {
   id: string
@@ -128,7 +129,7 @@ export default function NotifPanel({ onClose }: { onClose: () => void }) {
           <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>Chargement...</div>
         ) : notifs.length === 0 ? (
           <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔔</div>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}><Emoji native="🔔" /></div>
             <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '15px', color: '#ffffff', marginBottom: '6px' }}>Aucune alerte</div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>Tes notifications apparaîtront ici</div>
           </div>
@@ -150,11 +151,11 @@ export default function NotifPanel({ onClose }: { onClose: () => void }) {
               onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(16,185,129,0.08)')}
             >
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
-                {getNotifIcon(n.type)}
+                <Emoji native={getNotifIcon(n.type)} size="18px" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', marginBottom: '2px' }}>{n.title}</div>
-                {n.body && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>}
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', marginBottom: '2px' }}><EmojiText text={n.title} size="13px" /></div>
+                {n.body && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><EmojiText text={n.body} size="12px" /></div>}
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '3px' }}>
                   {new Date(n.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </div>

@@ -16,6 +16,7 @@ import { listingOccupancy } from '@/lib/utils'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 import PushPermission from '@/components/notifications/PushPermission'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 const LIFESTYLE_TAGS = ['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail']
@@ -120,7 +121,7 @@ function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, l
                   color: active ? '#10B981' : 'rgba(255,255,255,0.55)',
                 }}
               >
-                {tag}
+                <EmojiText text={tag} size="12.5px" />
               </button>
             )
           })}
@@ -265,7 +266,7 @@ function MatchCelebration({ profile, me, onMessage, onClose }: {
             {photo ? (
               <Image src={photo} alt={profile.name} width={96} height={96} className="w-full h-full object-cover" />
             ) : (
-              profile.isListing ? '🏠' : profile.name[0]
+              profile.isListing ? <Emoji native="🏠" /> : profile.name[0]
             )}
           </motion.div>
         </div>
@@ -746,7 +747,7 @@ export default function SwipePage() {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
-              <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
+              <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🏠" /></div>
               <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>Recherche de profils compatibles…</p>
               <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Ça prend quelques secondes</p>
             </div>

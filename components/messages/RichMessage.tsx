@@ -1,6 +1,7 @@
 'use client'
 
 import { CalendarClock, KeyRound, Home, FileText, Video, MapPin, Check, X, RefreshCw, ExternalLink } from 'lucide-react'
+import { EmojiText } from '@/components/ui/Emoji'
 
 export interface RichPayload {
   [k: string]: unknown
@@ -79,7 +80,7 @@ export default function RichMessage({ type, payload, isMe, onRespond, onCounter 
         <div className="flex items-center gap-1.5" style={{ color: accent, fontSize: 11, fontWeight: 700 }}>
           <Icon size={14} /> {isVisite ? 'PROPOSITION DE VISITE' : 'DEMANDE DE RÉSERVATION'}
         </div>
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: st.color, background: st.bg, padding: '2px 8px', borderRadius: 20 }}>{st.label}</span>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: st.color, background: st.bg, padding: '2px 8px', borderRadius: 20 }}><EmojiText text={st.label} size="10.5px" /></span>
       </div>
 
       {isVisite ? (

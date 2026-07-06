@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Emoji from '@/components/ui/Emoji'
 
 interface Props {
   onClose: () => void
@@ -37,7 +38,7 @@ export default function CreateDocumentModal({ onClose, onSelectBlank, onSelectTe
               className="text-left p-5 rounded-[14px] cursor-pointer transition-colors"
               style={{ background: '#252525', border: '1px solid #2D2D2D' }}
             >
-              <div className="text-[28px] mb-2">📄</div>
+              <div className="text-[28px] mb-2"><Emoji native="📄" /></div>
               <div className="text-[13.5px] font-bold mb-1" style={{ color: '#F1F5F9' }}>Page vierge</div>
               <div className="text-[11.5px]" style={{ color: '#6B7280' }}>Document texte libre, exportable en PDF</div>
             </button>
@@ -46,7 +47,7 @@ export default function CreateDocumentModal({ onClose, onSelectBlank, onSelectTe
               className="text-left p-5 rounded-[14px] cursor-pointer transition-colors"
               style={{ background: '#252525', border: '1px solid #2D2D2D' }}
             >
-              <div className="text-[28px] mb-2">🗂️</div>
+              <div className="text-[28px] mb-2"><Emoji native="🗂️" /></div>
               <div className="text-[13.5px] font-bold mb-1" style={{ color: '#F1F5F9' }}>Modèles</div>
               <div className="text-[11.5px]" style={{ color: '#6B7280' }}>Bail, état des lieux et autres modèles</div>
             </button>
@@ -68,7 +69,7 @@ export default function CreateDocumentModal({ onClose, onSelectBlank, onSelectTe
                   className="text-left p-5 rounded-[14px] cursor-pointer transition-colors"
                   style={{ background: '#252525', border: '1px solid #2D2D2D' }}
                 >
-                  <div className="text-[28px] mb-2">{t.icon}</div>
+                  <div className="text-[28px] mb-2"><Emoji native={t.icon} size="28px" /></div>
                   <div className="text-[13.5px] font-bold mb-1" style={{ color: '#F1F5F9' }}>{t.title}</div>
                   <div className="text-[11.5px]" style={{ color: '#6B7280' }}>{t.subtitle}</div>
                 </button>

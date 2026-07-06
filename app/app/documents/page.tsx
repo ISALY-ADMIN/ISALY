@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import DocumentsStorage from '@/components/documents/DocumentsStorage'
 import CreateDocumentModal from '@/components/documents/CreateDocumentModal'
 import BlankDocumentEditor from '@/components/documents/BlankDocumentEditor'
+import Emoji from '@/components/ui/Emoji'
 
 const BailGenerator = dynamic(() => import('@/components/documents/BailGenerator'), { ssr: false })
 const BailNonMeubleForm = dynamic(() => import('@/components/documents/BailNonMeubleForm'), { ssr: false })
@@ -80,7 +81,7 @@ export default function DocumentsPage() {
       <>
         <Topbar title="Mes documents" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>📁</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="📁" /></div>
         </div>
       </>
     )
@@ -103,7 +104,7 @@ export default function DocumentsPage() {
 
         {leases.length === 0 ? (
           <div className="text-center py-16 rounded-[18px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-            <div className="text-[52px] mb-4">📁</div>
+            <div className="text-[52px] mb-4"><Emoji native="📁" /></div>
             <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Aucun bail actif</h3>
             <p className="text-[13px]" style={{ color: '#6B7280' }}>Créez d&apos;abord un bail pour gérer ses documents.</p>
           </div>

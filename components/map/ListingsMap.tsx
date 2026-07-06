@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getCoordsForCity } from '@/lib/geo'
+import Emoji from '@/components/ui/Emoji'
 
 interface Listing {
   id: string
@@ -52,7 +53,7 @@ export default function ListingsMap() {
     return (
       <div className="flex items-center justify-center h-full">
         <div style={{ textAlign: 'center', color: '#9CA3AF' }}>
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>🗺️</div>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}><Emoji native="🗺️" /></div>
           <div style={{ fontSize: '14px' }}>Chargement de la carte...</div>
         </div>
       </div>
@@ -132,7 +133,7 @@ export default function ListingsMap() {
             <Popup maxWidth={280} className="listing-popup">
               <div style={{ fontFamily: "'Inter', sans-serif", padding: '4px' }}>
                 <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '8px', color: '#111827', textTransform: 'capitalize' }}>
-                  📍 {items[0].city}
+                  <Emoji native="📍" /> {items[0].city}
                 </div>
                 <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '10px' }}>
                   {items.length} annonce{items.length > 1 ? 's' : ''} disponible{items.length > 1 ? 's' : ''}
@@ -187,7 +188,7 @@ export default function ListingsMap() {
                         cursor: 'pointer',
                       }}
                     >
-                      💬 Contacter
+                      <Emoji native="💬" /> Contacter
                     </button>
                   </div>
                 ))}

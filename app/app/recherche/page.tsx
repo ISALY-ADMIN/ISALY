@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import type { SearchResponse, SearchResult } from '@/app/api/recherche/route'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 const SearchMap = dynamic(() => import('@/components/map/SearchMap'), { ssr: false })
 
@@ -136,7 +137,7 @@ function CheckItem({ checked, label, onToggle }: { checked: boolean; label: stri
         )}
       </span>
       <span style={{ fontSize: '13px', fontWeight: 600, color: checked ? '#10B981' : 'rgba(255,255,255,0.65)', transition: 'color 150ms ease', whiteSpace: 'nowrap' }}>
-        {label}
+        <EmojiText text={label} size="13px" />
       </span>
     </button>
   )
@@ -187,7 +188,7 @@ function ListingCard({ l, isFav, onFav, onContact, onHover, active, cardRef }: {
             onError={e => { e.currentTarget.style.display = 'none' }}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '38px' }}>🏠</div>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '38px' }}><Emoji native="🏠" /></div>
         )}
 
         {l.compat && <CompatBadge score={l.compat.score} />}
@@ -199,7 +200,7 @@ function ListingCard({ l, isFav, onFav, onContact, onHover, active, cardRef }: {
             background: l.boostTier === 'priority' ? 'rgba(245,158,11,0.92)' : 'rgba(99,102,241,0.92)',
             color: '#fff',
           }}>
-            {l.boostTier === 'priority' ? '⚡ PRIORITAIRE' : '✨ ESSENTIEL'}
+            {l.boostTier === 'priority' ? <><Emoji native="⚡" /> PRIORITAIRE</> : <><Emoji native="✨" /> ESSENTIEL</>}
           </span>
         )}
 
@@ -238,7 +239,7 @@ function ListingCard({ l, isFav, onFav, onContact, onHover, active, cardRef }: {
           {l.title}
         </div>
         <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)', margin: '3px 0 8px' }}>
-          📍 {l.city}{l.neighborhood ? ` · ${l.neighborhood}` : ''}
+          <Emoji native="📍" /> {l.city}{l.neighborhood ? ` · ${l.neighborhood}` : ''}
           {l.surface ? ` · ${l.surface} m²` : ''}
           {l.rooms > 0 ? ` · ${l.rooms} ch.` : ''}
         </div>
@@ -252,7 +253,7 @@ function ListingCard({ l, isFav, onFav, onContact, onHover, active, cardRef }: {
               ? { background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }
               : { background: 'rgba(239,68,68,0.12)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }),
           }}>
-            👥 {l.occupancy.current}/{l.occupancy.total}{remaining <= 0 ? ' · Complet' : ''}
+            <Emoji native="👥" /> {l.occupancy.current}/{l.occupancy.total}{remaining <= 0 ? ' · Complet' : ''}
           </span>
         </div>
 
@@ -266,7 +267,7 @@ function ListingCard({ l, isFav, onFav, onContact, onHover, active, cardRef }: {
               ? { background: 'rgba(16,185,129,0.12)', border: '1.5px solid #10B981', color: '#10B981' }
               : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)' }}
           >
-            {isFav ? '💚 Sauvegardé' : '🤍 Sauvegarder'}
+            {isFav ? <><Emoji native="💚" /> Sauvegardé</> : <><Emoji native="🤍" /> Sauvegarder</>}
           </button>
           <button
             aria-label="Contacter le loueur"
@@ -274,7 +275,7 @@ function ListingCard({ l, isFav, onFav, onContact, onHover, active, cardRef }: {
             className="flex-1 py-2 rounded-full text-[12.5px] font-bold text-white border-none cursor-pointer"
             style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
           >
-            💬 Contacter
+            <Emoji native="💬" /> Contacter
           </button>
         </div>
       </div>
@@ -428,7 +429,7 @@ function RechercheInner() {
                 }}
               >
                 <span style={{ fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>
-                  {seg.icon} {seg.label}
+                  <Emoji native={seg.icon} size="10.5px" /> {seg.label}
                 </span>
                 <span style={{ fontSize: '13.5px', fontWeight: 600, color: seg.value === 'Où ?' || seg.value === 'Peu importe' || seg.value === 'Toutes' ? 'rgba(255,255,255,0.35)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {seg.value}
@@ -445,7 +446,7 @@ function RechercheInner() {
                   background: 'linear-gradient(135deg, #10B981, #059669)',
                   boxShadow: '0 4px 14px rgba(16,185,129,0.4)',
                 }}
-              >🔍</button>
+              ><Emoji native="🔍" /></button>
             </div>
           </div>
 
@@ -476,7 +477,7 @@ function RechercheInner() {
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.1)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
-                        📍 {c}
+                        <Emoji native="📍" /> {c}
                       </button>
                     ))
                   )}
@@ -527,7 +528,7 @@ function RechercheInner() {
         {/* ── Barre de recherche libre ── */}
         <div className="max-w-[780px] mt-3">
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ fontSize: '14px' }}>✨</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ fontSize: '14px' }}><Emoji native="✨" /></span>
             <input
               value={freeText}
               onChange={e => setFreeText(e.target.value)}
@@ -564,7 +565,7 @@ function RechercheInner() {
             {/* Personnes par chambre */}
             <div className="col-span-2 sm:col-span-1 inline-flex items-center gap-2 p-1.5">
               <span style={{ fontSize: '13px', fontWeight: 600, color: filters.ppr > 0 ? '#10B981' : 'rgba(255,255,255,0.65)', whiteSpace: 'nowrap' }}>
-                👥 Personnes/chambre
+                <Emoji native="👥" /> Personnes/chambre
               </span>
               <div className="inline-flex rounded-[8px] overflow-hidden" style={{ border: '1.5px solid rgba(255,255,255,0.15)' }}>
                 {([[1, '1 seul'], [2, '2 max'], [3, '3+']] as const).map(([v, lab]) => (
@@ -591,9 +592,10 @@ function RechercheInner() {
                 ? { background: 'rgba(16,185,129,0.1)', border: '1.5px solid #10B981', color: '#10B981' }
                 : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)' }}
             >
+              <Emoji native="📐" />{' '}
               {filters.surface_min > 0 || filters.surface_max > 0
-                ? `📐 ${filters.surface_min || 0}–${filters.surface_max > 0 ? filters.surface_max : '∞'} m²`
-                : '📐 Superficie'}
+                ? `${filters.surface_min || 0}–${filters.surface_max > 0 ? filters.surface_max : '∞'} m²`
+                : 'Superficie'}
               {(filters.surface_min > 0 || filters.surface_max > 0) && (
                 <span role="button" aria-label="Réinitialiser la superficie"
                   onClick={e => { e.stopPropagation(); set('surface_min', 0); set('surface_max', 0) }}
@@ -726,7 +728,7 @@ function RechercheInner() {
         className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 border-none cursor-pointer text-white font-extrabold text-[13.5px] px-6 py-3 rounded-full"
         style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 8px 28px rgba(16,185,129,0.45)', fontFamily: "'Outfit', sans-serif" }}
       >
-        🗺 Voir la carte
+        <Emoji native="🗺" /> Voir la carte
       </button>
 
       {/* Overlay carte mobile */}

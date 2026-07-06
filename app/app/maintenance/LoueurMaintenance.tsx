@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface LeaseRow { id: string; address: string; city: string | null }
 
@@ -174,7 +175,7 @@ export default function LoueurMaintenance() {
       <>
         <Topbar title="Maintenance" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>🔧</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🔧" /></div>
         </div>
       </>
     )
@@ -185,7 +186,7 @@ export default function LoueurMaintenance() {
       <>
         <Topbar title="Maintenance" />
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-          <div className="text-[52px] mb-4">🔧</div>
+          <div className="text-[52px] mb-4"><Emoji native="🔧" /></div>
           <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Aucun bail actif</h3>
           <p className="text-[13px]" style={{ color: '#6B7280' }}>Les signalements apparaîtront ici une fois un bail actif créé.</p>
         </div>
@@ -232,7 +233,7 @@ export default function LoueurMaintenance() {
 
         {filtered.length === 0 ? (
           <div className="text-center py-16 rounded-[18px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-            <div className="text-[48px] mb-4">✅</div>
+            <div className="text-[48px] mb-4"><Emoji native="✅" /></div>
             <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucun signalement dans cette catégorie.</p>
           </div>
         ) : (
@@ -245,10 +246,10 @@ export default function LoueurMaintenance() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-[18px]">{cat.icon}</span>
+                        <span className="text-[18px]"><Emoji native={cat.icon} size="18px" /></span>
                         <span className="text-[14px] font-bold" style={{ color: '#111827' }}>{req.title}</span>
                         {(() => { const u = URGENCY_BADGE[req.urgency ?? 'normal']; return u ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: u.bg, color: u.color }}>{u.label}</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: u.bg, color: u.color }}><EmojiText text={u.label} size="10px" /></span>
                         ) : null })()}
                       </div>
                       <p className="text-[12.5px]" style={{ color: '#6B7280' }}>{req.description}</p>
@@ -257,7 +258,7 @@ export default function LoueurMaintenance() {
                       </p>
                       {req.photo_url && <Image src={req.photo_url} alt={req.title} width={120} height={90} className="mt-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />}
                     </div>
-                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: badge.bg, color: badge.color }}><EmojiText text={badge.label} size="11px" /></span>
                   </div>
 
                   {/* Status controls */}
@@ -278,7 +279,7 @@ export default function LoueurMaintenance() {
                   {/* Comment + resolution photo */}
                   <div className="mt-3 pt-3" style={{ borderTop: '1px solid #F3F4F6' }}>
                     {req.bailleur_comment && editingId !== req.id && (
-                      <p className="text-[12.5px] mb-2" style={{ color: '#374151' }}>💬 {req.bailleur_comment}</p>
+                      <p className="text-[12.5px] mb-2" style={{ color: '#374151' }}><Emoji native="💬" /> {req.bailleur_comment}</p>
                     )}
                     {req.resolved_photo_url && (
                       <Image src={req.resolved_photo_url} alt="Résolution" width={120} height={90} className="mb-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />
@@ -306,10 +307,10 @@ export default function LoueurMaintenance() {
                           className="text-[11.5px] font-semibold border-none bg-transparent cursor-pointer"
                           style={{ color: '#4ECBA0' }}
                         >
-                          💬 Ajouter un commentaire
+                          <Emoji native="💬" /> Ajouter un commentaire
                         </button>
                         <label className="text-[11.5px] font-semibold cursor-pointer" style={{ color: '#4ECBA0' }}>
-                          📷 Photo de résolution
+                          <Emoji native="📷" /> Photo de résolution
                           <input
                             type="file"
                             accept="image/*"

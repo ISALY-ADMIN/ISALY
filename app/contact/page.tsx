@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import Emoji from '@/components/ui/Emoji'
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', subject: 'Avis général', message: '' })
@@ -29,7 +30,7 @@ export default function ContactPage() {
   if (sent) return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Outfit', sans-serif" }}>
       <div style={{ textAlign: 'center', maxWidth: '420px', padding: '24px' }}>
-        <div style={{ fontSize: '56px', marginBottom: '24px' }}>✅</div>
+        <div style={{ fontSize: '56px', marginBottom: '24px' }}><Emoji native="✅" /></div>
         <h1 style={{ fontSize: '32px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>Message envoyé !</h1>
         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, marginBottom: '32px' }}>
           Merci pour ton retour. On lira ton message avec attention.
@@ -94,12 +95,12 @@ export default function ContactPage() {
               onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
               onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
             >
-              <option value="Avis général" style={{ background: '#1A1A1A' }}>💬 Avis général</option>
-              <option value="Bug ou problème technique" style={{ background: '#1A1A1A' }}>🐛 Bug ou problème technique</option>
-              <option value="Suggestion de fonctionnalité" style={{ background: '#1A1A1A' }}>💡 Suggestion de fonctionnalité</option>
-              <option value="Question sur mon compte" style={{ background: '#1A1A1A' }}>👤 Question sur mon compte</option>
-              <option value="Partenariat" style={{ background: '#1A1A1A' }}>🤝 Partenariat</option>
-              <option value="Autre" style={{ background: '#1A1A1A' }}>📌 Autre</option>
+              <option value="Avis général" style={{ background: '#1A1A1A' }}><Emoji native="💬" /> Avis général</option>
+              <option value="Bug ou problème technique" style={{ background: '#1A1A1A' }}><Emoji native="🐛" /> Bug ou problème technique</option>
+              <option value="Suggestion de fonctionnalité" style={{ background: '#1A1A1A' }}><Emoji native="💡" /> Suggestion de fonctionnalité</option>
+              <option value="Question sur mon compte" style={{ background: '#1A1A1A' }}><Emoji native="👤" /> Question sur mon compte</option>
+              <option value="Partenariat" style={{ background: '#1A1A1A' }}><Emoji native="🤝" /> Partenariat</option>
+              <option value="Autre" style={{ background: '#1A1A1A' }}><Emoji native="📌" /> Autre</option>
             </select>
           </div>
 

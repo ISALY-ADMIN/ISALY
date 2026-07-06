@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import Emoji from '@/components/ui/Emoji'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -46,7 +47,7 @@ export default function ForgotPasswordPage() {
 
         {sent ? (
           <>
-            <div className="text-[52px] mb-4">📬</div>
+            <div className="text-[52px] mb-4"><Emoji native="📬" /></div>
             <h2 className="text-[22px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
               Email envoyé !
             </h2>
@@ -63,7 +64,7 @@ export default function ForgotPasswordPage() {
           </>
         ) : (
           <>
-            <div className="text-[44px] mb-4">🔐</div>
+            <div className="text-[44px] mb-4"><Emoji native="🔐" /></div>
             <h2 className="text-[22px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
               Mot de passe oublié ?
             </h2>

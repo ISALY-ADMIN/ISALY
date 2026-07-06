@@ -1,4 +1,5 @@
 'use client'
+import Emoji from '@/components/ui/Emoji'
 
 export type BoostOption = 'standard' | 'featured' | 'priority'
 
@@ -109,7 +110,7 @@ export default function BoostSelector({ selected, onSelect, disabled }: Props) {
           >
             {/* Header: icon + badge */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-              <span style={{ fontSize: '22px' }}>{card.icon}</span>
+              <span style={{ fontSize: '22px' }}><Emoji native={card.icon} size="22px" /></span>
               <span style={{
                 fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '20px',
                 color: card.badgeColor, background: card.badgeBg,

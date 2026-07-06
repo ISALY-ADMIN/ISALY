@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useUserPresence, formatLastSeen } from '@/hooks/usePresence'
 import ActionsPanel, { RichType } from '@/components/messages/ActionsPanel'
 import RichMessage from '@/components/messages/RichMessage'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface Msg {
   id?: string
@@ -329,7 +330,7 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
           </>
         ) : (
           <>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>💬</div>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}><Emoji native="💬" /></div>
             <div>
               <div className="font-bold text-[14px]" style={{ color: '#fff' }}>Tes messages</div>
               <div className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Sélectionne une conversation</div>
@@ -439,7 +440,7 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
                           onClick={e => e.stopPropagation()}
                         >
                           {REACTION_EMOJIS.map(emoji => (
-                            <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} className="transition-transform hover:scale-125" style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '2px 4px' }}>{emoji}</button>
+                            <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} className="transition-transform hover:scale-125" style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '2px 4px' }}><Emoji native={emoji} size="20px" /></button>
                           ))}
                         </div>
                       )}
@@ -487,10 +488,10 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
                         {m.replyTo && (
                           <div style={{ background: isMe ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)', borderLeft: `3px solid ${isMe ? 'rgba(255,255,255,0.6)' : '#10B981'}`, borderRadius: 6, padding: '4px 8px', marginBottom: 6, fontSize: 12, opacity: 0.9 }}>
                             <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 11 }}>{m.replyTo.from === 'me' ? 'Toi' : firstName}</div>
-                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{m.replyTo.text}</div>
+                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}><EmojiText text={m.replyTo.text} size="12px" /></div>
                           </div>
                         )}
-                        {m.text}
+                        {m.text != null && <EmojiText text={m.text} size="13.5px" />}
                       </div>
                     )}
                   </div>
@@ -506,7 +507,7 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
                             onClick={() => toggleReaction(m.id, emoji)}
                             style={{ background: mine ? 'rgba(16,185,129,0.2)' : '#1c1c1c', border: `1px solid ${mine ? '#10B981' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '1px 7px', fontSize: 12, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 3 }}
                           >
-                            {emoji}{count > 1 ? <span style={{ fontSize: 10.5, fontWeight: 700 }}>{count}</span> : ''}
+                            <Emoji native={emoji} size="12px" />{count > 1 ? <span style={{ fontSize: 10.5, fontWeight: 700 }}>{count}</span> : ''}
                           </button>
                         )
                       })}
@@ -636,13 +637,13 @@ function CtxBtn({ children, onClick, icon, danger }: { children: React.ReactNode
 function EmptyChat() {
   return (
     <div className="flex flex-col items-center justify-center flex-1 text-center py-20">
-      <div className="text-[60px] mb-5" style={{ animation: 'bop 1.8s ease infinite' }}>💬</div>
+      <div className="text-[60px] mb-5" style={{ animation: 'bop 1.8s ease infinite' }}><Emoji native="💬" /></div>
       <h3 className="text-[20px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Tes conversations ici</h3>
       <p className="text-[13.5px] mb-6" style={{ color: 'rgba(255,255,255,0.4)', maxWidth: 260, lineHeight: 1.6 }}>
         Sélectionne une conversation à gauche ou commence à swiper pour trouver ton coloc !
       </p>
       <a href="/app/swipe" className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-bold text-white no-underline transition-all" style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 4px 16px rgba(16,185,129,.35)' }}>
-        🔥 Aller swiper
+        <Emoji native="🔥" /> Aller swiper
       </a>
     </div>
   )

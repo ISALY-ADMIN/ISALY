@@ -7,6 +7,7 @@ import { Send, Paperclip, X } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface MaintenanceRequest {
   id: string
@@ -141,7 +142,7 @@ export default function DeclarerProblemePage() {
       <>
         <Topbar title="Déclarer un problème" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>🔧</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🔧" /></div>
         </div>
       </>
     )
@@ -163,7 +164,7 @@ export default function DeclarerProblemePage() {
             className="px-6 py-4 flex items-center gap-2"
             style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}
           >
-            <span className="text-[16px]">✉️</span>
+            <span className="text-[16px]"><Emoji native="✉️" /></span>
             <h2 className="text-[15px] font-bold" style={{ color: '#111827' }}>Nouveau signalement</h2>
           </div>
 
@@ -196,7 +197,7 @@ export default function DeclarerProblemePage() {
                         ? { background: '#ECFDF5', borderColor: '#4ECBA0', boxShadow: '0 2px 10px rgba(78,203,160,.18)' }
                         : { background: '#F9FAFB', borderColor: '#E5E7EB' }}
                     >
-                      <span className="text-[22px] leading-none">{cat.icon}</span>
+                      <span className="text-[22px] leading-none"><Emoji native={cat.icon} size="22px" /></span>
                       <span className="text-[11.5px] font-semibold text-center leading-tight" style={{ color: active ? '#2AA87C' : '#6B7280' }}>{cat.label}</span>
                     </button>
                   )
@@ -299,7 +300,7 @@ export default function DeclarerProblemePage() {
 
             {canSubmit && (
               <div className="mb-4 p-3.5 rounded-[12px] flex items-center gap-3" style={{ background: '#F0FDF9', border: '1px solid #C6F0DE' }}>
-                <span className="text-[20px]">{CATEGORIES.find(c => c.id === form.category)?.icon ?? '📦'}</span>
+                <span className="text-[20px]"><Emoji native={CATEGORIES.find(c => c.id === form.category)?.icon ?? '📦'} size="20px" /></span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[12.5px] font-bold truncate" style={{ color: '#111827' }}>{form.title}</span>
@@ -338,11 +339,11 @@ export default function DeclarerProblemePage() {
 
         {loadingRequests ? (
           <div className="text-center py-12">
-            <div className="text-[40px]" style={{ animation: 'bop 1s ease infinite' }}>🔧</div>
+            <div className="text-[40px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🔧" /></div>
           </div>
         ) : requests.length === 0 ? (
           <div className="text-center py-16 rounded-[18px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-            <div className="text-[48px] mb-4">✅</div>
+            <div className="text-[48px] mb-4"><Emoji native="✅" /></div>
             <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Tout est en ordre !</h3>
             <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucun signalement envoyé pour l'instant.</p>
           </div>
@@ -362,7 +363,7 @@ export default function DeclarerProblemePage() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-[18px]">{cat?.icon ?? '📦'}</span>
+                        <span className="text-[18px]"><Emoji native={cat?.icon ?? '📦'} size="18px" /></span>
                         <span className="text-[14px] font-bold" style={{ color: '#111827' }}>{req.title}</span>
                         {(() => { const u = URGENCIES.find(x => x.id === (req.urgency ?? 'normal')); return u && u.id !== 'normal' ? (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: u.bg, color: u.color }}>{u.label}</span>
@@ -379,7 +380,7 @@ export default function DeclarerProblemePage() {
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-3">
                       <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: badge.bg, color: badge.color }}>
-                        {badge.label}
+                        <EmojiText text={badge.label} size="11px" />
                       </span>
                       <span className="text-[10.5px]" style={{ color: '#9CA3AF' }}>{formatDate(req.created_at)}</span>
                     </div>

@@ -1,4 +1,5 @@
 'use client'
+import { EmojiText } from '@/components/ui/Emoji'
 
 export type CertLevel = 0 | 1 | 2 | 3
 export type CertStatus = 'verified' | 'pending' | 'rejected'
@@ -45,7 +46,7 @@ export default function CertificationBadge({ level, status = 'verified', size = 
           letterSpacing: '0.5px',
         }}
       >
-        {icon}
+        <EmojiText text={icon} size="10px" />
       </span>
     )
   }
@@ -70,7 +71,7 @@ export default function CertificationBadge({ level, status = 'verified', size = 
         letterSpacing: '0.3px',
       }}
     >
-      <span style={{ letterSpacing: '1px' }}>{icon}</span>
+      <span style={{ letterSpacing: '1px' }}><EmojiText text={icon} size="12px" /></span>
       <span>{label}</span>
     </span>
   )

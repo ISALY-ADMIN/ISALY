@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Emoji from '@/components/ui/Emoji'
 
 interface MapListing {
   id: string
@@ -58,7 +59,7 @@ export default function MapPreview() {
     return (
       <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
-          <div style={{ fontSize: '36px', marginBottom: '12px' }}>🗺️</div>
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}><Emoji native="🗺️" /></div>
           <div style={{ fontSize: '14px' }}>Chargement de la carte...</div>
         </div>
       </div>
@@ -108,7 +109,7 @@ export default function MapPreview() {
             <Popup maxWidth={260}>
               <div style={{ fontFamily: "'Outfit', sans-serif", padding: '4px' }}>
                 <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '6px', color: '#111827' }}>
-                  📍 {items[0].city}
+                  <Emoji native="📍" /> {items[0].city}
                 </div>
                 <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
                   {items.length} annonce{items.length > 1 ? 's' : ''} disponible{items.length > 1 ? 's' : ''}

@@ -2,13 +2,14 @@
 
 import dynamic from 'next/dynamic'
 import Topbar from '@/components/layout/Topbar'
+import Emoji from '@/components/ui/Emoji'
 
 const ListingsMap = dynamic(() => import('@/components/map/ListingsMap'), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full" style={{ background: 'transparent' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🗺️</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🗺️" /></div>
         <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>Chargement de la carte...</div>
       </div>
     </div>

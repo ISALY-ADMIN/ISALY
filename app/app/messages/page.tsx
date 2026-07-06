@@ -10,6 +10,7 @@ import { CertLevel } from '@/components/ui/CertificationBadge'
 import { usePresence, useOnlineUsers } from '@/hooks/usePresence'
 import { useLease } from '@/contexts/LeaseContext'
 import type { RichType } from '@/components/messages/ActionsPanel'
+import Emoji from '@/components/ui/Emoji'
 
 interface Msg {
   from: 'me' | 'them'
@@ -328,7 +329,7 @@ function MessagesContent() {
         {loading ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
-              <div className="text-[44px] mb-3 animate-pulse">💬</div>
+              <div className="text-[44px] mb-3 animate-pulse"><Emoji native="💬" /></div>
               <p className="text-[14px]" style={{ color: '#6B7280' }}>Chargement…</p>
             </div>
           </div>

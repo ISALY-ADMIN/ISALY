@@ -11,6 +11,7 @@ import ScrollReveal from '@/components/animations/ScrollReveal'
 import Marquee from '@/components/animations/Marquee'
 import FloatingCard from '@/components/animations/FloatingCard'
 import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerContainer'
+import Emoji from '@/components/ui/Emoji'
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -114,7 +115,7 @@ export default function LandingPage() {
             onMouseEnter={e => (e.currentTarget.style.background = '#3DB890')}
             onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
           >
-            ✦ La colocation sans mauvaises surprises
+            <Emoji native="✦" /> La colocation sans mauvaises surprises
           </div>
         </motion.div>
 
@@ -268,7 +269,7 @@ export default function LandingPage() {
                     e.currentTarget.style.transform = ''
                   }}
                 >
-                  <div style={{ fontSize: '32px', marginBottom: '16px' }}>{feat.icon}</div>
+                  <div style={{ fontSize: '32px', marginBottom: '16px' }}><Emoji native={feat.icon} size="32px" /></div>
                   <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '22px', color: '#fff', marginBottom: '10px', fontWeight: 400 }}>{feat.title}</div>
                   <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{feat.desc}</div>
                 </div>
@@ -534,7 +535,7 @@ export default function LandingPage() {
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '14px' }}>📍</span>
+                  <span style={{ fontSize: '14px' }}><Emoji native="📍" /></span>
                   <span style={{ fontSize: '14px', fontWeight: 500, color: '#fff' }}>{name}</span>
                 </div>
                 <div style={{ fontSize: '12px', color: '#4ECBA0' }}>Voir les annonces</div>

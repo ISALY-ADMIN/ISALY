@@ -1,10 +1,14 @@
 'use client'
+import { useState } from 'react'
+import Emoji from '@/components/ui/Emoji'
 
 export default function ShareButtons({ url, title }: { url: string; title: string }) {
+  const [copied, setCopied] = useState(false)
+
   function copyLink() {
     navigator.clipboard.writeText(url).then(() => {
-      const btn = document.getElementById('copy-btn')
-      if (btn) { btn.textContent = '✓ Copié !'; setTimeout(() => { btn.textContent = '🔗 Copier le lien' }, 2000) }
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     })
   }
 
@@ -23,13 +27,12 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <button
-          id="copy-btn"
           onClick={copyLink}
           style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 500, cursor: 'pointer', transition: 'background 0.15s' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
         >
-          🔗 Copier le lien
+          {copied ? '✓ Copié !' : <><Emoji native="🔗" /> Copier le lien</>}
         </button>
         <a
           href={whatsappUrl}
@@ -37,7 +40,7 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
           rel="noopener noreferrer"
           style={{ display: 'block', textAlign: 'center', padding: '10px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', borderRadius: '10px', color: '#25D366', fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}
         >
-          📱 Partager sur WhatsApp
+          <Emoji native="📱" /> Partager sur WhatsApp
         </a>
         <button
           onClick={shareNative}

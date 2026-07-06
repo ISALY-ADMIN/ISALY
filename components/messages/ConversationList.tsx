@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { Search } from 'lucide-react'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface Conv {
   id: string
@@ -73,7 +74,7 @@ export default function ConversationList({ convs, activeId, onSelect, onlineIds,
               <div key={c.id}>
                 {showHeader && (
                   <div className="px-2.5 pt-3.5 pb-1.5 text-[10.5px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.28)' }}>
-                    {c.sectionLabel}
+                    <EmojiText text={c.sectionLabel!} size="10.5px" />
                   </div>
                 )}
                 <button
@@ -109,7 +110,7 @@ export default function ConversationList({ convs, activeId, onSelect, onlineIds,
                       {c.name}
                     </div>
                     <div className="text-[12px] truncate mt-0.5" style={{ color: hasUnread ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.38)', fontWeight: hasUnread ? 600 : 400 }}>
-                      {c.preview}
+                      <EmojiText text={c.preview} size="12px" />
                     </div>
                   </div>
 
@@ -136,7 +137,7 @@ export default function ConversationList({ convs, activeId, onSelect, onlineIds,
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center mt-6">
-      <div className="text-[48px] mb-3" style={{ animation: 'bop 1.6s ease infinite' }}>💬</div>
+      <div className="text-[48px] mb-3" style={{ animation: 'bop 1.6s ease infinite' }}><Emoji native="💬" /></div>
       <div className="text-[14px] font-bold mb-1.5" style={{ fontFamily: "'DM Serif Display', serif", color: '#ffffff' }}>
         Pas encore de conversations
       </div>
@@ -148,7 +149,7 @@ function EmptyState() {
         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-bold text-white no-underline transition-all"
         style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 4px 14px rgba(16,185,129,.35)' }}
       >
-        🔥 Aller swiper
+        <Emoji native="🔥" /> Aller swiper
       </a>
     </div>
   )

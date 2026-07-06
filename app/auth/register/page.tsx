@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 function translateError(msg: string): string {
   if (!msg) return 'Une erreur inconnue est survenue.'
@@ -101,7 +102,7 @@ export default function RegisterPage() {
   if (emailSent) return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'Outfit', sans-serif" }}>
       <div style={{ textAlign: 'center', maxWidth: '420px' }}>
-        <div style={{ fontSize: '56px', marginBottom: '24px' }}>📬</div>
+        <div style={{ fontSize: '56px', marginBottom: '24px' }}><Emoji native="📬" /></div>
         <h1 style={{ fontSize: '32px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>Vérifie ton email</h1>
         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, marginBottom: '32px' }}>
           On a envoyé un lien de confirmation à <span style={{ color: '#10B981', fontWeight: 600 }}>{form.email}</span>. Clique dessus pour activer ton compte.

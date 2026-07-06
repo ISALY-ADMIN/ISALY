@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import Emoji from '@/components/ui/Emoji'
 
 interface Toggle {
   key: string
@@ -176,7 +177,7 @@ export default function ParametresPage() {
               boxShadow: saving ? 'none' : '0 4px 16px rgba(78,203,160,.35)',
             }}
           >
-            {saving ? 'Sauvegarde...' : '💾 Sauvegarder les paramètres'}
+            {saving ? 'Sauvegarde...' : <><Emoji native="💾" /> Sauvegarder les paramètres</>}
           </button>
 
           {/* Danger zone */}
@@ -227,7 +228,7 @@ function Section({ title, icon, children }: { title: string; icon: string; child
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-[18px]">{icon}</span>
+        <span className="text-[18px]"><Emoji native={icon} size="18px" /></span>
         <h2 className="text-[15px] font-bold" style={{ color: '#fff' }}>{title}</h2>
       </div>
       <div className="rounded-[16px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 1px 8px rgba(0,0,0,.04)' }}>

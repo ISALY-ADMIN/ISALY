@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { jsPDF } from 'jspdf'
+import Emoji from '@/components/ui/Emoji'
 
 export default function BlankDocumentEditor({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState('Document sans titre')
@@ -51,7 +52,7 @@ export default function BlankDocumentEditor({ onClose }: { onClose: () => void }
           className="mt-4 w-full py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer"
           style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
         >
-          📄 Télécharger le PDF
+          <Emoji native="📄" /> Télécharger le PDF
         </button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 interface Roommate {
   id: string
@@ -103,7 +104,7 @@ export default function MaisonPage() {
       <>
         <Topbar title="Ma maison" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🏠" /></div>
         </div>
       </>
     )
@@ -115,7 +116,7 @@ export default function MaisonPage() {
       <>
         <Topbar title="Ma maison" />
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center" style={{ maxWidth: '480px', margin: '0 auto' }}>
-          <div className="text-[64px] mb-4">🏠</div>
+          <div className="text-[64px] mb-4"><Emoji native="🏠" /></div>
           <h2 className="text-[22px] font-extrabold mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>
             Tu n&apos;as pas encore de bail actif
           </h2>
@@ -127,7 +128,7 @@ export default function MaisonPage() {
             className="no-underline inline-flex items-center gap-2 px-6 py-3 rounded-full text-[14px] font-bold text-white"
             style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', boxShadow: '0 4px 20px rgba(78,203,160,.35)' }}
           >
-            🔍 Trouver ma coloc
+            <Emoji native="🔍" /> Trouver ma coloc
           </Link>
         </div>
       </>
@@ -151,7 +152,7 @@ export default function MaisonPage() {
           >
             <div>
               <div className="text-[13.5px] font-bold mb-0.5" style={{ color: '#92400E' }}>
-                ⚠️ Ton bail expire dans {remaining} mois — {lease.end_date && formatDate(lease.end_date)}
+                <Emoji native="⚠️" /> Ton bail expire dans {remaining} mois — {lease.end_date && formatDate(lease.end_date)}
               </div>
               <div className="text-[12px]" style={{ color: '#A16207' }}>
                 Pense à le renouveler ou à chercher une nouvelle coloc.
@@ -197,7 +198,7 @@ export default function MaisonPage() {
               { icon: '📅', label: 'Prochaine échéance', value: dueDate },
             ].map(s => (
               <div key={s.label} className="text-center rounded-[12px] py-4" style={{ background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
-                <div className="text-[22px] mb-1">{s.icon}</div>
+                <div className="text-[22px] mb-1"><Emoji native={s.icon} size="22px" /></div>
                 <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>{s.value}</div>
                 <div className="text-[10.5px] mt-0.5" style={{ color: '#9CA3AF' }}>{s.label}</div>
               </div>
@@ -211,7 +212,7 @@ export default function MaisonPage() {
             className="rounded-[14px] p-5 mb-5"
             style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
           >
-            <div className="text-[15px] font-bold mb-4" style={{ color: '#111827' }}>👥 Mes colocataires</div>
+            <div className="text-[15px] font-bold mb-4" style={{ color: '#111827' }}><Emoji native="👥" /> Mes colocataires</div>
             <div className="flex flex-col gap-3">
               {roommates.map(r => {
                 const name = [r.first_name, r.last_name].filter(Boolean).join(' ') || 'Colocataire'
@@ -232,7 +233,7 @@ export default function MaisonPage() {
           style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="text-[15px] font-bold" style={{ color: '#111827' }}>🔧 Signalements</div>
+            <div className="text-[15px] font-bold" style={{ color: '#111827' }}><Emoji native="🔧" /> Signalements</div>
             <Link
               href="/app/declarer-probleme"
               className="no-underline px-3.5 py-1.5 rounded-full text-[12px] font-semibold"
@@ -243,7 +244,7 @@ export default function MaisonPage() {
           </div>
           {maintenance.length === 0 ? (
             <div className="text-center py-4">
-              <div className="text-[28px] mb-1">✅</div>
+              <div className="text-[28px] mb-1"><Emoji native="✅" /></div>
               <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucun signalement en cours</p>
             </div>
           ) : (
@@ -265,7 +266,7 @@ export default function MaisonPage() {
                         : { background: '#ECFDF5', color: '#059669' }
                     }
                   >
-                    {m.urgency === 'urgent' ? '🔴 Urgent' : m.urgency === 'normal' ? '🟡 Normal' : '🟢 Faible'}
+                    {m.urgency === 'urgent' ? <><Emoji native="🔴" /> Urgent</> : m.urgency === 'normal' ? <><Emoji native="🟡" /> Normal</> : <><Emoji native="🟢" /> Faible</>}
                   </span>
                 </div>
               ))}
@@ -282,7 +283,7 @@ export default function MaisonPage() {
           onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.05)' }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-[26px]">📄</span>
+            <span className="text-[26px]"><Emoji native="📄" /></span>
             <div>
               <div className="text-[14px] font-semibold" style={{ color: '#111827' }}>Voir le détail de mon bail</div>
               <div className="text-[12px]" style={{ color: '#6B7280' }}>Adresse, loyer, dates</div>

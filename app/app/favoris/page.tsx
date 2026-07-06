@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 export default function FavorisPage() {
   const router = useRouter()
@@ -39,7 +40,7 @@ export default function FavorisPage() {
           <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.35)' }}>Chargement...</div>
         ) : listings.length === 0 && profiles.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 24px', background: 'rgba(255,255,255,0.04)', borderRadius: '16px', border: '0.5px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔖</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🔖" /></div>
             <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '20px', fontWeight: 700, color: '#ffffff', marginBottom: '8px' }}>Aucun favori pour l&apos;instant</div>
             <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.35)', marginBottom: '24px' }}>Sauvegarde des profils et annonces pour les retrouver ici.</div>
             <button onClick={() => router.push('/app/swipe')} style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '12px 24px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>Aller swiper</button>
@@ -55,7 +56,7 @@ export default function FavorisPage() {
                       <div style={{ width: '56px', height: '56px', borderRadius: '10px', background: l.photos?.[0] ? `url(${l.photos[0]}) center/cover` : 'linear-gradient(135deg, #6EE7B7, #047857)', flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '15px', color: '#ffffff' }}>{l.title || `Colocation à ${l.city}`}</div>
-                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>📍 {l.city} · {l.rent}€/mois</div>
+                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}><Emoji native="📍" /> {l.city} · {l.rent}€/mois</div>
                       </div>
                       <button onClick={() => router.push(`/app/messages?owner=${l.owner_id}`)} style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                         Contacter
@@ -76,7 +77,7 @@ export default function FavorisPage() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '15px', color: '#ffffff' }}>{p.first_name} {p.last_name?.[0]}.</div>
-                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>📍 {p.city ?? 'Ville non renseignée'} · {p.budget_max ?? 0}€/mois</div>
+                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}><Emoji native="📍" /> {p.city ?? 'Ville non renseignée'} · {p.budget_max ?? 0}€/mois</div>
                       </div>
                       <button onClick={() => router.push(`/app/messages?with=${p.first_name}`)} style={{ background: 'rgba(255,255,255,0.04)', color: '#10B981', border: '2px solid #10B981', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                         Écrire

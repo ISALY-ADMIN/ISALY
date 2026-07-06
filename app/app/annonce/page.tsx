@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import BoostSelector, { type BoostOption } from '@/components/listings/BoostSelector'
+import Emoji from '@/components/ui/Emoji'
 
 interface FormData {
   title: string
@@ -296,7 +297,7 @@ function AnnonceForm() {
         <Topbar title="Modifier l'annonce" />
         <div className="flex-1 flex items-center justify-center p-8">
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}><Emoji native="⏳" /></div>
             <div style={{ fontSize: '14px' }}>Chargement de l'annonce…</div>
           </div>
         </div>
@@ -310,7 +311,7 @@ function AnnonceForm() {
         <Topbar title="Mon annonce" />
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center" style={{ maxWidth: '400px' }}>
-            <div className="text-6xl mb-4">✅</div>
+            <div className="text-6xl mb-4"><Emoji native="✅" /></div>
             <h2
               className="text-[26px] mb-2"
               style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}
@@ -385,7 +386,7 @@ function AnnonceForm() {
           {!isEditing && (
             <div className="rounded-[14px] p-5 mb-5 border" style={{ background: '#111', borderColor: '#2D2D2D' }}>
               <div className="text-[13.5px] font-bold mb-1" style={{ color: '#E5E7EB' }}>
-                📎 Importer depuis une annonce existante
+                <Emoji native="📎" /> Importer depuis une annonce existante
               </div>
               {importSource && (
                 <div
@@ -597,12 +598,12 @@ function AnnonceForm() {
             {/* Boost */}
             <div className="mb-4">
               <div className="font-extrabold text-[13.5px] mb-3" style={{ color: '#E5E7EB' }}>
-                🚀 Booster l'annonce
+                <Emoji native="🚀" /> Booster l'annonce
               </div>
               <BoostSelector selected={boost} onSelect={setBoost} disabled={publishing} />
               {needsPayment && (
                 <p className="text-[11.5px] mt-2.5" style={{ color: '#9CA3AF' }}>
-                  💳 Vous serez redirigé vers Stripe pour finaliser l'abonnement. L'annonce sera activée dès le paiement confirmé.
+                  <Emoji native="💳" /> Vous serez redirigé vers Stripe pour finaliser l'abonnement. L'annonce sera activée dès le paiement confirmé.
                 </p>
               )}
             </div>
@@ -646,7 +647,7 @@ export default function AnnoncePage() {
     <Suspense fallback={
       <div className="flex-1 flex items-center justify-center p-8">
         <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}><Emoji native="⏳" /></div>
           <div style={{ fontSize: '14px' }}>Chargement…</div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 interface ProfileRow {
   id: string
@@ -111,7 +112,7 @@ function LocataireDetailContent() {
       <>
         <Topbar title="Locataire" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>👤</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="👤" /></div>
         </div>
       </>
     )
@@ -122,7 +123,7 @@ function LocataireDetailContent() {
       <>
         <Topbar title="Locataire" />
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-          <div className="text-[44px] mb-3">🚫</div>
+          <div className="text-[44px] mb-3"><Emoji native="🚫" /></div>
           <p className="text-[14px]" style={{ color: '#6B7280' }}>Vous n&apos;avez pas accès à ce profil.</p>
         </div>
       </>
@@ -150,7 +151,7 @@ function LocataireDetailContent() {
             <div className="text-[20px] font-extrabold" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>{name}</div>
             <div className="text-[13px] mt-0.5" style={{ color: '#6B7280' }}>
               {profile.city ?? 'Ville non renseignée'}
-              {reviewAvg !== null && <span> · ⭐ {reviewAvg}/5 ({reviews.length} avis)</span>}
+              {reviewAvg !== null && <span> · <Emoji native="⭐" /> {reviewAvg}/5 ({reviews.length} avis)</span>}
             </div>
             {dossier?.identity_verified && (
               <span className="inline-flex mt-1.5 text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#ECFDF5', color: '#059669' }}>
@@ -163,7 +164,7 @@ function LocataireDetailContent() {
             className="px-4 py-2.5 rounded-full text-[12.5px] font-bold text-white border-none cursor-pointer flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
           >
-            💬 Contacter
+            <Emoji native="💬" /> Contacter
           </button>
         </div>
 
@@ -174,7 +175,7 @@ function LocataireDetailContent() {
         {/* Historique des paiements */}
         {leaseId && (
           <div className="mb-6">
-            <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}>💳 Historique des paiements</h3>
+            <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}><Emoji native="💳" /> Historique des paiements</h3>
             {payments.length === 0 ? (
               <div className="text-center py-6 rounded-[12px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                 <p className="text-[13px]" style={{ color: '#9CA3AF' }}>Aucun paiement enregistré.</p>
@@ -194,7 +195,7 @@ function LocataireDetailContent() {
                           : { background: '#FFFBEB', color: '#D97706' }
                         }
                       >
-                        {p.status === 'paid' ? '✓ Payé' : p.status === 'late' ? '✗ Retard' : '⏳ Attente'}
+                        {p.status === 'paid' ? '✓ Payé' : p.status === 'late' ? '✗ Retard' : <><Emoji native="⏳" /> Attente</>}
                       </span>
                     </div>
                   </div>
@@ -206,7 +207,7 @@ function LocataireDetailContent() {
 
         {/* Documents */}
         <div className="mb-6">
-          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}>📄 Documents fournis</h3>
+          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}><Emoji native="📄" /> Documents fournis</h3>
           {!dossier ? (
             <div className="text-center py-6 rounded-[12px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
               <p className="text-[13px]" style={{ color: '#9CA3AF' }}>Aucun dossier soumis.</p>
@@ -235,7 +236,7 @@ function LocataireDetailContent() {
 
         {/* Avis reçus */}
         <div className="mb-6">
-          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}>⭐ Avis reçus</h3>
+          <h3 className="text-[15px] font-bold mb-3" style={{ color: '#fff' }}><Emoji native="⭐" /> Avis reçus</h3>
           {reviews.length === 0 ? (
             <div className="text-center py-6 rounded-[12px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
               <p className="text-[13px]" style={{ color: '#9CA3AF' }}>Aucun avis pour le moment.</p>

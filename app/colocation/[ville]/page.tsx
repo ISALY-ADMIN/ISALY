@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import Emoji from '@/components/ui/Emoji'
 
 export const revalidate = 3600
 
@@ -56,7 +57,7 @@ export default async function ColocationVillePage({ params }: Props) {
     return (
       <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: "'Outfit', sans-serif" }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏙️</div>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🏙️" /></div>
           <h1 style={{ fontSize: '24px', marginBottom: '12px' }}>Ville non trouvée</h1>
           <Link href="/" style={{ color: '#10B981', textDecoration: 'none' }}>Retour à l'accueil</Link>
         </div>
@@ -114,7 +115,7 @@ export default async function ColocationVillePage({ params }: Props) {
         {/* Listings */}
         {results.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 24px', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🔍" /></div>
             <h2 style={{ fontSize: '22px', color: '#fff', marginBottom: '12px' }}>Pas encore d'annonces à {cityName}</h2>
             <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', marginBottom: '28px' }}>
               Sois le premier à publier ou crée ton profil pour être alerté dès qu'une annonce apparaît.
@@ -131,14 +132,14 @@ export default async function ColocationVillePage({ params }: Props) {
                   <div style={{ height: '160px', background: 'linear-gradient(135deg, #6EE7B7, #047857)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>
                     {(l.photos as string[] | null)?.[0] ? (
                       <Image src={(l.photos as string[])[0]} alt={l.title ?? ''} fill sizes="280px" style={{ objectFit: 'cover' }} />
-                    ) : '🏠'}
+                    ) : <Emoji native="🏠" size="40px" />}
                   </div>
                   <div style={{ padding: '16px' }}>
                     <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {l.title || `Colocation à ${l.city}`}
                     </div>
                     <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginBottom: '10px' }}>
-                      📍 {l.city}{l.neighborhood ? ` · ${l.neighborhood}` : ''}
+                      <Emoji native="📍" /> {l.city}{l.neighborhood ? ` · ${l.neighborhood}` : ''}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: '18px', fontWeight: 700, color: '#10B981' }}>{l.rent}€<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>/mois</span></div>

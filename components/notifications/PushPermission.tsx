@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Emoji from '@/components/ui/Emoji'
 
 export default function PushPermission() {
   const [status, setStatus] = useState<NotificationPermission | null>(null)
@@ -56,7 +57,7 @@ export default function PushPermission() {
       alignItems: 'center',
       gap: '12px',
     }}>
-      <div style={{ fontSize: '24px' }}>🔔</div>
+      <div style={{ fontSize: '24px' }}><Emoji native="🔔" /></div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>Activer les notifications</div>
         <div style={{ fontSize: '12px', color: '#6B7280' }}>Sois alerté des nouveaux matchs et messages</div>

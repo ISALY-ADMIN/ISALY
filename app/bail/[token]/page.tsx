@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import SignatureCanvas, { SignatureCanvasHandle } from '@/components/documents/SignatureCanvas'
 import type { BailFormData } from '@/lib/bailPdf'
+import Emoji from '@/components/ui/Emoji'
 
 interface DocPayload {
   id: string
@@ -63,7 +64,7 @@ export default function PublicBailSignPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontSize: '44px' }}>📄</div>
+        <div style={{ fontSize: '44px' }}><Emoji native="📄" /></div>
       </div>
     )
   }
@@ -72,7 +73,7 @@ export default function PublicBailSignPage() {
     return (
       <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Outfit', sans-serif" }}>
         <div style={{ textAlign: 'center', maxWidth: '420px', padding: '24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚫</div>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🚫" /></div>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '15px' }}>{error}</p>
           <Link href="/" style={{ color: '#10B981', fontSize: '14px', fontWeight: 600 }}>Retour à l&apos;accueil</Link>
         </div>
@@ -120,7 +121,7 @@ export default function PublicBailSignPage() {
 
         {alreadySigned ? (
           <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '16px', padding: '24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '36px', marginBottom: '8px' }}>✅</div>
+            <div style={{ fontSize: '36px', marginBottom: '8px' }}><Emoji native="✅" /></div>
             <p style={{ color: '#10B981', fontWeight: 700, fontSize: '15px' }}>Bail signé avec succès</p>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '4px' }}>Votre propriétaire a été notifié.</p>
           </div>
@@ -140,7 +141,7 @@ export default function PublicBailSignPage() {
                 fontSize: '14px', cursor: 'pointer', opacity: submitting ? 0.6 : 1,
               }}
             >
-              {submitting ? 'Signature en cours…' : '✍️ Signer le bail'}
+              {submitting ? 'Signature en cours…' : <><Emoji native="✍️" /> Signer le bail</>}
             </button>
           </div>
         )}

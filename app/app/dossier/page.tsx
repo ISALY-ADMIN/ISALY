@@ -14,6 +14,7 @@ function StatusBadge({ variant, children }: { variant: 'ok' | 'pending' | 'missi
 }
 import { createClient } from '@/lib/supabase/client'
 import type { Dossier, Lease } from '@/types/database'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface ProfileSnap {
   first_name: string | null
@@ -72,7 +73,7 @@ function ScoreCard({ income, budgetMax }: { income: number | null; budgetMax: nu
       <div className="rounded-[14px] p-5 border flex-shrink-0" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', width: '220px', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
         <div className="text-[13px] font-bold mb-4" style={{ color: '#111827' }}>Solvabilité</div>
         <div className="text-center py-4">
-          <div className="text-[38px] mb-2">📊</div>
+          <div className="text-[38px] mb-2"><Emoji native="📊" /></div>
           <p className="text-[12px]" style={{ color: '#9CA3AF' }}>Complétez votre dossier pour voir votre score</p>
         </div>
       </div>
@@ -101,7 +102,7 @@ function ScoreCard({ income, budgetMax }: { income: number | null; budgetMax: nu
         <div className="text-center">
           <div className="text-[12px] font-bold" style={{ color }}>{effortLabel(effortRate)} · {Math.round(effortRate)}%</div>
           <div className="text-[12px] mt-1.5" style={{ color: '#6B7280' }}>Vous gagnez <strong style={{ color: '#111827' }}>{incomeRatio}x</strong> le loyer</div>
-          {parseFloat(incomeRatio) < 3 && <div className="text-[11px] mt-1" style={{ color: '#F59E0B' }}>⚠ Standard : 3x minimum</div>}
+          {parseFloat(incomeRatio) < 3 && <div className="text-[11px] mt-1" style={{ color: '#F59E0B' }}><Emoji native="⚠" /> Standard : 3x minimum</div>}
         </div>
       </div>
     </div>
@@ -113,7 +114,7 @@ function ReadinessBanner({ completion }: { completion: number }) {
   if (completion >= 90) {
     return (
       <div className="rounded-[12px] px-5 py-3.5 mb-5 flex items-center gap-3" style={{ background: '#ECFDF5', border: '1.5px solid #A7F3D0' }}>
-        <span className="text-xl flex-shrink-0">✅</span>
+        <span className="text-xl flex-shrink-0"><Emoji native="✅" /></span>
         <div>
           <div className="text-[13.5px] font-bold" style={{ color: '#059669' }}>Dossier complet — vous pouvez postuler</div>
           <div className="text-[12px]" style={{ color: '#6B7280' }}>Tous les documents essentiels sont présents</div>
@@ -125,7 +126,7 @@ function ReadinessBanner({ completion }: { completion: number }) {
     return (
       <div className="rounded-[12px] px-5 py-3.5 mb-5" style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A' }}>
         <div className="flex items-center gap-3 mb-2.5">
-          <span className="text-xl flex-shrink-0">⚠️</span>
+          <span className="text-xl flex-shrink-0"><Emoji native="⚠️" /></span>
           <div className="text-[13.5px] font-bold" style={{ color: '#D97706' }}>Dossier incomplet ({completion}%) — documents manquants</div>
         </div>
       </div>
@@ -133,7 +134,7 @@ function ReadinessBanner({ completion }: { completion: number }) {
   }
   return (
     <div className="rounded-[12px] px-5 py-3.5 mb-5 flex items-center gap-3" style={{ background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
-      <span className="text-xl flex-shrink-0">🚨</span>
+      <span className="text-xl flex-shrink-0"><Emoji native="🚨" /></span>
       <div>
         <div className="text-[13.5px] font-bold" style={{ color: '#DC2626' }}>Dossier insuffisant — candidature impossible</div>
         <div className="text-[12px]" style={{ color: '#6B7280' }}>Les propriétaires ne pourront pas valider votre candidature</div>
@@ -166,7 +167,7 @@ function ShareModal({ onClose }: { onClose: () => void }) {
         </div>
         {disabled ? (
           <div className="text-center py-6">
-            <div className="text-3xl mb-2">🔒</div>
+            <div className="text-3xl mb-2"><Emoji native="🔒" /></div>
             <p className="text-[13px]" style={{ color: '#6B7280' }}>Ce lien a été désactivé.</p>
             <button onClick={() => setDisabled(false)} className="mt-3 px-4 py-2 rounded-full text-[12.5px] font-semibold border-none cursor-pointer" style={{ background: '#4ECBA0', color: '#fff' }}>Générer un nouveau lien</button>
           </div>
@@ -184,7 +185,7 @@ function ShareModal({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
             </div>
-            <div className="rounded-[9px] px-3.5 py-2.5 text-[12px] mb-5" style={{ background: '#0A2118', color: '#6B7280' }}>🔒 Ce lien masque les données sensibles (pièce d&apos;identité, coordonnées bancaires).</div>
+            <div className="rounded-[9px] px-3.5 py-2.5 text-[12px] mb-5" style={{ background: '#0A2118', color: '#6B7280' }}><Emoji native="🔒" /> Ce lien masque les données sensibles (pièce d&apos;identité, coordonnées bancaires).</div>
             <div className="flex gap-2">
               <button onClick={onClose} className="flex-1 py-2.5 rounded-full text-[13px] font-semibold border-none cursor-pointer" style={{ background: '#2D2D2D', color: '#E5E7EB' }}>Fermer</button>
               <button onClick={() => setDisabled(true)} className="flex-1 py-2.5 rounded-full text-[13px] font-semibold border-[1.5px] cursor-pointer bg-transparent transition-colors" style={{ borderColor: '#EF4444', color: '#EF4444' }} onMouseEnter={e => (e.currentTarget.style.background = '#1A0000')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Désactiver le lien</button>
@@ -202,7 +203,7 @@ function OptDocRow({ emoji, label, uploaded, onUpload }: { emoji: string; label:
   return (
     <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid #F3F4F6' }}>
       <div className="flex items-center gap-2.5">
-        <span className="text-base">{emoji}</span>
+        <span className="text-base"><Emoji native={emoji} size="16px" /></span>
         <span className="text-[13px]" style={{ color: '#374151' }}>{label}</span>
       </div>
       {uploaded ? (
@@ -267,7 +268,7 @@ export default function DossierPage() {
         <Topbar title="Mon dossier" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-[44px] mb-3 animate-pulse">📁</div>
+            <div className="text-[44px] mb-3 animate-pulse"><Emoji native="📁" /></div>
             <p className="text-[14px]" style={{ color: '#6B7280' }}>Chargement du dossier…</p>
           </div>
         </div>
@@ -287,7 +288,7 @@ export default function DossierPage() {
           <div className="flex-1">
             <p className="text-[13.5px] mb-4" style={{ color: '#6B7280' }}>Gérez vos documents et partagez votre dossier en toute sécurité</p>
             <button onClick={() => setShowShare(true)} className="px-5 py-2.5 rounded-full text-sm font-semibold text-white border-none cursor-pointer transition-colors" style={{ background: '#4ECBA0' }} onMouseEnter={e => (e.currentTarget.style.background = '#2AA87C')} onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}>
-              📤 Partager mon dossier
+              <Emoji native="📤" /> Partager mon dossier
             </button>
           </div>
           <ScoreCard income={income} budgetMax={budgetMax} />
@@ -307,9 +308,9 @@ export default function DossierPage() {
           {/* Identité */}
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
-              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>📋 Identité</div>
+              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}><Emoji native="📋" /> Identité</div>
               <StatusBadge variant={dossier?.identity_verified ? 'ok' : 'pending'}>
-                {dossier?.identity_verified ? '✓ Vérifiée' : '⏳ En attente'}
+                {dossier?.identity_verified ? '✓ Vérifiée' : <><Emoji native="⏳" /> En attente</>}
               </StatusBadge>
             </div>
             {[
@@ -326,7 +327,7 @@ export default function DossierPage() {
           {/* Revenus */}
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
-              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>💰 Revenus</div>
+              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}><Emoji native="💰" /> Revenus</div>
               <StatusBadge variant={income ? 'ok' : 'missing'}>{income ? '✓ Renseigné' : '✗ Absent'}</StatusBadge>
             </div>
             {[
@@ -344,7 +345,7 @@ export default function DossierPage() {
           {/* Logement actuel */}
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
-              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>🏠 Logement actuel</div>
+              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}><Emoji native="🏠" /> Logement actuel</div>
               <StatusBadge variant={dossier?.rent_receipts_urls?.length ? 'pending' : 'missing'}>
                 {dossier?.rent_receipts_urls?.length ? `${dossier.rent_receipts_urls.length}/3 docs` : '✗ Absent'}
               </StatusBadge>
@@ -362,7 +363,7 @@ export default function DossierPage() {
               </span>
             </div>
             <div className="border-2 border-dashed rounded-[9px] p-4 text-center cursor-pointer transition-all mt-2.5" style={{ borderColor: '#E5E7EB' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.background = '#ECFDF5' }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.background = '' }}>
-              <div className="text-[22px]">📎</div>
+              <div className="text-[22px]"><Emoji native="📎" /></div>
               <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>Glisser-déposer ou cliquer</p>
             </div>
           </div>
@@ -370,7 +371,7 @@ export default function DossierPage() {
           {/* Garant */}
           <div className="rounded-[14px] p-5 border" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
             <div className="flex justify-between items-center mb-3">
-              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>🏦 Garant</div>
+              <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}><Emoji native="🏦" /> Garant</div>
               <StatusBadge variant={dossier?.guarantor_name ? 'ok' : 'missing'}>{dossier?.guarantor_name ? '✓ Ajouté' : '✗ Absent'}</StatusBadge>
             </div>
             {dossier?.guarantor_name ? (
@@ -380,7 +381,7 @@ export default function DossierPage() {
               </div>
             ) : (
               <div className="text-center py-5">
-                <div className="text-[38px] mb-2">👨‍👩‍👧</div>
+                <div className="text-[38px] mb-2"><Emoji native="👨‍👩‍👧" /></div>
                 <p className="text-[13px] mb-3" style={{ color: '#6B7280' }}>Un garant renforce votre dossier</p>
                 <button className="px-5 py-2 rounded-full text-sm font-semibold border-[1.5px] cursor-pointer transition-all bg-transparent" style={{ borderColor: '#E5E7EB', color: '#374151' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#4ECBA0' }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151' }}>+ Ajouter</button>
               </div>
@@ -391,8 +392,8 @@ export default function DossierPage() {
         {/* Bail en cours */}
         <div className="rounded-[14px] p-5 border mb-5" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
           <div className="flex justify-between items-center mb-1">
-            <h3 className="text-[17px]" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>🏠 Bail en cours</h3>
-            <StatusBadge variant={currentLease ? 'ok' : 'missing'}>{currentLease ? '🟢 Actif' : '✗ Aucun bail'}</StatusBadge>
+            <h3 className="text-[17px]" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}><Emoji native="🏠" /> Bail en cours</h3>
+            <StatusBadge variant={currentLease ? 'ok' : 'missing'}>{currentLease ? <><Emoji native="🟢" /> Actif</> : '✗ Aucun bail'}</StatusBadge>
           </div>
           {currentLease ? (
             <>
@@ -413,13 +414,13 @@ export default function DossierPage() {
               </div>
               <div className="flex gap-2 flex-wrap">
                 {['📄 Voir le bail', '🔑 État des lieux'].map(btn => (
-                  <button key={btn} className="px-4 py-2 rounded-full text-[12.5px] font-semibold border-[1.5px] cursor-pointer transition-all bg-transparent" style={{ borderColor: '#E5E7EB', color: '#374151' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#4ECBA0' }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151' }}>{btn}</button>
+                  <button key={btn} className="px-4 py-2 rounded-full text-[12.5px] font-semibold border-[1.5px] cursor-pointer transition-all bg-transparent" style={{ borderColor: '#E5E7EB', color: '#374151' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ECBA0'; e.currentTarget.style.color = '#4ECBA0' }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151' }}><EmojiText text={btn} size="12.5px" /></button>
                 ))}
               </div>
             </>
           ) : (
             <div className="py-6 text-center">
-              <div className="text-[38px] mb-2">🏡</div>
+              <div className="text-[38px] mb-2"><Emoji native="🏡" /></div>
               <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucun bail actif enregistré</p>
             </div>
           )}
@@ -446,7 +447,7 @@ export default function DossierPage() {
         <div className="rounded-[14px] border overflow-hidden" style={{ background: '#FFFFFF', borderColor: '#E5E7EB', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
           {pastLeases.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-[36px] mb-3">🏡</div>
+              <div className="text-[36px] mb-3"><Emoji native="🏡" /></div>
               <p className="text-[13.5px] font-semibold mb-1" style={{ color: '#111827' }}>Aucune colocation passée</p>
               <p className="text-[12.5px]" style={{ color: '#6B7280' }}>Votre historique se construira ici après vos premières colocations.</p>
             </div>
@@ -455,7 +456,7 @@ export default function DossierPage() {
               <div key={lease.id} className="p-5" style={{ borderBottom: i < pastLeases.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[12px] text-white flex-shrink-0" style={{ background: '#6B7280' }}>
-                    🏠
+                    <Emoji native="🏠" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2 mb-1">

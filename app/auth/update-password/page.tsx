@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 export default function UpdatePasswordPage() {
   const router = useRouter()
@@ -49,7 +50,7 @@ export default function UpdatePasswordPage() {
 
         {done ? (
           <>
-            <div className="text-[52px] mb-4">✅</div>
+            <div className="text-[52px] mb-4"><Emoji native="✅" /></div>
             <h2 className="text-[22px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
               Mot de passe mis à jour !
             </h2>
@@ -59,7 +60,7 @@ export default function UpdatePasswordPage() {
           </>
         ) : (
           <>
-            <div className="text-[44px] mb-4">🔑</div>
+            <div className="text-[44px] mb-4"><Emoji native="🔑" /></div>
             <h2 className="text-[22px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
               Nouveau mot de passe
             </h2>

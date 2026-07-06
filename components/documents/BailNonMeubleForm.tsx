@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import SignatureCanvas, { SignatureCanvasHandle } from '@/components/documents/SignatureCanvas'
 import { generateBailPdf, type BailSignaturesPayload } from '@/lib/documents/generateBailPdf'
+import Emoji from '@/components/ui/Emoji'
 
 interface LeaseRow {
   id: string
@@ -361,7 +362,7 @@ export default function BailNonMeubleForm({ lease, members, onClose }: { lease: 
               className="py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)', flex: 2 }}
             >
-              {generating ? 'Génération…' : '📄 Générer et télécharger le PDF'}
+              {generating ? 'Génération…' : <><Emoji native="📄" /> Générer et télécharger le PDF</>}
             </button>
           )}
         </div>

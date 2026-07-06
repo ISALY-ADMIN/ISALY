@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
+import Emoji from '@/components/ui/Emoji'
 
 function SwiperPlusContent() {
   const searchParams = useSearchParams()
@@ -41,7 +42,7 @@ function SwiperPlusContent() {
 
         {success && (
           <div style={{ background: '#ECFDF5', border: '1px solid #10B981', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '20px' }}>🎉</span>
+            <span style={{ fontSize: '20px' }}><Emoji native="🎉" /></span>
             <div>
               <div style={{ fontWeight: 700, color: '#065F46' }}>Swiper+ activé !</div>
               <div style={{ fontSize: '13px', color: '#059669' }}>Swipes et messages illimités dès maintenant.</div>
@@ -79,7 +80,7 @@ function SwiperPlusContent() {
               fontFamily: "'Outfit', sans-serif",
             }}
           >
-            {loading ? '⏳ Redirection...' : available ? "S'abonner →" : 'Bientôt disponible'}
+            {loading ? <><Emoji native="⏳" /> Redirection...</> : available ? "S'abonner →" : 'Bientôt disponible'}
           </button>
         </div>
 
@@ -129,7 +130,7 @@ function PaiementContent() {
 
         {success && (
           <div style={{ background: '#ECFDF5', border: '1px solid #10B981', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '20px' }}>🎉</span>
+            <span style={{ fontSize: '20px' }}><Emoji native="🎉" /></span>
             <div>
               <div style={{ fontWeight: 700, color: '#065F46' }}>Abonnement activé !</div>
               <div style={{ fontSize: '13px', color: '#059669' }}>Ton boost est maintenant actif. Tes annonces sont mises en avant.</div>
@@ -207,7 +208,7 @@ function PaiementContent() {
                   fontFamily: "'Outfit', sans-serif",
                 }}
               >
-                {loading === plan.id ? '⏳ Redirection...' : `Choisir ${plan.name} →`}
+                {loading === plan.id ? <><Emoji native="⏳" /> Redirection...</> : `Choisir ${plan.name} →`}
               </button>
             </div>
           ))}

@@ -12,6 +12,7 @@ import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 // ── Design tokens (signature dashboard-home) ──────────────────
 const MINT = '#10B981'
@@ -228,7 +229,7 @@ function BailModal({ onClose, onCreated }: { onClose: () => void; onCreated: () 
           <TextField label="Date de fin (optionnel)" type="date" value={form.end_date} onChange={v => setForm(p => ({ ...p, end_date: v }))} />
           <TextField label="Nombre de colocataires" type="number" value={form.nb_roommates} onChange={v => setForm(p => ({ ...p, nb_roommates: v }))} placeholder="1" />
         </div>
-        <div className="mt-5"><Button onClick={handleCreate} loading={saving}>🏠 Activer le mode locataire</Button></div>
+        <div className="mt-5"><Button onClick={handleCreate} loading={saving}><Emoji native="🏠" /> Activer le mode locataire</Button></div>
       </motion.div>
     </div>
   )
@@ -253,7 +254,7 @@ function DocRow({ label, required, doc, uploading, onUpload, onDelete }: {
         {has && doc!.isImage && doc!.url
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={doc!.url} alt="" className="w-full h-full object-cover" />
-          : <span className="text-[18px]">{has ? '📄' : required ? '📎' : '➕'}</span>}
+          : <span className="text-[18px]"><Emoji native={has ? '📄' : required ? '📎' : '➕'} size="18px" /></span>}
       </div>
       {/* Label + status */}
       <div className="flex-1 min-w-0">
@@ -286,7 +287,7 @@ function DocRow({ label, required, doc, uploading, onUpload, onDelete }: {
           {has ? 'Remplacer' : 'Uploader'}
         </Button>
         {has && (
-          <button onClick={onDelete} className="text-[13px] px-1.5 py-1 rounded-[8px] border-none bg-transparent cursor-pointer" style={{ color: '#F87171' }} title="Supprimer">🗑</button>
+          <button onClick={onDelete} className="text-[13px] px-1.5 py-1 rounded-[8px] border-none bg-transparent cursor-pointer" style={{ color: '#F87171' }} title="Supprimer"><Emoji native="🗑" /></button>
         )}
       </div>
     </div>
@@ -607,7 +608,7 @@ export default function ProfilPage() {
                   <img src={avatarUrl} alt="Avatar" referrerPolicy="no-referrer" className="w-[88px] h-[88px] rounded-full object-cover" style={{ border: `2px solid rgba(16,185,129,0.5)` }} />
                 ) : (
                   <div className="w-[88px] h-[88px] rounded-full flex items-center justify-center text-[26px] font-extrabold text-white" style={{ background: `linear-gradient(135deg, ${MINT}, ${MINT_D})` }}>
-                    {initials || '👤'}
+                    {initials || <Emoji native="👤" size="26px" />}
                   </div>
                 )}
                 <span
@@ -643,8 +644,8 @@ export default function ProfilPage() {
 
             {nextStep && (
               <div className="mt-5 flex items-center gap-2 px-3.5 py-2.5 rounded-[12px]" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-                <span className="text-[13px]">✨</span>
-                <span className="text-[12.5px] font-medium" style={{ color: MINT }}>{dynamicPhrase}</span>
+                <span className="text-[13px]"><Emoji native="✨" /></span>
+                <span className="text-[12.5px] font-medium" style={{ color: MINT }}><EmojiText text={dynamicPhrase} size="12.5px" /></span>
               </div>
             )}
           </motion.div>
@@ -737,28 +738,28 @@ export default function ProfilPage() {
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Rythme</label>
                     <div className="flex flex-wrap gap-2">
-                      {SCHEDULE_OPTS.map(o => <Chip key={o.v} active={dPrefs.schedule === o.v} onClick={() => setDPrefs(p => ({ ...p, schedule: p.schedule === o.v ? null : o.v }))}>{o.label}</Chip>)}
+                      {SCHEDULE_OPTS.map(o => <Chip key={o.v} active={dPrefs.schedule === o.v} onClick={() => setDPrefs(p => ({ ...p, schedule: p.schedule === o.v ? null : o.v }))}><EmojiText text={o.label} /></Chip>)}
                     </div>
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Ambiance</label>
                     <div className="flex flex-wrap gap-2">
-                      {VIBE_OPTS.map(o => <Chip key={o.v} active={dPrefs.vibe === o.v} onClick={() => setDPrefs(p => ({ ...p, vibe: p.vibe === o.v ? null : o.v }))}>{o.label}</Chip>)}
+                      {VIBE_OPTS.map(o => <Chip key={o.v} active={dPrefs.vibe === o.v} onClick={() => setDPrefs(p => ({ ...p, vibe: p.vibe === o.v ? null : o.v }))}><EmojiText text={o.label} /></Chip>)}
                     </div>
                   </div>
                   <div className="flex gap-6">
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Fumeur</label>
                       <div className="flex gap-2">
-                        <Chip active={dPrefs.smoker === false} onClick={() => setDPrefs(p => ({ ...p, smoker: false }))}>🚭 Non</Chip>
-                        <Chip active={dPrefs.smoker === true} onClick={() => setDPrefs(p => ({ ...p, smoker: true }))}>🚬 Oui</Chip>
+                        <Chip active={dPrefs.smoker === false} onClick={() => setDPrefs(p => ({ ...p, smoker: false }))}><Emoji native="🚭" /> Non</Chip>
+                        <Chip active={dPrefs.smoker === true} onClick={() => setDPrefs(p => ({ ...p, smoker: true }))}><Emoji native="🚬" /> Oui</Chip>
                       </div>
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TXT_LOW }}>Animaux</label>
                       <div className="flex gap-2">
-                        <Chip active={dPrefs.petsOk === true} onClick={() => setDPrefs(p => ({ ...p, petsOk: true }))}>🐾 OK</Chip>
-                        <Chip active={dPrefs.petsOk === false} onClick={() => setDPrefs(p => ({ ...p, petsOk: false }))}>🚫 Non</Chip>
+                        <Chip active={dPrefs.petsOk === true} onClick={() => setDPrefs(p => ({ ...p, petsOk: true }))}><Emoji native="🐾" /> OK</Chip>
+                        <Chip active={dPrefs.petsOk === false} onClick={() => setDPrefs(p => ({ ...p, petsOk: false }))}><Emoji native="🚫" /> Non</Chip>
                       </div>
                     </div>
                   </div>
@@ -768,7 +769,7 @@ export default function ProfilPage() {
                       {PASSIONS.map(p => (
                         <Chip key={p} active={dPrefs.passions.includes(p)}
                           onClick={() => setDPrefs(pr => ({ ...pr, passions: pr.passions.includes(p) ? pr.passions.filter(x => x !== p) : [...pr.passions, p] }))}>
-                          {PASSION_EMOJI[p]} {p}
+                          <Emoji native={PASSION_EMOJI[p]} /> {p}
                         </Chip>
                       ))}
                     </div>
@@ -789,7 +790,7 @@ export default function ProfilPage() {
                       smoker === false ? '🚭 Non-fumeur' : smoker === true ? '🚬 Fumeur' : null,
                       petsOk === true ? '🐾 Animaux OK' : petsOk === false ? '🚫 Sans animaux' : null,
                       ...passions.map(p => `${PASSION_EMOJI[p]} ${p}`),
-                    ].filter(Boolean).map((t, i) => <Tag key={i}>{t}</Tag>)}
+                    ].filter(Boolean).map((t, i) => <Tag key={i}><EmojiText text={t as string} /></Tag>)}
                     {!schedule && !vibe && passions.length === 0 && smoker === null && petsOk === null && (
                       <span className="text-[12.5px]" style={{ color: TXT_FAINT }}>Aucune préférence renseignée.</span>
                     )}
@@ -834,7 +835,7 @@ export default function ProfilPage() {
               <div className="flex justify-between items-center mb-2.5">
                 <span className="text-[13px] font-bold" style={{ color: TXT_HI }}>Niveau 3 — Dossier complet</span>
                 {!idDone
-                  ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_FAINT }}>🔒 Niveau 2 requis</span>
+                  ? <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_FAINT }}><Emoji native="🔒" /> Niveau 2 requis</span>
                   : incomeDone ? <CertificationBadge level={3} status={levelStatus(3)} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>Justificatifs requis</span>}
               </div>
               {idDone ? (
@@ -875,7 +876,7 @@ export default function ProfilPage() {
                 style={mode === 'locataire'
                   ? { background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.5)`, color: MINT }
                   : { background: 'rgba(255,255,255,0.03)', border: `1px solid ${INPUT_BORDER}`, color: TXT_LOW }}>
-                🔍 Je cherche une coloc
+                <Emoji native="🔍" /> Je cherche une coloc
                 {mode === 'locataire' && <div className="text-[10px] mt-0.5" style={{ color: MINT }}>Mode actuel</div>}
               </button>
               <button onClick={() => { if (mode === 'locataire') setShowBailModal(true) }}
@@ -883,13 +884,13 @@ export default function ProfilPage() {
                 style={mode === 'loueur'
                   ? { background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.5)`, color: MINT }
                   : { background: 'rgba(255,255,255,0.03)', border: `1px solid ${INPUT_BORDER}`, color: TXT_LOW }}>
-                🏠 Je suis dans un bail
+                <Emoji native="🏠" /> Je suis dans un bail
                 {mode === 'loueur' && <div className="text-[10px] mt-0.5" style={{ color: MINT }}>Mode actuel</div>}
               </button>
             </div>
             {mode === 'loueur' && lease && (
               <div className="mt-3 px-3 py-2.5 rounded-[10px] text-[12.5px]" style={{ background: 'rgba(16,185,129,0.08)', color: MINT, border: '1px solid rgba(16,185,129,0.25)' }}>
-                📍 {lease.address}{lease.city ? `, ${lease.city}` : ''} · {lease.monthly_rent} €/mois
+                <Emoji native="📍" /> {lease.address}{lease.city ? `, ${lease.city}` : ''} · {lease.monthly_rent} €/mois
               </div>
             )}
           </Section>

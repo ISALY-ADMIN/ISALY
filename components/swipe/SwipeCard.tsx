@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Bookmark, MessageCircle, MapPin, Users } from 'lucide-react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import Emoji from '@/components/ui/Emoji'
 import type { UiBreakdown } from '@/lib/matching'
 
 export interface SwipeProfile {
@@ -218,7 +219,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
             style={{ fontFamily: "'Outfit', sans-serif", fontSize: '150px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}
           >
-            {profile.isListing ? '🏠' : profile.name[0]}
+            {profile.isListing ? <Emoji native="🏠" /> : profile.name[0]}
           </div>
         )}
         {currentPhoto && (

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
 import ReportActions from './ReportActions'
+import Emoji from '@/components/ui/Emoji'
 
 async function getReports() {
   const supabase = createClient()
@@ -50,7 +51,7 @@ export default async function AdminSignalements() {
 
       {reports.length === 0 ? (
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '48px', textAlign: 'center', color: '#4B5563' }}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚩</div>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}><Emoji native="🚩" /></div>
           <p style={{ margin: 0, fontSize: '14px' }}>
             Aucun signalement.{reports.length === 0 ? ' (Exécutez sql-migrations/06_admin_signalements.sql si la table n\'existe pas encore.)' : ''}
           </p>

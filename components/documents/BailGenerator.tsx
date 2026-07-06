@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import SignatureCanvas, { SignatureCanvasHandle } from '@/components/documents/SignatureCanvas'
 import { generateBailPdf, type BailFormData } from '@/lib/bailPdf'
+import Emoji from '@/components/ui/Emoji'
 
 interface LeaseRow {
   id: string
@@ -108,7 +109,7 @@ export default function BailGenerator({ lease, members }: { lease: LeaseRow; mem
 
   return (
     <div className="mb-8">
-      <h3 className="text-[16px] font-bold mb-1" style={{ color: '#fff' }}>📝 Créer un contrat de bail</h3>
+      <h3 className="text-[16px] font-bold mb-1" style={{ color: '#fff' }}><Emoji native="📝" /> Créer un contrat de bail</h3>
       <p className="text-[12.5px] mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>Logement non meublé — Loi n°89-462 du 6 juillet 1989</p>
 
       <div className="rounded-[16px] p-5 flex flex-col gap-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
@@ -225,7 +226,7 @@ export default function BailGenerator({ lease, members }: { lease: LeaseRow; mem
             className="w-full py-3 rounded-full text-[13.5px] font-bold text-white border-none cursor-pointer"
             style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
           >
-            📄 Générer le PDF
+            <Emoji native="📄" /> Générer le PDF
           </button>
 
           {members.length > 0 && (
@@ -241,7 +242,7 @@ export default function BailGenerator({ lease, members }: { lease: LeaseRow; mem
                 className="flex-shrink-0 px-5 py-2.5 rounded-full text-[12.5px] font-bold border cursor-pointer disabled:opacity-50"
                 style={{ background: '#FFFFFF', borderColor: '#4ECBA0', color: '#2AA87C' }}
               >
-                {sending ? 'Envoi…' : '✉️ Envoyer pour signature'}
+                {sending ? 'Envoi…' : <><Emoji native="✉️" /> Envoyer pour signature</>}
               </button>
             </div>
           )}

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 interface Listing {
   id: string
@@ -77,7 +78,7 @@ export default function AnnoncesPreview() {
                         style={{ objectFit: 'cover' }}
                       />
                     ) : (
-                      <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>🏠</span>
+                      <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}><Emoji native="🏠" /></span>
                     )}
                   </div>
                   <div style={{ padding: '16px' }}>
@@ -85,7 +86,7 @@ export default function AnnoncesPreview() {
                       {l.title || `Colocation à ${l.city}`}
                     </div>
                     <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginBottom: '12px' }}>
-                      📍 {l.city}
+                      <Emoji native="📍" /> {l.city}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: '20px', fontWeight: 700, color: '#4ECBA0' }}>

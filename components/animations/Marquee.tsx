@@ -1,5 +1,6 @@
 'use client'
 import { motion } from 'framer-motion'
+import { EmojiText } from '@/components/ui/Emoji'
 
 interface MarqueeProps {
   items: string[]
@@ -39,7 +40,7 @@ export default function Marquee({ items, speed = 30, reverse = false }: MarqueeP
             whiteSpace: 'nowrap',
             fontFamily: "'Outfit', sans-serif",
           }}>
-            {item}
+            <EmojiText text={item} size="13px" />
           </div>
         ))}
       </motion.div>

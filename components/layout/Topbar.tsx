@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react'
 import NotifPanel from '@/components/notifications/NotifPanel'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Emoji from '@/components/ui/Emoji'
 
 interface TopbarProps {
   title: string
@@ -113,7 +114,7 @@ export default function Topbar({ title }: TopbarProps) {
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.10)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
             >
-              🔔
+              <Emoji native="🔔" />
               {notifCount > 0 && (
                 <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#10B981', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '10px', minWidth: '16px', textAlign: 'center' }}>
                   {notifCount}
@@ -192,7 +193,7 @@ function DropdownItem({ icon, children, danger }: { icon: string; children: Reac
       onMouseEnter={e => (e.currentTarget.style.background = danger ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.06)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      <span className="text-base">{icon}</span>
+      <span className="text-base"><Emoji native={icon} size="16px" /></span>
       {children}
     </div>
   )

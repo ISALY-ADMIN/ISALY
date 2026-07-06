@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface ColocRequestModalProps {
   onClose: () => void
@@ -66,7 +67,7 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
   if (step === 'sent') return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '20px' }}>
       <div style={{ background: '#fff', borderRadius: '20px', padding: '40px', textAlign: 'center', maxWidth: '380px', width: '100%' }}>
-        <div style={{ fontSize: '52px', marginBottom: '16px' }}>🎉</div>
+        <div style={{ fontSize: '52px', marginBottom: '16px' }}><Emoji native="🎉" /></div>
         <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '22px', color: '#111827', marginBottom: '8px' }}>Demande envoyée !</div>
         <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '24px' }}>
           {otherName} recevra ta demande de colocation et pourra l&apos;accepter ou la refuser.
@@ -103,7 +104,7 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
             { label: "📅 Date d'entrée", key: 'start_date', placeholder: '', type: 'date' },
           ] as { label: string; key: keyof typeof form; placeholder: string; type: string }[]).map(field => (
             <div key={field.key} style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>{field.label}</label>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}><EmojiText text={field.label} size="13px" /></label>
               <input
                 type={field.type}
                 placeholder={field.placeholder}
@@ -118,7 +119,7 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>⏱ Durée (mois)</label>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}><Emoji native="⏱" /> Durée (mois)</label>
               <select
                 value={form.duration}
                 onChange={e => setForm(f => ({ ...f, duration: e.target.value }))}
@@ -128,7 +129,7 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>🚪 Chambres dispo</label>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}><Emoji native="🚪" /> Chambres dispo</label>
               <select
                 value={form.rooms}
                 onChange={e => setForm(f => ({ ...f, rooms: e.target.value }))}
@@ -140,7 +141,7 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>💬 Message accompagnateur</label>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}><Emoji native="💬" /> Message accompagnateur</label>
             <textarea
               value={form.message}
               onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
@@ -168,7 +169,7 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
               opacity: (!form.address || !form.rent || !form.start_date) ? 0.6 : 1,
             }}
           >
-            {step === 'sending' ? '⏳ Envoi...' : '🏠 Envoyer la demande de colocation'}
+            {step === 'sending' ? <><Emoji native="⏳" /> Envoi...</> : <><Emoji native="🏠" /> Envoyer la demande de colocation</>}
           </button>
         </div>
       </div>

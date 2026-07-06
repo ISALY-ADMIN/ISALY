@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 interface LeaseRow { id: string; address: string; city: string | null }
 
@@ -103,12 +104,12 @@ export default function DocumentsStorage({ lease }: { lease: LeaseRow }) {
 
   return (
     <div className="mb-8">
-      <h3 className="text-[16px] font-bold mb-3" style={{ color: '#fff' }}>📁 Documents du contrat — {lease.address}</h3>
+      <h3 className="text-[16px] font-bold mb-3" style={{ color: '#fff' }}><Emoji native="📁" /> Documents du contrat — {lease.address}</h3>
 
       <input ref={fileInputRef} type="file" accept="application/pdf,image/*" style={{ display: 'none' }} onChange={handleFile} />
 
       {loading ? (
-        <div className="text-center py-8"><div className="text-[32px]" style={{ animation: 'bop 1s ease infinite' }}>📁</div></div>
+        <div className="text-center py-8"><div className="text-[32px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="📁" /></div></div>
       ) : (
         <div className="grid grid-cols-2 gap-2.5">
           {DOC_TYPES.map(type => {
@@ -117,7 +118,7 @@ export default function DocumentsStorage({ lease }: { lease: LeaseRow }) {
               <div key={type.id} className="p-3.5 rounded-[12px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span>{type.icon}</span>
+                    <span><Emoji native={type.icon} /></span>
                     <span className="text-[12.5px] font-semibold" style={{ color: '#374151' }}>{type.label}</span>
                   </div>
                   <button

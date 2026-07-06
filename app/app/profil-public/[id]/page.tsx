@@ -9,6 +9,7 @@ import Topbar from '@/components/layout/Topbar'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 interface PublicProfile {
   id: string
@@ -101,7 +102,7 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
       <>
         <Topbar title="Profil" />
         <div className="flex-1 flex items-center justify-center flex-col gap-3">
-          <div className="text-[44px]">🫥</div>
+          <div className="text-[44px]"><Emoji native="🫥" /></div>
           <p className="text-[14px]" style={{ color: 'rgba(255,255,255,0.45)' }}>Ce profil n&apos;existe pas ou n&apos;est plus disponible.</p>
         </div>
       </>

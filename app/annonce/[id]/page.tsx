@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { cache } from 'react'
 import { listingOccupancy } from '@/lib/utils'
 import ShareButtons from './ShareButtons'
+import Emoji from '@/components/ui/Emoji'
 
 interface Props {
   params: { id: string }
@@ -106,7 +107,7 @@ export default async function AnnoncePubliquePage({ params }: Props) {
           </div>
         ) : (
           <div style={{ borderRadius: '20px', height: '240px', background: 'linear-gradient(135deg, #6EE7B7, #047857)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', marginBottom: '32px' }}>
-            🏠
+            <Emoji native="🏠" />
           </div>
         )}
 
@@ -117,12 +118,12 @@ export default async function AnnoncePubliquePage({ params }: Props) {
             {/* Badge boost */}
             {listing.boost_type === 'featured' && (
               <div style={{ display: 'inline-block', marginBottom: '12px', fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '20px', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }}>
-                🚀 Annonce mise en avant
+                <Emoji native="🚀" /> Annonce mise en avant
               </div>
             )}
             {listing.boost_type === 'priority' && (
               <div style={{ display: 'inline-block', marginBottom: '12px', fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '20px', background: 'rgba(99,102,241,0.15)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.3)' }}>
-                ⭐ Annonce prioritaire
+                <Emoji native="⭐" /> Annonce prioritaire
               </div>
             )}
 
@@ -131,7 +132,7 @@ export default async function AnnoncePubliquePage({ params }: Props) {
             </h1>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.5)', fontSize: '15px', marginBottom: '24px' }}>
-              <span>📍</span>
+              <span><Emoji native="📍" /></span>
               <span>{listing.city}{listing.neighborhood ? ` · ${listing.neighborhood}` : ''}</span>
             </div>
 
@@ -145,7 +146,7 @@ export default async function AnnoncePubliquePage({ params }: Props) {
                 { icon: '👥', label: `${listingOccupancy(listing).current}/${listingOccupancy(listing).total} places` },
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 16px', fontSize: '14px', fontWeight: 600 }}>
-                  <span>{s.icon}</span>
+                  <span><Emoji native={s.icon} /></span>
                   <span style={{ color: '#fff' }}>{s.label}</span>
                 </div>
               ))}

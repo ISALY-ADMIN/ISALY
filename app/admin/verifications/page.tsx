@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
 import Image from 'next/image'
 import VerifyActions from './VerifyActions'
+import Emoji from '@/components/ui/Emoji'
 
 async function getPendingDossiers() {
   const supabase = createClient()
@@ -94,7 +95,7 @@ export default async function AdminVerifications() {
 
       {pending.length === 0 && (
         <div style={{ background: 'rgba(78,203,160,0.05)', border: '1px solid rgba(78,203,160,0.15)', borderRadius: '14px', padding: '40px', textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>✅</div>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}><Emoji native="✅" /></div>
           <p style={{ color: '#4ECBA0', fontSize: '14px', fontWeight: 600, margin: 0 }}>Aucune vérification en attente</p>
         </div>
       )}

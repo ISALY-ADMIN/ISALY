@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
+import Emoji from '@/components/ui/Emoji'
 
 async function getPayments() {
   const supabase = createClient()
@@ -72,7 +73,7 @@ export default async function AdminPaiements() {
 
         {payments.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#4B5563' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>💳</div>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}><Emoji native="💳" /></div>
             <p style={{ margin: 0 }}>Aucun paiement enregistré</p>
           </div>
         ) : (

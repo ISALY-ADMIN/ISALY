@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface LeaseRow {
   id: string
@@ -191,7 +192,7 @@ function BauxPageInner() {
       <>
         <Topbar title="Mes baux" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>📋</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="📋" /></div>
         </div>
       </>
     )
@@ -202,7 +203,7 @@ function BauxPageInner() {
       <>
         <Topbar title="Mes baux" />
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-          <div className="text-[52px] mb-4">📋</div>
+          <div className="text-[52px] mb-4"><Emoji native="📋" /></div>
           <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Aucun bail pour le moment</h3>
           <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Vos baux apparaîtront ici une fois un contrat créé sur l&apos;un de vos biens.</p>
         </div>
@@ -287,7 +288,7 @@ function BauxPageInner() {
         <div className="rounded-[14px] overflow-hidden mb-7" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #F3F4F6' }}>
             <h3 className="text-[15px] font-bold" style={{ color: '#111827' }}>Informations générales</h3>
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: statutBg, color: statutColor }}>{statutLabel}</span>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: statutBg, color: statutColor }}><EmojiText text={statutLabel} size="11px" /></span>
           </div>
           {[
             { label: 'Adresse', value: `${lease.address}${lease.city ? `, ${lease.city}` : ''}` },
@@ -313,7 +314,7 @@ function BauxPageInner() {
               border: `1px solid ${expiresInDays !== null && expiresInDays < 60 ? '#FCA5A5' : '#E5E7EB'}`,
             }}
           >
-            <h3 className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}>📅 Échéances clés</h3>
+            <h3 className="text-[15px] font-bold mb-3" style={{ color: '#111827' }}><Emoji native="📅" /> Échéances clés</h3>
             <div className="flex flex-col gap-1.5 text-[13px]">
               <div className="flex justify-between">
                 <span style={{ color: '#6B7280' }}>Renouvellement tacite</span>
@@ -328,7 +329,7 @@ function BauxPageInner() {
             </div>
             {expiresInDays !== null && expiresInDays < 60 && (
               <p className="text-[12.5px] font-semibold mt-3" style={{ color: '#DC2626' }}>
-                ⚠️ Ce bail arrive à échéance dans {expiresInDays} jour{expiresInDays > 1 ? 's' : ''}.
+                <Emoji native="⚠️" /> Ce bail arrive à échéance dans {expiresInDays} jour{expiresInDays > 1 ? 's' : ''}.
               </p>
             )}
           </div>
@@ -392,8 +393,8 @@ function BauxPageInner() {
                   <div className="flex items-center gap-3">
                     <span className="text-[15px] font-bold" style={{ color: '#111827' }}>{row.amount} €</span>
                     {row.status === 'paid' && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#ECFDF5', color: '#059669' }}>✓ Payé</span>}
-                    {row.status === 'pending' && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFFBEB', color: '#D97706' }}>⏳ Attente</span>}
-                    {row.status === 'late' && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FEF2F2', color: '#DC2626' }}>🔴 Retard</span>}
+                    {row.status === 'pending' && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FFFBEB', color: '#D97706' }}><Emoji native="⏳" /> Attente</span>}
+                    {row.status === 'late' && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#FEF2F2', color: '#DC2626' }}><Emoji native="🔴" /> Retard</span>}
                     {row.status !== 'paid' && (
                       <div className="flex items-center gap-1.5">
                         <button
@@ -411,7 +412,7 @@ function BauxPageInner() {
                             className="text-[11px] font-bold px-3 py-1.5 rounded-full border cursor-pointer disabled:opacity-50"
                             style={{ background: '#FFFFFF', borderColor: '#E5E7EB', color: '#374151' }}
                           >
-                            {relanceId === (row.id === 'new' ? row.tenant_id : row.id) ? 'Envoi…' : '✉️ Relancer'}
+                            {relanceId === (row.id === 'new' ? row.tenant_id : row.id) ? 'Envoi…' : <><Emoji native="✉️" /> Relancer</>}
                           </button>
                         )}
                       </div>
@@ -431,7 +432,7 @@ function BauxPageInner() {
             style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
           >
             <div className="flex items-center gap-3">
-              <span className="text-[22px]">📁</span>
+              <span className="text-[22px]"><Emoji native="📁" /></span>
               <div>
                 <div className="text-[14px] font-bold" style={{ color: '#111827' }}>Documents liés</div>
                 <div className="text-[12px]" style={{ color: '#6B7280' }}>Bail, états des lieux, justificatifs…</div>

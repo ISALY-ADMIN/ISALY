@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useLease } from '@/contexts/LeaseContext'
 import Topbar from '@/components/layout/Topbar'
 import LoueurMaintenance from './LoueurMaintenance'
+import Emoji from '@/components/ui/Emoji'
 
 export default function MaintenancePage() {
   const { mode, loading } = useLease()
@@ -19,7 +20,7 @@ export default function MaintenancePage() {
       <>
         <Topbar title="Maintenance" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>🔧</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🔧" /></div>
         </div>
       </>
     )

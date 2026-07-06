@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Emoji from '@/components/ui/Emoji'
 
 // ── Stat card ─────────────────────────────────────────────────
 interface StatCardProps {
@@ -30,7 +31,7 @@ export function StatCard({ label, value, href, color, bg, icon, alert }: StatCar
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-            {icon}
+            <Emoji native={icon} size="18px" />
           </div>
           {alert && (
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
@@ -81,7 +82,7 @@ export function QuickLink({ href, label, icon, desc }: QuickLinkProps) {
           d.style.background = 'rgba(255,255,255,0.03)'
         }}
       >
-        <span style={{ fontSize: '24px' }}>{icon}</span>
+        <span style={{ fontSize: '24px' }}><Emoji native={icon} size="24px" /></span>
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600, color: '#E5E7EB', marginBottom: '2px' }}>{label}</div>
           <div style={{ fontSize: '12px', color: '#6B7280' }}>{desc}</div>

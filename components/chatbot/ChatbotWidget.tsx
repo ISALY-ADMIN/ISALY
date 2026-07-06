@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 interface Message {
   role: 'bot' | 'user'
@@ -85,7 +86,7 @@ export default function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
               className="self-start max-w-[82%] px-3 py-2 rounded-[13px] text-[13px] leading-relaxed"
               style={{ background: '#252525', color: '#E5E7EB', borderBottomLeftRadius: '3px' }}
             >
-              {m.text}
+              <EmojiText text={m.text} size="13px" />
             </div>
           ) : (
             <div
@@ -93,7 +94,7 @@ export default function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
               className="self-end max-w-[82%] px-3 py-2 rounded-[13px] text-[13px] text-white leading-relaxed"
               style={{ background: '#4ECBA0', borderBottomRightRadius: '3px' }}
             >
-              {m.text}
+              <EmojiText text={m.text} size="13px" />
             </div>
           )
         )}
@@ -126,7 +127,7 @@ export default function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
           className="w-8 h-8 rounded-full border-none cursor-pointer text-white text-sm flex items-center justify-center flex-shrink-0"
           style={{ background: '#4ECBA0' }}
         >
-          ➤
+          <Emoji native="➤" />
         </button>
       </div>
     </div>

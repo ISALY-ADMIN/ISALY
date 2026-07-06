@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 function translateError(msg: string): string {
   if (msg.includes('Invalid login credentials')) return 'Email ou mot de passe incorrect.'
@@ -95,7 +96,7 @@ export default function LoginPage() {
 
           {/* Header */}
           <div style={{ marginBottom: '32px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Bon retour 👋</h1>
+            <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Bon retour <Emoji native="👋" /></h1>
             <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
               Pas encore de compte ?{' '}
               <Link href="/auth/register" style={{ color: '#10B981', textDecoration: 'none', fontWeight: 600 }}>Créer un compte</Link>
@@ -169,7 +170,7 @@ export default function LoginPage() {
             {/* Email non confirmé */}
             {emailUnconfirmed && (
               <div style={{ padding: '14px 16px', borderRadius: '10px', background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.25)' }}>
-                <p style={{ fontSize: '13px', fontWeight: 600, color: '#FB923C', margin: '0 0 6px' }}>📬 Email non confirmé</p>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#FB923C', margin: '0 0 6px' }}><Emoji native="📬" /> Email non confirmé</p>
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 10px', lineHeight: 1.5 }}>
                   Vérifie ta boîte mail et clique sur le lien de confirmation avant de te connecter.
                 </p>

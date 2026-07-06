@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
 
 export default function FinalizePage() {
   const router = useRouter()
@@ -76,7 +77,7 @@ export default function FinalizePage() {
           className="bg-white rounded-[24px] w-full text-center"
           style={{ padding: '52px 44px', boxShadow: '0 8px 36px rgba(0,0,0,.13)', maxWidth: '420px' }}
         >
-          <div className="text-[48px] mb-4">⚠️</div>
+          <div className="text-[48px] mb-4"><Emoji native="⚠️" /></div>
           <h2 className="text-[20px] mb-3" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
             Problème de sauvegarde
           </h2>
@@ -105,7 +106,7 @@ export default function FinalizePage() {
         <div className="flex justify-center mb-6">
           <Image src="/LOGO_ISALY.png" alt="ISALY" height={36} width={120} style={{ width: 'auto', height: '36px', objectFit: 'contain' }} />
         </div>
-        <div className="text-[48px] mb-4">✨</div>
+        <div className="text-[48px] mb-4"><Emoji native="✨" /></div>
         <h2 className="text-[22px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
           Création de ton profil…
         </h2>

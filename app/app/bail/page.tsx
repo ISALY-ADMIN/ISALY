@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Topbar from '@/components/layout/Topbar'
 import { useLease } from '@/contexts/LeaseContext'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -36,7 +37,7 @@ export default function BailPage() {
       <>
         <Topbar title="Mon bail" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}>📄</div>
+          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="📄" /></div>
         </div>
       </>
     )
@@ -80,7 +81,7 @@ export default function BailPage() {
               style={{ borderBottom: i < rows.length - 1 ? '1px solid #F3F4F6' : 'none' }}
             >
               <span style={{ color: '#6B7280' }}>{row.label}</span>
-              <span className="font-semibold text-right" style={{ color: '#111827', maxWidth: '60%' }}>{row.value}</span>
+              <span className="font-semibold text-right" style={{ color: '#111827', maxWidth: '60%' }}><EmojiText text={row.value} size="13.5px" /></span>
             </div>
           ))}
         </div>
@@ -101,7 +102,7 @@ export default function BailPage() {
               style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}
             >
               <div className="flex items-center gap-3">
-                <span className="text-[20px]">{doc.icon}</span>
+                <span className="text-[20px]"><Emoji native={doc.icon} size="20px" /></span>
                 <span className="text-[13.5px] font-medium" style={{ color: '#374151' }}>{doc.label}</span>
               </div>
               <button
