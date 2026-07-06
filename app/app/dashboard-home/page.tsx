@@ -289,7 +289,7 @@ function LocataireGrid({ d }: { d: DashboardData }) {
         )}
       </BentoCard>
 
-      {/* PARRAINAGE — 1x1 */}
+      {/* [HIDDEN] parrainage - réactiver quand demandé
       <BentoCard href="/app/parrainage" ariaLabel="Mon code parrainage">
         <ModuleTitle icon="🎁" label="PARRAINAGE" />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -307,6 +307,7 @@ function LocataireGrid({ d }: { d: DashboardData }) {
           </div>
         </div>
       </BentoCard>
+      */}
 
       {/* ACTIVITÉ — 2x1 */}
       <ActivityCard notifications={d.notifications} />

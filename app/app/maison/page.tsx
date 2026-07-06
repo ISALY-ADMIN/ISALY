@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import Topbar from '@/components/layout/Topbar'
+import Button from '@/components/ui/Button'
 import Emoji from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import { BentoCard, BentoStyles, ModuleTitle, EmptyState, Skeleton, CountUp, AvatarStack, cardBase } from '@/components/ui/Bento'
@@ -235,30 +236,37 @@ export default function MaisonPage() {
     setUploading(false)
   }
 
-  // ── Header commun (titre + toggle démo) ──
+  // ── Header commun (titre + sous-titre + toggle démo) — même structure que dashboard-home ──
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
   const header = (
     <motion.div initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '28px', flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#fff', margin: 0 }}>Ma maison</h1>
-        {demo && (
-          <span style={{
-            fontSize: '10.5px', fontWeight: 800, padding: '4px 10px', borderRadius: '14px', letterSpacing: '0.08em',
-            background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.35)',
-          }}>DÉMO</span>
-        )}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Ma maison</h1>
+          {demo && (
+            <span style={{
+              fontSize: '10.5px', fontWeight: 800, padding: '4px 10px', borderRadius: '14px', letterSpacing: '0.08em',
+              background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.35)',
+            }}>DÉMO</span>
+          )}
+        </div>
+        <div style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.4)', textTransform: d ? undefined : 'capitalize' }}>
+          {d ? <><Emoji native="📍" size="13px" /> {d.lease.address}{d.lease.city ? `, ${d.lease.city}` : ''}</> : today}
+        </div>
       </div>
-      {/* Toggle mode démo (état local uniquement) */}
-      <button type="button" onClick={() => setDemo(v => !v)} aria-pressed={demo}
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+      {/* Toggle mode démo (état local uniquement) — même switch que Paramètres */}
+      <button type="button" onClick={() => setDemo(v => !v)} role="switch" aria-checked={demo}
+        style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
         <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', fontFamily: "'Outfit', sans-serif" }}>Mode démo</span>
-        <span style={{
-          width: 36, height: 20, borderRadius: 12, position: 'relative', transition: 'background 0.2s ease',
+        <span aria-hidden style={{
+          width: 44, height: 24, borderRadius: 12, position: 'relative', flexShrink: 0, transition: 'all 0.2s ease',
           background: demo ? '#10B981' : 'rgba(255,255,255,0.15)',
+          boxShadow: demo ? '0 2px 8px rgba(16,185,129,0.3)' : 'none',
         }}>
           <span style={{
-            position: 'absolute', top: 2, left: demo ? 18 : 2, width: 16, height: 16, borderRadius: '50%',
-            background: '#fff', transition: 'left 0.2s ease',
+            position: 'absolute', top: 3, left: demo ? 23 : 3, width: 18, height: 18, borderRadius: '50%',
+            background: '#fff', transition: 'left 0.2s ease', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
           }} />
         </span>
       </button>
@@ -302,7 +310,12 @@ export default function MaisonPage() {
             </Link>
           )}
           <div className="flex flex-col items-center text-center" style={{ padding: '72px 24px' }}>
-            <div className="text-[56px] mb-4"><Emoji native="🏠" /></div>
+            <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden style={{ marginBottom: '16px' }}>
+              <circle cx="44" cy="44" r="40" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.2)" />
+              <path d="M28 44 L44 30 L60 44" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              <path d="M32 42 V58 H56 V42" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              <rect x="40" y="48" width="8" height="10" rx="1.5" stroke="#10B981" strokeWidth="2" fill="rgba(16,185,129,0.15)" />
+            </svg>
             <h2 className="text-[20px] font-bold mb-2" style={{ color: '#fff', fontFamily: "'Outfit', sans-serif" }}>Aucun bail actif</h2>
             <p className="text-[13.5px] mb-6" style={{ color: 'rgba(255,255,255,0.5)', maxWidth: '380px', lineHeight: 1.6 }}>
               Une fois ton bail signé, tu retrouveras ici ton loyer, tes colocataires, tes documents et les signalements.
@@ -335,10 +348,6 @@ export default function MaisonPage() {
       <BentoStyles />
       <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '32px 24px 48px', fontFamily: "'Outfit', sans-serif" }}>
         {header}
-
-        <div className="text-[13.5px] mb-5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-          <Emoji native="📍" size="13px" /> {lease.address}{lease.city ? `, ${lease.city}` : ''}
-        </div>
 
         <motion.div
           initial="hidden"
@@ -389,7 +398,7 @@ export default function MaisonPage() {
           <BentoCard href="/app/colocataires" ariaLabel={`Mes ${roommates.length} colocataires — voir leurs profils`}>
             <ModuleTitle icon="👥" label="MES COLOCATAIRES" />
             {roommates.length === 0 ? (
-              <EmptyState text="Personne d'autre sur ce bail pour le moment." />
+              <EmptyState text="Personne d'autre sur ce bail pour le moment." cta="Voir la colocation" />
             ) : (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <AvatarStack people={roommates} />
@@ -480,7 +489,7 @@ export default function MaisonPage() {
                 <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981' }}>Tout lire →</div>
               </div>
             ) : (
-              <EmptyState text="Aucune consigne laissée par le loueur." />
+              <EmptyState text="Aucune consigne laissée par le loueur." cta="Ouvrir le bail" />
             )}
           </BentoCard>
 
@@ -496,20 +505,15 @@ export default function MaisonPage() {
             <div style={{ ...cardBase }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <ModuleTitle icon="📁" label="DOCUMENTS" />
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => !demo && fileRef.current?.click()}
-                  disabled={uploading || demo}
-                  className="cursor-pointer"
-                  style={{
-                    fontSize: '12px', fontWeight: 700, padding: '6px 14px', borderRadius: '10px',
-                    background: 'transparent', color: 'rgba(255,255,255,0.75)',
-                    border: '1px solid rgba(255,255,255,0.15)', fontFamily: "'Outfit', sans-serif",
-                    opacity: uploading || demo ? 0.5 : 1,
-                  }}
+                  disabled={demo}
+                  loading={uploading}
                 >
                   {uploading ? 'Envoi…' : '+ Déposer l’état des lieux'}
-                </button>
+                </Button>
                 <input ref={fileRef} type="file" accept=".pdf,image/*" style={{ display: 'none' }}
                   onChange={e => { const f = e.target.files?.[0]; if (f) uploadEdl(f); e.target.value = '' }} />
               </div>

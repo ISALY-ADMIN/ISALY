@@ -8,9 +8,11 @@ import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 import ModeSwitcher from '@/components/ModeSwitcher'
 import {
-  Home, Flame, Search, Map, MessageCircle,
+  Home, Flame, Search, MessageCircle, // [HIDDEN] carte : ré-ajouter Map ici
+
   Folder, User, Megaphone, FileText, Bookmark,
-  CreditCard, Gift, Settings, LogOut,
+  CreditCard, Settings, LogOut, // [HIDDEN] parrainage : ré-ajouter Gift ici
+
   Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
   ShieldAlert, Building2, AlertTriangle,
   type LucideIcon,
@@ -28,7 +30,8 @@ const locataireMainItems: NavItem[] = [
   { icon: Home,          label: 'Tableau de bord', href: '/app/dashboard-home', id: 'dashboard-home' },
   { icon: Flame,         label: 'Trouver',     href: '/app/swipe',          id: 'swipe' },
   { icon: Search,        label: 'Rechercher',  href: '/app/recherche',      id: 'recherche' },
-  { icon: Map,           label: 'Carte',       href: '/app/carte',          id: 'carte' },
+  // [HIDDEN] carte - réactiver quand demandé
+  // { icon: Map,           label: 'Carte',       href: '/app/carte',          id: 'carte' },
   { icon: MessageCircle, label: 'Messages',    href: '/app/messages',       id: 'messages' },
 ]
 const locataireSpaceItems: NavItem[] = [
@@ -39,7 +42,8 @@ const locataireSpaceItems: NavItem[] = [
 ]
 const locataireAccountItems: NavItem[] = [
   { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
-  { icon: Gift,       label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
+  // [HIDDEN] parrainage - réactiver quand demandé
+  // { icon: Gift,       label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
   { icon: Settings,   label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
 ]
 

@@ -93,6 +93,32 @@ export function LeaseProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { fetchLease() }, [fetchLease])
 
+  // Realtime : tout changement sur un bail dont l'utilisateur est partie (signature,
+  // passage pending_signature → active…) re-synchronise le contexte sans reload.
+  useEffect(() => {
+    const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    let cancelled = false
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || cancelled) return
+      channel = supabase
+        .channel(`leases-updates-${user.id}`)
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'leases', filter: `tenant_id=eq.${user.id}` },
+          () => fetchLease())
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'leases', filter: `owner_id=eq.${user.id}` },
+          () => fetchLease())
+        .subscribe()
+    })
+
+    return () => {
+      cancelled = true
+      if (channel) supabase.removeChannel(channel)
+    }
+  }, [fetchLease])
+
   return (
     <LeaseContext.Provider value={{
       lease,
