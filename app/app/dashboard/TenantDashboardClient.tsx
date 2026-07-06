@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Topbar from '@/components/layout/Topbar'
+import Emoji from '@/components/ui/Emoji'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
 
@@ -28,10 +29,10 @@ interface DossierData {
   completion_percent: number
 }
 
-const URGENCY_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-  urgent:  { bg: '#FEF2F2', color: '#EF4444', label: '🔴 Urgent' },
-  normal:  { bg: '#FFFBEB', color: '#D97706', label: '🟡 En cours' },
-  low:     { bg: '#ECFDF5', color: '#059669', label: '🟢 Faible' },
+const URGENCY_COLOR: Record<string, { bg: string; color: string; icon: string; label: string }> = {
+  urgent:  { bg: '#FEF2F2', color: '#EF4444', icon: '🔴', label: 'Urgent' },
+  normal:  { bg: '#FFFBEB', color: '#D97706', icon: '🟡', label: 'En cours' },
+  low:     { bg: '#ECFDF5', color: '#059669', icon: '🟢', label: 'Faible' },
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -160,7 +161,7 @@ export default function TenantDashboardClient() {
       <>
         <Topbar title="Tableau de bord" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px] mb-3" style={{ animation: 'bop 1s ease infinite' }}>🏠</div>
+          <div className="mb-3" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🏠" size="44px" /></div>
         </div>
       </>
     )
@@ -189,7 +190,7 @@ export default function TenantDashboardClient() {
           >
             <div>
               <div className="text-[13.5px] font-bold mb-0.5" style={{ color: '#92400E' }}>
-                ⚠️ Ton bail expire dans {remaining} mois — {lease.end_date && formatDate(lease.end_date)}
+                <Emoji native="⚠️" size="13.5px" /> Ton bail expire dans {remaining} mois — {lease.end_date && formatDate(lease.end_date)}
               </div>
               <div className="text-[12px]" style={{ color: '#A16207' }}>
                 Pense à le renouveler ou à chercher une nouvelle coloc dès maintenant.
@@ -208,10 +209,10 @@ export default function TenantDashboardClient() {
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="mb-6">
           <h1 className="text-[26px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>
-            Bonjour {firstName} 👋
+            Bonjour {firstName} <Emoji native="👋" size="26px" />
           </h1>
           <p className="text-[14px] mb-2" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            📍 {lease.address}{lease.city ? `, ${lease.city}` : ''}
+            <Emoji native="📍" size="14px" /> {lease.address}{lease.city ? `, ${lease.city}` : ''}
           </p>
           <span
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full"
@@ -238,13 +239,13 @@ export default function TenantDashboardClient() {
             </div>
             <div>
               {payStatus === 'paid' && (
-                <span className="text-[13px] font-bold px-4 py-2 rounded-full" style={{ background: '#4ECBA0', color: '#fff' }}>✅ Payé</span>
+                <span className="text-[13px] font-bold px-4 py-2 rounded-full" style={{ background: '#4ECBA0', color: '#fff' }}><Emoji native="✅" size="13px" /> Payé</span>
               )}
               {payStatus === 'pending' && (
-                <span className="text-[13px] font-bold px-4 py-2 rounded-full" style={{ background: '#F59E0B', color: '#fff' }}>⏳ {dueLabel}</span>
+                <span className="text-[13px] font-bold px-4 py-2 rounded-full" style={{ background: '#F59E0B', color: '#fff' }}><Emoji native="⏳" size="13px" /> {dueLabel}</span>
               )}
               {payStatus === 'late' && (
-                <span className="text-[13px] font-bold px-4 py-2 rounded-full" style={{ background: '#EF4444', color: '#fff' }}>❌ En retard</span>
+                <span className="text-[13px] font-bold px-4 py-2 rounded-full" style={{ background: '#EF4444', color: '#fff' }}><Emoji native="❌" size="13px" /> En retard</span>
               )}
             </div>
           </div>
@@ -264,7 +265,7 @@ export default function TenantDashboardClient() {
               className="px-5 py-2.5 rounded-full text-[13px] font-semibold border cursor-pointer"
               style={{ background: 'transparent', borderColor: '#4ECBA0', color: '#2AA87C' }}
             >
-              📄 Voir le reçu
+              <Emoji native="📄" size="13px" /> Voir le reçu
             </button>
           )}
 
@@ -323,7 +324,7 @@ export default function TenantDashboardClient() {
               className="rounded-[14px] p-4 text-center"
               style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
             >
-              <div className="text-[24px] mb-1">{stat.icon}</div>
+              <div className="mb-1"><Emoji native={stat.icon} size="24px" /></div>
               <div className="text-[20px] font-extrabold mb-0.5" style={{ color: '#111827', fontFamily: "'DM Serif Display', serif" }}>
                 {stat.value}
               </div>
@@ -336,7 +337,7 @@ export default function TenantDashboardClient() {
         {/* ── Section 3 — Maintenance ────────────────────────── */}
         <div className="rounded-[14px] p-5 mb-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
           <div className="flex items-center justify-between mb-4">
-            <div className="text-[15px] font-bold" style={{ color: '#111827' }}>🔧 Signalements en cours</div>
+            <div className="text-[15px] font-bold" style={{ color: '#111827' }}><Emoji native="🔧" size="15px" /> Signalements en cours</div>
             <Link
               href="/app/declarer-probleme"
               className="no-underline px-3.5 py-1.5 rounded-full text-[12px] font-semibold"
@@ -348,7 +349,7 @@ export default function TenantDashboardClient() {
 
           {maintenanceItems.length === 0 ? (
             <div className="text-center py-5">
-              <div className="text-[32px] mb-2">✅</div>
+              <div className="mb-2"><Emoji native="✅" size="32px" /></div>
               <p className="text-[13px]" style={{ color: '#6B7280' }}>Aucun signalement en cours</p>
             </div>
           ) : (
@@ -368,7 +369,7 @@ export default function TenantDashboardClient() {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span className="text-[10.5px] font-bold" style={{ color: u.color }}>{u.label}</span>
+                      <span className="text-[10.5px] font-bold" style={{ color: u.color }}><Emoji native={u.icon} size="10.5px" /> {u.label}</span>
                       <span className="text-[10.5px]" style={{ color: '#9CA3AF' }}>{STATUS_LABEL[req.status]}</span>
                     </div>
                   </div>
@@ -380,7 +381,7 @@ export default function TenantDashboardClient() {
 
         {/* ── Section 4 — Documents ──────────────────────────── */}
         <div className="rounded-[14px] p-5 mb-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
-          <div className="text-[15px] font-bold mb-4" style={{ color: '#111827' }}>📄 Documents du bail</div>
+          <div className="text-[15px] font-bold mb-4" style={{ color: '#111827' }}><Emoji native="📄" size="15px" /> Documents du bail</div>
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { icon: '📄', label: 'Bail signé', action: 'Télécharger', available: !!lease },
@@ -394,7 +395,7 @@ export default function TenantDashboardClient() {
                 style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
               >
                 <div className="flex items-center gap-2">
-                  <span>{doc.icon}</span>
+                  <Emoji native={doc.icon} size="14px" />
                   <span className="text-[12.5px] font-medium" style={{ color: '#374151' }}>{doc.label}</span>
                 </div>
                 <button
@@ -421,7 +422,7 @@ export default function TenantDashboardClient() {
           onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.05)' }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-[28px]">📄</span>
+            <Emoji native="📄" size="28px" />
             <div>
               <div className="text-[14px] font-semibold" style={{ color: '#111827' }}>Voir le détail de mon bail</div>
               <div className="text-[12px]" style={{ color: '#6B7280' }}>Adresse, loyer, dates, propriétaire</div>

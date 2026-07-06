@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import { listingOccupancy } from '@/lib/utils'
 import BoostSelector, { type BoostOption } from '@/components/listings/BoostSelector'
@@ -137,7 +138,7 @@ function MesAnnoncesContent() {
           zIndex: 999, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
           display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap',
         }}>
-          {successMsg}
+          <EmojiText text={successMsg} />
           <button
             onClick={() => setSuccessMsg('')}
             style={{ background: 'none', border: 'none', color: '#4ECBA0', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
@@ -173,12 +174,12 @@ function MesAnnoncesContent() {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: '#9CA3AF' }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+            <div style={{ marginBottom: '12px' }}><Emoji native="⏳" size="32px" /></div>
             <div>Chargement...</div>
           </div>
         ) : listings.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 24px', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: '52px', marginBottom: '16px' }}>🏠</div>
+            <div style={{ marginBottom: '16px' }}><Emoji native="🏠" size="52px" /></div>
             <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '22px', color: '#111827', marginBottom: '8px' }}>
               Aucune annonce pour l&apos;instant
             </div>
@@ -237,7 +238,7 @@ function MesAnnoncesContent() {
                           width: '100%', height: '100%', minHeight: '140px',
                           background: 'linear-gradient(135deg, #6EE7B7, #047857)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px',
-                        }}>🏠</div>
+                        }}><Emoji native="🏠" size="36px" /></div>
                       )}
                     </div>
 
@@ -250,7 +251,7 @@ function MesAnnoncesContent() {
                               {listing.title || `Colocation à ${listing.city}`}
                             </div>
                             <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '2px' }}>
-                              📍 {listing.city}{listing.neighborhood ? ` · ${listing.neighborhood}` : ''}
+                              <Emoji native="📍" size="13px" /> {listing.city}{listing.neighborhood ? ` · ${listing.neighborhood}` : ''}
                             </div>
                           </div>
                           <span style={{
@@ -264,10 +265,10 @@ function MesAnnoncesContent() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#374151', marginTop: '8px' }}>
-                          <span>💰 <strong>{listing.rent}€</strong>/mois</span>
-                          {listing.surface > 0 && <span>📐 {listing.surface}m²</span>}
-                          {listing.rooms_available > 0 && <span>🚪 {listing.rooms_available} chambre{listing.rooms_available > 1 ? 's' : ''}</span>}
-                          <span>👥 {listingOccupancy(listing).current}/{listingOccupancy(listing).total} places</span>
+                          <span><Emoji native="💰" size="13px" /> <strong>{listing.rent}€</strong>/mois</span>
+                          {listing.surface > 0 && <span><Emoji native="📐" size="13px" /> {listing.surface}m²</span>}
+                          {listing.rooms_available > 0 && <span><Emoji native="🚪" size="13px" /> {listing.rooms_available} chambre{listing.rooms_available > 1 ? 's' : ''}</span>}
+                          <span><Emoji native="👥" size="13px" /> {listingOccupancy(listing).current}/{listingOccupancy(listing).total} places</span>
                         </div>
 
                         {/* Badge boost actif */}
@@ -278,7 +279,7 @@ function MesAnnoncesContent() {
                             background: tier === 'featured' ? '#ECFDF5' : '#FFFBEB',
                             color: tier === 'featured' ? '#059669' : '#D97706',
                           }}>
-                            {tier === 'featured' ? '🚀 Mis en avant' : '⭐ Prioritaire'}
+                            {tier === 'featured' ? <><Emoji native="🚀" size="11px" /> Mis en avant</> : <><Emoji native="⭐" size="11px" /> Prioritaire</>}
                           </span>
                         )}
                       </div>
@@ -289,13 +290,13 @@ function MesAnnoncesContent() {
                           {listing.is_active ? '⏸ Désactiver' : '▶ Réactiver'}
                         </button>
                         <button onClick={() => router.push(`/app/annonce?edit=${listing.id}`)} style={btnBase}>
-                          ✏️ Modifier
+                          <Emoji native="✏️" size="13px" /> Modifier
                         </button>
                         <button
                           onClick={() => deleteListing(listing.id)}
                           style={{ ...btnBase, border: '1px solid #FECACA', color: '#EF4444' }}
                         >
-                          🗑 Supprimer
+                          <Emoji native="🗑" size="13px" /> Supprimer
                         </button>
                       </div>
                     </div>
@@ -329,7 +330,7 @@ function MesAnnoncesContent() {
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '16px' }}>{tier === 'featured' ? '🚀' : '⭐'}</span>
+                        <Emoji native={tier === 'featured' ? '🚀' : '⭐'} size="16px" />
                         <span style={{ fontSize: '13px', fontWeight: 600, color: tier === 'featured' ? '#4ECBA0' : '#F59E0B' }}>
                           {tier === 'featured' ? 'Mis en avant' : 'Prioritaire'} jusqu&apos;au{' '}
                           {expiresAt?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -355,7 +356,7 @@ function MesAnnoncesContent() {
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
                     }}>
                       <span style={{ fontSize: '13px', color: '#EF4444', fontWeight: 500 }}>
-                        ⚠️ Boost expiré le {expiresAt?.toLocaleDateString('fr-FR')}
+                        <Emoji native="⚠️" size="13px" /> Boost expiré le {expiresAt?.toLocaleDateString('fr-FR')}
                       </span>
                       <button
                         onClick={() => setBoostExpanded(prev => ({ ...prev, [listing.id]: true }))}
@@ -389,7 +390,7 @@ function MesAnnoncesContent() {
                         e.currentTarget.style.background = 'rgba(78,203,160,0.04)'
                       }}
                     >
-                      ✨ Booster cette annonce pour plus de visibilité
+                      <Emoji native="✨" size="13px" /> Booster cette annonce pour plus de visibilité
                     </button>
                   ) : (
                     // Panel de sélection boost
@@ -399,7 +400,7 @@ function MesAnnoncesContent() {
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                         <div style={{ fontSize: '14px', fontWeight: 700, color: '#E5E7EB' }}>
-                          🚀 Choisissez votre boost
+                          <Emoji native="🚀" size="14px" /> Choisissez votre boost
                         </div>
                         <button
                           onClick={() => setBoostExpanded(prev => ({ ...prev, [listing.id]: false }))}

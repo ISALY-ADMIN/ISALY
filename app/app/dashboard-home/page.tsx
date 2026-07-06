@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import Topbar from '@/components/layout/Topbar'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import type { DashboardData } from '@/app/api/dashboard/route'
 
@@ -99,7 +100,7 @@ function BentoCard({ href, ariaLabel, className, children, gradient }: {
 function ModuleTitle({ icon, label, light }: { icon: string; label: string; light?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-      <span style={{ fontSize: '15px' }}>{icon}</span>
+      <Emoji native={icon} size="15px" />
       <span style={{
         fontFamily: "'Outfit', sans-serif", fontSize: '13px', fontWeight: 700,
         letterSpacing: '0.02em', color: light ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.5)',
@@ -233,7 +234,7 @@ export default function DashboardHomePage() {
             <span style={{
               fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '20px',
               background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.35)',
-            }}>🏠 Mode Loueur</span>
+            }}><Emoji native="🏠" size="12px" /> Mode Loueur</span>
           ) : (
             <Link href="/app/profil" aria-label="Compléter mon profil" style={{ textDecoration: 'none' }}>
               <CompletionRing pct={data.profile.completion} />
@@ -298,7 +299,7 @@ function LocataireGrid({ d }: { d: DashboardData }) {
                   {l.photo ? (
                     <Image src={l.photo} alt={l.title} width={92} height={116} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>🏠</div>
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Emoji native="🏠" size="26px" /></div>
                   )}
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 6px', background: 'linear-gradient(transparent, rgba(0,0,0,0.75))', fontSize: '9px', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {l.rent}€ · {l.city}
@@ -443,20 +444,20 @@ function LoueurGrid({ d }: { d: DashboardData }) {
                   <div style={{ width: 44, height: 34, borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
                     {l.photo
                       ? <Image src={l.photo} alt={l.title} width={44} height={34} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : '🏠'}
+                      : <Emoji native="🏠" size="14px" />}
                   </div>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: l.isActive ? '#10B981' : 'rgba(255,255,255,0.22)' }} title={l.isActive ? 'Active' : 'Inactive'} />
                   <span style={{ flex: 1, fontSize: '13.5px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {l.title}
                   </span>
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>👥 {l.current}/{l.total}</span>
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}><Emoji native="👥" size="12px" /> {l.current}/{l.total}</span>
                   {l.boostTier !== 'standard' && (
                     <span style={{
                       fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', flexShrink: 0,
                       background: l.boostTier === 'priority' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)',
                       color: l.boostTier === 'priority' ? '#F59E0B' : '#818CF8',
                     }}>
-                      {l.boostTier === 'priority' ? '⚡ Prioritaire' : '✨ Essentiel'}
+                      {l.boostTier === 'priority' ? <><Emoji native="⚡" size="10px" /> Prioritaire</> : <><Emoji native="✨" size="10px" /> Essentiel</>}
                     </span>
                   )}
                 </div>
@@ -503,7 +504,7 @@ function LoueurGrid({ d }: { d: DashboardData }) {
               width: 40, height: 40, borderRadius: '50%', flexShrink: 0, fontSize: '18px',
               background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>✅</span>
+            }}><Emoji native="✅" size="18px" /></span>
             <div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>Aucun problème signalé</div>
               <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>Tes locataires n&apos;ont rien remonté — tout roule.</div>
@@ -552,7 +553,7 @@ function LoueurGrid({ d }: { d: DashboardData }) {
                 background: d.boost?.tier === 'priority' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)',
                 color: d.boost?.tier === 'priority' ? '#F59E0B' : '#818CF8',
               }}>
-                {d.boost?.tier === 'priority' ? '⚡ Prioritaire' : '✨ Essentiel'}
+                {d.boost?.tier === 'priority' ? <><Emoji native="⚡" size="12px" /> Prioritaire</> : <><Emoji native="✨" size="12px" /> Essentiel</>}
               </span>
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>
                 {d.boost?.expiresAt
@@ -613,7 +614,7 @@ function UnreadCard({ unread }: { unread: DashboardData['unread'] }) {
               fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontStyle: 'italic',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              « {unread.preview} »
+              « <EmojiText text={unread.preview} size="12px" /> »
             </div>
           )}
         </div>
@@ -647,9 +648,9 @@ function ActivityCard({ notifications }: { notifications: DashboardData['notific
                     width: 26, height: 26, borderRadius: '50%', flexShrink: 0, fontSize: '12px',
                     background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>{NOTIF_ICONS[n.type] ?? '🔔'}</span>
+                  }}><Emoji native={NOTIF_ICONS[n.type] ?? '🔔'} size="12px" /></span>
                   <span style={{ flex: 1, fontSize: '12.5px', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {n.title}
+                    <EmojiText text={n.title} size="12.5px" />
                   </span>
                   <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
                 </div>

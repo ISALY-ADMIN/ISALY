@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import Topbar from '@/components/layout/Topbar'
+import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import { profilesCompatibility, type ProfileCompatibility } from '@/lib/matching'
 import { listingOccupancy } from '@/lib/utils'
@@ -136,7 +137,7 @@ export default function AnnonceDetailPage() {
       <div className="min-h-screen" style={{ background: 'transparent' }}>
         <Topbar title="Annonce" />
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div style={{ fontSize: '44px', marginBottom: '12px' }}>🏚</div>
+          <div style={{ marginBottom: '12px' }}><Emoji native="🏚" size="44px" /></div>
           <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '19px', fontWeight: 700, color: '#fff', marginBottom: '18px' }}>
             Cette annonce n&apos;existe plus
           </h2>
@@ -197,7 +198,7 @@ export default function AnnonceDetailPage() {
               onError={e => { e.currentTarget.style.display = 'none' }}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '56px' }}>🏠</div>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Emoji native="🏠" size="56px" /></div>
           )}
           {boostTier !== 'standard' && (
             <span style={{
@@ -205,7 +206,7 @@ export default function AnnonceDetailPage() {
               padding: '5px 12px', borderRadius: '14px', color: '#fff',
               background: boostTier === 'priority' ? 'rgba(245,158,11,0.92)' : 'rgba(99,102,241,0.92)',
             }}>
-              {boostTier === 'priority' ? '⚡ PRIORITAIRE' : '✨ ESSENTIEL'}
+              {boostTier === 'priority' ? <><Emoji native="⚡" size="11px" /> PRIORITAIRE</> : <><Emoji native="✨" size="11px" /> ESSENTIEL</>}
             </span>
           )}
           {photos.length > 1 && (
@@ -239,7 +240,7 @@ export default function AnnonceDetailPage() {
           <div style={{ minWidth: 0 }}>
             <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '26px', fontWeight: 800, color: '#fff', margin: 0 }}>{title}</h1>
             <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', marginTop: '4px' }}>
-              📍 {listing.city}{listing.neighborhood ? ` · ${listing.neighborhood}` : ''}
+              <Emoji native="📍" size="14px" /> {listing.city}{listing.neighborhood ? ` · ${listing.neighborhood}` : ''}
             </div>
           </div>
           <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 800, color: '#10B981', whiteSpace: 'nowrap' }}>
@@ -259,7 +260,7 @@ export default function AnnonceDetailPage() {
             <span key={s as string} style={{
               fontSize: '12.5px', fontWeight: 600, padding: '7px 13px', borderRadius: '12px',
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)',
-            }}>{s}</span>
+            }}><EmojiText text={s as string} size="12.5px" /></span>
           ))}
         </div>
 
@@ -270,7 +271,7 @@ export default function AnnonceDetailPage() {
             className="flex-1 sm:flex-none sm:px-10 py-3 rounded-full text-[14px] font-extrabold text-white border-none cursor-pointer"
             style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.35)', fontFamily: "'Outfit', sans-serif" }}
           >
-            💬 Contacter le loueur
+            <Emoji native="💬" size="14px" /> Contacter le loueur
           </button>
           <button
             onClick={toggleFav}
@@ -280,7 +281,7 @@ export default function AnnonceDetailPage() {
               ? { background: 'rgba(16,185,129,0.12)', border: '1.5px solid #10B981', color: '#10B981' }
               : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.7)' }}
           >
-            {isFav ? '💚 Sauvegardé' : '🤍 Sauvegarder'}
+            {isFav ? <><Emoji native="💚" size="14px" /> Sauvegardé</> : <><Emoji native="🤍" size="14px" /> Sauvegarder</>}
           </button>
         </div>
 
@@ -288,7 +289,7 @@ export default function AnnonceDetailPage() {
           {/* Compatibilité */}
           <div style={card}>
             <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '16px' }}>
-              🎯 Compatibilité avec le loueur
+              <Emoji native="🎯" size="15px" /> Compatibilité avec le loueur
             </div>
             {compat ? (
               <>
@@ -327,7 +328,7 @@ export default function AnnonceDetailPage() {
           {/* Loueur */}
           <div style={card}>
             <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '16px' }}>
-              🏠 Le loueur
+              <Emoji native="🏠" size="15px" /> Le loueur
             </div>
             {owner ? (
               <div className="flex items-center gap-4">
@@ -353,7 +354,7 @@ export default function AnnonceDetailPage() {
                   </div>
                   <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)', marginTop: '4px' }}>
                     {owner.rating !== null
-                      ? <>⭐ <strong style={{ color: '#fff' }}>{owner.rating}</strong> · {owner.reviewCount} avis</>
+                      ? <><Emoji native="⭐" size="12px" /> <strong style={{ color: '#fff' }}>{owner.rating}</strong> · {owner.reviewCount} avis</>
                       : 'Pas encore d’avis'}
                   </div>
                 </div>
@@ -378,7 +379,7 @@ export default function AnnonceDetailPage() {
         {approxCoords && (
           <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: '20px' }}>
             <div style={{ padding: '18px 22px 12px' }}>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '15px', fontWeight: 700, color: '#fff' }}>📍 Localisation</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '15px', fontWeight: 700, color: '#fff' }}><Emoji native="📍" size="15px" /> Localisation</div>
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Zone approximative — l&apos;adresse exacte est partagée après le match.</div>
             </div>
             <div style={{ height: '280px' }}>
@@ -415,7 +416,7 @@ export default function AnnonceDetailPage() {
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={s.photos[0]} alt={s.title ?? ''} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px' }}>🏠</div>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Emoji native="🏠" size="30px" /></div>
                       )}
                     </div>
                     <div className="p-3">
@@ -424,7 +425,7 @@ export default function AnnonceDetailPage() {
                       </div>
                       <div className="flex justify-between items-center mt-1">
                         <span style={{ fontSize: '14px', fontWeight: 800, color: '#10B981' }}>{s.rent}€</span>
-                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>👥 {so.current}/{so.total}</span>
+                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}><Emoji native="👥" size="11px" /> {so.current}/{so.total}</span>
                       </div>
                     </div>
                   </div>
