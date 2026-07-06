@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
+import NoLeaseState from '@/components/ui/NoLeaseState'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
@@ -28,14 +28,9 @@ function formatAmount(n: number) {
 }
 
 export default function TenantLoyersClient() {
-  const router = useRouter()
   const { lease, loading: leaseLoading } = useLease()
   const [payments, setPayments] = useState<RentPayment[]>([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!leaseLoading && !lease) router.replace('/app/swipe')
-  }, [lease, leaseLoading, router])
 
   useEffect(() => {
     if (!lease) return
@@ -54,7 +49,7 @@ export default function TenantLoyersClient() {
     load()
   }, [lease])
 
-  if (leaseLoading || !lease) {
+  if (leaseLoading) {
     return (
       <>
         <Topbar title="Mes loyers" />
@@ -63,6 +58,10 @@ export default function TenantLoyersClient() {
         </div>
       </>
     )
+  }
+
+  if (!lease) {
+    return <NoLeaseState title="Mes loyers" message="Ton historique de loyers et tes quittances apparaîtront ici dès qu'un bail actif sera lié à ton compte." />
   }
 
   // Build 12-month chart data (current year)

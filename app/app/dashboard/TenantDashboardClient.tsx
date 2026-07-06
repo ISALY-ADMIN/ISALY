@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Topbar from '@/components/layout/Topbar'
+import NoLeaseState from '@/components/ui/NoLeaseState'
 import Emoji from '@/components/ui/Emoji'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
@@ -60,7 +60,6 @@ function monthsRemaining(end: string | null): number | null {
 }
 
 export default function TenantDashboardClient() {
-  const router = useRouter()
   const { lease, loading: leaseLoading } = useLease()
   const [firstName, setFirstName] = useState('')
   const [currentPayment, setCurrentPayment] = useState<RentPayment | null>(null)
@@ -68,12 +67,6 @@ export default function TenantDashboardClient() {
   const [maintenanceItems, setMaintenanceItems] = useState<MaintenanceRequest[]>([])
   const [dossier, setDossier] = useState<DossierData | null>(null)
   const [marking, setMarking] = useState(false)
-
-  useEffect(() => {
-    if (!leaseLoading && !lease) {
-      router.replace('/app/swipe')
-    }
-  }, [lease, leaseLoading, router])
 
   useEffect(() => {
     if (!lease) return
@@ -167,7 +160,9 @@ export default function TenantDashboardClient() {
     )
   }
 
-  if (!lease) return null
+  if (!lease) {
+    return <NoLeaseState title="Tableau de bord" message="Ton tableau de bord locataire s'activera dès qu'un bail actif sera lié à ton compte." />
+  }
 
   const remaining = monthsRemaining(lease.end_date)
   const expireSoon = remaining !== null && remaining < 3

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
+import NoLeaseState from '@/components/ui/NoLeaseState'
 import { useLease } from '@/contexts/LeaseContext'
 import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
@@ -35,10 +36,6 @@ export default function ColocatairesPage() {
   const { lease, loading: leaseLoading } = useLease()
   const [roommates, setRoommates] = useState<Roommate[]>([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!leaseLoading && !lease) router.replace('/app/swipe')
-  }, [lease, leaseLoading, router])
 
   useEffect(() => {
     if (!lease) return
@@ -75,7 +72,7 @@ export default function ColocatairesPage() {
     router.push(`/app/messages?with=${encodeURIComponent(name)}`)
   }
 
-  if (leaseLoading || !lease) {
+  if (leaseLoading) {
     return (
       <>
         <Topbar title="Mes colocataires" />
@@ -84,6 +81,10 @@ export default function ColocatairesPage() {
         </div>
       </>
     )
+  }
+
+  if (!lease) {
+    return <NoLeaseState title="Mes colocataires" message="Tes colocataires apparaîtront ici dès qu'un bail actif sera lié à ton compte." />
   }
 
   return (
