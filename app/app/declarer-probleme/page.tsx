@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Send, Paperclip, X } from 'lucide-react'
+import { Send, Paperclip, X, ChevronRight } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import NoLeaseState from '@/components/ui/NoLeaseState'
 import Button from '@/components/ui/Button'
@@ -67,6 +68,7 @@ function formatDate(iso: string) {
 }
 
 export default function DeclarerProblemePage() {
+  const router = useRouter()
   const { lease, loading: leaseLoading } = useLease()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -82,6 +84,9 @@ export default function DeclarerProblemePage() {
   useEffect(() => {
     if (!lease) return
     loadRequests()
+    // Marque comme vu → efface le badge sidebar (dot mint sur "Déclarer un problème")
+    try { localStorage.setItem('maintenance_last_seen', new Date().toISOString()) } catch {}
+    window.dispatchEvent(new Event('maintenance-seen'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lease])
 
@@ -358,9 +363,16 @@ export default function DeclarerProblemePage() {
               const cat = CATEGORIES.find(c => c.id === req.category)
               const photos = req.photos && req.photos.length > 0 ? req.photos : (req.photo_url ? [req.photo_url] : [])
               return (
-                <div key={req.id} className="rounded-[16px] p-5" style={darkCard}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
+                <button key={req.id} type="button"
+                  onClick={() => router.push(`/app/signalement/${req.id}`)}
+                  className="rounded-[16px] p-5 text-left cursor-pointer transition-all hover:-translate-y-0.5 w-full block"
+                  style={{
+                    ...darkCard, borderColor: 'rgba(255,255,255,0.08)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(16,185,129,0.4)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(16,185,129,0.1)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none' }}>
+                  <div className="flex items-start justify-between mb-3 gap-3">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-[18px]"><Emoji native={cat?.icon ?? '📦'} size="18px" /></span>
                         <span className="text-[14px] font-bold" style={{ color: '#fff' }}>{req.title}</span>
@@ -368,30 +380,32 @@ export default function DeclarerProblemePage() {
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: u.bg, color: u.color }}>{u.label}</span>
                         ) : null })()}
                       </div>
-                      <p className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{req.description}</p>
+                      <p className="text-[12.5px]" style={{
+                        color: 'rgba(255,255,255,0.55)', margin: 0,
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      }}>{req.description}</p>
                       {photos.length > 0 && (
-                        <div className="flex gap-2 mt-2">
-                          {photos.map((url, i) => (
-                            <Image key={i} src={url} alt={req.title} width={90} height={70} className="rounded-[10px] object-cover" style={{ width: '90px', height: '70px' }} />
-                          ))}
+                        <div className="flex items-center gap-1.5 mt-2 text-[11px] font-bold" style={{ color: 'rgba(16,185,129,0.75)' }}>
+                          <Paperclip size={11} /> {photos.length} photo{photos.length > 1 ? 's' : ''}
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-3">
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: badge.bg, color: badge.color }}>
                         <EmojiText text={badge.label} size="11px" />
                       </span>
                       <span className="text-[10.5px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{formatDate(req.created_at)}</span>
+                      <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }} />
                     </div>
                   </div>
 
                   {req.bailleur_comment && (
-                    <div className="mt-3 p-3 rounded-[10px]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <div className="text-[10.5px] font-bold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Réponse du bailleur</div>
-                      <p className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{req.bailleur_comment}</p>
-                      {req.resolved_photo_url && (
-                        <Image src={req.resolved_photo_url} alt="Résolution" width={120} height={90} className="mt-2 rounded-[10px] object-cover" style={{ width: '120px', height: '90px' }} />
-                      )}
+                    <div className="mt-3 p-3 rounded-[10px]" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <div className="text-[10.5px] font-bold uppercase tracking-wider mb-1" style={{ color: '#10B981' }}>Réponse du bailleur</div>
+                      <p className="text-[12.5px]" style={{
+                        color: 'rgba(255,255,255,0.75)', margin: 0,
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      }}>{req.bailleur_comment}</p>
                     </div>
                   )}
 
@@ -400,7 +414,7 @@ export default function DeclarerProblemePage() {
                       <div key={s} className="flex-1 h-1.5 rounded-full" style={{ background: i <= statusIdx ? '#10B981' : 'rgba(255,255,255,0.08)' }} />
                     ))}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>

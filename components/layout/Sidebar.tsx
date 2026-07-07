@@ -83,6 +83,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed]   = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [maintenanceCount, setMaintenanceCount] = useState(0)
+  const [tenantMaintenanceCount, setTenantMaintenanceCount] = useState(0)
   const [currentMode, setCurrentMode] = useState<'locataire' | 'loueur'>('locataire')
   const [userData, setUserData]     = useState<UserData>({
     firstName: '', lastName: '', role: '', avatarUrl: null, isAdmin: false,
@@ -145,12 +146,25 @@ export default function Sidebar() {
         setMaintenanceCount(mCount ?? 0)
       }
 
+      // Badge côté locataire : notifications maintenance non lues → dot mint sur "Déclarer un problème"
+      const { count: tmCount } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('type', 'maintenance')
+        .eq('read', false)
+      setTenantMaintenanceCount(tmCount ?? 0)
+
       // Real-time badge update
       channel = supabase
         .channel('sidebar-unread')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
           const m = payload.new as { sender_id: string; read: boolean }
           if (m.sender_id !== user.id && !m.read) setUnreadCount(n => n + 1)
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
+          const n = payload.new as { type: string; read: boolean }
+          if (n.type === 'maintenance' && !n.read) setTenantMaintenanceCount(c => c + 1)
         })
         .subscribe()
     }
@@ -168,11 +182,22 @@ export default function Sidebar() {
       })()
     }
 
+    /** Marque les notifications maintenance comme lues côté user (déclenché par la visite d'un signalement). */
+    async function handleMaintenanceSeen() {
+      const { data: { user: u } } = await supabase.auth.getUser()
+      if (!u) return
+      await supabase.from('notifications')
+        .update({ read: true }).eq('user_id', u.id).eq('type', 'maintenance').eq('read', false)
+      setTenantMaintenanceCount(0)
+    }
+
     window.addEventListener('messages-read', handleMessagesRead)
+    window.addEventListener('maintenance-seen', handleMaintenanceSeen)
     loadProfile()
     return () => {
       if (channel) supabase.removeChannel(channel)
       window.removeEventListener('messages-read', handleMessagesRead)
+      window.removeEventListener('maintenance-seen', handleMaintenanceSeen)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -287,7 +312,8 @@ export default function Sidebar() {
 
             {!collapsed && <NavSection label="Mon espace" />}
             {locataireSpaceItems.map(item => (
-              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
+              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed}
+                unread={item.id === 'declarer-probleme' ? tenantMaintenanceCount : 0} />
             ))}
 
             {!collapsed && <NavSection label="Compte" />}
