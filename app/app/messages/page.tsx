@@ -62,6 +62,7 @@ function MessagesContent() {
   const withName     = searchParams.get('with')
   const ownerParam   = searchParams.get('owner')
   const listingParam = searchParams.get('listing')
+  const convParam    = searchParams.get('conversation')
 
   const [convs, setConvs] = useState<Conv[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -115,6 +116,17 @@ function MessagesContent() {
       if (match) setActiveId(match.id)
     }
   }, [withName, convs])
+
+  // Ouverture directe d'une conv par id (ex : bouton "Contacter" de /app/recherche).
+  useEffect(() => {
+    if (!convParam || convs.length === 0) return
+    const match = convs.find(c => c.id === convParam)
+    if (match) {
+      setActiveId(match.id)
+      setMobileView('chat')
+      setConvs(cs => cs.map(c => c.id === match.id ? { ...c, unread: 0 } : c))
+    }
+  }, [convParam, convs])
 
   useEffect(() => {
     if (!ownerParam) return

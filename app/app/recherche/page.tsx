@@ -358,6 +358,24 @@ function RechercheInner() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [filters, router])
 
+  // "Contacter" : get-or-create de la conversation avec le loueur, puis ouvre la conv réelle.
+  // Fallback ?owner=<id> si l'API échoue → laisse messages/page.tsx gérer la conv virtuelle.
+  async function contactOwner(l: SearchResult) {
+    if (!l.ownerId) return
+    try {
+      const res = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receiver_id: l.ownerId, listing_id: l.id }),
+      })
+      if (res.ok) {
+        const { id } = await res.json()
+        if (id) { router.push(`/app/messages?conversation=${id}`); return }
+      }
+    } catch {}
+    router.push(`/app/messages?owner=${l.ownerId}&listing=${l.id}`)
+  }
+
   async function toggleFav(id: string) {
     setFavorites(prev => {
       const next = new Set(prev)
@@ -704,7 +722,7 @@ function RechercheInner() {
                     l={l}
                     isFav={favorites.has(l.id)}
                     onFav={() => toggleFav(l.id)}
-                    onContact={() => router.push(`/app/messages?owner=${l.ownerId}`)}
+                    onContact={() => contactOwner(l)}
                     onHover={setHoveredId}
                     active={activeId === l.id}
                     cardRef={el => { if (el) cardRefs.current.set(l.id, el); else cardRefs.current.delete(l.id) }}
