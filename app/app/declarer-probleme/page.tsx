@@ -153,6 +153,9 @@ export default function DeclarerProblemePage() {
     setSubmitting(false)
   }
 
+  // Guard strict : n'affiche JAMAIS le NoLeaseState tant que le lease-context charge.
+  // Sinon, avant que fetchLease ne finisse, `!lease` est vrai et le locataire voit
+  // "Aucun bail actif" par erreur alors qu'il en a un.
   if (leaseLoading) {
     return (
       <>
@@ -164,8 +167,11 @@ export default function DeclarerProblemePage() {
     )
   }
 
-  if (!lease) {
-    return <NoLeaseState title="Déclarer un problème" message="Vous pourrez déclarer un problème dès qu'un bail actif sera lié à votre compte. Si votre bail est en attente de signature, il apparaîtra ici une fois signé par les deux parties." />
+  if (!lease || lease.status !== 'active') {
+    const msg = lease && lease.status === 'pending_signature'
+      ? "Votre bail est en attente de signature. Vous pourrez déclarer un problème dès qu'il sera signé par les deux parties."
+      : "Vous pourrez déclarer un problème dès qu'un bail actif sera lié à votre compte. Si votre bail est en attente de signature, il apparaîtra ici une fois signé par les deux parties."
+    return <NoLeaseState title="Déclarer un problème" message={msg} />
   }
 
   const canSubmit = !!form.category && !!form.title && !!form.description && !submitting

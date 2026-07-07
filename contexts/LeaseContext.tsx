@@ -78,11 +78,14 @@ export function LeaseProvider({ children }: { children: React.ReactNode }) {
         ? `tenant_id.eq.${user.id},id.in.(${roommateLeaseIds.join(',')})`
         : `tenant_id.eq.${user.id}`
 
+      // Cherche 'active' ET 'pending_signature' — chaque page décide ensuite
+      // (ex : /app/declarer-probleme n'accepte que 'active', /app/maison affiche les deux).
       const { data } = await supabase
         .from('leases')
         .select('*')
         .or(partyFilter)
-        .eq('status', 'active')
+        .in('status', ['active', 'pending_signature'])
+        .order('status', { ascending: true }) // 'active' avant 'pending_signature'
         .limit(1)
         .maybeSingle()
 

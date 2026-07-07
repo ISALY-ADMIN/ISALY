@@ -50,6 +50,14 @@ interface DisplayRow {
   paidAt: string | null
 }
 
+interface LeaseDoc {
+  name: string
+  path: string
+  createdAt: string | null
+  sizeBytes: number | null
+  category: 'edl_entree' | 'edl_sortie' | 'other'
+}
+
 const COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6']
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -84,9 +92,16 @@ function BauxPageInner() {
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [relanceId, setRelanceId] = useState<string | null>(null)
+  const [leaseDocs, setLeaseDocs] = useState<LeaseDoc[]>([])
+  const [uploadingDoc, setUploadingDoc] = useState<null | 'edl_entree' | 'edl_sortie' | 'other'>(null)
+  const [newDocsCount, setNewDocsCount] = useState(0)
 
   const locatairesRef = useRef<HTMLDivElement>(null)
   const loyersRef = useRef<HTMLDivElement>(null)
+  const docsRef = useRef<HTMLDivElement>(null)
+  const edlEntreeInputRef = useRef<HTMLInputElement>(null)
+  const edlSortieInputRef = useRef<HTMLInputElement>(null)
+  const otherInputRef = useRef<HTMLInputElement>(null)
 
   const selectedLease = leases.find(l => l.id === selectedLeaseId) ?? null
   const selectedMonth = new Date()
@@ -129,7 +144,10 @@ function BauxPageInner() {
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (!tab || loading) return
-    const target = tab === 'locataires' ? locatairesRef.current : tab === 'loyers' ? loyersRef.current : null
+    const target = tab === 'locataires' ? locatairesRef.current
+      : tab === 'loyers' ? loyersRef.current
+      : tab === 'documents' ? docsRef.current
+      : null
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [searchParams, loading])
 
@@ -183,6 +201,32 @@ function BauxPageInner() {
       .limit(1)
       .maybeSingle()
     setSignatureStatus(doc?.status ?? null)
+
+    // Documents du bail (bucket privé "leases", path {lease_id}/*)
+    // — les deux parties y accèdent via RLS leases_bucket_parties_select
+    const { data: files } = await supabase.storage.from('leases').list(selectedLease.id, {
+      limit: 100,
+      sortBy: { column: 'created_at', order: 'desc' },
+    })
+    const docs: LeaseDoc[] = (files ?? [])
+      .filter(f => f.name && !f.name.startsWith('.'))
+      .map(f => {
+        const category: LeaseDoc['category'] =
+          f.name.startsWith('etat-des-lieux-entree') ? 'edl_entree'
+          : f.name.startsWith('etat-des-lieux-sortie') ? 'edl_sortie'
+          : 'other'
+        const createdAt = (f.created_at as string | undefined)
+          ?? ((f as { updated_at?: string }).updated_at ?? null)
+        const sizeBytes = ((f as { metadata?: { size?: number } }).metadata?.size ?? null)
+        return { name: f.name, path: `${selectedLease.id}/${f.name}`, createdAt, sizeBytes, category }
+      })
+    setLeaseDocs(docs)
+
+    // Badge "nouveaux depuis la dernière visite" (par bail)
+    let lastSeen = 0
+    try { lastSeen = Number(localStorage.getItem(`lease_docs_last_seen_${selectedLease.id}`) ?? 0) } catch {}
+    const fresh = docs.filter(d => d.createdAt && new Date(d.createdAt).getTime() > lastSeen).length
+    setNewDocsCount(fresh)
   }, [selectedLease])
 
   useEffect(() => { loadLeaseData() }, [loadLeaseData])
@@ -247,6 +291,37 @@ function BauxPageInner() {
       if (res.ok) await loadLeaseData()
     } catch {}
     setBusyId(null)
+  }
+
+  async function openLeaseDoc(path: string) {
+    const supabase = createClient()
+    const { data } = await supabase.storage.from('leases').createSignedUrl(path, 600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+
+  async function uploadLeaseDoc(file: File, category: 'edl_entree' | 'edl_sortie' | 'other') {
+    if (!lease) return
+    setUploadingDoc(category)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'pdf'
+      const prefix = category === 'edl_entree' ? 'etat-des-lieux-entree'
+        : category === 'edl_sortie' ? 'etat-des-lieux-sortie'
+        : 'doc'
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '')
+      const path = category === 'other'
+        ? `${lease.id}/${safe}-${Date.now()}.${ext}`
+        : `${lease.id}/${prefix}-${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('leases').upload(path, file, { cacheControl: '3600', upsert: false })
+      if (!error) await loadLeaseData()
+    } catch {}
+    setUploadingDoc(null)
+  }
+
+  function markDocsSeen() {
+    if (!lease) return
+    try { localStorage.setItem(`lease_docs_last_seen_${lease.id}`, String(Date.now())) } catch {}
+    setNewDocsCount(0)
   }
 
   async function relancer(row: DisplayRow) {
@@ -424,7 +499,113 @@ function BauxPageInner() {
           </div>
         </div>
 
-        {/* d. Documents liés */}
+        {/* d. Documents du bail — inclut EDL déposé par le locataire (bucket privé partagé) */}
+        <div ref={docsRef} className="mb-7">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[15px] font-bold" style={{ color: '#fff' }}>Documents du bail</h3>
+              {newDocsCount > 0 && (
+                <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FEF2F2', color: '#DC2626' }}>
+                  {newDocsCount} nouveau{newDocsCount > 1 ? 'x' : ''}
+                </span>
+              )}
+            </div>
+            {newDocsCount > 0 && (
+              <button
+                onClick={markDocsSeen}
+                className="text-[11.5px] font-semibold cursor-pointer border-none rounded-full px-2.5 py-1"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
+              >
+                Marquer comme vus
+              </button>
+            )}
+          </div>
+
+          <div className="rounded-[14px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
+            {([
+              { key: 'edl_entree' as const, icon: '🔑', label: 'État des lieux d\'entrée', ref: edlEntreeInputRef },
+              { key: 'edl_sortie' as const, icon: '🚪', label: 'État des lieux de sortie', ref: edlSortieInputRef },
+              { key: 'other'      as const, icon: '📎', label: 'Autres documents',         ref: otherInputRef      },
+            ]).map((section, sIdx, sArr) => {
+              const docsInCat = leaseDocs.filter(d => d.category === section.key)
+              return (
+                <div key={section.key} style={{ borderBottom: sIdx < sArr.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[18px]"><Emoji native={section.icon} size="18px" /></span>
+                      <div>
+                        <div className="text-[13.5px] font-bold" style={{ color: '#111827' }}>{section.label}</div>
+                        <div className="text-[11.5px]" style={{ color: '#9CA3AF' }}>
+                          {docsInCat.length === 0 ? 'Aucun fichier' : `${docsInCat.length} fichier${docsInCat.length > 1 ? 's' : ''}`}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <input
+                        ref={section.ref}
+                        type="file"
+                        accept="application/pdf,image/*"
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const f = e.target.files?.[0]
+                          if (f) uploadLeaseDoc(f, section.key)
+                          if (e.target) e.target.value = ''
+                        }}
+                      />
+                      <button
+                        onClick={() => section.ref.current?.click()}
+                        disabled={uploadingDoc === section.key}
+                        className="text-[11.5px] font-bold px-3 py-1.5 rounded-full border-none cursor-pointer text-white disabled:opacity-50"
+                        style={{ background: '#4ECBA0' }}
+                      >
+                        {uploadingDoc === section.key ? 'Envoi…' : <><Emoji native="⬆" /> Déposer</>}
+                      </button>
+                    </div>
+                  </div>
+                  {docsInCat.length > 0 && (
+                    <div className="px-5 pb-3">
+                      {docsInCat.map((d, i) => {
+                        const lastSeen = (() => { try { return Number(localStorage.getItem(`lease_docs_last_seen_${lease.id}`) ?? 0) } catch { return 0 } })()
+                        const isNew = !!d.createdAt && new Date(d.createdAt).getTime() > lastSeen
+                        return (
+                          <button
+                            key={d.path}
+                            onClick={() => openLeaseDoc(d.path)}
+                            className="w-full flex items-center justify-between text-left py-2.5 border-none cursor-pointer bg-transparent"
+                            style={{ borderTop: i > 0 ? '1px solid #F9FAFB' : 'none' }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-[15px]"><Emoji native="📄" size="15px" /></span>
+                              <div className="min-w-0">
+                                <div className="text-[12.5px] font-semibold truncate" style={{ color: '#111827' }}>
+                                  {d.name}
+                                  {isNew && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full align-middle" style={{ background: '#FEF2F2', color: '#DC2626' }}>NOUVEAU</span>}
+                                </div>
+                                <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
+                                  {d.createdAt ? `Déposé le ${formatDate(d.createdAt)}` : 'Date inconnue'}
+                                  {d.sizeBytes != null ? ` · ${Math.max(1, Math.round(d.sizeBytes / 1024))} Ko` : ''}
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: '#ECFDF5', color: '#059669' }}>
+                              Ouvrir
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="text-[11.5px] mt-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Les fichiers déposés ici sont partagés entre le loueur et le(s) locataire(s) du bail.
+          </p>
+        </div>
+
+        {/* Coffre-fort personnel du loueur */}
         <div className="mb-4">
           <Link
             href="/app/documents"
@@ -432,10 +613,10 @@ function BauxPageInner() {
             style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}
           >
             <div className="flex items-center gap-3">
-              <span className="text-[22px]"><Emoji native="📁" /></span>
+              <span className="text-[22px]"><Emoji native="🔐" /></span>
               <div>
-                <div className="text-[14px] font-bold" style={{ color: '#111827' }}>Documents liés</div>
-                <div className="text-[12px]" style={{ color: '#6B7280' }}>Bail, états des lieux, justificatifs…</div>
+                <div className="text-[14px] font-bold" style={{ color: '#111827' }}>Mon coffre-fort personnel</div>
+                <div className="text-[12px]" style={{ color: '#6B7280' }}>Vos justificatifs privés (non partagés)</div>
               </div>
             </div>
             <span style={{ color: '#4ECBA0', fontSize: '20px' }}>›</span>
