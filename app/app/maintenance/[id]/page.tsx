@@ -173,11 +173,11 @@ export default function MaintenanceDetailPage() {
   const [savingStatus, setSavingStatus] = useState<string | null>(null)
   const [savingComment, setSavingComment] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const [toast, setToast] = useState('')
+  const [toast, setToast] = useState<{ msg: string; kind: 'ok' | 'err' } | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
 
-  const notify = useCallback((msg: string) => {
-    setToast(msg); setTimeout(() => setToast(''), 3000)
+  const notify = useCallback((msg: string, kind: 'ok' | 'err' = 'ok') => {
+    setToast({ msg, kind }); setTimeout(() => setToast(null), 3200)
   }, [])
 
   const load = useCallback(async () => {
@@ -204,50 +204,95 @@ export default function MaintenanceDetailPage() {
   }, [loading, viewerRole, request, router])
 
   async function updateStatus(status: MaintenanceRequest['status']) {
-    if (!request) return
-    setSavingStatus(status)
-    const res = await fetch(`/api/maintenance/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+    if (!request || savingStatus) return
+    if (status === request.status) return
+    const previous = request
+    // Mise à jour optimiste : la timeline et la progress bar réagissent immédiatement
+    setRequest({
+      ...request,
+      status,
+      resolved_at: status === 'resolved' ? new Date().toISOString() : request.resolved_at,
     })
-    if (!res.ok) console.error('[maintenance detail] status update failed:', await res.text())
-    else notify(`Statut mis à jour : ${STATUS_STEPS.find(s => s.id === status)?.label}`)
+    setSavingStatus(status)
+    try {
+      const res = await fetch(`/api/maintenance/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      const json = await res.json().catch(() => ({} as { request?: MaintenanceRequest; error?: string }))
+      if (!res.ok) {
+        console.error('[maintenance detail] status update failed:', res.status, json)
+        setRequest(previous) // rollback
+        notify(`Impossible d'enregistrer le statut${json?.error ? ` : ${json.error}` : ''}`, 'err')
+      } else {
+        if (json.request) setRequest(json.request as MaintenanceRequest)
+        notify(`Statut mis à jour : ${STATUS_STEPS.find(s => s.id === status)?.label}`)
+      }
+    } catch (e) {
+      console.error('[maintenance detail] status update exception:', e)
+      setRequest(previous)
+      notify('Erreur réseau — statut non enregistré', 'err')
+    }
     setSavingStatus(null)
-    load()
   }
 
   async function saveComment() {
     if (!request) return
     setSavingComment(true)
-    const res = await fetch(`/api/maintenance/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bailleur_comment: comment }),
-    })
-    if (!res.ok) console.error('[maintenance detail] comment save failed:', await res.text())
-    else notify('Réponse envoyée au locataire')
+    try {
+      const res = await fetch(`/api/maintenance/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bailleur_comment: comment }),
+      })
+      const json = await res.json().catch(() => ({} as { request?: MaintenanceRequest; error?: string }))
+      if (!res.ok) {
+        console.error('[maintenance detail] comment save failed:', res.status, json)
+        notify(`Impossible d'envoyer la réponse${json?.error ? ` : ${json.error}` : ''}`, 'err')
+      } else {
+        if (json.request) setRequest(json.request as MaintenanceRequest)
+        notify('Réponse envoyée au locataire')
+      }
+    } catch (e) {
+      console.error('[maintenance detail] comment save exception:', e)
+      notify('Erreur réseau — réponse non enregistrée', 'err')
+    }
     setSavingComment(false)
-    load()
   }
 
   async function uploadResolutionPhoto(file: File) {
     if (!request) return
     setUploadingPhoto(true)
-    const supabase = createClient()
-    const path = `maintenance/${Date.now()}-${file.name.replace(/\s/g, '_')}`
-    const { error: upErr } = await supabase.storage.from('documents').upload(path, file)
-    if (upErr) { console.error('[maintenance detail] upload error:', upErr); setUploadingPhoto(false); return }
-    const { data: pub } = supabase.storage.from('documents').getPublicUrl(path)
-    const res = await fetch(`/api/maintenance/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resolved_photo_url: pub.publicUrl }),
-    })
-    if (!res.ok) console.error('[maintenance detail] resolution photo save failed:', await res.text())
-    else notify('Photo de résolution enregistrée')
+    try {
+      const supabase = createClient()
+      const path = `maintenance/${Date.now()}-${file.name.replace(/\s/g, '_')}`
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, file)
+      if (upErr) {
+        console.error('[maintenance detail] upload error:', upErr)
+        notify('Impossible d\'uploader la photo', 'err')
+        setUploadingPhoto(false)
+        return
+      }
+      const { data: pub } = supabase.storage.from('documents').getPublicUrl(path)
+      const res = await fetch(`/api/maintenance/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolved_photo_url: pub.publicUrl }),
+      })
+      const json = await res.json().catch(() => ({} as { request?: MaintenanceRequest; error?: string }))
+      if (!res.ok) {
+        console.error('[maintenance detail] resolution photo save failed:', res.status, json)
+        notify(`Impossible d'enregistrer la photo${json?.error ? ` : ${json.error}` : ''}`, 'err')
+      } else {
+        if (json.request) setRequest(json.request as MaintenanceRequest)
+        notify('Photo de résolution enregistrée')
+      }
+    } catch (e) {
+      console.error('[maintenance detail] resolution photo exception:', e)
+      notify('Erreur réseau — photo non enregistrée', 'err')
+    }
     setUploadingPhoto(false)
-    load()
   }
 
   if (loading) {
@@ -533,10 +578,12 @@ export default function MaintenanceDetailPage() {
             style={{
               position: 'fixed', bottom: 30, left: '50%', transform: 'translateX(-50%)', zIndex: 60,
               padding: '12px 20px', borderRadius: 12, fontFamily: OUTFIT, fontSize: 13, fontWeight: 700,
-              background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.4)',
               backdropFilter: 'blur(6px)',
+              ...(toast.kind === 'err'
+                ? { background: 'rgba(239,68,68,0.15)', color: '#F87171', border: '1px solid rgba(239,68,68,0.4)' }
+                : { background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.4)' }),
             }}>
-            <Eye size={13} style={{ display: 'inline', marginRight: 6 }} /> {toast}
+            <Eye size={13} style={{ display: 'inline', marginRight: 6 }} /> {toast.msg}
           </motion.div>
         )}
       </AnimatePresence>

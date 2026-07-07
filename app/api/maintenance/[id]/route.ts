@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 /**
  * GET — récupère un signalement + son bail + les identités des parties.
@@ -71,17 +72,39 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body.status) {
     update.status = body.status
     if (body.status === 'resolved') update.resolved_at = new Date().toISOString()
+    else if (request.status === 'resolved') update.resolved_at = null // rétrogradation → efface la date
   }
   if (body.bailleur_comment !== undefined) update.bailleur_comment = body.bailleur_comment
   if (body.resolved_photo_url !== undefined) update.resolved_photo_url = body.resolved_photo_url
 
-  const { data, error } = await supabase
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+  }
+
+  // Ownership déjà vérifié manuellement ci-dessus (lease.owner_id === user.id).
+  // On utilise service-role pour bypasser toute RLS bancale sur maintenance_requests UPDATE
+  // (ex : policy `maintenance_update` qui dépendait d'un is_lease_owner() défaillant).
+  const admin = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+
+  const { data, error } = await admin
     .from('maintenance_requests')
     .update(update)
     .eq('id', params.id)
     .select()
     .single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[PATCH /api/maintenance/[id]] update error:', error, 'update payload:', update, 'user:', user.id)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  if (!data) {
+    console.error('[PATCH /api/maintenance/[id]] update returned no row for id:', params.id, 'payload:', update)
+    return NextResponse.json({ error: 'Update returned no row (unexpected)' }, { status: 500 })
+  }
+  console.log('[PATCH /api/maintenance/[id]] updated', params.id, 'fields:', Object.keys(update).join(','))
 
   // Notifications locataire — signal chaque événement distinct côté propriétaire
   if (request.tenant_id) {
@@ -125,7 +148,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     if (notifs.length > 0) {
-      const { error: notifErr } = await supabase.from('notifications').insert(notifs)
+      const { error: notifErr } = await admin.from('notifications').insert(notifs)
       if (notifErr) console.error('[PATCH /api/maintenance/[id]] notifications error:', notifErr)
     }
   }
