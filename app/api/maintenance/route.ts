@@ -3,6 +3,51 @@ import { createApiClient } from '@/lib/supabase/api-auth'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { maintenanceRequestTemplate } from '@/lib/email-templates'
 
+/**
+ * GET — signalements côté loueur.
+ * Passe par la même auth serveur (cookies SSR ou Bearer mobile) que le POST,
+ * ce qui élimine toute divergence de session entre l'écriture et la lecture.
+ * Retourne { requests: [{ ...maintenance_requests, lease: {id, address, city, status} }] }
+ * pour TOUS les baux dont le user est owner (tous statuts sauf 'draft').
+ */
+export async function GET(req: Request) {
+  const { supabase, user } = await createApiClient(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: leases, error: leaseErr } = await supabase
+    .from('leases')
+    .select('id, address, city, status')
+    .eq('owner_id', user.id)
+    .in('status', ['active', 'pending_signature', 'ended'])
+    .order('created_at', { ascending: false })
+
+  if (leaseErr) {
+    console.error('[GET /api/maintenance] leases error:', leaseErr)
+    return NextResponse.json({ error: leaseErr.message, requests: [], leases: [] }, { status: 500 })
+  }
+
+  const leaseRows = (leases ?? []) as { id: string; address: string | null; city: string | null; status: string }[]
+  if (leaseRows.length === 0) {
+    return NextResponse.json({ requests: [], leases: [] })
+  }
+
+  const leaseIds = leaseRows.map(l => l.id)
+  const { data: requests, error: reqErr } = await supabase
+    .from('maintenance_requests')
+    .select('*')
+    .in('lease_id', leaseIds)
+    .order('created_at', { ascending: false })
+
+  if (reqErr) {
+    console.error('[GET /api/maintenance] requests error:', reqErr)
+    return NextResponse.json({ error: reqErr.message, requests: [], leases: leaseRows }, { status: 500 })
+  }
+
+  console.log(`[GET /api/maintenance] user=${user.id} leases=${leaseRows.length} requests=${(requests ?? []).length}`)
+
+  return NextResponse.json({ requests: requests ?? [], leases: leaseRows })
+}
+
 export async function POST(req: Request) {
   const { supabase, user } = await createApiClient(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

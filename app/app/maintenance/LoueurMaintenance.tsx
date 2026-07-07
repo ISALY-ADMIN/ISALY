@@ -106,43 +106,60 @@ export default function LoueurMaintenance() {
   const [commentDraft, setCommentDraft] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
 
-  /** Charge tous les baux du loueur + tous leurs signalements en une passe. */
+  /**
+   * Charge tous les baux du loueur + tous leurs signalements via l'endpoint
+   * GET /api/maintenance, qui utilise la même auth serveur (cookies SSR) que le
+   * POST qui fonctionne — ça évite toute divergence de session côté browser.
+   * Un fallback client direct est tenté si l'endpoint retourne une erreur réseau.
+   */
   const load = useCallback(async () => {
     setLoading(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/auth/login'); return }
 
-    // Baux du loueur — tous statuts sauf 'draft' (un signalement peut exister
-    // sur un bail 'active' ou 'ended' ; 'draft' n'a jamais eu de locataire).
-    const { data: leaseRows, error: leaseErr } = await supabase
-      .from('leases')
-      .select('id, address, city, status')
-      .eq('owner_id', user.id)
-      .in('status', ['active', 'pending_signature', 'ended'])
-      .order('created_at', { ascending: false })
+    let leaseRows: (LeaseRow & { status: string })[] = []
+    let requestRows: MaintenanceRequest[] = []
+    let debugUserId: string | null = null
 
-    if (leaseErr) console.error('[maintenance] leases fetch error:', leaseErr)
-
-    const rows = (leaseRows ?? []) as (LeaseRow & { status: string })[]
-    setLeases(rows)
-
-    if (rows.length === 0) {
-      setRequests([])
-      setLoading(false)
-      return
+    try {
+      const res = await fetch('/api/maintenance', { cache: 'no-store' })
+      if (res.status === 401) { router.push('/auth/login'); return }
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        console.error('[maintenance] GET /api/maintenance failed:', res.status, json)
+      }
+      leaseRows = (json.leases ?? []) as (LeaseRow & { status: string })[]
+      requestRows = (json.requests ?? []) as MaintenanceRequest[]
+    } catch (e) {
+      console.error('[maintenance] GET /api/maintenance network error, fallback client:', e)
+      // Fallback client direct (RLS-only) si l'API n'est pas disponible
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/auth/login'); return }
+      debugUserId = user.id
+      const { data: ls, error: leaseErr } = await supabase
+        .from('leases').select('id, address, city, status')
+        .eq('owner_id', user.id)
+        .in('status', ['active', 'pending_signature', 'ended'])
+        .order('created_at', { ascending: false })
+      if (leaseErr) console.error('[maintenance] fallback leases error:', leaseErr)
+      leaseRows = (ls ?? []) as (LeaseRow & { status: string })[]
+      if (leaseRows.length > 0) {
+        const { data: rs, error: reqErr } = await supabase
+          .from('maintenance_requests').select('*')
+          .in('lease_id', leaseRows.map(l => l.id))
+          .order('created_at', { ascending: false })
+        if (reqErr) console.error('[maintenance] fallback requests error:', reqErr)
+        requestRows = (rs ?? []) as MaintenanceRequest[]
+      }
     }
 
-    // Signalements pour TOUS les baux du loueur, en une seule requête.
-    const { data: reqRows, error: reqErr } = await supabase
-      .from('maintenance_requests')
-      .select('*')
-      .in('lease_id', rows.map(l => l.id))
-      .order('created_at', { ascending: false })
+    // Log verbeux pour diagnostiquer côté DevTools
+    console.log('[maintenance] loaded',
+      { userId: debugUserId, leases: leaseRows.length, leaseIds: leaseRows.map(l => l.id),
+        requests: requestRows.length, requestLeaseIds: requestRows.map(r => r.lease_id) })
 
-    if (reqErr) console.error('[maintenance] requests fetch error:', reqErr)
+    setLeases(leaseRows)
 
-    const list = ((reqRows ?? []) as MaintenanceRequest[]).sort((a, b) => {
+    const list = requestRows.sort((a, b) => {
       const sr = (STATUS_RANK[a.status] ?? 0) - (STATUS_RANK[b.status] ?? 0)
       if (sr !== 0) return sr
       const ur = (URGENCY_RANK[a.urgency ?? 'normal'] ?? 1) - (URGENCY_RANK[b.urgency ?? 'normal'] ?? 1)
@@ -154,6 +171,7 @@ export default function LoueurMaintenance() {
     // Noms des locataires
     const tenantIds = Array.from(new Set(list.map(r => r.tenant_id).filter(Boolean))) as string[]
     if (tenantIds.length > 0) {
+      const supabase = createClient()
       const { data: profiles, error: profErr } = await supabase.from('profiles').select('id, first_name, last_name').in('id', tenantIds)
       if (profErr) console.error('[maintenance] tenants fetch error:', profErr)
       const map: Record<string, string> = {}
