@@ -1,152 +1,429 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { FileText, File as FileIcon, Image as ImageIcon, Lock, Unlock, Shield, Search, Trash2, Download, X, UploadCloud } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
-import { createClient } from '@/lib/supabase/client'
-import DocumentsStorage from '@/components/documents/DocumentsStorage'
-import CreateDocumentModal from '@/components/documents/CreateDocumentModal'
-import BlankDocumentEditor from '@/components/documents/BlankDocumentEditor'
+import Button from '@/components/ui/Button'
 import Emoji from '@/components/ui/Emoji'
+import { createClient } from '@/lib/supabase/client'
+import { VAULT_CATEGORIES, depositToVault, type VaultCategory, type VaultDoc } from '@/lib/vault'
+import { generateQuittanceModele, generateEdlModele, generateAttestationAssuranceModele } from '@/lib/documents/quittancePdf'
+import { generateBailPdf as generateBailLoi89Pdf } from '@/lib/documents/generateBailPdf'
+import { emptyBailNonMeubleData } from '@/components/documents/BailNonMeubleForm'
 
-const BailGenerator = dynamic(() => import('@/components/documents/BailGenerator'), { ssr: false })
-const BailNonMeubleForm = dynamic(() => import('@/components/documents/BailNonMeubleForm'), { ssr: false })
+const LOCKOUT_KEY = 'isaly-vault-lockout'
+const MAX_TRIES = 3
+const LOCK_MS = 5 * 60 * 1000
 
-interface LeaseRow {
-  id: string
-  address: string
-  city: string | null
-  monthly_rent: number
-  start_date: string
-  tenant_id: string | null
+const cardStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: '20px',
 }
 
-interface Member { id: string; name: string }
+function formatSize(bytes: number | null): string {
+  if (!bytes) return '—'
+  if (bytes < 1024) return `${bytes} o`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`
+  return `${(bytes / 1024 / 1024).toFixed(1)} Mo`
+}
 
-export default function DocumentsPage() {
-  const router = useRouter()
-  const [leases, setLeases] = useState<LeaseRow[]>([])
-  const [selectedLeaseId, setSelectedLeaseId] = useState<string | null>(null)
-  const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [blankOpen, setBlankOpen] = useState(false)
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(null)
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
-  const selectedLease = leases.find(l => l.id === selectedLeaseId) ?? null
+function docIcon(mime: string | null) {
+  if (mime?.startsWith('image/')) return <ImageIcon size={20} />
+  if (mime === 'application/pdf') return <FileText size={20} />
+  return <FileIcon size={20} />
+}
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/auth/login'); return }
+function getLockout(): { fails: number; until: number } {
+  try { return JSON.parse(localStorage.getItem(LOCKOUT_KEY) ?? '{"fails":0,"until":0}') } catch { return { fails: 0, until: 0 } }
+}
 
-      const { data } = await supabase
-        .from('leases')
-        .select('id, address, city, monthly_rent, start_date, tenant_id')
-        .eq('owner_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
+// ── Modale PIN (création / saisie) ──
+function PinModal({ mode, onSubmit, onSkip, error, busy }: {
+  mode: 'create' | 'enter'
+  onSubmit: (pin: string, confirm?: string) => void
+  onSkip?: () => void
+  error: string
+  busy: boolean
+}) {
+  const [pin, setPin] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const pinInput = 'w-full px-4 py-3 rounded-[10px] text-[20px] text-center tracking-[0.5em] outline-none font-bold'
+  const pinStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }
 
-      const rows = (data ?? []) as LeaseRow[]
-      setLeases(rows)
-      if (rows.length > 0) setSelectedLeaseId(rows[0].id)
-      setLoading(false)
-    }
-    load()
-  }, [router])
-
-  const loadMembers = useCallback(async () => {
-    if (!selectedLease) { setMembers([]); return }
-    const supabase = createClient()
-    const { data: roommateRows } = await supabase.from('lease_roommates').select('profile_id').eq('lease_id', selectedLease.id)
-    const ids = [
-      ...(selectedLease.tenant_id ? [selectedLease.tenant_id] : []),
-      ...((roommateRows ?? []) as { profile_id: string }[]).map(r => r.profile_id),
-    ]
-    if (ids.length === 0) { setMembers([]); return }
-    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name').in('id', ids)
-    setMembers(ids.map(id => {
-      const p = (profiles ?? []).find((p: { id: string }) => p.id === id)
-      const name = p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : 'Locataire'
-      return { id, name: name || 'Locataire' }
-    }))
-  }, [selectedLease])
-
-  useEffect(() => { loadMembers() }, [loadMembers])
-
-  if (loading) {
-    return (
-      <>
-        <Topbar title="Mes documents" />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-[44px]" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="📁" /></div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-[380px] rounded-[20px] p-7 text-center"
+        style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', fontFamily: "'Outfit', sans-serif" }}>
+        <div className="flex justify-center mb-4">
+          <span className="flex items-center justify-center rounded-full" style={{ width: 56, height: 56, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10B981' }}>
+            <Lock size={24} />
+          </span>
         </div>
-      </>
-    )
+        <h2 className="text-[17px] font-bold mb-1" style={{ color: '#fff' }}>
+          {mode === 'create' ? 'Créer votre code PIN' : 'Coffre-fort verrouillé'}
+        </h2>
+        <p className="text-[12.5px] mb-5" style={{ color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+          {mode === 'create'
+            ? 'Un code à 4 chiffres protégera l’accès à vos documents.'
+            : 'Entrez votre code PIN à 4 chiffres pour accéder à vos documents.'}
+        </p>
+        <input className={pinInput} style={pinStyle} type="password" inputMode="numeric" maxLength={4} placeholder="••••"
+          value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+        {mode === 'create' && (
+          <input className={`${pinInput} mt-3`} style={pinStyle} type="password" inputMode="numeric" maxLength={4} placeholder="Confirmer"
+            value={confirm} onChange={e => setConfirm(e.target.value.replace(/\D/g, ''))} />
+        )}
+        {error && <p className="text-[12px] mt-3 mb-0" style={{ color: '#EF4444' }}>{error}</p>}
+        <div className="flex flex-col gap-2 mt-5">
+          <Button loading={busy} disabled={pin.length !== 4 || (mode === 'create' && confirm.length !== 4)}
+            onClick={() => onSubmit(pin, confirm)}>
+            {mode === 'create' ? 'Activer le PIN' : 'Déverrouiller'}
+          </Button>
+          {mode === 'create' && onSkip && <Button variant="ghost" onClick={onSkip}>Plus tard</Button>}
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+// ═══════════ Page ═══════════
+
+export default function DocumentsVaultPage() {
+  const [pinState, setPinState] = useState<'loading' | 'create' | 'locked' | 'open'>('loading')
+  const [pinError, setPinError] = useState('')
+  const [pinBusy, setPinBusy] = useState(false)
+  const [pinConfigured, setPinConfigured] = useState(false)
+
+  const [docs, setDocs] = useState<VaultDoc[]>([])
+  const [loadingDocs, setLoadingDocs] = useState(true)
+  const [filter, setFilter] = useState<'all' | VaultCategory>('all')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<'date' | 'name'>('date')
+  const [dragOver, setDragOver] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [pendingName, setPendingName] = useState('')
+  const [pendingCat, setPendingCat] = useState<VaultCategory>('autres')
+  const [uploading, setUploading] = useState(false)
+  const [preview, setPreview] = useState<{ doc: VaultDoc; url: string } | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  // ── PIN ──
+  useEffect(() => {
+    fetch('/api/vault/pin')
+      .then(r => r.json())
+      .then((j: { configured?: boolean }) => {
+        setPinConfigured(!!j.configured)
+        setPinState(j.configured ? 'locked' : 'create')
+      })
+      .catch(() => setPinState('open'))
+  }, [])
+
+  async function handlePin(pin: string, confirm?: string) {
+    setPinError('')
+    if (pinState === 'create') {
+      if (pin !== confirm) { setPinError('Les deux codes ne correspondent pas.'); return }
+      setPinBusy(true)
+      const res = await fetch('/api/vault/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', pin }) })
+      setPinBusy(false)
+      if (!res.ok) { setPinError('Erreur lors de la création du PIN.'); return }
+      setPinConfigured(true)
+      setPinState('open')
+      return
+    }
+    // Saisie : lockout 3 essais → 5 min (localStorage, côté client uniquement)
+    const lock = getLockout()
+    if (lock.until > Date.now()) {
+      setPinError(`Trop d'essais. Réessayez dans ${Math.ceil((lock.until - Date.now()) / 60000)} min.`)
+      return
+    }
+    setPinBusy(true)
+    const res = await fetch('/api/vault/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'verify', pin }) })
+    const j = await res.json().catch(() => ({}))
+    setPinBusy(false)
+    if (j.ok) {
+      try { localStorage.removeItem(LOCKOUT_KEY) } catch {}
+      setPinState('open')
+    } else {
+      const fails = lock.fails + 1
+      const until = fails >= MAX_TRIES ? Date.now() + LOCK_MS : 0
+      try { localStorage.setItem(LOCKOUT_KEY, JSON.stringify({ fails: fails >= MAX_TRIES ? 0 : fails, until })) } catch {}
+      setPinError(until ? 'Trop d’essais — coffre-fort bloqué 5 minutes.' : `Code incorrect (${fails}/${MAX_TRIES}).`)
+    }
   }
+
+  // ── Documents ──
+  const loadDocs = useCallback(async () => {
+    setLoadingDocs(true)
+    const supabase = createClient()
+    const { data } = await supabase.from('documents').select('*').order('created_at', { ascending: false })
+    setDocs((data ?? []) as VaultDoc[])
+    setLoadingDocs(false)
+  }, [])
+
+  useEffect(() => { if (pinState === 'open') loadDocs() }, [pinState, loadDocs])
+
+  function pickFile(f: File) {
+    setPendingFile(f)
+    setPendingName(f.name.replace(/\.[^.]+$/, ''))
+    setPendingCat('autres')
+  }
+
+  async function confirmUpload() {
+    if (!pendingFile) return
+    setUploading(true)
+    const { error } = await depositToVault(pendingFile, pendingName || pendingFile.name, pendingCat, { mimeType: pendingFile.type })
+    setUploading(false)
+    if (!error) { setPendingFile(null); loadDocs() }
+  }
+
+  async function openPreview(doc: VaultDoc) {
+    const supabase = createClient()
+    const { data } = await supabase.storage.from('vault').createSignedUrl(doc.file_path, 600)
+    if (data?.signedUrl) setPreview({ doc, url: data.signedUrl })
+  }
+
+  async function deleteDoc(doc: VaultDoc) {
+    const supabase = createClient()
+    await supabase.storage.from('vault').remove([doc.file_path])
+    await supabase.from('documents').delete().eq('id', doc.id)
+    setPreview(null)
+    loadDocs()
+  }
+
+  const filtered = docs
+    .filter(doc => filter === 'all' || doc.category === filter)
+    .filter(doc => !search || doc.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : b.created_at.localeCompare(a.created_at))
+
+  const catOf = (id: string) => VAULT_CATEGORIES.find(c => c.id === id)
+
+  const modeles = [
+    { label: 'Bail loi 89 non meublé', sub: 'Contrat vierge complet', icon: '📄', gen: () => generateBailLoi89Pdf(emptyBailNonMeubleData(), { bailleur: { name: '', dataUrl: null, signedAt: null }, locataire1: { name: '', dataUrl: null, signedAt: null } }).save('modele-bail-loi89.pdf') },
+    { label: 'Quittance de loyer', sub: 'Modèle pré-formaté', icon: '🧾', gen: () => generateQuittanceModele().save('modele-quittance.pdf') },
+    { label: "État des lieux d'entrée", sub: 'Pièce par pièce', icon: '🔑', gen: () => generateEdlModele().save('modele-etat-des-lieux.pdf') },
+    { label: 'Attestation d’assurance', sub: 'À compléter par l’assureur', icon: '🛡️', gen: () => generateAttestationAssuranceModele().save('modele-attestation-assurance.pdf') },
+  ]
 
   return (
     <>
       <Topbar title="Mes documents" />
-      <div className="flex-1 overflow-y-auto p-7" style={{ maxWidth: '900px' }}>
-        <h2 className="text-[22px] mb-1" style={{ fontFamily: "'DM Serif Display', serif", color: '#fff' }}>Mes documents</h2>
-        <p className="text-[13px] mb-5" style={{ color: 'rgba(255,255,255,0.5)' }}>Stockage de documents et création de bail par contrat.</p>
 
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="mb-6 px-5 py-3 rounded-full text-[13px] font-bold text-white border-none cursor-pointer"
-          style={{ background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)' }}
-        >
-          + Créer un document
-        </button>
-
-        {leases.length === 0 ? (
-          <div className="text-center py-16 rounded-[18px]" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-            <div className="text-[52px] mb-4"><Emoji native="📁" /></div>
-            <h3 className="text-[18px] mb-2" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>Aucun bail actif</h3>
-            <p className="text-[13px]" style={{ color: '#6B7280' }}>Créez d&apos;abord un bail pour gérer ses documents.</p>
-          </div>
-        ) : (
-          <>
-            {leases.length > 1 && (
-              <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-                {leases.map(l => (
-                  <button
-                    key={l.id}
-                    onClick={() => setSelectedLeaseId(l.id)}
-                    className="flex-shrink-0 px-4 py-2 rounded-full text-[12.5px] font-semibold border-[1.5px] cursor-pointer transition-all"
-                    style={selectedLeaseId === l.id ? { background: '#ECFDF5', borderColor: '#4ECBA0', color: '#2AA87C' } : { background: '#FFFFFF', borderColor: '#E5E7EB', color: '#6B7280' }}
-                  >
-                    {l.address}{l.city ? `, ${l.city}` : ''}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {selectedLease && (
-              <>
-                <DocumentsStorage lease={selectedLease} />
-                <BailGenerator lease={selectedLease} members={members} />
-              </>
-            )}
-          </>
-        )}
-      </div>
-
-      {createOpen && (
-        <CreateDocumentModal
-          onClose={() => setCreateOpen(false)}
-          onSelectBlank={() => { setCreateOpen(false); setBlankOpen(true) }}
-          onSelectTemplate={(templateId) => { setCreateOpen(false); setActiveTemplate(templateId) }}
-        />
+      {pinState === 'create' && (
+        <PinModal mode="create" onSubmit={handlePin} onSkip={() => setPinState('open')} error={pinError} busy={pinBusy} />
+      )}
+      {pinState === 'locked' && (
+        <PinModal mode="enter" onSubmit={handlePin} error={pinError} busy={pinBusy} />
       )}
 
-      {blankOpen && <BlankDocumentEditor onClose={() => setBlankOpen(false)} />}
+      <div className="flex-1 overflow-y-auto" style={{ filter: pinState === 'locked' || pinState === 'create' ? 'blur(8px)' : 'none' }}>
+        <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '32px 24px 64px', fontFamily: "'Outfit', sans-serif" }}>
 
-      {activeTemplate === 'bail_non_meuble' && selectedLease && (
-        <BailNonMeubleForm lease={selectedLease} members={members} onClose={() => setActiveTemplate(null)} />
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            className="flex items-center justify-between gap-4 mb-3 flex-wrap">
+            <div>
+              <h1 className="text-[28px] font-bold m-0" style={{ color: '#fff' }}>Coffre-fort de documents</h1>
+              <p className="text-[13.5px] mt-1 mb-0" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                Baux, quittances, états des lieux et pièces personnelles — au même endroit.
+              </p>
+            </div>
+            <span className="flex items-center gap-2 text-[12px] font-extrabold px-4 py-2 rounded-full"
+              style={pinConfigured
+                ? { background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }
+                : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.12)' }}>
+              {pinConfigured ? <><Lock size={13} /> Coffre-fort verrouillé par PIN</> : <><Unlock size={13} /> Coffre-fort déverrouillé</>}
+            </span>
+          </motion.div>
+
+          {/* Bandeau sécurité */}
+          <div className="flex items-center gap-2 text-[12px] mb-6 px-4 py-2.5 rounded-[10px]"
+            style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', color: 'rgba(255,255,255,0.5)' }}>
+            <Shield size={13} style={{ color: '#10B981', flexShrink: 0 }} />
+            Vos documents sont stockés chiffrés et accessibles uniquement par vous.
+          </div>
+
+          {/* Barre filtres */}
+          <div className="flex items-center gap-3 mb-5 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
+              {[{ id: 'all' as const, label: 'Tous', icon: '🗂️' }, ...VAULT_CATEGORIES].map(c => (
+                <button key={c.id} type="button" onClick={() => setFilter(c.id as 'all' | VaultCategory)}
+                  className="px-3.5 py-1.5 rounded-full text-[12px] font-bold cursor-pointer transition-all"
+                  style={{
+                    background: filter === c.id ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: filter === c.id ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                    color: filter === c.id ? '#10B981' : 'rgba(255,255,255,0.55)',
+                    fontFamily: "'Outfit', sans-serif",
+                  }}>{c.label}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="relative">
+                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.35)' }} />
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
+                  className="pl-9 pr-4 py-2 rounded-[10px] text-[12.5px] outline-none w-[180px]"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontFamily: "'Outfit', sans-serif" }} />
+              </div>
+              <select value={sort} onChange={e => setSort(e.target.value as 'date' | 'name')}
+                className="px-3 py-2 rounded-[10px] text-[12.5px] outline-none"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', appearance: 'none', fontFamily: "'Outfit', sans-serif" }}>
+                <option value="date" style={{ background: '#1a1a1a' }}>Plus récents</option>
+                <option value="name" style={{ background: '#1a1a1a' }}>Nom A→Z</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Dropzone */}
+          <div
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) pickFile(f) }}
+            onClick={() => fileRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 rounded-[20px] py-8 mb-6 cursor-pointer transition-all"
+            style={{
+              border: dragOver ? '2px dashed #10B981' : '2px dashed rgba(255,255,255,0.12)',
+              background: dragOver ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)',
+            }}>
+            <UploadCloud size={26} style={{ color: dragOver ? '#10B981' : 'rgba(255,255,255,0.35)' }} />
+            <div className="text-[13.5px] font-semibold" style={{ color: dragOver ? '#10B981' : 'rgba(255,255,255,0.65)' }}>
+              Glissez un document ici, ou cliquez pour parcourir
+            </div>
+            <div className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.3)' }}>PDF, images — 10 Mo max</div>
+            <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) pickFile(f); e.target.value = '' }} />
+          </div>
+
+          {/* Grille documents */}
+          {loadingDocs ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+              {[0, 1, 2].map(i => <div key={i} className="rounded-[20px] h-[110px]" style={{ background: 'rgba(255,255,255,0.04)', animation: 'shimmer 1.4s ease-in-out infinite' }} />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-10 mb-10 rounded-[20px]" style={{ ...cardStyle }}>
+              <div className="text-[36px] mb-2"><Emoji native="🗄️" /></div>
+              <div className="text-[14px] font-bold mb-1" style={{ color: '#fff' }}>
+                {docs.length === 0 ? 'Votre coffre-fort est vide' : 'Aucun document ne correspond'}
+              </div>
+              <div className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                {docs.length === 0 ? 'Déposez votre premier document ci-dessus, ou générez-le depuis votre bail.' : 'Modifiez vos filtres ou votre recherche.'}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+              {filtered.map(doc => (
+                <button key={doc.id} type="button" onClick={() => openPreview(doc)}
+                  className="text-left p-5 rounded-[20px] cursor-pointer transition-all hover:-translate-y-0.5"
+                  style={{ ...cardStyle, fontFamily: "'Outfit', sans-serif" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="flex items-center justify-center rounded-[10px]"
+                      style={{ width: 40, height: 40, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>
+                      {docIcon(doc.mime_type)}
+                    </span>
+                    <span className="text-[10.5px] font-extrabold px-2.5 py-1 rounded-full"
+                      style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }}>
+                      {catOf(doc.category)?.label ?? doc.category}
+                    </span>
+                  </div>
+                  <div className="text-[13.5px] font-bold truncate" style={{ color: '#fff' }}>{doc.name}</div>
+                  <div className="text-[11.5px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    {formatDate(doc.created_at)} · {formatSize(doc.file_size)}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Modèles */}
+          <div className="text-[12px] font-extrabold uppercase tracking-wider mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Modèles de documents
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {modeles.map(m => (
+              <div key={m.label} className="p-5 rounded-[20px] flex flex-col gap-2" style={cardStyle}>
+                <div className="text-[22px]"><Emoji native={m.icon} size="22px" /></div>
+                <div className="text-[13px] font-bold" style={{ color: '#fff' }}>{m.label}</div>
+                <div className="text-[11.5px] mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{m.sub}</div>
+                <Button size="sm" variant="secondary" onClick={m.gen}>Télécharger le modèle</Button>
+              </div>
+            ))}
+          </div>
+
+          <Link href="/app/baux/nouveau" className="no-underline inline-flex items-center gap-2 text-[13px] font-bold" style={{ color: '#10B981' }}>
+            <Emoji native="📄" size="14px" /> Établir un bail loi 89 complet →
+          </Link>
+        </div>
+      </div>
+
+      {/* Modale catégorisation upload */}
+      {pendingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-[420px] rounded-[20px] p-6"
+            style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', fontFamily: "'Outfit', sans-serif" }}>
+            <div className="text-[15px] font-bold mb-4" style={{ color: '#fff' }}>Ajouter au coffre-fort</div>
+            <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Nom du document</label>
+            <input value={pendingName} onChange={e => setPendingName(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none mb-4"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+            <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Catégorie</label>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {VAULT_CATEGORIES.map(c => (
+                <button key={c.id} type="button" onClick={() => setPendingCat(c.id)}
+                  className="px-3.5 py-1.5 rounded-full text-[12px] font-bold cursor-pointer"
+                  style={{
+                    background: pendingCat === c.id ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: pendingCat === c.id ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                    color: pendingCat === c.id ? '#10B981' : 'rgba(255,255,255,0.55)',
+                    fontFamily: "'Outfit', sans-serif",
+                  }}>{c.icon} {c.label}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button onClick={confirmUpload} loading={uploading}>Déposer</Button>
+              <Button variant="ghost" onClick={() => setPendingFile(null)}>Annuler</Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modale aperçu */}
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)' }}>
+          <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-[720px] max-h-[85vh] rounded-[20px] p-5 flex flex-col"
+            style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', fontFamily: "'Outfit', sans-serif" }}>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="min-w-0">
+                <div className="text-[14.5px] font-bold truncate" style={{ color: '#fff' }}>{preview.doc.name}</div>
+                <div className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  {catOf(preview.doc.category)?.label} · {formatDate(preview.doc.created_at)} · {formatSize(preview.doc.file_size)}
+                </div>
+              </div>
+              <button type="button" onClick={() => setPreview(null)} className="cursor-pointer border-none bg-transparent p-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 min-h-[320px] rounded-[12px] overflow-hidden mb-4" style={{ background: '#fff' }}>
+              {preview.doc.mime_type?.startsWith('image/') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={preview.url} alt={preview.doc.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <iframe src={preview.url} title={preview.doc.name} style={{ width: '100%', height: '55vh', border: 'none' }} />
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button size="sm" onClick={() => window.open(preview.url, '_blank')}><Download size={14} /> Télécharger</Button>
+              <Button size="sm" variant="danger" onClick={() => deleteDoc(preview.doc)}><Trash2 size={14} /> Supprimer</Button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </>
   )

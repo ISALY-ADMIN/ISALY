@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       owner_id: user.id,
       tenant_id: body.tenant_id,
       listing_id: body.listing_id ?? null,
+      bail_data: (body as { bail_data?: Record<string, unknown> }).bail_data ?? null,
       address: body.address,
       city: body.city ?? null,
       monthly_rent: body.rent,

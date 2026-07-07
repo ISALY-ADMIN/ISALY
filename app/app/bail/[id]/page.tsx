@@ -9,6 +9,10 @@ import SignatureCanvas, { SignatureCanvasHandle } from '@/components/documents/S
 import Emoji from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import { generateBailPdf, type BailFormData } from '@/lib/bailPdf'
+import { generateBailPdf as generateBailLoi89Pdf } from '@/lib/documents/generateBailPdf'
+import type { BailNonMeubleData } from '@/components/documents/BailNonMeubleForm'
+import { generateQuittancePdf, generateAvenantPdf } from '@/lib/documents/quittancePdf'
+import { depositToVault } from '@/lib/vault'
 import type { BailDetail } from '@/app/api/bail/[id]/route'
 import type { Lease } from '@/types/database'
 
@@ -57,6 +61,38 @@ function leaseToBailData(lease: Lease, ownerName: string, tenantName: string): B
   }
 }
 
+/** PDF du bail : loi 89 complet si bail_data existe, sinon générateur simplifié historique. */
+function buildBailPdf(detail: BailDetail) {
+  const { lease, owner, tenant } = detail
+  const bailData = lease.bail_data as unknown as BailNonMeubleData | null
+  if (bailData && bailData.adresse) {
+    return generateBailLoi89Pdf(bailData, {
+      bailleur: {
+        name: bailData.bailleurNomPrenom || owner?.name || 'Bailleur',
+        dataUrl: lease.owner_signature?.signature_data ?? null,
+        signedAt: lease.owner_signature?.signed_at ?? null,
+      },
+      locataire1: {
+        name: bailData.locataire1Nom || tenant?.name || 'Locataire',
+        dataUrl: lease.tenant_signature?.signature_data ?? null,
+        signedAt: lease.tenant_signature?.signed_at ?? null,
+      },
+    })
+  }
+  return generateBailPdf(
+    leaseToBailData(lease, owner?.name ?? 'Bailleur', tenant?.name ?? 'Locataire'),
+    {
+      bailleur: lease.owner_signature?.signature_data ?? null,
+      locataire: lease.tenant_signature?.signature_data ?? null,
+    }
+  )
+}
+
+const MONTH_LABEL = (ym: string) => {
+  const [y, m] = ym.split('-').map(Number)
+  return new Date(y, (m || 1) - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+}
+
 const sectionCard: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
   border: '1px solid rgba(255,255,255,0.08)',
@@ -77,6 +113,49 @@ export default function BailDetailPage() {
   const [consent, setConsent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [quittanceOpen, setQuittanceOpen] = useState(false)
+  const [avenantOpen, setAvenantOpen] = useState(false)
+  const [quittance, setQuittance] = useState({ month: new Date().toISOString().slice(0, 7), loyer: '', charges: '' })
+  const [avenant, setAvenant] = useState({ objet: '', modifications: '' })
+  const [toast, setToast] = useState('')
+
+  function notify(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
+
+  async function deposit(pdfBlob: Blob, name: string, category: 'bail' | 'quittances' | 'autres') {
+    if (!detail) return
+    const { error: e } = await depositToVault(pdfBlob, name, category, { leaseId: detail.lease.id })
+    notify(e ? `Erreur : ${e}` : `« ${name} » déposé dans votre espace ✓`)
+  }
+
+  function makeQuittance() {
+    if (!detail) return null
+    const bailData = detail.lease.bail_data as unknown as BailNonMeubleData | null
+    return generateQuittancePdf({
+      bailleurNom: detail.owner?.name ?? 'Bailleur',
+      bailleurAdresse: bailData?.bailleurDomicile ?? '',
+      locataireNom: detail.tenant?.name ?? 'Locataire',
+      adresseLogement: `${detail.lease.address ?? ''}${detail.lease.city ? `, ${detail.lease.city}` : ''}`,
+      moisLabel: MONTH_LABEL(quittance.month),
+      loyerHC: Number(quittance.loyer) || detail.lease.monthly_rent || 0,
+      charges: Number(quittance.charges) || detail.lease.charges_amount || 0,
+      lieu: detail.lease.city ?? '',
+    })
+  }
+
+  function makeAvenant() {
+    if (!detail) return null
+    return generateAvenantPdf({
+      bailleurNom: detail.owner?.name ?? 'Bailleur',
+      locataireNom: detail.tenant?.name ?? 'Locataire',
+      adresseLogement: `${detail.lease.address ?? ''}${detail.lease.city ? `, ${detail.lease.city}` : ''}`,
+      dateBail: formatDate(detail.lease.start_date),
+      objet: avenant.objet,
+      modifications: avenant.modifications,
+    })
+  }
 
   const load = useCallback(async () => {
     try {
@@ -96,13 +175,7 @@ export default function BailDetailPage() {
       const freshRes = await fetch(`/api/bail/${id}`)
       if (!freshRes.ok) return
       const fresh: BailDetail = await freshRes.json()
-      const doc = generateBailPdf(
-        leaseToBailData(fresh.lease, fresh.owner?.name ?? 'Bailleur', fresh.tenant?.name ?? 'Locataire'),
-        {
-          bailleur: fresh.lease.owner_signature?.signature_data ?? null,
-          locataire: fresh.lease.tenant_signature?.signature_data ?? null,
-        }
-      )
+      const doc = buildBailPdf(fresh)
       const blob = doc.output('blob')
       const path = `${d.lease.id}/bail-signe.pdf`
       const supabase = createClient()
@@ -144,14 +217,7 @@ export default function BailDetailPage() {
   function downloadPdf() {
     if (!detail) return
     if (detail.documentSignedUrl) { window.open(detail.documentSignedUrl, '_blank'); return }
-    const doc = generateBailPdf(
-      leaseToBailData(detail.lease, detail.owner?.name ?? 'Bailleur', detail.tenant?.name ?? 'Locataire'),
-      {
-        bailleur: detail.lease.owner_signature?.signature_data ?? null,
-        locataire: detail.lease.tenant_signature?.signature_data ?? null,
-      }
-    )
-    doc.save('bail-isaly.pdf')
+    buildBailPdf(detail).save('bail-isaly.pdf')
   }
 
   if (loading) {
@@ -331,7 +397,90 @@ export default function BailDetailPage() {
             <Button variant="secondary" onClick={downloadPdf}>
               <Emoji native="📄" size="14px" /> {documentSignedUrl ? 'Voir le PDF signé' : 'Télécharger le bail (PDF)'}
             </Button>
+            <Button variant="secondary" onClick={() => { const doc = buildBailPdf(detail); deposit(doc.output('blob'), `Bail — ${lease.address ?? 'logement'}`, 'bail') }}>
+              <Emoji native="🗄️" size="14px" /> Déposer dans mon espace
+            </Button>
+            {myRole === 'owner' && lease.status === 'active' && (
+              <>
+                <Button variant="secondary" onClick={() => { setAvenantOpen(false); setQuittanceOpen(v => !v) }}>
+                  <Emoji native="🧾" size="14px" /> Générer une quittance de loyer
+                </Button>
+                <Button variant="secondary" onClick={() => { setQuittanceOpen(false); setAvenantOpen(v => !v) }}>
+                  <Emoji native="📝" size="14px" /> Générer un avenant
+                </Button>
+              </>
+            )}
           </div>
+
+          {toast && (
+            <div className="rounded-[12px] px-5 py-3 mb-5 text-[13px] font-semibold"
+              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10B981' }}>
+              {toast}
+            </div>
+          )}
+
+          {/* Modale quittance */}
+          {quittanceOpen && (
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} style={{ ...sectionCard, marginBottom: '20px' }}>
+              <div className="text-[14px] font-bold mb-4" style={{ color: '#fff' }}><Emoji native="🧾" size="14px" /> Quittance de loyer</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                <div>
+                  <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Mois concerné</label>
+                  <input type="month" value={quittance.month} onChange={e => setQuittance(q => ({ ...q, month: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', colorScheme: 'dark' }} />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Loyer HC (€)</label>
+                  <input type="number" placeholder={String(lease.monthly_rent ?? 0)} value={quittance.loyer} onChange={e => setQuittance(q => ({ ...q, loyer: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Charges (€)</label>
+                  <input type="number" placeholder={String(lease.charges_amount ?? 0)} value={quittance.charges} onChange={e => setQuittance(q => ({ ...q, charges: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff' }} />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button size="sm" onClick={() => { const doc = makeQuittance(); if (doc) doc.save(`quittance-${quittance.month}.pdf`) }}>Télécharger</Button>
+                <Button size="sm" variant="secondary" onClick={() => { const doc = makeQuittance(); if (doc) deposit(doc.output('blob'), `Quittance — ${MONTH_LABEL(quittance.month)}`, 'quittances') }}>
+                  Déposer dans mon espace
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setQuittanceOpen(false)}>Fermer</Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Modale avenant */}
+          {avenantOpen && (
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} style={{ ...sectionCard, marginBottom: '20px' }}>
+              <div className="text-[14px] font-bold mb-4" style={{ color: '#fff' }}><Emoji native="📝" size="14px" /> Avenant au bail</div>
+              <div className="mb-4">
+                <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Objet de l&apos;avenant</label>
+                <input value={avenant.objet} onChange={e => setAvenant(a => ({ ...a, objet: e.target.value }))}
+                  placeholder="Ex : révision du montant des charges"
+                  className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff' }} />
+              </div>
+              <div className="mb-5">
+                <label className="block text-[11.5px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Modifications convenues</label>
+                <textarea rows={4} value={avenant.modifications} onChange={e => setAvenant(a => ({ ...a, modifications: e.target.value }))}
+                  placeholder="Détail des clauses modifiées…"
+                  className="w-full px-4 py-2.5 rounded-[10px] text-[13.5px] outline-none resize-none"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff' }} />
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button size="sm" disabled={!avenant.objet} onClick={() => { const doc = makeAvenant(); if (doc) doc.save('avenant-bail.pdf') }}>Télécharger</Button>
+                <Button size="sm" variant="secondary" disabled={!avenant.objet}
+                  onClick={() => { const doc = makeAvenant(); if (doc) deposit(doc.output('blob'), `Avenant — ${avenant.objet}`, 'autres') }}>
+                  Déposer dans mon espace
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setAvenantOpen(false)}>Fermer</Button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Bandeau légal eIDAS */}
           <p className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>

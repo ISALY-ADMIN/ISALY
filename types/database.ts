@@ -182,6 +182,8 @@ export interface Lease {
   tenant_signature: LeaseSignature | null
   owner_signature: LeaseSignature | null
   house_rules: string | null
+  /** JSON complet du formulaire bail loi 89 (BailNonMeubleData) — regénération PDF fidèle. */
+  bail_data: Record<string, unknown> | null
   created_at: string
 }
 
