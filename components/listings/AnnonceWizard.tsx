@@ -388,7 +388,7 @@ export default function AnnonceWizard({ open, onClose, onSuccess }: {
         equipements:       draft.amenities.length ? draft.amenities : null,
         photos:            photoUrls,
         boost_type:        'standard',
-        boost_level:       0,
+        boost_level:       'standard',
         boost_tier:        'standard',
         is_active:         draft.publish_now,
       }
