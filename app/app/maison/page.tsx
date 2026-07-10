@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button'
 import Emoji from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import { BentoCard, BentoStyles, ModuleTitle, EmptyState, Skeleton, CountUp, AvatarStack, cardBase } from '@/components/ui/Bento'
+import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 
 // ═══════════════ Types ═══════════════
 
@@ -108,6 +109,7 @@ const DEMO_DATA: MaisonData = {
 // ═══════════════ Page ═══════════════
 
 export default function MaisonPage() {
+  useModeChangeRefresh()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<MaisonData | null>(null)
   const [pendingLeaseId, setPendingLeaseId] = useState<string | null>(null)

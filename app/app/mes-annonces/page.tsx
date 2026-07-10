@@ -15,6 +15,7 @@ import Button from '@/components/ui/Button'
 import { createClient } from '@/lib/supabase/client'
 import { listingOccupancy } from '@/lib/utils'
 import { BentoStyles, CountUp, cardBase } from '@/components/ui/Bento'
+import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 
 // ─── Types ───────────────────────────────────────────────────
 interface Listing {
@@ -483,6 +484,7 @@ function SkeletonCard() {
 function MesAnnoncesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  useModeChangeRefresh()
 
   const initialToast =
     searchParams.get('created') === '1' ? 'Annonce publiée avec succès'

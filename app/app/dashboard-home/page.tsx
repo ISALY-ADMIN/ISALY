@@ -10,6 +10,8 @@ import { createClient } from '@/lib/supabase/client'
 import { BentoCard, BentoStyles, ModuleTitle, EmptyState, Skeleton, CountUp, AvatarStack, cardBase } from '@/components/ui/Bento'
 import type { DashboardData } from '@/app/api/dashboard/route'
 import { computeProfileCompletion } from '@/lib/profileCompletion'
+import { useLease } from '@/contexts/LeaseContext'
+import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 
 // ═══════════════ Helpers ═══════════════
 
@@ -54,6 +56,8 @@ function CompletionRing({ pct }: { pct: number }) {
 
 export default function DashboardHomePage() {
   const router = useRouter()
+  const { mode } = useLease()
+  useModeChangeRefresh()
   const [data, setData] = useState<DashboardData | null>(null)
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -65,7 +69,8 @@ export default function DashboardHomePage() {
     } catch {}
   }, [router])
 
-  useEffect(() => { load() }, [load])
+  // Refetch quand le mode change (le dashboard rend une variante par role)
+  useEffect(() => { load() }, [load, mode])
 
   // Realtime : nouveaux messages / notifications → refetch débouncé
   useEffect(() => {

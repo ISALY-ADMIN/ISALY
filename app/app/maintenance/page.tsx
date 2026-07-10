@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLease } from '@/contexts/LeaseContext'
+import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 import Topbar from '@/components/layout/Topbar'
 import LoueurMaintenance from './LoueurMaintenance'
 import Emoji from '@/components/ui/Emoji'
@@ -10,6 +11,7 @@ import Emoji from '@/components/ui/Emoji'
 export default function MaintenancePage() {
   const { mode, loading } = useLease()
   const router = useRouter()
+  useModeChangeRefresh()
 
   useEffect(() => {
     if (!loading && mode === 'locataire') router.replace('/app/declarer-probleme')

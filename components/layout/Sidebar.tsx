@@ -217,16 +217,22 @@ export default function Sidebar() {
     router.refresh()
   }
 
-  function handleModeSwitch(newMode: 'locataire' | 'loueur') {
+  async function handleModeSwitch(newMode: 'locataire' | 'loueur') {
     // Optimistic — update UI immediately
     setCurrentMode(newMode)
     syncContextMode(newMode)
-    // Persist silently in background
-    fetch('/api/profile/mode', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: newMode }),
-    }).catch(() => {})
+    // Persist puis redirige vers dashboard-home (qui rend automatiquement
+    // la variante correspondant au nouveau role). router.refresh() force le
+    // re-render même quand on est déjà sur /app/dashboard-home.
+    try {
+      await fetch('/api/profile/mode', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: newMode }),
+      })
+    } catch {}
+    router.push('/app/dashboard-home')
+    router.refresh()
   }
 
   const initials    = ((userData.firstName[0] ?? '') + (userData.lastName[0] ?? '')).toUpperCase() || '?'

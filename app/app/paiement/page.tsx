@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
+import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 import Emoji from '@/components/ui/Emoji'
 
 function SwiperPlusContent() {
@@ -226,6 +227,7 @@ function PaiementContent() {
 
 function PaiementSwitch() {
   const { mode } = useLease()
+  useModeChangeRefresh()
   if (mode === 'locataire') return <SwiperPlusContent />
   return <PaiementContent />
 }
