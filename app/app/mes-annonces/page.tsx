@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 import { listingOccupancy } from '@/lib/utils'
 import { BentoStyles, CountUp, cardBase } from '@/components/ui/Bento'
 import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
+import AnnonceWizard from '@/components/listings/AnnonceWizard'
 
 // ─── Types ───────────────────────────────────────────────────
 interface Listing {
@@ -499,6 +500,7 @@ function MesAnnoncesContent() {
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null)
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1)
   const [toast, setToast] = useState<string>(initialToast)
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -630,7 +632,7 @@ function MesAnnoncesContent() {
               Gérez vos biens en location
             </div>
           </div>
-          <Button variant="primary" size="md" onClick={() => router.push('/app/mes-annonces/nouveau')}>
+          <Button variant="primary" size="md" onClick={() => setWizardOpen(true)}>
             <Plus size={16} strokeWidth={2.2} />
             Publier une annonce
           </Button>
@@ -659,7 +661,7 @@ function MesAnnoncesContent() {
             <SkeletonCard /><SkeletonCard />
           </div>
         ) : listings.length === 0 ? (
-          <EmptyState onCreate={() => router.push('/app/mes-annonces/nouveau')} />
+          <EmptyState onCreate={() => setWizardOpen(true)} />
         ) : (
           <motion.div
             initial="hidden" animate="visible"
@@ -692,6 +694,16 @@ function MesAnnoncesContent() {
           />
         )}
       </AnimatePresence>
+
+      <AnnonceWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onSuccess={(_id, mode) => {
+          setWizardOpen(false)
+          setToast(mode === 'published' ? 'Annonce publiée !' : 'Brouillon enregistré')
+          load()
+        }}
+      />
     </div>
   )
 }

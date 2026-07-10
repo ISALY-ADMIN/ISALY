@@ -52,7 +52,8 @@ const locataireAccountItems: NavItem[] = [
 // ── Mode Loueur ──────────────────────────────────────────────
 const loueurGestionItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord',    href: '/app/dashboard-home', id: 'dashboard-home' },
-  { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',       id: 'annonce' },
+  // [HIDDEN] deposer-annonce - remplacé par le bouton dans mes-annonces
+  // { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',       id: 'annonce' },
   { icon: FileText,        label: 'Mes annonces',       href: '/app/mes-annonces',   id: 'mes-annonces' },
   // [HIDDEN] candidatures - réactiver quand demandé
   // { icon: Inbox,           label: 'Mes candidatures',   href: '/app/candidatures',   id: 'candidatures' },
