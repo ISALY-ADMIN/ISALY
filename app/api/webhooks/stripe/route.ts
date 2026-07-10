@@ -71,6 +71,27 @@ export async function POST(request: Request) {
             details:      { boost_tier: boostTier, boost_expires_at: boostExpiresAt.toISOString() },
           })
         } catch {}
+
+        // Notification in-app au loueur
+        try {
+          const { data: listing } = await supabase
+            .from('listings')
+            .select('title, city, owner_id')
+            .eq('id', listingId)
+            .single()
+          if (listing?.owner_id) {
+            const label = listing.title || (listing.city ? `annonce à ${listing.city}` : 'votre annonce')
+            const tierLabel = boostTier === 'priority' ? 'Prioritaire' : 'Essentiel'
+            await supabase.from('notifications').insert({
+              user_id: listing.owner_id,
+              type:    'boost',
+              title:   `Votre annonce est maintenant boostée`,
+              body:    `${label} bénéficie désormais du boost ${tierLabel}.`,
+              link:    '/app/mes-annonces',
+              read:    false,
+            })
+          }
+        } catch {}
       }
 
       break

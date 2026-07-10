@@ -14,7 +14,7 @@ import {
   CreditCard, Settings, LogOut, // [HIDDEN] parrainage : ré-ajouter Gift ici
 
   Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
-  ShieldAlert, Building2, AlertTriangle,
+  ShieldAlert, Building2, AlertTriangle, Inbox,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -54,6 +54,7 @@ const loueurGestionItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord',    href: '/app/dashboard-home', id: 'dashboard-home' },
   { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',       id: 'annonce' },
   { icon: FileText,        label: 'Mes annonces',       href: '/app/mes-annonces',   id: 'mes-annonces' },
+  { icon: Inbox,           label: 'Mes candidatures',   href: '/app/candidatures',   id: 'candidatures' },
   {
     icon: ClipboardList, label: 'Mes baux', href: '/app/baux', id: 'baux',
     children: [

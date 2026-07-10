@@ -380,7 +380,7 @@ function ListingCard({ l, onToggle, onDelete, busy }: {
             {!boostActive && (
               <Button
                 variant="ghost" size="sm"
-                onClick={() => router.push('/app/paiement')}
+                onClick={() => router.push(`/app/boost?listing=${l.id}`)}
                 aria-label="Booster l'annonce"
                 className="!px-2.5 !py-1.5"
                 style={{ color: '#818CF8' }}
