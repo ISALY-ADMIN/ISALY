@@ -23,6 +23,8 @@ interface NavItem {
   label: string
   href: string
   id: string
+  /** Sous-items indentés rendus statiquement sous cet onglet (loueur seulement). */
+  children?: NavItem[]
 }
 
 // ── Mode Locataire ───────────────────────────────────────────
@@ -49,14 +51,18 @@ const locataireAccountItems: NavItem[] = [
 
 // ── Mode Loueur ──────────────────────────────────────────────
 const loueurGestionItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Tableau de bord',  href: '/app/dashboard-home', id: 'dashboard-home' },
-  { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',   id: 'annonce' },
-  { icon: FileText,        label: 'Mes annonces',     href: '/app/mes-annonces', id: 'mes-annonces' },
-  { icon: Users,           label: 'Mes locataires',   href: '/app/locataires',   id: 'locataires' },
-  { icon: Receipt,         label: 'Mes loyers',       href: '/app/loyers',       id: 'loyers' },
-  { icon: Folder,          label: 'Mes documents',    href: '/app/documents',    id: 'documents' },
-  { icon: Wrench,          label: 'Maintenance',      href: '/app/maintenance',  id: 'maintenance' },
-  { icon: ClipboardList,   label: 'Mes baux',         href: '/app/baux',         id: 'baux' },
+  { icon: LayoutDashboard, label: 'Tableau de bord',    href: '/app/dashboard-home', id: 'dashboard-home' },
+  { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',       id: 'annonce' },
+  { icon: FileText,        label: 'Mes annonces',       href: '/app/mes-annonces',   id: 'mes-annonces' },
+  {
+    icon: ClipboardList, label: 'Mes baux', href: '/app/baux', id: 'baux',
+    children: [
+      { icon: Users,   label: 'Mes locataires', href: '/app/locataires', id: 'locataires' },
+      { icon: Receipt, label: 'Mes loyers',     href: '/app/loyers',     id: 'loyers' },
+    ],
+  },
+  { icon: Folder,          label: 'Mes documents',      href: '/app/documents',      id: 'documents' },
+  { icon: Wrench,          label: 'Maintenance',        href: '/app/maintenance',    id: 'maintenance' },
 ]
 const loueurCommunicationItems: NavItem[] = [
   { icon: MessageCircle, label: 'Messages', href: '/app/messages', id: 'messages' },
@@ -290,7 +296,23 @@ export default function Sidebar() {
           <>
             {!collapsed && <NavSection label="Gestion" />}
             {loueurGestionItems.map(item => (
-              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={item.id === 'maintenance' ? maintenanceCount : 0} />
+              <div key={item.id}>
+                <NavLink item={item} active={pathname === item.href} collapsed={collapsed} unread={item.id === 'maintenance' ? maintenanceCount : 0} />
+                {!collapsed && item.children && item.children.length > 0 && (
+                  <div
+                    style={{
+                      marginLeft: '22px', marginRight: '10px',
+                      marginTop: '2px', marginBottom: '4px',
+                      borderLeft: '2px solid rgba(78,203,160,0.45)',
+                      paddingLeft: '4px',
+                    }}
+                  >
+                    {item.children.map(sub => (
+                      <NavSubLink key={sub.id} item={sub} active={pathname === sub.href} />
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
 
             {!collapsed && <NavSection label="Communication" />}
@@ -399,6 +421,46 @@ export default function Sidebar() {
         </Link>
       </div>
     </aside>
+  )
+}
+
+function NavSubLink({ item, active }: { item: NavItem; active: boolean }) {
+  const Icon = item.icon
+  return (
+    <Link
+      href={item.href}
+      className="flex items-center gap-2 py-1.5 no-underline transition-all duration-200"
+      style={{
+        paddingLeft: '10px', paddingRight: '10px',
+        borderRadius: '6px',
+        color: active ? '#4ECBA0' : '#9CA3AF',
+        opacity: active ? 1 : 0.7,
+        background: active ? 'rgba(78,203,160,0.08)' : 'transparent',
+      }}
+      onMouseEnter={e => {
+        if (!active) {
+          e.currentTarget.style.opacity = '1'
+          e.currentTarget.style.color = '#E5E7EB'
+        }
+      }}
+      onMouseLeave={e => {
+        if (!active) {
+          e.currentTarget.style.opacity = '0.7'
+          e.currentTarget.style.color = '#9CA3AF'
+        }
+      }}
+    >
+      <Icon size={14} strokeWidth={1.75} style={{ flexShrink: 0, opacity: 0.6 }} />
+      <span
+        className="flex-1"
+        style={{
+          textTransform: 'uppercase', fontFamily: "'Outfit', sans-serif",
+          fontSize: '11px', fontWeight: 600, letterSpacing: '1px',
+        }}
+      >
+        {item.label}
+      </span>
+    </Link>
   )
 }
 
