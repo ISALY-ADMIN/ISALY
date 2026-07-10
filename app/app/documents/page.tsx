@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { FileText, File as FileIcon, Image as ImageIcon, Lock, Unlock, Shield, Search, Trash2, Download, X, UploadCloud } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
@@ -52,6 +53,7 @@ function PinModal({ mode, onSubmit, onSkip, error, busy }: {
   error: string
   busy: boolean
 }) {
+  const router = useRouter()
   const [pin, setPin] = useState('')
   const [confirm, setConfirm] = useState('')
   const pinInput = 'w-full px-4 py-3 rounded-[10px] text-[20px] text-center tracking-[0.5em] outline-none font-bold'
@@ -89,6 +91,16 @@ function PinModal({ mode, onSubmit, onSkip, error, busy }: {
           </Button>
           {mode === 'create' && onSkip && <Button variant="ghost" onClick={onSkip}>Plus tard</Button>}
         </div>
+        <button
+          type="button"
+          onClick={() => router.push('/app/dashboard-home')}
+          className="mt-4 mx-auto block bg-transparent border-none cursor-pointer text-[13px]"
+          style={{ color: 'rgba(255,255,255,0.4)', fontFamily: "'Outfit', sans-serif" }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+        >
+          ← Retour au tableau de bord
+        </button>
       </motion.div>
     </div>
   )
