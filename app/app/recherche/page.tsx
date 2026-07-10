@@ -402,6 +402,7 @@ function RechercheInner() {
   const mapItems = useMemo(
     () => results.filter(r => r.coords).map(r => ({
       id: r.id, title: r.title, rent: r.rent, photo: r.photos[0] ?? null, coords: r.coords!,
+      city: r.city ?? null,
     })),
     [results],
   )
