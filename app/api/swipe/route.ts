@@ -10,12 +10,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { swipedId, direction } = await request.json()
+  const { swipedId, direction, listing_id } = await request.json()
 
-  // Record the swipe
+  // Record the swipe (listing_id optionnel : cible l'annonce qui a déclenché le swipe)
+  const swipePayload: {
+    swiper_id: string
+    swiped_id: string
+    direction: string
+    listing_id?: string
+  } = { swiper_id: user.id, swiped_id: swipedId, direction }
+  if (typeof listing_id === 'string' && listing_id) {
+    swipePayload.listing_id = listing_id
+  }
+
   const { error: swipeError } = await supabase
     .from('swipes')
-    .upsert({ swiper_id: user.id, swiped_id: swipedId, direction })
+    .upsert(swipePayload)
 
   if (swipeError) {
     return NextResponse.json({ error: swipeError.message }, { status: 500 })

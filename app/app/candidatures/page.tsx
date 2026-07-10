@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -45,6 +45,7 @@ interface Candidature {
   direction: SwipeDirection
   created_at: string
   ignored: boolean
+  listing_id: string | null
   profile: CandidateProfile
   listing: ListingLite | null
   hasMatch: boolean
@@ -351,6 +352,8 @@ function SkeletonCard() {
 // ─── Main page ───────────────────────────────────────────────
 function CandidaturesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const listingFilter = searchParams.get('listing')
   const [items, setItems] = useState<Candidature[] | null>(null)
   const [tab, setTab] = useState<TabFilter>('all')
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -364,7 +367,7 @@ function CandidaturesContent() {
     // 1. Charge les swipes reçus (candidatures)
     const { data: swipes } = await supabase
       .from('swipes')
-      .select('id, swiper_id, direction, created_at, ignored_by_target')
+      .select('id, swiper_id, direction, created_at, ignored_by_target, listing_id')
       .eq('swiped_id', user.id)
       .in('direction', ['right', 'super'])
       .order('created_at', { ascending: false })
@@ -410,9 +413,10 @@ function CandidaturesContent() {
       if (other) matchByOtherUser.set(other, { matchId: m.id, conversationId: convByMatch.get(m.id) ?? null })
     }
 
-    // Annonce à afficher : la plus récente active (fallback : plus récente)
-    const listingDisplay =
+    // Fallback : plus récente active (pour swipes legacy sans listing_id)
+    const listingFallback =
       listings.find(l => l.is_active) ?? listings[0] ?? null
+    const listingById = new Map(listings.map(l => [l.id, l]))
 
     // 3. Compose les candidatures
     const profileById = new Map(profiles.map(p => [p.id, p]))
@@ -423,14 +427,17 @@ function CandidaturesContent() {
         if (!profile) return null
         const mHit = matchByOtherUser.get(s.swiper_id as string)
         const cmp = computeCompatibility(myMatching, profile.matching_data)
+        const swipeListingId = (s as { listing_id?: string | null }).listing_id ?? null
+        const listing = (swipeListingId && listingById.get(swipeListingId)) || listingFallback
         return {
           swipe_id: s.id,
           swiper_id: s.swiper_id as string,
           direction: s.direction as SwipeDirection,
           created_at: s.created_at,
           ignored: !!s.ignored_by_target,
+          listing_id: swipeListingId,
           profile,
-          listing: listingDisplay,
+          listing,
           hasMatch: !!mHit,
           conversationId: mHit?.conversationId ?? null,
           compatibility: cmp ? Math.round(cmp.score) : null,
@@ -449,25 +456,34 @@ function CandidaturesContent() {
     return () => clearTimeout(t)
   }, [toast])
 
-  const visible = useMemo(() => {
+  const filteredByListing = useMemo(() => {
     const arr = items ?? []
-    const notIgnored = arr.filter(c => !c.ignored)
+    if (!listingFilter) return arr
+    return arr.filter(c => c.listing_id === listingFilter)
+  }, [items, listingFilter])
+
+  const activeListing = useMemo(() => {
+    if (!listingFilter) return null
+    return filteredByListing.find(c => c.listing)?.listing ?? null
+  }, [filteredByListing, listingFilter])
+
+  const visible = useMemo(() => {
+    const notIgnored = filteredByListing.filter(c => !c.ignored)
     if (tab === 'all') return notIgnored
     if (tab === 'pending') return notIgnored.filter(c => !c.hasMatch && !c.conversationId)
     if (tab === 'contacted') return notIgnored.filter(c => c.conversationId != null && !c.hasMatch)
     if (tab === 'matched') return notIgnored.filter(c => c.hasMatch)
     return notIgnored
-  }, [items, tab])
+  }, [filteredByListing, tab])
 
   const stats = useMemo(() => {
-    const arr = items ?? []
-    const notIgnored = arr.filter(c => !c.ignored)
+    const notIgnored = filteredByListing.filter(c => !c.ignored)
     return {
       total: notIgnored.length,
       pending: notIgnored.filter(c => !c.hasMatch && !c.conversationId).length,
       matched: notIgnored.filter(c => c.hasMatch).length,
     }
-  }, [items])
+  }, [filteredByListing])
 
   async function handleContact(c: Candidature) {
     if (busyId) return
@@ -562,14 +578,14 @@ function CandidaturesContent() {
   }
 
   const tabs: { id: TabFilter; label: string; count: number }[] = useMemo(() => {
-    const notIgnored = (items ?? []).filter(c => !c.ignored)
+    const notIgnored = filteredByListing.filter(c => !c.ignored)
     return [
       { id: 'all', label: 'Toutes', count: notIgnored.length },
       { id: 'pending', label: 'En attente', count: notIgnored.filter(c => !c.hasMatch && !c.conversationId).length },
       { id: 'contacted', label: 'Contactés', count: notIgnored.filter(c => c.conversationId != null && !c.hasMatch).length },
       { id: 'matched', label: 'Matchs', count: notIgnored.filter(c => c.hasMatch).length },
     ]
-  }, [items])
+  }, [filteredByListing])
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
@@ -602,6 +618,39 @@ function CandidaturesContent() {
             Gérez les demandes reçues sur vos annonces
           </div>
         </motion.div>
+
+        {/* ── Bandeau filtre par annonce ── */}
+        {listingFilter && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+              background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+              borderRadius: '12px', padding: '10px 14px', marginBottom: '20px',
+              fontSize: '13px', color: 'rgba(255,255,255,0.75)',
+            }}
+          >
+            <Inbox size={14} strokeWidth={2} color="#10B981" />
+            <span>
+              Filtre :{' '}
+              <strong style={{ color: '#fff', fontWeight: 700 }}>
+                {activeListing?.title || (activeListing?.city ? `Colocation à ${activeListing.city}` : 'annonce sélectionnée')}
+              </strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => router.push('/app/candidatures')}
+              aria-label="Retirer le filtre"
+              style={{
+                marginLeft: 'auto', background: 'none', border: 'none',
+                color: '#10B981', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                fontFamily: OUTFIT, fontSize: '12px', fontWeight: 700,
+              }}
+            >
+              <X size={12} strokeWidth={2.4} /> Retirer
+            </button>
+          </motion.div>
+        )}
 
         {/* ── Stats row ── */}
         {items !== null && items.length > 0 && (

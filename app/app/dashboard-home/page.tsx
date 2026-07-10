@@ -372,7 +372,7 @@ function LoueurGrid({ d }: { d: DashboardData }) {
       </BentoCard>
 
       {/* CANDIDATURES — 1x1 */}
-      <BentoCard href="/app/messages" ariaLabel={`${d.likesReceived?.count ?? 0} candidatures reçues — voir les candidats`}>
+      <BentoCard href="/app/candidatures" ariaLabel={`${d.likesReceived?.count ?? 0} candidatures reçues — voir les candidats`}>
         <ModuleTitle icon="💚" label="CANDIDATURES" />
         {(d.likesReceived?.count ?? 0) === 0 ? (
           <EmptyState text="Aucune candidature pour l'instant." cta="Boost ton annonce pour plus de visibilité" />

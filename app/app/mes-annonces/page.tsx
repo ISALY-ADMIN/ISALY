@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Edit3, Trash2, Zap, ExternalLink,
   Home as HomeIcon, MapPin, Ruler, DoorOpen, Users, X, CheckCircle2,
+  Inbox,
 } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
@@ -212,11 +213,12 @@ function DeleteModal({ listing, step, busy, onCancel, onNext, onConfirm }: {
 }
 
 // ─── Listing card (horizontal) ───────────────────────────────
-function ListingCard({ l, onToggle, onDelete, busy }: {
+function ListingCard({ l, onToggle, onDelete, busy, candidatesCount }: {
   l: Listing
   onToggle: () => void
   onDelete: () => void
   busy: boolean
+  candidatesCount: number
 }) {
   const router = useRouter()
   const { tier, active: boostActive, expiresAt } = boostState(l)
@@ -412,6 +414,24 @@ function ListingCard({ l, onToggle, onDelete, busy }: {
               <Trash2 size={13} strokeWidth={2} />
             </Button>
           </div>
+
+          {/* Lien discret candidatures */}
+          {candidatesCount > 0 && (
+            <Link
+              href={`/app/candidatures?listing=${l.id}`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                textDecoration: 'none',
+                fontSize: '11.5px', fontWeight: 600, color: '#10B981',
+                marginTop: '2px', width: 'fit-content',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline' }}
+              onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none' }}
+            >
+              <Inbox size={11} strokeWidth={2} />
+              {candidatesCount} candidature{candidatesCount > 1 ? 's' : ''}
+            </Link>
+          )}
         </div>
       </div>
     </motion.div>
@@ -472,6 +492,7 @@ function MesAnnoncesContent() {
 
   const [listings, setListings] = useState<Listing[] | null>(null)
   const [candidatesCount, setCandidatesCount] = useState(0)
+  const [candidatesByListing, setCandidatesByListing] = useState<Record<string, number>>({})
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null)
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1)
@@ -494,8 +515,20 @@ function MesAnnoncesContent() {
         .from('swipes').select('id', { count: 'exact', head: true })
         .eq('swiped_id', user.id).in('direction', ['right', 'super'])
       setCandidatesCount(count ?? 0)
+
+      // Comptage par annonce (nécessite swipes.listing_id — sinon renvoie {})
+      const { data: perListing } = await supabase
+        .from('swipes').select('listing_id')
+        .eq('swiped_id', user.id).in('direction', ['right', 'super'])
+      const grouped: Record<string, number> = {}
+      for (const row of (perListing ?? []) as { listing_id: string | null }[]) {
+        if (!row.listing_id) continue
+        grouped[row.listing_id] = (grouped[row.listing_id] ?? 0) + 1
+      }
+      setCandidatesByListing(grouped)
     } else {
       setCandidatesCount(0)
+      setCandidatesByListing({})
     }
   }, [router])
 
@@ -636,6 +669,7 @@ function MesAnnoncesContent() {
                 key={l.id}
                 l={l}
                 busy={pendingId === l.id}
+                candidatesCount={candidatesByListing[l.id] ?? 0}
                 onToggle={() => handleToggle(l)}
                 onDelete={() => openDelete(l)}
               />

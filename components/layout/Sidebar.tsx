@@ -54,7 +54,8 @@ const loueurGestionItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord',    href: '/app/dashboard-home', id: 'dashboard-home' },
   { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',       id: 'annonce' },
   { icon: FileText,        label: 'Mes annonces',       href: '/app/mes-annonces',   id: 'mes-annonces' },
-  { icon: Inbox,           label: 'Mes candidatures',   href: '/app/candidatures',   id: 'candidatures' },
+  // [HIDDEN] candidatures - réactiver quand demandé
+  // { icon: Inbox,           label: 'Mes candidatures',   href: '/app/candidatures',   id: 'candidatures' },
   {
     icon: ClipboardList, label: 'Mes baux', href: '/app/baux', id: 'baux',
     children: [
