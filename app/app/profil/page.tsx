@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
+import { computeProfileCompletion, computeProfileCompletionSteps } from '@/lib/profileCompletion'
 
 // ── Design tokens (signature dashboard-home) ──────────────────
 const MINT = '#10B981'
@@ -343,24 +344,21 @@ export default function ProfilPage() {
 
   const [showBailModal, setShowBailModal] = useState(false)
 
-  // ── Completion computation ──────────────────────────────────
-  const completion = [
-    { key: 'photo', label: 'Photo de profil', done: !!avatarUrl },
-    { key: 'name', label: 'Prénom & nom', done: !!(firstName && lastName) },
-    { key: 'bio', label: 'Bio (20+ car.)', done: bio.trim().length > 20 },
-    { key: 'city', label: 'Ville & budget', done: !!city && budgetMax > 0 },
-    { key: 'quiz', label: 'Test de compatibilité', done: quizDone },
-    { key: 'cni', label: "Pièce d'identité", done: !!(docs.identity_front && docs.identity_back) },
-    { key: 'income', label: 'Justificatif de revenus', done: !!(docs.payslip && docs.domicile) },
-  ]
-  const doneCount = completion.filter(c => c.done).length
-  const completionPct = Math.round((doneCount / completion.length) * 100)
-
-  // Level criteria
+  // ── Level criteria (calculé d'abord — computedLevel alimente la checklist partagée) ─
   const l1Done = !!avatarUrl && !!firstName && !!lastName && bio.trim().length > 20 && !!city && budgetMax > 0 && !!email
   const idDone = !!(docs.identity_front && docs.identity_back)
   const incomeDone = !!(docs.payslip && docs.domicile)
   const computedLevel: CertLevel = (l1Done && idDone && incomeDone) ? 3 : (l1Done && idDone) ? 2 : l1Done ? 1 : 0
+
+  // ── Completion computation (source de vérité : lib/profileCompletion) ──
+  const completionInput = {
+    avatarUrl, firstName, lastName, city, bio, budgetMax,
+    matchingData: quizDone ? { completed_at: 'x' } : null,
+    certLevel: computedLevel,
+  }
+  const completion = computeProfileCompletionSteps(completionInput)
+  const doneCount = completion.filter(c => c.done).length
+  const completionPct = computeProfileCompletion(completionInput)
 
   const levelStatus = (lvl: number): CertStatus => {
     const list = lvl === 2 ? ID_DOCS : lvl === 3 ? INCOME_DOCS : []

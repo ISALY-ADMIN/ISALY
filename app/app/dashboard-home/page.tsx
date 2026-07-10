@@ -9,6 +9,7 @@ import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import { BentoCard, BentoStyles, ModuleTitle, EmptyState, Skeleton, CountUp, AvatarStack, cardBase } from '@/components/ui/Bento'
 import type { DashboardData } from '@/app/api/dashboard/route'
+import { computeProfileCompletion } from '@/lib/profileCompletion'
 
 // ═══════════════ Helpers ═══════════════
 
@@ -112,7 +113,7 @@ export default function DashboardHomePage() {
             }}><Emoji native="🏠" size="12px" /> Mode Loueur</span>
           ) : (
             <Link href="/app/profil" aria-label="Compléter mon profil" style={{ textDecoration: 'none' }}>
-              <CompletionRing pct={data.profile.completion} />
+              <CompletionRing pct={computeProfileCompletion(data.profile)} />
             </Link>
           ))}
         </motion.div>

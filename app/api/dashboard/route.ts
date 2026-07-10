@@ -9,8 +9,13 @@ export interface DashboardData {
   profile: {
     id: string
     firstName: string
+    lastName: string
     avatarUrl: string | null
-    completion: number
+    bio: string | null
+    city: string | null
+    budgetMax: number | null
+    matchingData: Record<string, unknown> | null
+    certLevel: number
     referralCode: string
     referralCount: number
   }
@@ -57,20 +62,6 @@ export interface DashboardData {
   }
 }
 
-function completionPct(p: Record<string, unknown>, certLevel: number): number {
-  const md = p.matching_data as Record<string, unknown> | null
-  const steps = [
-    !!(p.first_name && p.last_name),
-    !!p.avatar_url,
-    !!p.city,
-    !!(typeof p.bio === 'string' && p.bio.length > 20),
-    !!(typeof p.budget_max === 'number' && p.budget_max > 0),
-    !!(md && typeof md.completed_at === 'string'),
-    certLevel >= 1,
-  ]
-  return Math.round((steps.filter(Boolean).length / steps.length) * 100)
-}
-
 export async function GET(request: Request) {
   // Auth cookies (site) OU Bearer (app mobile), comme /api/swipe.
   const { supabase, user } = await createApiClient(request)
@@ -78,7 +69,7 @@ export async function GET(request: Request) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, role, referral_code, referral_count')
+    .select('first_name, last_name, avatar_url, city, bio, budget_max, matching_data, role, referral_code, referral_count, cert_level')
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
@@ -87,9 +78,8 @@ export async function GET(request: Request) {
   // est supprimée par la migration 27.
   const mode: 'locataire' | 'loueur' = profile.role === 'loueur' ? 'loueur' : 'locataire'
 
-  // ── Commun : certification, matchs, messages non lus, notifications ──
-  const [certRes, matchRes, unreadRes, lastUnreadRes, notifRes] = await Promise.all([
-    supabase.from('user_certifications').select('level').eq('user_id', user.id).eq('status', 'verified'),
+  // ── Commun : matchs, messages non lus, notifications ──
+  const [matchRes, unreadRes, lastUnreadRes, notifRes] = await Promise.all([
     supabase.from('matches')
       .select('user1_id, user2_id, created_at')
       .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
@@ -104,7 +94,6 @@ export async function GET(request: Request) {
       .limit(8),
   ])
 
-  const certLevel = Math.max(0, ...(certRes.data ?? []).map(c => c.level as number))
   const allMatches = matchRes.data ?? []
   const partnerIds = allMatches
     .map(m => (m.user1_id === user.id ? m.user2_id : m.user1_id))
@@ -127,8 +116,13 @@ export async function GET(request: Request) {
     profile: {
       id: user.id,
       firstName: (profile.first_name as string) ?? '',
+      lastName: (profile.last_name as string) ?? '',
       avatarUrl: (profile.avatar_url as string) ?? null,
-      completion: completionPct(profile as Record<string, unknown>, certLevel),
+      bio: (profile.bio as string) ?? null,
+      city: (profile.city as string) ?? null,
+      budgetMax: (profile.budget_max as number) ?? null,
+      matchingData: (profile.matching_data as Record<string, unknown>) ?? null,
+      certLevel: (profile.cert_level as number) ?? 0,
       referralCode: (profile.referral_code as string) ?? '',
       referralCount: (profile.referral_count as number) ?? 0,
     },
