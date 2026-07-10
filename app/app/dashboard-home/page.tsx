@@ -309,7 +309,7 @@ function LocataireGrid({ d }: { d: DashboardData }) {
       </BentoCard>
       */}
 
-      {/* ACTIVITÉ — 2x1 */}
+      {/* ACTIVITÉ — 4x1 */}
       <ActivityCard notifications={d.notifications} />
     </>
   )
@@ -545,7 +545,8 @@ function UnreadCard({ unread }: { unread: DashboardData['unread'] }) {
   )
 }
 
-function ActivityCard({ notifications, className = 'md:col-span-2' }: { notifications: DashboardData['notifications']; className?: string }) {
+function ActivityCard({ notifications, className = 'md:col-span-4' }: { notifications: DashboardData['notifications']; className?: string }) {
+  const items = notifications.slice(0, 8)
   return (
     <motion.div
       variants={{
@@ -557,24 +558,29 @@ function ActivityCard({ notifications, className = 'md:col-span-2' }: { notifica
     >
       <div style={{ ...cardBase }}>
         <ModuleTitle icon="🕐" label="ACTIVITÉ RÉCENTE" />
-        {notifications.length === 0 ? (
+        {items.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>
             Ton activité récente s&apos;affichera ici — matchs, messages, alertes.
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
-            {notifications.map((n, i) => {
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {items.map((n, i) => {
+              const isLast = i === items.length - 1
               const inner = (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '9px 2px',
+                  borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                }}>
                   <span style={{
-                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0, fontSize: '12px',
+                    width: 28, height: 28, borderRadius: '50%', flexShrink: 0, fontSize: '13px',
                     background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}><Emoji native={NOTIF_ICONS[n.type] ?? '🔔'} size="12px" /></span>
-                  <span style={{ flex: 1, fontSize: '12.5px', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    <EmojiText text={n.title} size="12.5px" />
+                  }}><Emoji native={NOTIF_ICONS[n.type] ?? '🔔'} size="13px" /></span>
+                  <span style={{ flex: 1, fontSize: '13px', color: 'rgba(255,255,255,0.78)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <EmojiText text={n.title} size="13px" />
                   </span>
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
+                  <span style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
                 </div>
               )
               return n.link ? (

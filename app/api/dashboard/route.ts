@@ -101,7 +101,7 @@ export async function GET(request: Request) {
       .select('title, body, link, type, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(4),
+      .limit(8),
   ])
 
   const certLevel = Math.max(0, ...(certRes.data ?? []).map(c => c.level as number))
