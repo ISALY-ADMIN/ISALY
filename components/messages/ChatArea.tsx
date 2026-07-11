@@ -246,12 +246,21 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
     if (!messageId || !currentUserId) return
     const supabase = createClient()
     const mine = reactions[messageId]?.some(r => r.userId === currentUserId && r.emoji === emoji)
+    const prevSnapshot = reactions[messageId] ?? []
     if (mine) {
       setReactions(prev => ({ ...prev, [messageId]: (prev[messageId] ?? []).filter(r => !(r.userId === currentUserId && r.emoji === emoji)) }))
-      await supabase.from('message_reactions').delete().eq('message_id', messageId).eq('user_id', currentUserId).eq('emoji', emoji)
+      const { error } = await supabase.from('message_reactions').delete().eq('message_id', messageId).eq('user_id', currentUserId).eq('emoji', emoji)
+      if (error) {
+        console.error('[reactions] delete failed', error)
+        setReactions(prev => ({ ...prev, [messageId]: prevSnapshot }))
+      }
     } else {
       setReactions(prev => ({ ...prev, [messageId]: [...(prev[messageId] ?? []), { emoji, userId: currentUserId }] }))
-      await supabase.from('message_reactions').insert({ message_id: messageId, user_id: currentUserId, emoji })
+      const { error } = await supabase.from('message_reactions').insert({ message_id: messageId, user_id: currentUserId, emoji })
+      if (error) {
+        console.error('[reactions] insert failed', error)
+        setReactions(prev => ({ ...prev, [messageId]: prevSnapshot }))
+      }
     }
   }
 
@@ -394,7 +403,7 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
               <div
                 className={`flex items-end gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
                 style={{ marginBottom: isLast ? '10px' : '2px' }}
-                onContextMenu={(e) => { e.preventDefault(); setShowActionsFor(i); setShowReactionPicker(null) }}
+                onContextMenu={(e) => { e.preventDefault(); setShowActionsFor(i); setShowReactionPicker(m.id ?? null) }}
               >
                 {/* Avatar slot */}
                 <div className="w-8 flex-shrink-0">

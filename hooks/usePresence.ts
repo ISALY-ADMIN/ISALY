@@ -93,20 +93,37 @@ function attachPresence(uid: string, listener?: (online: Set<string>) => void): 
 export function usePresence(currentUserId: string | null) {
   useEffect(() => {
     if (!currentUserId) return
-    const supabase = createClient()
 
     async function updateLastSeen() {
-      await supabase
-        .from('profiles')
-        .update({ last_seen: new Date().toISOString() })
-        .eq('id', currentUserId!)
+      try {
+        const res = await fetch('/api/presence/heartbeat', {
+          method: 'POST',
+          credentials: 'same-origin',
+          keepalive: true,
+        })
+        if (!res.ok) console.error('[presence] heartbeat failed', res.status, await res.text().catch(() => ''))
+      } catch (e) {
+        console.error('[presence] heartbeat error', e)
+      }
+    }
+
+    function beaconLastSeen() {
+      // beforeunload : fetch async peut être coupé ; sendBeacon garantit l'envoi.
+      try {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/presence/heartbeat', new Blob([], { type: 'application/json' }))
+        } else {
+          fetch('/api/presence/heartbeat', { method: 'POST', keepalive: true, credentials: 'same-origin' })
+        }
+      } catch { /* noop */ }
     }
 
     updateLastSeen()
     const interval = setInterval(updateLastSeen, 60000)
     window.addEventListener('focus', updateLastSeen)
     window.addEventListener('blur', updateLastSeen)
-    window.addEventListener('beforeunload', updateLastSeen)
+    window.addEventListener('beforeunload', beaconLastSeen)
+    document.addEventListener('visibilitychange', updateLastSeen)
 
     const detach = attachPresence(currentUserId)
 
@@ -114,7 +131,8 @@ export function usePresence(currentUserId: string | null) {
       clearInterval(interval)
       window.removeEventListener('focus', updateLastSeen)
       window.removeEventListener('blur', updateLastSeen)
-      window.removeEventListener('beforeunload', updateLastSeen)
+      window.removeEventListener('beforeunload', beaconLastSeen)
+      document.removeEventListener('visibilitychange', updateLastSeen)
       detach()
     }
   }, [currentUserId])
