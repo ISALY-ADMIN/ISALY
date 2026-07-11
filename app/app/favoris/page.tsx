@@ -8,6 +8,7 @@ import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
 import Emoji from '@/components/ui/Emoji'
 import CertificationBadge, { type CertLevel } from '@/components/ui/CertificationBadge'
+import { IsalyScoreBadge } from '@/components/ui/IsalyScore'
 import { BentoStyles, CountUp } from '@/components/ui/Bento'
 import { createClient } from '@/lib/supabase/client'
 import { computeCompatibility } from '@/lib/matching'
@@ -148,6 +149,11 @@ function ListingCard({ l, compat, onRemove }: { l: Listing; compat: number | nul
             background: 'rgba(245,158,11,0.9)', color: '#1C1200', backdropFilter: 'blur(4px)',
           }}><Emoji native={boost.icon} size="11px" /> {boost.label}</span>
         )}
+        {l.owner_id && (
+          <span style={{ position: 'absolute', bottom: 12, right: 12 }}>
+            <IsalyScoreBadge userId={l.owner_id} size={30} />
+          </span>
+        )}
       </div>
 
       {/* Contenu */}
@@ -212,6 +218,7 @@ function ProfileCard({ p, compat, onRemove }: { p: FavProfile; compat: number | 
 
       {(p.cert_level ?? 0) > 0 || compat != null ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <IsalyScoreBadge userId={p.id} size={26} />
           {(p.cert_level ?? 0) > 0 && <CertificationBadge level={(p.cert_level ?? 0) as CertLevel} size="sm" />}
           {compat != null && (
             <span style={{

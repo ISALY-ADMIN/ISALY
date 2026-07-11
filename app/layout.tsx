@@ -4,21 +4,36 @@ import InstallBanner from '@/components/pwa/InstallBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Ta coloc idéale existe déjà',
-  description: 'ISALY analyse tes habitudes, tes horaires et ta personnalité pour te connecter avec des colocataires vraiment compatibles.',
+  metadataBase: new URL('https://isaly.fr'),
+  title: {
+    default: 'ISALY — La colocation intelligente en France',
+    template: '%s — ISALY',
+  },
+  description: 'Trouvez votre colocation idéale avec ISALY. Matching de personnalité, annonces vérifiées, bail électronique. Gratuit pour les locataires.',
+  keywords: ['colocation', 'colocataire', 'location', 'appartement', 'bail', 'matching'],
+  robots: 'index, follow',
+  alternates: {
+    canonical: './',
+  },
   icons: {
     icon: '/favicon.png',
-    apple: '/favicon.png',
+    apple: '/icon-192.png',
     shortcut: '/favicon.png',
   },
   openGraph: {
-    title: 'Ta coloc idéale existe déjà',
-    description: 'Matching intelligent pour trouver le colocataire idéal.',
+    title: 'ISALY — La colocation intelligente en France',
+    description: 'Trouvez votre colocation idéale avec ISALY. Matching de personnalité, annonces vérifiées, bail électronique. Gratuit pour les locataires.',
     url: 'https://isaly.fr',
     siteName: 'ISALY',
-    images: [{ url: 'https://isaly.fr/favicon.png', width: 512, height: 512 }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'ISALY — Ta coloc idéale existe déjà' }],
     locale: 'fr_FR',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ISALY — La colocation intelligente en France',
+    description: 'Matching de personnalité, annonces vérifiées, bail électronique.',
+    images: ['/og-image.png'],
   },
 }
 

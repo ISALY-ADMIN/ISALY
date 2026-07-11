@@ -13,6 +13,7 @@ import Marquee from '@/components/animations/Marquee'
 import FloatingCard from '@/components/animations/FloatingCard'
 import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerContainer'
 import Emoji from '@/components/ui/Emoji'
+import { ARTICLES, readingTime } from '@/content/blog/articles'
 
 // ─── Styles partagés ─────────────────────────────────────────────────────────
 
@@ -510,6 +511,51 @@ export default function LandingPage() {
               </StaggerItem>
             ))}
           </StaggerContainer>
+        </section>
+      </ScrollReveal>
+
+      {/* ═══ NOS GUIDES (blog) ═══ */}
+      <ScrollReveal delay={0}>
+        <section style={{ padding: '100px 24px', maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+            <div style={sectionKicker}>ISALY IMMO</div>
+            <h2 style={sectionTitle}>Nos guides de la colocation</h2>
+            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', margin: '16px auto 0', maxWidth: '460px', lineHeight: 1.7 }}>
+              Droits, conseils et bonnes pratiques pour coloquer sereinement.
+            </p>
+          </div>
+          <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            {ARTICLES.slice(0, 3).map(a => (
+              <StaggerItem key={a.slug}>
+                <Link href={`/blog/${a.slug}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+                  <div style={{ ...glassCard, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{
+                      height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(5,150,105,0.06))',
+                    }}>
+                      <Emoji native={a.emoji} size="44px" />
+                    </div>
+                    <div style={{ padding: '18px 20px 20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#10B981', marginBottom: '8px' }}>
+                        {a.category}
+                      </div>
+                      <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '16px', fontWeight: 700, color: '#fff', lineHeight: 1.4, marginBottom: '10px', flex: 1 }}>
+                        {a.title}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
+                        {readingTime(a)} min de lecture
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+          <div style={{ textAlign: 'center', marginTop: '32px' }}>
+            <Link href="/blog" style={{ fontSize: '14px', fontWeight: 700, color: '#10B981', textDecoration: 'none', fontFamily: "'Outfit', sans-serif" }}>
+              Tous les articles →
+            </Link>
+          </div>
         </section>
       </ScrollReveal>
 

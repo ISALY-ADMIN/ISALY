@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import type { MetadataRoute } from 'next'
+import { ARTICLES } from '@/content/blog/articles'
 
 const CITY_SLUGS = [
   'paris', 'marseille', 'lyon', 'toulouse', 'nice', 'nantes', 'montpellier',
@@ -28,6 +29,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
+  const blogRoutes: MetadataRoute.Sitemap = [
+    { url: `${base}/blog`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7 },
+    ...ARTICLES.map(a => ({
+      url: `${base}/blog/${a.slug}`,
+      lastModified: new Date(a.updated ?? a.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ]
+
   let listingRoutes: MetadataRoute.Sitemap = []
   try {
     const supabase = createClient()
@@ -48,5 +59,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Graceful degradation — sitemap works without DB
   }
 
-  return [...staticRoutes, ...cityRoutes, ...listingRoutes]
+  return [...staticRoutes, ...cityRoutes, ...blogRoutes, ...listingRoutes]
 }

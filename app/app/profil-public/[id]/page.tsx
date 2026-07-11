@@ -8,6 +8,7 @@ import { MapPin, MessageCircle, Home, Star, ChevronRight, Users } from 'lucide-r
 import Topbar from '@/components/layout/Topbar'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import { ReliabilityGauge } from '@/components/ui/ReliabilityScore'
+import { IsalyScoreGauge } from '@/components/ui/IsalyScore'
 import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
@@ -163,6 +164,11 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
             </button>
           )}
         </Card>
+
+        {/* ── ISALY Score ── */}
+        <div style={{ marginBottom: '16px' }}>
+          <IsalyScoreGauge userId={profile.id} />
+        </div>
 
         {/* ── Score de fiabilité (loueur) ── */}
         {profile.role === 'loueur' && (

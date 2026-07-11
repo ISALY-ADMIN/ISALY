@@ -8,6 +8,7 @@ import { MapPin, Camera, Pencil } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
 import CertificationBadge, { CertLevel, CertStatus } from '@/components/ui/CertificationBadge'
+import { IsalyScoreGauge } from '@/components/ui/IsalyScore'
 import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
@@ -684,6 +685,13 @@ export default function ProfilPage() {
               </div>
             )}
           </motion.div>
+
+          {/* ── ISALY SCORE ────────────────────────────────────── */}
+          {userId && (
+            <div className="mt-4">
+              <IsalyScoreGauge userId={userId} />
+            </div>
+          )}
 
           {/* ── CHECKLIST DE COMPLÉTION ────────────────────────── */}
           <Section title="Complétion du dossier" delay={0.04}>

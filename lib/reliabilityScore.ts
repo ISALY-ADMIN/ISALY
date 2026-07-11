@@ -11,27 +11,22 @@ export interface ReliabilityResult {
 }
 
 /**
- * Score de fiabilité loueur 0-100 :
- * - Taux de réponse < 24h sur 30 jours : 40 pts
- * - Note moyenne des avis : 30 pts (note/5 × 30)
- * - Ancienneté : 15 pts (plafonné à 12 mois)
- * - Dossier vérifié (cert_level >= 2) : 15 pts
+ * Taux de réponse < 24h sur les 30 derniers jours + délai moyen.
+ * Partagé entre le score de fiabilité loueur et l'ISALY Score.
  */
-export async function computeReliabilityScore(
+export async function computeResponseStats(
   supabase: SupabaseClient,
-  ownerId: string
-): Promise<ReliabilityResult | null> {
-  const [{ data: profile }, { data: reviews }, { data: convs }] = await Promise.all([
-    supabase.from('profiles').select('created_at, cert_level').eq('id', ownerId).single(),
-    supabase.from('user_reviews').select('rating').eq('reviewed_id', ownerId),
-    supabase.from('conversations').select('id').or(`user1_id.eq.${ownerId},user2_id.eq.${ownerId}`).limit(30),
-  ])
-
-  if (!profile) return null
-
-  // ── Taux de réponse (40 pts) ──
+  userId: string
+): Promise<{ responseRate: number | null; avgResponseHours: number | null }> {
   let responseRate: number | null = null
   let avgResponseHours: number | null = null
+
+  const { data: convs } = await supabase
+    .from('conversations')
+    .select('id')
+    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+    .limit(30)
+
   if (convs && convs.length > 0) {
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     const { data: msgs } = await supabase
@@ -54,10 +49,10 @@ export async function computeReliabilityScore(
       const delays: number[] = []
       for (const list of Array.from(byConv.values())) {
         for (let i = 0; i < list.length; i++) {
-          if (list[i].sender_id === ownerId) continue
-          // Message entrant : le loueur a-t-il répondu ensuite ?
+          if (list[i].sender_id === userId) continue
+          // Message entrant : l'utilisateur a-t-il répondu ensuite ?
           incoming++
-          const reply = list.slice(i + 1).find(m => m.sender_id === ownerId)
+          const reply = list.slice(i + 1).find(m => m.sender_id === userId)
           if (reply) {
             const delta = new Date(reply.created_at).getTime() - new Date(list[i].created_at).getTime()
             delays.push(delta / 3600000)
@@ -73,6 +68,28 @@ export async function computeReliabilityScore(
       }
     }
   }
+
+  return { responseRate, avgResponseHours }
+}
+
+/**
+ * Score de fiabilité loueur 0-100 :
+ * - Taux de réponse < 24h sur 30 jours : 40 pts
+ * - Note moyenne des avis : 30 pts (note/5 × 30)
+ * - Ancienneté : 15 pts (plafonné à 12 mois)
+ * - Dossier vérifié (cert_level >= 2) : 15 pts
+ */
+export async function computeReliabilityScore(
+  supabase: SupabaseClient,
+  ownerId: string
+): Promise<ReliabilityResult | null> {
+  const [{ data: profile }, { data: reviews }, { responseRate, avgResponseHours }] = await Promise.all([
+    supabase.from('profiles').select('created_at, cert_level').eq('id', ownerId).single(),
+    supabase.from('user_reviews').select('rating').eq('reviewed_id', ownerId),
+    computeResponseStats(supabase, ownerId),
+  ])
+
+  if (!profile) return null
 
   // ── Avis (30 pts) ──
   const reviewCount = reviews?.length ?? 0

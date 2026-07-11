@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /colocation/
+Allow: /blog/
+Disallow: /app/
+Disallow: /admin/
+Disallow: /auth/finalize
+Sitemap: https://isaly.fr/sitemap.xml
