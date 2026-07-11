@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { MapPin, MessageCircle, Home, Star, ChevronRight, Users } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import { ReliabilityGauge } from '@/components/ui/ReliabilityScore'
 import ReviewStars from '@/components/ui/ReviewStars'
 import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
@@ -62,6 +63,11 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.id === userId) setIsMe(true)
+
+      // Vue de profil (rate-limitée : 1 / user / jour côté DB)
+      if (user && user.id !== userId) {
+        fetch(`/api/profiles/${userId}/view`, { method: 'PATCH' }).catch(() => {})
+      }
 
       const [{ data: p }, { data: ls }, leaseRes, convRes] = await Promise.all([
         supabase.from('profiles').select('id, first_name, last_name, avatar_url, city, bio, cert_level, role').eq('id', userId).single(),
@@ -157,6 +163,13 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
             </button>
           )}
         </Card>
+
+        {/* ── Score de fiabilité (loueur) ── */}
+        {profile.role === 'loueur' && (
+          <div style={{ marginBottom: '16px' }}>
+            <ReliabilityGauge userId={profile.id} />
+          </div>
+        )}
 
         {/* ── Bio ── */}
         {profile.bio && (

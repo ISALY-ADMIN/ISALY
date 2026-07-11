@@ -11,6 +11,8 @@ import { createClient } from '@/lib/supabase/client'
 import { profilesCompatibility, type ProfileCompatibility } from '@/lib/matching'
 import { listingOccupancy } from '@/lib/utils'
 import { getCoordsForCity, jitterCoords } from '@/lib/geo'
+import VisitBooking from '@/components/visits/VisitBooking'
+import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 
 const SearchMap = dynamic(() => import('@/components/map/SearchMap'), { ssr: false })
 
@@ -70,6 +72,7 @@ export default function AnnonceDetailPage() {
   const [isFav, setIsFav] = useState(false)
   const [photoIdx, setPhotoIdx] = useState(0)
   const [notFound, setNotFound] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -80,6 +83,10 @@ export default function AnnonceDetailPage() {
       setListing(l as ListingRow)
 
       const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUserId(user?.id ?? null)
+
+      // Vue d'annonce (rate-limitée : 1 / user / jour côté DB)
+      fetch(`/api/listings/${l.id}/view`, { method: 'PATCH' }).catch(() => {})
 
       const [ownerRes, certRes, reviewsRes, meRes, favRes, similarRes] = await Promise.all([
         l.owner_id
@@ -285,6 +292,11 @@ export default function AnnonceDetailPage() {
           </button>
         </div>
 
+        {/* ── Planifier une visite (créneaux du loueur) ── */}
+        <div style={{ marginTop: '-16px', marginBottom: '24px' }}>
+          <VisitBooking listingId={listing.id} ownerId={listing.owner_id} currentUserId={currentUserId} />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           {/* Compatibilité */}
           <div style={card}>
@@ -332,15 +344,22 @@ export default function AnnonceDetailPage() {
             </div>
             {owner ? (
               <div className="flex items-center gap-4">
-                <div style={{
-                  width: 60, height: 60, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-                  background: 'linear-gradient(135deg, #10B981, #059669)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '22px', fontWeight: 800, color: '#fff',
-                }}>
-                  {owner.avatarUrl
-                    ? <Image src={owner.avatarUrl} alt={owner.firstName} width={60} height={60} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : (owner.firstName[0] ?? '?').toUpperCase()}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div style={{
+                    width: 60, height: 60, borderRadius: '50%', overflow: 'hidden',
+                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '22px', fontWeight: 800, color: '#fff',
+                  }}>
+                    {owner.avatarUrl
+                      ? <Image src={owner.avatarUrl} alt={owner.firstName} width={60} height={60} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : (owner.firstName[0] ?? '?').toUpperCase()}
+                  </div>
+                  {listing.owner_id && (
+                    <span style={{ position: 'absolute', bottom: -4, right: -4 }}>
+                      <ReliabilityBadge userId={listing.owner_id} size={24} />
+                    </span>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

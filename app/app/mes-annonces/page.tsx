@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Edit3, Trash2, Zap, ExternalLink,
   Home as HomeIcon, MapPin, Ruler, DoorOpen, Users, X, CheckCircle2,
-  Inbox,
+  Inbox, CalendarClock,
 } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
@@ -403,6 +403,17 @@ function ListingCard({ l, onToggle, onDelete, busy, candidatesCount }: {
             >
               <ExternalLink size={13} strokeWidth={2} />
               <span style={{ fontSize: '12px' }}>Voir</span>
+            </Button>
+
+            <Button
+              variant="ghost" size="sm"
+              onClick={() => router.push(`/app/annonces/${l.id}/creneaux`)}
+              aria-label="Gérer les créneaux de visite"
+              className="!px-2.5 !py-1.5"
+              title="Gérer les créneaux de visite"
+            >
+              <CalendarClock size={13} strokeWidth={2} />
+              <span style={{ fontSize: '12px' }}>Créneaux</span>
             </Button>
 
             <Button

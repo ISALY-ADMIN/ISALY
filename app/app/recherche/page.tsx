@@ -8,6 +8,8 @@ import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import type { SearchResponse, SearchResult } from '@/app/api/recherche/route'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
+import CreateAlertButton from '@/components/alerts/CreateAlertButton'
+import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 
 const SearchMap = dynamic(() => import('@/components/map/SearchMap'), { ssr: false })
 
@@ -192,6 +194,13 @@ function ListingCard({ l, isFav, onFav, onContact, onHover, active, cardRef }: {
         )}
 
         {l.compat && <CompatBadge score={l.compat.score} />}
+
+        {/* Score de fiabilité du loueur */}
+        {l.ownerId && (
+          <span style={{ position: 'absolute', bottom: 10, right: 10, zIndex: 2 }}>
+            <ReliabilityBadge userId={l.ownerId} size={26} />
+          </span>
+        )}
 
         {l.boostTier !== 'standard' && (
           <span style={{
@@ -621,6 +630,17 @@ function RechercheInner() {
                   style={{ fontSize: '11px', opacity: 0.8 }}>✕</span>
               )}
             </button>
+
+            {/* Alerte de recherche sur les critères courants */}
+            <CreateAlertButton criteria={{
+              city: filters.city || undefined,
+              budget_max: filters.budget_max || undefined,
+              rooms: filters.rooms || undefined,
+              surface_min: filters.surface_min || undefined,
+              meuble: filters.meuble || undefined,
+              animaux_ok: filters.animaux || undefined,
+              non_fumeur: filters.non_fumeur || undefined,
+            }} />
           </div>
 
           {openPanel === 'surface' && (

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Bookmark, MessageCircle, MapPin, Users } from 'lucide-react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
+import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 import Emoji from '@/components/ui/Emoji'
 import type { UiBreakdown } from '@/lib/matching'
 
@@ -282,6 +283,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
         {/* ── Badges haut ── */}
         <div className="absolute z-20 flex items-center gap-2" style={{ top: photos.length > 1 ? '20px' : '14px', left: '14px' }}>
           {(profile.certLevel ?? 0) > 0 && <CertificationBadge level={profile.certLevel!} size="sm" />}
+          {profile.isListing && profile.ownerId && <ReliabilityBadge userId={profile.ownerId} size={26} />}
         </div>
         <button
           onClick={toggleFavorite}

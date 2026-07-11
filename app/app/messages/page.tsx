@@ -11,6 +11,8 @@ import { usePresence, useOnlineUsers } from '@/hooks/usePresence'
 import { useLease } from '@/contexts/LeaseContext'
 import type { RichType } from '@/components/messages/ActionsPanel'
 import Emoji from '@/components/ui/Emoji'
+import AgendaPanel from '@/components/visits/AgendaPanel'
+import { CalendarDays } from 'lucide-react'
 
 interface Msg {
   from: 'me' | 'them'
@@ -63,6 +65,7 @@ function MessagesContent() {
   const ownerParam   = searchParams.get('owner')
   const listingParam = searchParams.get('listing')
   const convParam    = searchParams.get('conversation')
+  const [agendaOpen, setAgendaOpen] = useState(searchParams.get('agenda') === '1')
 
   const [convs, setConvs] = useState<Conv[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -334,6 +337,23 @@ function MessagesContent() {
   return (
     <>
       <Topbar title="Messages" />
+
+      {/* Bouton Agenda flottant */}
+      <button
+        onClick={() => setAgendaOpen(true)}
+        aria-label="Agenda des visites"
+        title="Agenda des visites"
+        className="fixed border-none cursor-pointer rounded-full flex items-center justify-center"
+        style={{
+          top: 64, right: 16, zIndex: 30, width: 40, height: 40,
+          background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.4)',
+          color: '#10B981',
+        }}
+      >
+        <CalendarDays size={18} strokeWidth={1.9} />
+      </button>
+      <AgendaPanel open={agendaOpen} onClose={() => setAgendaOpen(false)} />
+
       <div
         className="flex flex-1 overflow-hidden"
         style={{ height: 'calc(100vh - 54px)' }}

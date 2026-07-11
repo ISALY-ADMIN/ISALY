@@ -11,6 +11,7 @@ import {
 import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
 import ModeSwitcher from '@/components/ModeSwitcher'
+import AlertsSettings from '@/components/alerts/AlertsSettings'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useLease } from '@/contexts/LeaseContext'
@@ -413,6 +414,13 @@ export default function ParametresPage() {
                   <Badge muted>Non supportées</Badge>
                 )}
               </Row>
+            </Section>
+
+            {/* ── Alertes de recherche ── */}
+            <Section icon={<Bell size={14} />} title="Alertes de recherche">
+              <div style={{ padding: '4px 0' }}>
+                <AlertsSettings />
+              </div>
             </Section>
 
             {/* ── 4. Confidentialité & données ── */}
