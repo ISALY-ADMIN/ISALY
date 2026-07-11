@@ -67,9 +67,10 @@ export async function middleware(request: NextRequest) {
         return redirect('/app/dashboard-home')
       }
 
-      // Connected + done: bounce away from public/auth/onboarding pages
+      // Connected + done: bounce away from public/auth/onboarding pages → dashboard
+      // (le dashboard gère l'affichage selon le mode locataire/loueur)
       if (onboardingDone && (isRoot || isLoginOrRegister || isOnboarding)) {
-        return redirect('/app/swipe')
+        return redirect('/app/dashboard-home')
       }
 
       // Connected + not done: block /app/* until finalize runs (admin routes are exempt)
