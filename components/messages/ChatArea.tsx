@@ -450,36 +450,44 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
                       <CtxBtn onClick={() => { setRealtimeMessages(p => p.filter((_, idx) => idx !== i)); setShowActionsFor(null) }} icon={<Trash2 size={15} />} danger>Supprimer pour moi</CtxBtn>
                     </div>
 
-                    {/* Menu réactions (hover desktop / long-press mobile) */}
+                    {/* Menu réactions (hover desktop / long-press mobile)
+                        Outer transparent : bottom:100% + paddingBottom → aucun gap DOM,
+                        la souris traverse bubble→picker sans déclencher onMouseLeave. */}
                     {m.id && (hoveredMessageId === m.id || showReactionPicker === m.id) && (
                       <div
                         style={{
                           position: 'absolute',
-                          bottom: 'calc(100% + 4px)',
+                          bottom: '100%',
                           left: isMe ? undefined : 0,
                           right: isMe ? 0 : undefined,
+                          paddingBottom: 4,
                           zIndex: 50,
-                          background: '#1a1a1a',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: 100,
-                          padding: '6px 8px',
-                          display: 'flex',
-                          gap: 4,
-                          boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
                         }}
                         onClick={e => e.stopPropagation()}
                       >
-                        {REACTION_EMOJIS.map(emoji => (
-                          <button
-                            key={emoji}
-                            onClick={() => toggleReaction(m.id, emoji)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, transition: 'transform 0.15s', lineHeight: 0 }}
-                            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.3)')}
-                            onMouseLeave={e => (e.currentTarget.style.transform = '')}
-                          >
-                            <Emoji native={emoji} size="24px" />
-                          </button>
-                        ))}
+                        <div
+                          style={{
+                            background: '#1a1a1a',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: 100,
+                            padding: '6px 8px',
+                            display: 'flex',
+                            gap: 4,
+                            boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                          }}
+                        >
+                          {REACTION_EMOJIS.map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => toggleReaction(m.id, emoji)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, transition: 'transform 0.15s', lineHeight: 0 }}
+                              onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.3)')}
+                              onMouseLeave={e => (e.currentTarget.style.transform = '')}
+                            >
+                              <Emoji native={emoji} size="24px" />
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
 
