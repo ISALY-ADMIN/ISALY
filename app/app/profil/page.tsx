@@ -350,6 +350,18 @@ export default function ProfilPage() {
   const incomeDone = !!(docs.payslip && docs.domicile)
   const computedLevel: CertLevel = (l1Done && idDone && incomeDone) ? 3 : (l1Done && idDone) ? 2 : l1Done ? 1 : 0
 
+  // ── Tooltip premier usage sur le ring de complétion ──
+  const [showRingTip, setShowRingTip] = useState(false)
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('tooltip_profil_seen')) return
+      setShowRingTip(true)
+      localStorage.setItem('tooltip_profil_seen', '1')
+      const t = setTimeout(() => setShowRingTip(false), 7000)
+      return () => clearTimeout(t)
+    } catch {}
+  }, [])
+
   // ── Completion computation (source de vérité : lib/profileCompletion) ──
   const completionInput = {
     avatarUrl, firstName, lastName, city, bio, budgetMax,
@@ -637,7 +649,32 @@ export default function ProfilPage() {
                   : <span className="text-[11.5px] font-semibold px-2.5 py-1 rounded-[8px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_LOW }}>Non vérifié</span>}
               </div>
 
-              <ProgressRing pct={completionPct} />
+              <div className="relative">
+                <ProgressRing pct={completionPct} />
+                {showRingTip && (
+                  <div
+                    onClick={() => setShowRingTip(false)}
+                    className="absolute cursor-pointer"
+                    style={{
+                      top: 'calc(100% + 10px)', right: 0, zIndex: 30, width: 220,
+                      background: '#1a1a1a', border: '1px solid rgba(16,185,129,0.4)',
+                      borderRadius: '12px', padding: '10px 14px',
+                      fontSize: '12.5px', fontWeight: 600, color: '#fff', lineHeight: 1.5,
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute', top: -5, right: 18, width: 10, height: 10,
+                        background: '#1a1a1a', borderLeft: '1px solid rgba(16,185,129,0.4)',
+                        borderTop: '1px solid rgba(16,185,129,0.4)', transform: 'rotate(45deg)',
+                      }}
+                    />
+                    <Emoji native="✨" size="12px" /> Complète ton profil pour apparaître en priorité dans le swipe
+                  </div>
+                )}
+              </div>
             </div>
 
             {nextStep && (

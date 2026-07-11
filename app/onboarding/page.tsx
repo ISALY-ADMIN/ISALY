@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import MatchingQuiz from '@/components/quiz/MatchingQuiz'
 import type { MatchingData } from '@/lib/matching'
@@ -36,6 +38,82 @@ const STEP_LABELS = [
   'Ton test de compatibilité',
 ]
 const TOTAL = 3
+
+// Message de récompense affiché à la fin de chaque étape
+const STEP_REWARDS = [
+  'Super ! Ton profil est en place 🎉',
+  'Ta recherche est enregistrée ✨',
+  'Ton score de compatibilité est calculé ✨',
+]
+
+/** Barre de progression gamifiée : cercles ✓ + segments animés (spring). */
+function ProgressSteps({ step }: { step: number }) {
+  return (
+    <div className="flex items-center mb-3.5">
+      {Array.from({ length: TOTAL }, (_, i) => {
+        const done = i < step - 1
+        const current = i === step - 1
+        return (
+          <div key={i} className="flex items-center" style={{ flex: i < TOTAL - 1 ? 1 : 'none' }}>
+            <div
+              className="flex items-center justify-center rounded-full flex-shrink-0 transition-colors duration-300"
+              style={{
+                width: 24, height: 24, fontSize: 11.5, fontWeight: 800,
+                background: done ? '#10B981' : current ? '#ECFDF5' : '#F3F4F6',
+                border: `2px solid ${done || current ? '#10B981' : '#E5E7EB'}`,
+                color: done ? '#fff' : current ? '#059669' : '#9CA3AF',
+              }}
+            >
+              {done ? <Check size={13} strokeWidth={3} /> : i + 1}
+            </div>
+            {i < TOTAL - 1 && (
+              <div className="flex-1 mx-1.5 rounded-full overflow-hidden" style={{ height: 3, background: '#E5E7EB' }}>
+                <motion.div
+                  initial={false}
+                  animate={{ scaleX: done ? 1 : 0 }}
+                  transition={{ type: 'spring', stiffness: 180, damping: 26 }}
+                  style={{ height: '100%', background: '#10B981', transformOrigin: 'left', borderRadius: 999 }}
+                />
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Micro-célébration de fin d'étape : check mint + message, scale-in puis fade. */
+function StepReward({ message }: { message: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-[24px]"
+      style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(4px)' }}
+    >
+      <motion.div
+        initial={{ scale: 0.4, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 16 }}
+        className="flex items-center justify-center rounded-full mb-4"
+        style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 8px 32px rgba(16,185,129,0.35)' }}
+      >
+        <Check size={30} color="#fff" strokeWidth={3} />
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="text-[16px] font-bold text-center px-8"
+        style={{ color: '#111827', fontFamily: "'Outfit', sans-serif" }}
+      >
+        {message}
+      </motion.div>
+    </motion.div>
+  )
+}
 
 // ─── Shared UI components ─────────────────────────────────────────────────────
 
@@ -237,6 +315,7 @@ export default function OnboardingPage() {
   const [d, setD] = useState<OnboardingData>(DEFAULT)
   const [saving, setSaving] = useState(false)
   const [resumeBanner, setResumeBanner] = useState(false)
+  const [reward, setReward] = useState<string | null>(null)
   const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Load: check DB draft first (if logged in), then localStorage
@@ -337,7 +416,7 @@ export default function OnboardingPage() {
   }
 
   async function next() {
-    if (step >= TOTAL) return
+    if (step >= TOTAL || reward) return
     const nextStep = step + 1
     try { localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, onboarding_step: nextStep })) } catch {}
     const supabase = createClient()
@@ -348,11 +427,17 @@ export default function OnboardingPage() {
         onboarding_step: nextStep,
       }).eq('id', user.id).then(() => {})
     }
-    setStep(s => s + 1)
+    // Récompense de fin d'étape, puis transition
+    setReward(STEP_REWARDS[step - 1])
+    setTimeout(() => {
+      setReward(null)
+      setStep(s => s + 1)
+    }, 1600)
   }
 
   async function finish(matching_data: MatchingData) {
     setSaving(true)
+    setReward(STEP_REWARDS[2])
     const payload = {
       first_name:  d.first_name  || null,
       last_name:   d.last_name   || null,
@@ -373,15 +458,15 @@ export default function OnboardingPage() {
         onboarding_draft: null, onboarding_step: 0,
       })
       try { localStorage.removeItem('isaly_onboarding_data') } catch {}
-      router.push('/app/swipe')
+      // Laisse la récompense visible un instant avant la redirection
+      setTimeout(() => router.push('/app/swipe'), 1400)
     } else {
       // Not yet logged in — save to localStorage and go to register
       try {
         localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, ...payload, matching_data }))
       } catch {}
-      router.push('/auth/register')
+      setTimeout(() => router.push('/auth/register'), 1400)
     }
-    setSaving(false)
   }
 
   return (
@@ -390,9 +475,14 @@ export default function OnboardingPage() {
       style={{ background: 'linear-gradient(135deg, #edfaf4, #f7f8fa)' }}
     >
       <div
-        className="bg-white rounded-[24px] w-full"
+        className="bg-white rounded-[24px] w-full relative"
         style={{ padding: '36px 40px', boxShadow: '0 8px 36px rgba(0,0,0,.13)', maxWidth: '560px' }}
       >
+        {/* Récompense de fin d'étape */}
+        <AnimatePresence>
+          {reward && <StepReward message={reward} />}
+        </AnimatePresence>
+
         {/* Resume banner */}
         {resumeBanner && (
           <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#10B981', textAlign: 'center' }}>
@@ -408,19 +498,11 @@ export default function OnboardingPage() {
           />
         </div>
 
-        {/* Progress bar */}
-        <div className="flex gap-1 mb-3.5">
-          {Array.from({ length: TOTAL }, (_, i) => (
-            <div
-              key={i}
-              className="flex-1 h-1.5 rounded-full transition-all duration-300"
-              style={{ background: i < step ? '#4ECBA0' : '#E5E7EB' }}
-            />
-          ))}
-        </div>
+        {/* Progress bar gamifiée */}
+        <ProgressSteps step={step} />
 
         <div className="text-[10.5px] font-extrabold uppercase mb-1.5" style={{ letterSpacing: '2px', color: '#2AA87C' }}>
-          ÉTAPE {step} / {TOTAL}
+          ÉTAPE {step} SUR {TOTAL}
         </div>
         <h2 className="text-[24px] mb-4" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
           {STEP_LABELS[step - 1]}

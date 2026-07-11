@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import InstallBanner from '@/components/pwa/InstallBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -31,6 +32,11 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#10B981" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="ISALY" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="icon" href="/favicon.png?v=2" type="image/png" />
         <link rel="shortcut icon" href="/favicon.png?v=2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,6 +64,7 @@ export default function RootLayout({
       </Script>
       <body>
         {children}
+        <InstallBanner />
       </body>
     </html>
   )

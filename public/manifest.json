@@ -1,0 +1,15 @@
+{
+  "name": "ISALY — Ta coloc idéale",
+  "short_name": "ISALY",
+  "description": "Plateforme de colocation par matching intelligent",
+  "start_url": "/app/dashboard-home",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#10B981",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

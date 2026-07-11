@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, ArrowRight } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
@@ -49,6 +50,105 @@ function CompletionRing({ pct }: { pct: number }) {
         fontSize: '12px', fontWeight: 700, color: '#10B981',
       }}>{pct}%</span>
     </div>
+  )
+}
+
+/** Guide "première semaine" : 3 étapes rapides, dismissable, persistant en localStorage. */
+function FirstWeekGuide({ profileCompletion }: { profileCompletion: number }) {
+  const [visible, setVisible] = useState(false)
+  const [done, setDone] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('isaly_guide_dismissed')) return
+      setDone(JSON.parse(localStorage.getItem('isaly_guide_steps') ?? '{}'))
+      setVisible(true)
+    } catch {}
+  }, [])
+
+  const steps = [
+    { key: 'profil', label: 'Complète ton profil', href: '/app/profil', isDone: !!done.profil || profileCompletion >= 80 },
+    { key: 'swipe', label: 'Fais ton premier swipe', href: '/app/swipe', isDone: !!done.swipe },
+    { key: 'recherche', label: 'Découvre les annonces', href: '/app/recherche', isDone: !!done.recherche },
+  ]
+  const allDone = steps.every(s => s.isDone)
+
+  function markDone(key: string) {
+    const next = { ...done, [key]: true }
+    setDone(next)
+    try { localStorage.setItem('isaly_guide_steps', JSON.stringify(next)) } catch {}
+  }
+
+  function dismiss() {
+    setVisible(false)
+    try { localStorage.setItem('isaly_guide_dismissed', '1') } catch {}
+  }
+
+  if (!visible || allDone) return null
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        style={{
+          background: 'rgba(16,185,129,0.07)',
+          border: '1px solid rgba(16,185,129,0.25)',
+          borderRadius: '18px',
+          padding: '18px 20px',
+          marginBottom: '24px',
+          position: 'relative',
+        }}
+      >
+        <button
+          onClick={dismiss}
+          aria-label="Fermer le guide"
+          style={{
+            position: 'absolute', top: 12, right: 12,
+            width: 28, height: 28, borderRadius: '50%', border: 'none', cursor: 'pointer',
+            background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <X size={14} />
+        </button>
+        <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#fff', fontFamily: "'Outfit', sans-serif", marginBottom: '12px' }}>
+          <Emoji native="👋" size="15px" /> Bienvenue sur ISALY ! Voici comment commencer
+        </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {steps.map((s, i) => (
+            <Link
+              key={s.key}
+              href={s.href}
+              onClick={() => markDone(s.key)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                textDecoration: 'none',
+                padding: '9px 16px', borderRadius: '100px',
+                fontSize: '13px', fontWeight: 600,
+                background: s.isDone ? 'rgba(16,185,129,0.18)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${s.isDone ? 'rgba(16,185,129,0.45)' : 'rgba(255,255,255,0.12)'}`,
+                color: s.isDone ? '#10B981' : 'rgba(255,255,255,0.8)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span style={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '10px', fontWeight: 800,
+                background: s.isDone ? '#10B981' : 'rgba(255,255,255,0.1)',
+                color: s.isDone ? '#fff' : 'rgba(255,255,255,0.55)',
+              }}>
+                {s.isDone ? '✓' : i + 1}
+              </span>
+              {s.label}
+              {!s.isDone && <ArrowRight size={13} style={{ opacity: 0.5 }} />}
+            </Link>
+          ))}
+        </div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
@@ -122,6 +222,11 @@ export default function DashboardHomePage() {
             </Link>
           ))}
         </motion.div>
+
+        {/* ── Guide première semaine (locataire) ── */}
+        {data && data.mode === 'locataire' && (
+          <FirstWeekGuide profileCompletion={computeProfileCompletion(data.profile)} />
+        )}
 
         {/* ── Bento grid ── */}
         {!data ? (

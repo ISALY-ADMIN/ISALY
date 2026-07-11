@@ -193,13 +193,13 @@ function MatchCelebration({ profile, me, onMessage, onClose }: {
   onClose: () => void
 }) {
   const confetti = useMemo(
-    () => Array.from({ length: 22 }, (_, i) => ({
+    () => Array.from({ length: 28 }, (_, i) => ({
       left: Math.random() * 100,
       delay: Math.random() * 0.8,
       duration: 2 + Math.random() * 1.6,
       size: 6 + Math.random() * 7,
       rotate: Math.random() * 360,
-      shade: i % 3 === 0 ? '#10B981' : i % 3 === 1 ? '#34D399' : '#059669',
+      shade: i % 4 === 0 ? '#10B981' : i % 4 === 1 ? '#34D399' : i % 4 === 2 ? '#FBBF24' : '#FFFFFF',
     })),
     [],
   )
@@ -285,7 +285,9 @@ function MatchCelebration({ profile, me, onMessage, onClose }: {
           transition={{ delay: 0.45 }}
           style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px', maxWidth: '320px' }}
         >
-          Toi et {profile.name.split(' ')[0]} êtes compatibles — envoyez un premier message !
+          {profile.match != null
+            ? <>Toi et {profile.name.split(' ')[0]} êtes compatibles à <strong style={{ color: '#10B981' }}>{profile.match}%</strong> — envoyez un premier message !</>
+            : <>Toi et {profile.name.split(' ')[0]} êtes compatibles — envoyez un premier message !</>}
         </motion.p>
 
         <motion.div
@@ -395,6 +397,18 @@ export default function SwipePage() {
   const [lifestyle, setLifestyle] = useState<Set<string>>(new Set())
   const [undoIndex, setUndoIndex] = useState<number | null>(null)
   const [me, setMe] = useState<{ initials: string; avatarUrl: string | null }>({ initials: '', avatarUrl: null })
+  const [showSwipeTip, setShowSwipeTip] = useState(false)
+
+  // Tooltip premier usage : une seule fois (localStorage)
+  useEffect(() => {
+    try { if (!localStorage.getItem('tooltip_swipe_seen')) setShowSwipeTip(true) } catch {}
+  }, [])
+
+  function dismissSwipeTip() {
+    if (!showSwipeTip) return
+    setShowSwipeTip(false)
+    try { localStorage.setItem('tooltip_swipe_seen', '1') } catch {}
+  }
 
   const cardRef = useRef<SwipeCardHandle>(null)
   const swipeLock = useRef(false)
@@ -597,6 +611,7 @@ export default function SwipePage() {
   async function handleSwipe(dir: SwipeDirection) {
     if (swipeLock.current) return
     swipeLock.current = true
+    dismissSwipeTip()
     const swiped = profiles[index]
     const swipedIndex = index
     if (swiped) {
@@ -763,8 +778,24 @@ export default function SwipePage() {
               {/* Card stack */}
               <div
                 className="relative flex-1 min-h-0 my-2"
-                style={{ width: 'min(460px, 92vw)', maxHeight: '78vh' }}
+                style={{
+                  width: 'min(460px, 92vw)', maxHeight: '78vh',
+                  animation: showSwipeTip ? 'tip-wobble 1.6s ease 0.6s 2' : undefined,
+                }}
               >
+                {showSwipeTip && (
+                  <style>{`
+                    @keyframes tip-wobble {
+                      0%, 100% { transform: rotate(0deg); }
+                      25% { transform: rotate(-2.5deg); }
+                      75% { transform: rotate(2.5deg); }
+                    }
+                    @keyframes tip-pulse {
+                      0%, 100% { opacity: 1; }
+                      50% { opacity: 0.65; }
+                    }
+                  `}</style>
+                )}
                 {profiles[index + 2] && <GhostCard profile={profiles[index + 2]} depth={2} />}
                 {profiles[index + 1] && <GhostCard profile={profiles[index + 1]} depth={1} />}
                 <div className="absolute inset-0" style={{ zIndex: 3 }}>
@@ -776,6 +807,24 @@ export default function SwipePage() {
                     onMessage={goMessage}
                   />
                 </div>
+                {/* Tooltip premier usage */}
+                {showSwipeTip && (
+                  <button
+                    onClick={dismissSwipeTip}
+                    className="absolute border-none cursor-pointer"
+                    style={{
+                      bottom: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 10,
+                      background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(16,185,129,0.4)', borderRadius: '100px',
+                      padding: '10px 20px', fontSize: '13.5px', fontWeight: 700, color: '#fff',
+                      fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                      animation: 'tip-pulse 2s ease infinite',
+                    }}
+                  >
+                    ← Passe · Like →
+                  </button>
+                )}
               </div>
 
               <SwipeActions
