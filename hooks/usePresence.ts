@@ -95,15 +95,21 @@ export function usePresence(currentUserId: string | null) {
     if (!currentUserId) return
 
     async function updateLastSeen() {
+      console.log('PRESENCE: heartbeat starting…', { currentUserId })
       try {
         const res = await fetch('/api/presence/heartbeat', {
           method: 'POST',
           credentials: 'same-origin',
           keepalive: true,
         })
-        if (!res.ok) console.error('[presence] heartbeat failed', res.status, await res.text().catch(() => ''))
+        const body = await res.text().catch(() => '')
+        if (!res.ok) {
+          console.error('PRESENCE: heartbeat error — HTTP', res.status, body)
+        } else {
+          console.log('PRESENCE: heartbeat sent (HTTP', res.status + ')', body)
+        }
       } catch (e) {
-        console.error('[presence] heartbeat error', e)
+        console.error('PRESENCE: heartbeat network error', e)
       }
     }
 
@@ -155,13 +161,16 @@ export function useOnlineUsers(currentUserId: string | null): Set<string> {
 }
 
 /**
- * Présence d'un utilisateur précis (header du chat) :
- * Presence partagée (instantané) + last_seen (fallback "Vu il y a X").
+ * Statut en ligne d'un utilisateur (header du chat).
+ * Approche simple et fiable : on lit profiles.last_seen (mis à jour toutes
+ * les 60s par usePresence côté propriétaire) et on dérive :
+ *   isOnline = last_seen > now - 2 min
+ * Re-fetch toutes les 30s + subscribe temps réel sur ce profil précis.
  */
 export function useUserPresence(userId: string | null) {
-  const [presenceOnline, setPresenceOnline] = useState(false)
   const [lastSeen, setLastSeen] = useState<string | null>(null)
   const [avgResponseTime, setAvgResponseTime] = useState<number | null>(null)
+  const [nowTick, setNowTick] = useState(() => Date.now())
   const mountId = useRef(Math.random().toString(36).slice(2))
 
   useEffect(() => {
@@ -169,12 +178,13 @@ export function useUserPresence(userId: string | null) {
     const supabase = createClient()
 
     async function fetchPresence() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('last_seen')
         .eq('id', userId!)
         .single()
 
+      if (error) console.error('PRESENCE: fetch profile last_seen error', error)
       if (data?.last_seen) setLastSeen(data.last_seen)
 
       const { data: convData } = await supabase
@@ -208,14 +218,12 @@ export function useUserPresence(userId: string | null) {
     }
 
     fetchPresence()
-    const interval = setInterval(fetchPresence, 60000)
+    const fetchInterval = setInterval(fetchPresence, 30000)
+    // Tick régulier pour que le label "En ligne / Vu il y a X" se rafraîchisse
+    // quand last_seen ne change pas (interlocuteur inactif).
+    const tickInterval = setInterval(() => setNowTick(Date.now()), 30000)
 
-    // Présence instantanée via le canal partagé (listener, pas de nouveau canal)
-    const uid = userId
-    const onOnline = (set: Set<string>) => setPresenceOnline(set.has(uid))
-    const detach = attachPresence(uid, onOnline)
-
-    // Fallback last_seen : canal postgres_changes propre à ce montage (topic unique)
+    // Realtime : UPDATE last_seen instantané pour ce profil (canal unique par montage)
     const lsChannel = supabase
       .channel(`presence-user:${userId}:${mountId.current}`)
       .on('postgres_changes', {
@@ -227,15 +235,13 @@ export function useUserPresence(userId: string | null) {
       .subscribe()
 
     return () => {
-      clearInterval(interval)
-      detach()
+      clearInterval(fetchInterval)
+      clearInterval(tickInterval)
       supabase.removeChannel(lsChannel)
     }
   }, [userId])
 
-  // En ligne si présent sur le canal OU last_seen < 5 min
-  const lastSeenRecent = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) / 60000 < 5 : false
-  const isOnline = presenceOnline || lastSeenRecent
+  const isOnline = lastSeen ? (nowTick - new Date(lastSeen).getTime()) / 60000 < 2 : false
 
   return { isOnline, lastSeen, avgResponseTime }
 }
@@ -250,7 +256,7 @@ export function formatLastSeen(lastSeen: string | null): string {
   if (isNaN(d.getTime())) return ''
   const now = new Date()
   const diffMin = (now.getTime() - d.getTime()) / 60000
-  if (diffMin < 5) return 'En ligne'
+  if (diffMin < 2) return 'En ligne'
   if (diffMin < 60) return `Vu il y a ${Math.round(diffMin)} min`
   if (d.toDateString() === now.toDateString()) return `Vu il y a ${Math.round(diffMin / 60)} h`
   const yesterday = new Date(now)

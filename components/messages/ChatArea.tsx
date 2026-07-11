@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { Paperclip, ArrowUp, MoreHorizontal, ChevronLeft, ChevronRight, Reply, Pencil, Trash2, SmilePlus, CalendarClock, KeyRound, Home, FileText } from 'lucide-react'
+import { Paperclip, ArrowUp, MoreHorizontal, ChevronLeft, ChevronRight, Reply, Pencil, Trash2, CalendarClock, KeyRound, Home, FileText } from 'lucide-react'
 import { CertLevel } from '@/components/ui/CertificationBadge'
 import { createClient } from '@/lib/supabase/client'
 import { useUserPresence, formatLastSeen } from '@/hooks/usePresence'
@@ -84,6 +84,7 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
   const taRef = useRef<HTMLTextAreaElement>(null)
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({})
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null)
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editText, setEditText] = useState('')
   const [replyTo, setReplyTo] = useState<Msg | null>(null)
@@ -242,24 +243,35 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
 
   // ── Réactions ───────────────────────────────────────────────────────────
   async function toggleReaction(messageId: string | undefined, emoji: string) {
+    console.log('REACTION: click on emoji', emoji, 'for message', messageId, '| currentUserId=', currentUserId)
     setShowReactionPicker(null)
-    if (!messageId || !currentUserId) return
+    setHoveredMessageId(null)
+    if (!messageId || !currentUserId) {
+      console.warn('REACTION: aborted — missing messageId or currentUserId', { messageId, currentUserId })
+      return
+    }
     const supabase = createClient()
     const mine = reactions[messageId]?.some(r => r.userId === currentUserId && r.emoji === emoji)
     const prevSnapshot = reactions[messageId] ?? []
     if (mine) {
+      console.log('REACTION: deleting from message_reactions...', { messageId, emoji })
       setReactions(prev => ({ ...prev, [messageId]: (prev[messageId] ?? []).filter(r => !(r.userId === currentUserId && r.emoji === emoji)) }))
-      const { error } = await supabase.from('message_reactions').delete().eq('message_id', messageId).eq('user_id', currentUserId).eq('emoji', emoji)
+      const { data, error, status } = await supabase.from('message_reactions').delete().eq('message_id', messageId).eq('user_id', currentUserId).eq('emoji', emoji).select()
       if (error) {
-        console.error('[reactions] delete failed', error)
+        console.error('REACTION: delete error', { status, error, code: error.code, message: error.message, details: error.details, hint: error.hint })
         setReactions(prev => ({ ...prev, [messageId]: prevSnapshot }))
+      } else {
+        console.log('REACTION: delete success', { rows: data?.length, status })
       }
     } else {
+      console.log('REACTION: inserting into message_reactions...', { messageId, user_id: currentUserId, emoji })
       setReactions(prev => ({ ...prev, [messageId]: [...(prev[messageId] ?? []), { emoji, userId: currentUserId }] }))
-      const { error } = await supabase.from('message_reactions').insert({ message_id: messageId, user_id: currentUserId, emoji })
+      const { data, error, status } = await supabase.from('message_reactions').insert({ message_id: messageId, user_id: currentUserId, emoji }).select()
       if (error) {
-        console.error('[reactions] insert failed', error)
+        console.error('REACTION: insert error', { status, error, code: error.code, message: error.message, details: error.details, hint: error.hint })
         setReactions(prev => ({ ...prev, [messageId]: prevSnapshot }))
+      } else {
+        console.log('REACTION: insert success', { data, status })
       }
     }
   }
@@ -417,11 +429,15 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
                 </div>
 
                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`} style={{ maxWidth: '78%' }}>
-                  <div className="relative">
+                  <div
+                    className="relative"
+                    onMouseEnter={() => { if (m.id) setHoveredMessageId(m.id) }}
+                    onMouseLeave={() => setHoveredMessageId(prev => prev === m.id ? null : prev)}
+                  >
 
                     {/* Context menu (clic droit) */}
                     <div
-                      style={{ position: 'absolute', right: isMe ? 0 : undefined, left: isMe ? undefined : 0, top: -8, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', padding: 4, zIndex: 20, minWidth: 170, display: showActionsFor === i ? 'block' : 'none' }}
+                      style={{ position: 'absolute', right: isMe ? 0 : undefined, left: isMe ? undefined : 0, top: -8, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', padding: 4, zIndex: 40, minWidth: 170, display: showActionsFor === i ? 'block' : 'none' }}
                       onClick={e => e.stopPropagation()}
                     >
                       <CtxBtn onClick={() => { setReplyTo(m); setShowActionsFor(null) }} icon={<Reply size={15} />}>Répondre</CtxBtn>
@@ -434,26 +450,38 @@ export default function ChatArea({ conv, onSend, onSendRich, defaultMessage, con
                       <CtxBtn onClick={() => { setRealtimeMessages(p => p.filter((_, idx) => idx !== i)); setShowActionsFor(null) }} icon={<Trash2 size={15} />} danger>Supprimer pour moi</CtxBtn>
                     </div>
 
-                    {/* Déclencheur de réactions (hover) */}
-                    <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: isMe ? -34 : undefined, right: isMe ? undefined : -34, top: '50%', transform: 'translateY(-50%)' }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setShowReactionPicker(showReactionPicker === m.id ? null : (m.id ?? null)); setShowActionsFor(null) }}
-                        className="flex items-center justify-center rounded-full transition-transform hover:scale-110"
-                        style={{ width: 28, height: 28, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer' }}
+                    {/* Menu réactions (hover desktop / long-press mobile) */}
+                    {m.id && (hoveredMessageId === m.id || showReactionPicker === m.id) && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 'calc(100% + 4px)',
+                          left: isMe ? undefined : 0,
+                          right: isMe ? 0 : undefined,
+                          zIndex: 50,
+                          background: '#1a1a1a',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: 100,
+                          padding: '6px 8px',
+                          display: 'flex',
+                          gap: 4,
+                          boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                        }}
+                        onClick={e => e.stopPropagation()}
                       >
-                        <SmilePlus size={15} color="rgba(255,255,255,0.7)" />
-                      </button>
-                      {showReactionPicker === m.id && m.id && (
-                        <div
-                          style={{ position: 'absolute', bottom: 34, left: isMe ? 0 : undefined, right: isMe ? undefined : 0, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, padding: '6px 8px', display: 'flex', gap: 2, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 30 }}
-                          onClick={e => e.stopPropagation()}
-                        >
-                          {REACTION_EMOJIS.map(emoji => (
-                            <button key={emoji} onClick={() => toggleReaction(m.id, emoji)} className="transition-transform hover:scale-125" style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '2px 4px' }}><Emoji native={emoji} size="20px" /></button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                        {REACTION_EMOJIS.map(emoji => (
+                          <button
+                            key={emoji}
+                            onClick={() => toggleReaction(m.id, emoji)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, transition: 'transform 0.15s', lineHeight: 0 }}
+                            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.3)')}
+                            onMouseLeave={e => (e.currentTarget.style.transform = '')}
+                          >
+                            <Emoji native={emoji} size="24px" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Bulle : édition / rich / texte */}
                     {editingIndex === i ? (
