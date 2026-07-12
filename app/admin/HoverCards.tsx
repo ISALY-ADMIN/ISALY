@@ -12,9 +12,11 @@ interface StatCardProps {
   bg: string
   icon: string
   alert?: boolean
+  suffix?: string
+  sub?: string
 }
 
-export function StatCard({ label, value, href, color, bg, icon, alert }: StatCardProps) {
+export function StatCard({ label, value, href, color, bg, icon, alert, suffix, sub }: StatCardProps) {
   return (
     <Link href={href} style={{ textDecoration: 'none' }}>
       <div
@@ -38,11 +40,16 @@ export function StatCard({ label, value, href, color, bg, icon, alert }: StatCar
           )}
         </div>
         <div style={{ fontSize: '32px', fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: '6px' }}>
-          {value.toLocaleString('fr-FR')}
+          {value.toLocaleString('fr-FR')}{suffix && <span style={{ fontSize: '18px', fontWeight: 600, color: '#9CA3AF', marginLeft: '3px' }}>{suffix}</span>}
         </div>
         <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 500 }}>
           {label}
         </div>
+        {sub && (
+          <div style={{ fontSize: '11px', color: '#4B5563', marginTop: '3px' }}>
+            {sub}
+          </div>
+        )}
       </div>
     </Link>
   )

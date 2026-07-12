@@ -1,32 +1,85 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
+import { createAdminClient } from '@/lib/admin/serviceClient'
+import { stripe } from '@/lib/stripe'
 import { StatCard, QuickLink } from './HoverCards'
 
-async function getStats() {
-  const supabase = createClient()
+export const dynamic = 'force-dynamic'
 
-  const [usersRes, listingsRes, matchesRes, dossiersRes, reportsRes] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    supabase.from('listings').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('matches').select('*', { count: 'exact', head: true }),
-    supabase
+async function getStripeRevenueThisMonth(): Promise<number | null> {
+  try {
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+    const intents = await stripe.paymentIntents.list({
+      created: { gte: Math.floor(startOfMonth.getTime() / 1000) },
+      limit: 100,
+    })
+    const cents = intents.data
+      .filter(pi => pi.status === 'succeeded')
+      .reduce((sum, pi) => sum + (pi.amount_received ?? pi.amount ?? 0), 0)
+    return Math.round(cents / 100)
+  } catch {
+    return null
+  }
+}
+
+async function getStats() {
+  const admin = createAdminClient()
+
+  const now = new Date()
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
+  const weekAgo = new Date(now.getTime() - 7 * 86400_000)
+
+  const [
+    usersRes, activeUsersRes, newUsersTodayRes,
+    listingsRes, listingsWeekRes,
+    matchesRes, matchesTodayRes, matchesWeekRes,
+    activeLeasesRes,
+    dossiersRes, reportsRes, pendingDocsRes, reportedReviewsRes, maintenanceRes,
+    stripeRevenue,
+  ] = await Promise.all([
+    admin.from('profiles').select('*', { count: 'exact', head: true }),
+    admin.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen', weekAgo.toISOString()),
+    admin.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
+    admin.from('listings').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    admin.from('listings').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo.toISOString()),
+    admin.from('matches').select('*', { count: 'exact', head: true }),
+    admin.from('matches').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
+    admin.from('matches').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo.toISOString()),
+    admin.from('leases').select('monthly_rent').eq('status', 'active'),
+    admin
       .from('dossiers')
       .select('*', { count: 'exact', head: true })
       .not('identity_doc_url', 'is', null)
       .eq('identity_verified', false),
-    supabase
-      .from('reports')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'open')
-      .then(r => r),
+    admin.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+    admin.from('user_documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+    admin.from('user_reviews').select('*', { count: 'exact', head: true }).eq('reported', true),
+    admin.from('maintenance_requests').select('*', { count: 'exact', head: true }).eq('status', 'sent'),
+    getStripeRevenueThisMonth(),
   ])
+
+  const activeLeases = (activeLeasesRes.data ?? []) as { monthly_rent: number | null }[]
+  const totalRent = activeLeases.reduce((s, l) => s + (l.monthly_rent ?? 0), 0)
 
   return {
     users: usersRes.count ?? 0,
+    activeUsers7d: activeUsersRes.count ?? 0,
+    newUsersToday: newUsersTodayRes.count ?? 0,
     listings: listingsRes.count ?? 0,
+    listingsWeek: listingsWeekRes.count ?? 0,
     matches: matchesRes.count ?? 0,
+    matchesToday: matchesTodayRes.count ?? 0,
+    matchesWeek: matchesWeekRes.count ?? 0,
+    activeLeases: activeLeases.length,
+    estimatedRevenue: Math.round(totalRent * 0.025),
+    stripeRevenue,
     pendingVerifications: dossiersRes.count ?? 0,
     openReports: reportsRes.count ?? 0,
+    pendingDocuments: pendingDocsRes.count ?? 0,
+    reportedReviews: reportedReviewsRes.count ?? 0,
+    pendingMaintenance: maintenanceRes.count ?? 0,
   }
 }
 
@@ -61,18 +114,49 @@ export default async function AdminDashboard() {
   await getAdminUser()
   const [stats, actions] = await Promise.all([getStats(), getRecentActions()])
 
-  const cards = [
-    { label: 'Utilisateurs',            value: stats.users,               href: '/admin/utilisateurs', color: '#60A5FA', bg: 'rgba(96,165,250,0.1)',  icon: '👥' },
-    { label: 'Annonces actives',         value: stats.listings,            href: '/admin/annonces',     color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)',  icon: '🏠' },
-    { label: 'Matchs total',             value: stats.matches,             href: '/admin',              color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', icon: '❤️' },
-    { label: 'Vérifications en attente', value: stats.pendingVerifications, href: '/admin/verifications', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: '📋', alert: stats.pendingVerifications > 0 },
-    { label: 'Signalements ouverts',     value: stats.openReports,         href: '/admin/signalements', color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   icon: '🚩', alert: stats.openReports > 0 },
+  const sections: { title: string; cards: Parameters<typeof StatCard>[0][] }[] = [
+    {
+      title: 'Utilisateurs',
+      cards: [
+        { label: 'Utilisateurs total',   value: stats.users,          href: '/admin/utilisateurs', color: '#60A5FA', bg: 'rgba(96,165,250,0.1)', icon: '👥' },
+        { label: 'Actifs sur 7 jours',   value: stats.activeUsers7d,  href: '/admin/utilisateurs', color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)', icon: '🟢' },
+        { label: "Inscrits aujourd'hui", value: stats.newUsersToday,  href: '/admin/utilisateurs', color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', icon: '✨' },
+      ],
+    },
+    {
+      title: 'Activité',
+      cards: [
+        { label: 'Annonces actives',       value: stats.listings,      href: '/admin/annonces', color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)',  icon: '🏠', sub: `+${stats.listingsWeek} cette semaine` },
+        { label: "Matchs aujourd'hui",     value: stats.matchesToday,  href: '/admin',          color: '#F472B6', bg: 'rgba(244,114,182,0.1)', icon: '❤️', sub: `${stats.matchesWeek} cette semaine` },
+        { label: 'Matchs total',           value: stats.matches,       href: '/admin',          color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', icon: '💜' },
+      ],
+    },
+    {
+      title: 'Revenus',
+      cards: [
+        { label: 'Baux actifs',                 value: stats.activeLeases,     href: '/admin/paiements', color: '#60A5FA', bg: 'rgba(96,165,250,0.1)', icon: '📄' },
+        { label: 'CA estimé / mois (2,5 %)',    value: stats.estimatedRevenue, href: '/admin/paiements', color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)', icon: '💶', suffix: '€' },
+        ...(stats.stripeRevenue !== null
+          ? [{ label: 'Revenus Stripe ce mois', value: stats.stripeRevenue,    href: '/admin/paiements', color: '#818CF8', bg: 'rgba(129,140,248,0.1)', icon: '💳', suffix: '€' as const }]
+          : []),
+      ],
+    },
+    {
+      title: 'Modération',
+      cards: [
+        { label: 'Documents en attente',     value: stats.pendingDocuments,     href: '/admin/documents',     color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: '📎', alert: stats.pendingDocuments > 0 },
+        { label: 'Vérifications en attente', value: stats.pendingVerifications, href: '/admin/verifications', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: '📋', alert: stats.pendingVerifications > 0 },
+        { label: 'Avis signalés',            value: stats.reportedReviews,      href: '/admin/reviews',       color: '#EF4444', bg: 'rgba(239,68,68,0.1)',  icon: '⭐', alert: stats.reportedReviews > 0 },
+        { label: 'Signalements ouverts',     value: stats.openReports,          href: '/admin/signalements',  color: '#EF4444', bg: 'rgba(239,68,68,0.1)',  icon: '🚩', alert: stats.openReports > 0 },
+        { label: 'Maintenance en attente',   value: stats.pendingMaintenance,   href: '/admin/signalements',  color: '#FB923C', bg: 'rgba(251,146,60,0.1)', icon: '🔧', alert: stats.pendingMaintenance > 0 },
+      ],
+    },
   ]
 
   const quickLinks = [
     { href: '/admin/utilisateurs',  label: 'Gérer les utilisateurs',  icon: '👥', desc: 'Voir, suspendre, modifier les comptes' },
-    { href: '/admin/verifications', label: 'Vérifier les dossiers',   icon: '✅', desc: "Valider les pièces d'identité" },
-    { href: '/admin/annonces',      label: 'Modérer les annonces',    icon: '🏠', desc: 'Désactiver les annonces problématiques' },
+    { href: '/admin/documents',     label: 'Valider les documents',   icon: '📎', desc: 'Vérifier les pièces envoyées par les users' },
+    { href: '/admin/reviews',       label: 'Modérer les avis',        icon: '⭐', desc: 'Traiter les avis signalés' },
     { href: '/admin/signalements',  label: 'Traiter les signalements', icon: '🚩', desc: 'Répondre aux signalements ouverts' },
   ]
 
@@ -89,12 +173,20 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats grid — client components (hover effects) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '40px' }}>
-        {cards.map(card => (
-          <StatCard key={card.label} {...card} />
-        ))}
-      </div>
+      {/* Stats — sections (client components, hover effects) */}
+      {sections.map(section => (
+        <div key={section.title} style={{ marginBottom: '28px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '12px' }}>
+            {section.title}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            {section.cards.map(card => (
+              <StatCard key={card.label} {...card} />
+            ))}
+          </div>
+        </div>
+      ))}
+      <div style={{ marginBottom: '12px' }} />
 
       {/* Recent activity */}
       <div>

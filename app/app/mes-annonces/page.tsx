@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Edit3, Trash2, Zap, ExternalLink,
   Home as HomeIcon, MapPin, Ruler, DoorOpen, Users, X, CheckCircle2,
-  Inbox, CalendarClock,
+  Inbox, CalendarClock, Eye, TrendingUp,
 } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
@@ -30,6 +30,7 @@ interface Listing {
   occupants_current: number | null
   capacity_total: number | null
   photos: string[] | null
+  views_count: number | null
   is_active: boolean
   boost_type: string | null
   boost_tier: string | null
@@ -135,6 +136,96 @@ function StatCard({ icon, label, value, tint }: {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
         <CountUp value={value} style={{ fontFamily: "'Outfit', sans-serif", fontSize: '26px', fontWeight: 800, color: '#fff', lineHeight: 1 }} />
         <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{label}</span>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Performance chart (14 jours) ────────────────────────────
+// Palette validée CVD/contraste sur surface sombre : vues #059669 · likes #6366F1
+export interface PerfDay { day: string; label: string; views: number; likes: number }
+
+function PerfChart({ data }: { data: PerfDay[] }) {
+  const [hovered, setHovered] = useState<number | null>(null)
+  const max = Math.max(1, ...data.map(d => Math.max(d.views, d.likes)))
+  const H = 110
+
+  return (
+    <motion.div
+      variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+      style={{ ...cardBase, padding: '20px 22px', height: 'auto' }}
+    >
+      {/* Titre + légende */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: "'Outfit', sans-serif", fontSize: '14px', fontWeight: 700, color: '#fff' }}>
+          <TrendingUp size={15} strokeWidth={2} color="#10B981" />
+          Performance · 14 derniers jours
+        </span>
+        <div style={{ display: 'flex', gap: '14px', fontSize: '11.5px', fontWeight: 600, color: 'rgba(255,255,255,0.55)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: '#059669', display: 'inline-block' }} />
+            Vues
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: '#6366F1', display: 'inline-block' }} />
+            Likes reçus
+          </span>
+        </div>
+      </div>
+
+      {/* Zone barres */}
+      <div style={{ position: 'relative' }}>
+        {/* Repère max (recessif) */}
+        <div style={{ position: 'absolute', top: 0, left: 0, fontSize: '10px', color: 'rgba(255,255,255,0.3)', lineHeight: 1 }}>{max}</div>
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', gap: '2px',
+          height: `${H}px`, borderBottom: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          {data.map((d, i) => {
+            const hv = Math.round((d.views / max) * (H - 14))
+            const hl = Math.round((d.likes / max) * (H - 14))
+            const isHover = hovered === i
+            return (
+              <div
+                key={d.day}
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  flex: 1, height: '100%', display: 'flex', alignItems: 'flex-end',
+                  justifyContent: 'center', gap: '2px', cursor: 'default',
+                  background: isHover ? 'rgba(255,255,255,0.04)' : 'transparent',
+                  borderRadius: '6px 6px 0 0', position: 'relative',
+                }}
+              >
+                <span style={{ width: '38%', maxWidth: 12, height: Math.max(hv, d.views > 0 ? 3 : 1), background: d.views > 0 ? '#059669' : 'rgba(255,255,255,0.07)', borderRadius: '3px 3px 0 0' }} />
+                <span style={{ width: '38%', maxWidth: 12, height: Math.max(hl, d.likes > 0 ? 3 : 1), background: d.likes > 0 ? '#6366F1' : 'rgba(255,255,255,0.07)', borderRadius: '3px 3px 0 0' }} />
+                {/* Tooltip */}
+                {isHover && (
+                  <div style={{
+                    position: 'absolute', bottom: `${H + 4}px`, left: '50%', transform: 'translateX(-50%)',
+                    background: '#16191D', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
+                    padding: '8px 12px', whiteSpace: 'nowrap', zIndex: 10,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.45)', pointerEvents: 'none',
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{d.label}</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.65)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#059669', marginRight: 5 }} />{d.views} vue{d.views > 1 ? 's' : ''}</span>
+                      <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#6366F1', marginRight: 5 }} />{d.likes} like{d.likes > 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        {/* Labels X (1 jour sur 2) */}
+        <div style={{ display: 'flex', gap: '2px', marginTop: '6px' }}>
+          {data.map((d, i) => (
+            <span key={d.day} style={{ flex: 1, textAlign: 'center', fontSize: '9.5px', color: 'rgba(255,255,255,0.35)' }}>
+              {i % 2 === (data.length + 1) % 2 ? d.label : ''}
+            </span>
+          ))}
+        </div>
       </div>
     </motion.div>
   )
@@ -332,6 +423,10 @@ function ListingCard({ l, onToggle, onDelete, busy, candidatesCount }: {
               <Users size={13} strokeWidth={1.75} />
               {occ.current}/{occ.total} places
             </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#34D399' }}>
+              <Eye size={13} strokeWidth={1.75} />
+              {(l.views_count ?? 0).toLocaleString('fr-FR')} vue{(l.views_count ?? 0) > 1 ? 's' : ''}
+            </span>
           </div>
 
           {/* Ligne 3 : loyer + date */}
@@ -507,6 +602,8 @@ function MesAnnoncesContent() {
   const [listings, setListings] = useState<Listing[] | null>(null)
   const [candidatesCount, setCandidatesCount] = useState(0)
   const [candidatesByListing, setCandidatesByListing] = useState<Record<string, number>>({})
+  const [visitsBooked, setVisitsBooked] = useState(0)
+  const [perfData, setPerfData] = useState<PerfDay[]>([])
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null)
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1)
@@ -526,24 +623,56 @@ function MesAnnoncesContent() {
 
     const myIds = (myListingIdsRes.data ?? []).map(l => l.id as string)
     if (myIds.length > 0) {
-      const { count } = await supabase
-        .from('swipes').select('id', { count: 'exact', head: true })
-        .eq('swiped_id', user.id).in('direction', ['right', 'super'])
-      setCandidatesCount(count ?? 0)
+      // Fenêtre 14 jours (dates locales)
+      const days: PerfDay[] = []
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        days.push({ day: key, label: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), views: 0, likes: 0 })
+      }
+      const since = days[0].day
+      const todayIso = days[days.length - 1].day
 
-      // Comptage par annonce (nécessite swipes.listing_id — sinon renvoie {})
-      const { data: perListing } = await supabase
-        .from('swipes').select('listing_id')
-        .eq('swiped_id', user.id).in('direction', ['right', 'super'])
+      const [candRes, perListingRes, viewsRes, likesRes, visitsRes] = await Promise.all([
+        supabase.from('swipes').select('id', { count: 'exact', head: true })
+          .eq('swiped_id', user.id).in('direction', ['right', 'super']),
+        // Comptage par annonce (nécessite swipes.listing_id — sinon renvoie {})
+        supabase.from('swipes').select('listing_id')
+          .eq('swiped_id', user.id).in('direction', ['right', 'super']),
+        supabase.from('listing_views').select('viewed_on')
+          .in('listing_id', myIds).gte('viewed_on', since),
+        supabase.from('swipes').select('created_at')
+          .eq('swiped_id', user.id).in('direction', ['right', 'super'])
+          .gte('created_at', `${since}T00:00:00`),
+        supabase.from('visit_slots').select('id', { count: 'exact', head: true })
+          .eq('owner_id', user.id).eq('is_booked', true).gte('slot_date', todayIso),
+      ])
+
+      setCandidatesCount(candRes.count ?? 0)
+      setVisitsBooked(visitsRes.count ?? 0)
+
       const grouped: Record<string, number> = {}
-      for (const row of (perListing ?? []) as { listing_id: string | null }[]) {
+      for (const row of (perListingRes.data ?? []) as { listing_id: string | null }[]) {
         if (!row.listing_id) continue
         grouped[row.listing_id] = (grouped[row.listing_id] ?? 0) + 1
       }
       setCandidatesByListing(grouped)
+
+      const byDay = new Map(days.map(d => [d.day, d]))
+      for (const v of (viewsRes.data ?? []) as { viewed_on: string }[]) {
+        const d = byDay.get(v.viewed_on); if (d) d.views++
+      }
+      for (const s of (likesRes.data ?? []) as { created_at: string }[]) {
+        const dt = new Date(s.created_at)
+        const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+        const d = byDay.get(key); if (d) d.likes++
+      }
+      setPerfData(days)
     } else {
       setCandidatesCount(0)
       setCandidatesByListing({})
+      setVisitsBooked(0)
+      setPerfData([])
     }
   }, [router])
 
@@ -562,8 +691,10 @@ function MesAnnoncesContent() {
       total: arr.length,
       active: arr.filter(l => l.is_active).length,
       candidates: candidatesCount,
+      views: arr.reduce((s, l) => s + (l.views_count ?? 0), 0),
+      visits: visitsBooked,
     }
-  }, [listings, candidatesCount])
+  }, [listings, candidatesCount, visitsBooked])
 
   async function handleToggle(l: Listing) {
     if (pendingId) return
@@ -660,9 +791,21 @@ function MesAnnoncesContent() {
               gap: '12px', marginBottom: '20px',
             }}
           >
-            <StatCard icon={<HomeIcon size={20} strokeWidth={1.8} />} label={stats.total > 1 ? 'annonces publiées' : 'annonce publiée'} value={stats.total} />
-            <StatCard icon={<CheckCircle2 size={20} strokeWidth={1.8} />} label={stats.active > 1 ? 'annonces actives' : 'annonce active'} value={stats.active} />
+            <StatCard icon={<CheckCircle2 size={20} strokeWidth={1.8} />} label={`annonce${stats.active > 1 ? 's' : ''} active${stats.active > 1 ? 's' : ''} sur ${stats.total}`} value={stats.active} />
+            <StatCard icon={<Eye size={20} strokeWidth={1.8} />} label={stats.views > 1 ? 'vues au total' : 'vue au total'} value={stats.views} tint="#34D399" />
             <StatCard icon={<Users size={20} strokeWidth={1.8} />} label={stats.candidates > 1 ? 'candidatures reçues' : 'candidature reçue'} value={stats.candidates} tint="#818CF8" />
+            <StatCard icon={<CalendarClock size={20} strokeWidth={1.8} />} label={stats.visits > 1 ? 'visites réservées' : 'visite réservée'} value={stats.visits} tint="#F59E0B" />
+          </motion.div>
+        )}
+
+        {/* ── Graphique performance 14 jours ── */}
+        {listings !== null && listings.length > 0 && perfData.length > 0 && (
+          <motion.div
+            initial="hidden" animate="visible"
+            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } } }}
+            style={{ marginBottom: '20px' }}
+          >
+            <PerfChart data={perfData} />
           </motion.div>
         )}
 
