@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, ShieldCheck, Megaphone,
-  Flag, CreditCard, ArrowLeft, FileCheck, Star,
+  Flag, CreditCard, ArrowLeft, FileCheck, Star, BarChart3,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -18,6 +18,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Tableau de bord', href: '/admin' },
+  { icon: BarChart3,       label: 'Analytics',       href: '/admin/analytics' },
   { icon: Users,           label: 'Utilisateurs',    href: '/admin/utilisateurs' },
   { icon: ShieldCheck,     label: 'Vérifications',   href: '/admin/verifications' },
   { icon: FileCheck,       label: 'Documents',       href: '/admin/documents', badgeKey: 'pendingDocuments' },

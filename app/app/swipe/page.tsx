@@ -12,6 +12,7 @@ import MatchList, { MatchItem } from '@/components/swipe/MatchList'
 import ModeSwitcher from '@/components/ModeSwitcher'
 import { createClient } from '@/lib/supabase/client'
 import { profilesCompatibility } from '@/lib/matching'
+import { track } from '@/lib/analytics'
 import { listingOccupancy } from '@/lib/utils'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
@@ -436,6 +437,8 @@ export default function SwipePage() {
             tags: (p.passions as string[]) ?? [],
             bio: (p.bio as string) ?? '',
             certLevel: (p.cert_level as 0 | 1 | 2 | 3) ?? 0,
+            urgent: !!p.urgent_search_active && !!p.urgent_search_expires_at &&
+              new Date(p.urgent_search_expires_at as string) > new Date(),
           })))
         }
       }
@@ -503,6 +506,8 @@ export default function SwipePage() {
       else filtered.sort((a, b) => (b.match ?? -1) - (a.match ?? -1))
       // Annonces complètes dépriorisées : toujours en fin de pile
       filtered.sort((a, b) => Number(isFull(a)) - Number(isFull(b)))
+      // Mission 15 : recherche urgente = tête de pile (tri stable, appliqué en dernier)
+      filtered.sort((a, b) => Number(!!b.urgent) - Number(!!a.urgent))
       setProfiles(filtered)
     } catch {}
     setLoading(false)
@@ -615,6 +620,10 @@ export default function SwipePage() {
     const swiped = profiles[index]
     const swipedIndex = index
     if (swiped) {
+      const targetType = swiped.isListing ? 'listing' as const : 'profile' as const
+      if (dir === 'right') track.swipeRight(targetType)
+      else if (dir === 'left') track.swipeLeft(targetType)
+      else track.superLike(targetType)
       try {
         const res = await fetch('/api/swipe', {
           method: 'POST',
@@ -623,6 +632,7 @@ export default function SwipePage() {
         })
         const json = await res.json()
         if (json.matched) {
+          track.match()
           setTimeout(() => {
             setMatchPopup(swiped)
             fetchMatches()

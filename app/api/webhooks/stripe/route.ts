@@ -1,6 +1,15 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
+import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { resend, FROM_EMAIL } from '@/lib/resend'
+import { identityVerifiedTemplate } from '@/lib/email-templates'
+
+/** Normalise un nom pour comparaison (accents, casse, espaces). */
+function normName(s: string | null | undefined): string {
+  return (s ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
 
 export async function POST(request: Request) {
   const body = await request.text()
@@ -157,6 +166,90 @@ export async function POST(request: Request) {
           plan_type:                 planType as 'assurance' | 'featured' | 'priority',
           status:                    'succeeded',
         })
+      }
+      break
+    }
+
+    // ── Mission 14 : vérification d'identité Stripe Identity ──
+    case 'identity.verification_session.verified': {
+      const session = event.data.object as Stripe.Identity.VerificationSession
+      const userId = session.metadata?.user_id
+      if (!userId) break
+
+      // Service role : le webhook n'a pas de session utilisateur (RLS)
+      const admin = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      )
+
+      // Données vérifiées par Stripe (nom + prénom du document)
+      let verifiedFirst = ''
+      let verifiedLast = ''
+      try {
+        const full = await stripe.identity.verificationSessions.retrieve(session.id, {
+          expand: ['verified_outputs'],
+        })
+        verifiedFirst = full.verified_outputs?.first_name ?? ''
+        verifiedLast = full.verified_outputs?.last_name ?? ''
+      } catch (err) {
+        console.error('Stripe Identity retrieve error:', err)
+      }
+
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('first_name, last_name, email, cert_level')
+        .eq('id', userId)
+        .single()
+      if (!profile) break
+
+      const nameMatch =
+        normName(profile.first_name) === normName(verifiedFirst) &&
+        normName(profile.last_name) === normName(verifiedLast)
+
+      if (!nameMatch) {
+        await admin.from('notifications').insert({
+          user_id: userId,
+          type: 'system',
+          title: 'Vérification échouée',
+          body: 'Le nom du document ne correspond pas à votre profil. Vérifiez vos prénom et nom, puis réessayez.',
+          link: '/app/profil',
+        })
+        break
+      }
+
+      await admin.from('user_documents').upsert({
+        user_id: userId,
+        type: 'identity',
+        file_url: session.id,
+        storage_path: session.id,
+        status: 'verified',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,type' })
+
+      if ((profile.cert_level ?? 0) < 2) {
+        await admin.from('profiles').update({ cert_level: 2 }).eq('id', userId)
+      }
+
+      await admin.from('notifications').insert({
+        user_id: userId,
+        type: 'system',
+        title: 'Votre identité a été vérifiée ✓',
+        body: 'Votre badge « Identité vérifiée » est maintenant visible sur votre profil.',
+        link: '/app/profil',
+      })
+
+      if (profile.email) {
+        try {
+          await resend.emails.send({
+            from: FROM_EMAIL,
+            to: profile.email,
+            subject: 'Votre identité est vérifiée ✓ — ISALY',
+            html: identityVerifiedTemplate(profile.first_name ?? ''),
+          })
+        } catch (err) {
+          console.error('Resend identity email error:', err)
+        }
       }
       break
     }

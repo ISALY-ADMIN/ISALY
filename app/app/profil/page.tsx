@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Camera, Pencil } from 'lucide-react'
+import { MapPin, Camera, Pencil, Shield, Zap, ExternalLink } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
 import CertificationBadge, { CertLevel, CertStatus } from '@/components/ui/CertificationBadge'
@@ -15,6 +15,7 @@ import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { computeProfileCompletion, computeProfileCompletionSteps } from '@/lib/profileCompletion'
+import { track } from '@/lib/analytics'
 
 // ── Design tokens (signature dashboard-home) ──────────────────
 const MINT = '#10B981'
@@ -50,7 +51,8 @@ const PASSION_EMOJI: Record<string, string> = {
 
 // ── Document model ────────────────────────────────────────────
 const BUCKET = 'certifications'
-type DocType = 'identity_front' | 'identity_back' | 'payslip' | 'domicile' | 'guarantor'
+type DocType = 'identity_front' | 'identity_back' | 'payslip' | 'domicile' | 'guarantor' | 'identity' | 'garant'
+const GOLD = '#F59E0B'
 
 const ID_DOCS: { type: DocType; label: string; required: boolean }[] = [
   { type: 'identity_front', label: "Pièce d'identité — recto", required: true },
@@ -62,7 +64,7 @@ const INCOME_DOCS: { type: DocType; label: string; required: boolean }[] = [
   { type: 'guarantor', label: 'Garant (optionnel)', required: false },
 ]
 
-type DocInfo = { path: string; status: CertStatus; url: string | null; isImage: boolean; name: string }
+type DocInfo = { path: string; status: CertStatus; url: string | null; isImage: boolean; name: string; garantName?: string; garantEmail?: string }
 type Docs = Partial<Record<DocType, DocInfo>>
 
 // ── UI primitives ─────────────────────────────────────────────
@@ -345,11 +347,26 @@ export default function ProfilPage() {
 
   const [showBailModal, setShowBailModal] = useState(false)
 
+  // Mission 14 — vérification Stripe Identity
+  const [verifyLoading, setVerifyLoading] = useState(false)
+
+  // Mission 15 — recherche urgente
+  const [urgent, setUrgent] = useState({ active: false, availableFrom: '', city: '', expiresAt: null as string | null })
+  const [urgentForm, setUrgentForm] = useState(false)
+  const [urgentDraft, setUrgentDraft] = useState({ availableFrom: '', city: '' })
+  const [urgentSaving, setUrgentSaving] = useState(false)
+
+  // Mission 16 — garant digital
+  const [garantOption, setGarantOption] = useState<'garant' | 'gli' | null>(null)
+  const [garantDraft, setGarantDraft] = useState({ name: '', email: '' })
+
   // ── Level criteria (calculé d'abord — computedLevel alimente la checklist partagée) ─
   const l1Done = !!avatarUrl && !!firstName && !!lastName && bio.trim().length > 20 && !!city && budgetMax > 0 && !!email
-  const idDone = !!(docs.identity_front && docs.identity_back)
+  const stripeVerified = docs.identity?.status === 'verified'
+  const idDone = !!(docs.identity_front && docs.identity_back) || stripeVerified
   const incomeDone = !!(docs.payslip && docs.domicile)
-  const computedLevel: CertLevel = (l1Done && idDone && incomeDone) ? 3 : (l1Done && idDone) ? 2 : l1Done ? 1 : 0
+  const garantAdded = !!docs.garant
+  const computedLevel: CertLevel = (l1Done && idDone && (incomeDone || garantAdded)) ? 3 : (l1Done && idDone) ? 2 : l1Done ? 1 : 0
 
   // ── Tooltip premier usage sur le ring de complétion ──
   const [showRingTip, setShowRingTip] = useState(false)
@@ -374,6 +391,8 @@ export default function ProfilPage() {
   const completionPct = computeProfileCompletion(completionInput)
 
   const levelStatus = (lvl: number): CertStatus => {
+    if (lvl === 2 && stripeVerified) return 'verified'
+    if (lvl === 3 && !incomeDone && garantAdded) return docs.garant!.status
     const list = lvl === 2 ? ID_DOCS : lvl === 3 ? INCOME_DOCS : []
     const req = list.filter(d => d.required).map(d => docs[d.type]).filter(Boolean) as DocInfo[]
     if (req.length === 0) return 'verified'
@@ -398,6 +417,7 @@ export default function ProfilPage() {
       map[row.type as DocType] = {
         path, status: (row.status as CertStatus) ?? 'pending', url,
         isImage: /\.(png|jpe?g|webp|gif|avif)$/i.test(path), name,
+        garantName: row.garant_name ?? undefined, garantEmail: row.garant_email ?? undefined,
       }
     }
     return map
@@ -432,8 +452,20 @@ export default function ProfilPage() {
         setPetsOk(profile.pets_ok ?? null)
         setIsVisible(profile.is_visible ?? true)
         setQuizDone(!!(profile.matching_data && typeof profile.matching_data.completed_at === 'string'))
+        setCertLevel((profile.cert_level ?? 0) as CertLevel)
+        setUrgent({
+          active: !!profile.urgent_search_active && (!profile.urgent_search_expires_at || new Date(profile.urgent_search_expires_at) > new Date()),
+          availableFrom: profile.urgent_search_available_from ?? '',
+          city: profile.city ?? '',
+          expiresAt: profile.urgent_search_expires_at ?? null,
+        })
+        setUrgentDraft({ availableFrom: profile.urgent_search_available_from ?? '', city: profile.city ?? '' })
       }
       setDocs(docMap)
+      if (docMap.garant) {
+        setGarantOption('garant')
+        setGarantDraft({ name: docMap.garant.garantName ?? '', email: docMap.garant.garantEmail ?? '' })
+      }
       if (listingCities) {
         setCityOptions(Array.from(new Set(listingCities.map((l: { city: string }) => l.city).filter(Boolean))).slice(0, 40))
       }
@@ -515,8 +547,55 @@ export default function ProfilPage() {
     setUploadingAvatar(false)
   }
 
+  // ── Mission 14 : Stripe Identity hosted flow ─────────────────
+  async function startIdentityVerification() {
+    setVerifyLoading(true)
+    try {
+      const res = await fetch('/api/verify/identity', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.url) { track.identityVerificationStarted(); window.location.href = data.url; return }
+      if (data.fallback) {
+        toast({ title: 'Vérification automatique indisponible', description: 'Envoyez votre pièce d\'identité ci-dessous — validation manuelle sous 24 h.', duration: 5000 })
+      } else {
+        toast({ title: 'Impossible de lancer la vérification', description: data.error ?? 'Réessayez.', variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Erreur réseau', description: 'Réessayez.', variant: 'destructive' })
+    }
+    setVerifyLoading(false)
+  }
+
+  // ── Mission 15 : recherche urgente ───────────────────────────
+  async function saveUrgent(active: boolean) {
+    if (active && (!urgentDraft.availableFrom || !urgentDraft.city.trim())) {
+      toast({ title: 'Champs manquants', description: 'Indiquez la date de disponibilité et la ville.', variant: 'destructive' })
+      return
+    }
+    setUrgentSaving(true)
+    try {
+      const res = await fetch('/api/profiles/urgent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(active
+          ? { active: true, available_from: urgentDraft.availableFrom, city: urgentDraft.city.trim() }
+          : { active: false }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Erreur')
+      setUrgent({ active, availableFrom: urgentDraft.availableFrom, city: urgentDraft.city, expiresAt: data.expires_at ?? null })
+      setUrgentForm(false)
+      if (active) track.urgentSearchActivated(urgentDraft.city.trim())
+      toast(active
+        ? { title: '🔥 Recherche urgente activée', description: 'Vous remontez en priorité pendant 7 jours.', duration: 4000 }
+        : { title: 'Mode recherche urgente désactivé', duration: 2500 })
+    } catch (e) {
+      toast({ title: 'Échec', description: (e as Error).message, variant: 'destructive' })
+    }
+    setUrgentSaving(false)
+  }
+
   // ── Document upload / delete ─────────────────────────────────
-  async function uploadDoc(type: DocType, file: File) {
+  async function uploadDoc(type: DocType, file: File, extra?: Record<string, string | null>) {
     setDocUploading(type)
     try {
       const supabase = createClient()
@@ -538,11 +617,17 @@ export default function ProfilPage() {
 
       const { error: dbErr } = await supabase.from('user_documents').upsert({
         user_id: userId, type, file_url: path, storage_path: path, status: 'pending', updated_at: new Date().toISOString(),
+        ...(extra ?? {}),
       }, { onConflict: 'user_id,type' })
       if (dbErr) throw dbErr
 
       const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600)
-      setDocs(d => ({ ...d, [type]: { path, status: 'pending', url: signed?.signedUrl ?? null, isImage: /\.(png|jpe?g|webp|gif|avif)$/i.test(path), name: path.split('/').pop() ?? 'document' } }))
+      setDocs(d => ({ ...d, [type]: {
+        path, status: 'pending' as CertStatus, url: signed?.signedUrl ?? null,
+        isImage: /\.(png|jpe?g|webp|gif|avif)$/i.test(path), name: path.split('/').pop() ?? 'document',
+        garantName: (extra?.garant_name as string) ?? undefined, garantEmail: (extra?.garant_email as string) ?? undefined,
+      } }))
+      if (type === 'garant') track.garantAdded()
       toast({ title: '✓ Document envoyé', description: 'En attente de validation.', duration: 3000 })
     } catch (err) {
       toast({ title: 'Échec de l\'upload', description: (err as Error).message || 'Réessayez.', variant: 'destructive' })
@@ -645,9 +730,21 @@ export default function ProfilPage() {
                 <div className="flex items-center gap-1.5 text-[13px] mb-2.5" style={{ color: TXT_LOW }}>
                   <MapPin size={13} /> {city || 'Ville non renseignée'}
                 </div>
-                {certLevel > 0
-                  ? <CertificationBadge level={certLevel} status={levelStatus(certLevel)} size="md" />
-                  : <span className="text-[11.5px] font-semibold px-2.5 py-1 rounded-[8px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_LOW }}>Non vérifié</span>}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {certLevel > 0
+                    ? <CertificationBadge level={certLevel} status={levelStatus(certLevel)} size="md" />
+                    : <span className="text-[11.5px] font-semibold px-2.5 py-1 rounded-[8px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_LOW }}>Non vérifié</span>}
+                  {certLevel >= 2 && (
+                    <span title="Identité vérifiée par ISALY" className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.12)', color: MINT, border: '1px solid rgba(16,185,129,0.35)' }}>
+                      <Shield size={11} /> Identité vérifiée
+                    </span>
+                  )}
+                  {urgent.active && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(245,158,11,0.12)', color: GOLD, border: '1px solid rgba(245,158,11,0.35)' }}>
+                      <Emoji native="🔥" size="11px" /> Recherche active
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="relative">
@@ -866,11 +963,31 @@ export default function ProfilPage() {
                 <span className="text-[13px] font-bold" style={{ color: TXT_HI }}>Niveau 2 — Identité certifiée</span>
                 {idDone ? <CertificationBadge level={2} status={levelStatus(2)} size="sm" /> : <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(255,255,255,0.06)', color: TXT_LOW }}>Pièce d'identité requise</span>}
               </div>
-              {ID_DOCS.map(d => (
-                <DocRow key={d.type} label={d.label} required={d.required} doc={docs[d.type]} uploading={docUploading === d.type}
-                  onUpload={f => uploadDoc(d.type, f)} onDelete={() => deleteDoc(d.type)} />
-              ))}
-              {!idDone && <p className="text-[11.5px] mt-2.5 mb-0" style={{ color: TXT_FAINT }}>➜ Ajoutez le recto ET le verso de votre pièce d'identité pour atteindre le niveau 2.</p>}
+              {/* Mission 14 — vérification automatique Stripe Identity */}
+              {stripeVerified ? (
+                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-[12px] mb-1" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                  <Shield size={15} color={MINT} />
+                  <span className="text-[12.5px] font-semibold" style={{ color: MINT }}>Identité vérifiée automatiquement via Stripe Identity</span>
+                </div>
+              ) : (
+                <>
+                  {!idDone && (
+                    <div className="flex items-center justify-between gap-3 flex-wrap px-3.5 py-3 rounded-[12px] mb-2.5" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] font-bold" style={{ color: TXT_HI }}><Shield size={12} className="inline -mt-0.5" color={MINT} /> Vérification automatique</div>
+                        <div className="text-[11px] mt-0.5" style={{ color: TXT_LOW }}>2 minutes avec votre pièce d'identité — sécurisé par Stripe Identity.</div>
+                      </div>
+                      <Button size="sm" onClick={startIdentityVerification} loading={verifyLoading}>Vérifier mon identité</Button>
+                    </div>
+                  )}
+                  {!idDone && <p className="text-[11px] mt-0 mb-1.5" style={{ color: TXT_FAINT }}>… ou envoyez vos documents manuellement (validation sous 24 h) :</p>}
+                  {ID_DOCS.map(d => (
+                    <DocRow key={d.type} label={d.label} required={d.required} doc={docs[d.type]} uploading={docUploading === d.type}
+                      onUpload={f => uploadDoc(d.type, f)} onDelete={() => deleteDoc(d.type)} />
+                  ))}
+                  {!idDone && <p className="text-[11.5px] mt-2.5 mb-0" style={{ color: TXT_FAINT }}>➜ Ajoutez le recto ET le verso de votre pièce d'identité pour atteindre le niveau 2.</p>}
+                </>
+              )}
             </div>
 
             {/* Niveau 3 */}
@@ -891,6 +1008,79 @@ export default function ProfilPage() {
                 </>
               ) : (
                 <p className="text-[12px] m-0" style={{ color: TXT_FAINT }}>Validez d'abord votre identité (Niveau 2) pour débloquer le dossier complet.</p>
+              )}
+            </div>
+
+            {/* ── Mission 16 : Garantie loyer impayé ── */}
+            <div className="rounded-[14px] p-4 mt-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${garantAdded && docs.garant?.status === 'verified' ? 'rgba(245,158,11,0.35)' : CARD_BORDER}` }}>
+              <div className="flex justify-between items-center mb-1.5 gap-2 flex-wrap">
+                <span className="text-[13px] font-bold" style={{ color: TXT_HI }}>Garantie loyer impayé</span>
+                {garantAdded && docs.garant?.status === 'verified' && (
+                  <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(245,158,11,0.12)', color: GOLD }}>
+                    <Shield size={10} /> Garant vérifié
+                  </span>
+                )}
+              </div>
+              <p className="text-[11.5px] mt-0 mb-3" style={{ color: TXT_LOW }}>
+                Rassurez votre futur propriétaire avec une garantie GLI ou un garant physique.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+                <button
+                  onClick={() => setGarantOption(o => o === 'garant' ? null : 'garant')}
+                  className="text-left p-3.5 rounded-[12px] cursor-pointer transition-all duration-150 active:scale-[0.99]"
+                  style={garantOption === 'garant'
+                    ? { background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.5)' }
+                    : { background: 'rgba(255,255,255,0.03)', border: `1px solid ${INPUT_BORDER}` }}
+                >
+                  <div className="text-[12.5px] font-bold mb-0.5" style={{ color: garantOption === 'garant' ? MINT : TXT_HI }}><Emoji native="🤝" size="12px" /> Je présente un garant</div>
+                  <div className="text-[11px]" style={{ color: TXT_LOW }}>Un proche se porte garant — ajoutez ses coordonnées et un justificatif.</div>
+                </button>
+                <button
+                  onClick={() => setGarantOption(o => o === 'gli' ? null : 'gli')}
+                  className="text-left p-3.5 rounded-[12px] cursor-pointer transition-all duration-150 active:scale-[0.99]"
+                  style={garantOption === 'gli'
+                    ? { background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.5)' }
+                    : { background: 'rgba(255,255,255,0.03)', border: `1px solid ${INPUT_BORDER}` }}
+                >
+                  <div className="text-[12.5px] font-bold mb-0.5" style={{ color: garantOption === 'gli' ? MINT : TXT_HI }}><Emoji native="🛡️" size="12px" /> Je souscris une garantie</div>
+                  <div className="text-[11px]" style={{ color: TXT_LOW }}>Garantie loyer impayé via un partenaire (Garantme, Cautioneo).</div>
+                </button>
+              </div>
+
+              {garantOption === 'garant' && (
+                <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <TextField label="Nom & prénom du garant" value={garantDraft.name} onChange={v => setGarantDraft(p => ({ ...p, name: v }))} placeholder="Marie Dupont" />
+                    <TextField label="Email du garant" type="email" value={garantDraft.email} onChange={v => setGarantDraft(p => ({ ...p, email: v }))} placeholder="marie@exemple.fr" />
+                  </div>
+                  <DocRow
+                    label="Justificatifs du garant (identité + revenus)"
+                    required={false}
+                    doc={docs.garant}
+                    uploading={docUploading === 'garant'}
+                    onUpload={f => {
+                      if (!garantDraft.name.trim() || !garantDraft.email.trim()) {
+                        toast({ title: 'Coordonnées du garant requises', description: 'Renseignez le nom et l\'email du garant avant d\'envoyer le justificatif.', variant: 'destructive' })
+                        return
+                      }
+                      uploadDoc('garant', f, { garant_name: garantDraft.name.trim(), garant_email: garantDraft.email.trim() })
+                    }}
+                    onDelete={() => deleteDoc('garant')}
+                  />
+                  <p className="text-[11px] m-0" style={{ color: TXT_FAINT }}>Une fois validé par notre équipe, votre dossier passe au niveau 3 avec le badge « Garant vérifié ».</p>
+                </div>
+              )}
+
+              {garantOption === 'gli' && (
+                <a
+                  href="https://garantme.fr/?utm_source=isaly&utm_medium=partner&utm_campaign=garant_digital"
+                  target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-[12.5px] font-bold px-4 py-2.5 rounded-[10px] no-underline transition-transform active:scale-[0.98]"
+                  style={{ background: `linear-gradient(135deg, ${MINT}, ${MINT_D})`, color: '#fff' }}
+                >
+                  Souscrire chez notre partenaire <ExternalLink size={13} />
+                </a>
               )}
             </div>
           </Section>
@@ -934,6 +1124,64 @@ export default function ProfilPage() {
             {mode === 'loueur' && lease && (
               <div className="mt-3 px-3 py-2.5 rounded-[10px] text-[12.5px]" style={{ background: 'rgba(16,185,129,0.08)', color: MINT, border: '1px solid rgba(16,185,129,0.25)' }}>
                 <Emoji native="📍" /> {lease.address}{lease.city ? `, ${lease.city}` : ''} · {lease.monthly_rent} €/mois
+              </div>
+            )}
+
+            {/* ── Mission 15 : mode recherche urgente ── */}
+            {mode === 'locataire' && (
+              <div className="rounded-[14px] p-4 mt-3" style={{ background: 'rgba(245,158,11,0.08)', border: `1px solid ${GOLD}` }}>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Zap size={16} color={GOLD} className="flex-shrink-0" />
+                    <span className="text-[13px] font-bold" style={{ color: TXT_HI }}>Recherche urgente</span>
+                    <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full tracking-wider" style={{ background: 'rgba(245,158,11,0.15)', color: GOLD, border: '1px solid rgba(245,158,11,0.4)' }}>
+                      BÊTA GRATUITE
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
+                    <span className="text-[11px] font-semibold" style={{ color: urgent.active ? GOLD : TXT_LOW }}>{urgent.active ? 'Activé' : 'Désactivé'}</span>
+                    <input
+                      type="checkbox"
+                      checked={urgent.active || urgentForm}
+                      disabled={urgentSaving}
+                      onChange={e => {
+                        if (e.target.checked) { setUrgentForm(true) }
+                        else if (urgent.active) { saveUrgent(false) }
+                        else { setUrgentForm(false) }
+                      }}
+                      className="w-[17px] h-[17px] cursor-pointer" style={{ accentColor: GOLD }}
+                    />
+                  </label>
+                </div>
+                <p className="text-[11.5px] mt-1.5 mb-0" style={{ color: TXT_LOW }}>
+                  Remontez en priorité dans le swipe des loueurs pendant 7 jours, avec le badge <span style={{ color: GOLD }}>🔥 Recherche active</span>. Gratuit pendant la bêta (1,99 € ensuite).
+                </p>
+
+                {urgent.active && (
+                  <div className="mt-2.5 px-3 py-2 rounded-[10px] text-[12px]" style={{ background: 'rgba(245,158,11,0.1)', color: GOLD }}>
+                    <Emoji native="🔥" size="12px" /> Actif jusqu'au {urgent.expiresAt ? new Date(urgent.expiresAt).toLocaleDateString('fr-FR') : '—'}
+                    {urgent.availableFrom ? ` · disponible dès le ${new Date(urgent.availableFrom).toLocaleDateString('fr-FR')}` : ''}
+                  </div>
+                )}
+
+                {urgentForm && !urgent.active && (
+                  <div className="flex flex-col gap-3 mt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <TextField label="Disponible à partir du" type="date" value={urgentDraft.availableFrom} onChange={v => setUrgentDraft(p => ({ ...p, availableFrom: v }))} />
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: TXT_LOW }}>Dans quelle ville ?</label>
+                        <input list="city-list-urgent" value={urgentDraft.city} onChange={e => setUrgentDraft(p => ({ ...p, city: e.target.value }))}
+                          placeholder="Ex. Lyon" className="w-full px-3.5 py-2.5 rounded-[10px] text-[13.5px] outline-none"
+                          style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TXT_HI }} />
+                        <datalist id="city-list-urgent">{cityOptions.map(c => <option key={c} value={c} />)}</datalist>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => saveUrgent(true)} loading={urgentSaving}><Zap size={13} /> Activer pour 7 jours</Button>
+                      <Button size="sm" variant="secondary" onClick={() => setUrgentForm(false)}>Annuler</Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </Section>

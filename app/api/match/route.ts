@@ -56,9 +56,15 @@ export async function GET() {
     }
   })
 
-  // Scores réels d'abord (décroissant), tests non complétés à la fin
+  // Mission 15 : recherche urgente non expirée = priorité absolue,
+  // puis scores réels (décroissant), tests non complétés à la fin
+  const now = Date.now()
+  const urgentBoost = (p: Profile & { urgent_search_active?: boolean; urgent_search_expires_at?: string | null }) =>
+    p.urgent_search_active && p.urgent_search_expires_at && new Date(p.urgent_search_expires_at).getTime() > now ? 1 : 0
   const ranked = scored
-    .sort((a, b) => (b.compatibilityScore ?? -1) - (a.compatibilityScore ?? -1))
+    .sort((a, b) =>
+      urgentBoost(b) - urgentBoost(a) ||
+      (b.compatibilityScore ?? -1) - (a.compatibilityScore ?? -1))
     .slice(0, 20)
 
   return NextResponse.json({

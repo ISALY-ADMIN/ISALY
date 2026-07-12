@@ -3,7 +3,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Bookmark, MessageCircle, MapPin, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Bookmark, MessageCircle, MapPin, Users, Shield } from 'lucide-react'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 import { IsalyScoreBadge } from '@/components/ui/IsalyScore'
@@ -32,6 +32,8 @@ export interface SwipeProfile {
   ownerId?: string
   /** Places sur l'annonce : X déjà sur place / Y capacité totale. */
   occupancy?: { current: number; total: number } | null
+  /** Mission 15 : recherche urgente active (locataire) — ring or + badge URGENT. */
+  urgent?: boolean
 }
 
 export type SwipeDirection = 'left' | 'right' | 'super'
@@ -207,8 +209,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
         style={{
           borderRadius: '24px',
           background: '#111111',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 24px 70px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.3)',
+          border: profile.urgent ? '2px solid #F59E0B' : '1px solid rgba(255,255,255,0.08)',
+          boxShadow: profile.urgent
+            ? '0 24px 70px rgba(0,0,0,0.55), 0 0 24px rgba(245,158,11,0.25)'
+            : '0 24px 70px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.3)',
         }}
       >
         {/* ── Photo plein format ── */}
@@ -284,6 +288,26 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
         {/* ── Badges haut ── */}
         <div className="absolute z-20 flex items-center gap-2" style={{ top: photos.length > 1 ? '20px' : '14px', left: '14px' }}>
           {(profile.certLevel ?? 0) > 0 && <CertificationBadge level={profile.certLevel!} size="sm" />}
+          {(profile.certLevel ?? 0) >= 2 && (
+            <span
+              title={(profile.certLevel ?? 0) >= 3 ? 'Identité + garant vérifiés par ISALY' : 'Identité vérifiée par ISALY'}
+              className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full"
+              style={{ background: 'rgba(0,0,0,0.45)', border: `1px solid ${(profile.certLevel ?? 0) >= 3 ? 'rgba(245,158,11,0.6)' : 'rgba(16,185,129,0.6)'}`, backdropFilter: 'blur(4px)' }}
+            >
+              <Shield size={12} color={(profile.certLevel ?? 0) >= 3 ? '#F59E0B' : '#10B981'} />
+            </span>
+          )}
+          {profile.urgent && (
+            <span
+              className="inline-flex items-center gap-1"
+              style={{
+                fontSize: '10px', fontWeight: 800, letterSpacing: '1px', padding: '3px 9px', borderRadius: '99px',
+                background: 'rgba(245,158,11,0.9)', color: '#0A0A0A', fontFamily: "'Outfit', sans-serif",
+              }}
+            >
+              <Emoji native="🔥" size="10px" /> URGENT
+            </span>
+          )}
           {profile.isListing && profile.ownerId && <ReliabilityBadge userId={profile.ownerId} size={26} />}
           {!profile.isListing && <IsalyScoreBadge userId={profile.id} size={32} />}
         </div>

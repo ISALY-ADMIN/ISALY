@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
+import { track } from '@/lib/analytics'
 
 function translateError(msg: string): string {
   if (!msg) return 'Une erreur inconnue est survenue.'
@@ -48,6 +49,7 @@ export default function RegisterPage() {
     }
     const newUser = data.user
     const hasSession = !!data.session
+    track.signUp('email')
 
     if (newUser && ref) {
       try {

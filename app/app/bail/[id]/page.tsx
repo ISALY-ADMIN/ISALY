@@ -13,6 +13,7 @@ import { generateBailPdf as generateBailLoi89Pdf } from '@/lib/documents/generat
 import type { BailNonMeubleData } from '@/components/documents/BailNonMeubleForm'
 import { generateQuittancePdf, generateAvenantPdf } from '@/lib/documents/quittancePdf'
 import { depositToVault } from '@/lib/vault'
+import { track } from '@/lib/analytics'
 import type { BailDetail } from '@/app/api/bail/[id]/route'
 import type { Lease } from '@/types/database'
 
@@ -116,6 +117,7 @@ export default function BailDetailPage() {
   const [quittanceOpen, setQuittanceOpen] = useState(false)
   const [avenantOpen, setAvenantOpen] = useState(false)
   const [quittance, setQuittance] = useState({ month: new Date().toISOString().slice(0, 7), loyer: '', charges: '' })
+  const [sendingQuittance, setSendingQuittance] = useState(false)
   const [avenant, setAvenant] = useState({ objet: '', modifications: '' })
   const [toast, setToast] = useState('')
 
@@ -143,6 +145,27 @@ export default function BailDetailPage() {
       charges: Number(quittance.charges) || detail.lease.charges_amount || 0,
       lieu: detail.lease.city ?? '',
     })
+  }
+
+  // Mission 17 — génération serveur : dépôt coffre locataire + bailleur, email, notification
+  async function sendQuittanceToTenant() {
+    if (!detail || sendingQuittance) return
+    setSendingQuittance(true)
+    try {
+      const res = await fetch('/api/quittances/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lease_id: detail.lease.id, month: quittance.month }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Erreur')
+      notify(json.result === 'skipped'
+        ? 'Quittance déjà générée pour ce mois ✓'
+        : 'Quittance envoyée au locataire (email + coffre-fort) ✓')
+    } catch (e) {
+      notify(`Erreur : ${(e as Error).message}`)
+    }
+    setSendingQuittance(false)
   }
 
   function makeAvenant() {
@@ -204,6 +227,7 @@ export default function BailDetailPage() {
       })
       const json = await res.json()
       if (!res.ok) { setError(json.error ?? 'Erreur lors de la signature.'); setSubmitting(false); return }
+      track.leaseSigned()
       if (json.status === 'active') await uploadSignedPdf(detail)
       setSignOpen(false)
       setConsent(false)
@@ -447,6 +471,9 @@ export default function BailDetailPage() {
                 <Button size="sm" onClick={() => { const doc = makeQuittance(); if (doc) doc.save(`quittance-${quittance.month}.pdf`) }}>Télécharger</Button>
                 <Button size="sm" variant="secondary" onClick={() => { const doc = makeQuittance(); if (doc) deposit(doc.output('blob'), `Quittance — ${MONTH_LABEL(quittance.month)}`, 'quittances') }}>
                   Déposer dans mon espace
+                </Button>
+                <Button size="sm" variant="secondary" onClick={sendQuittanceToTenant} loading={sendingQuittance}>
+                  <Emoji native="📨" size="13px" /> Envoyer au locataire
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setQuittanceOpen(false)}>Fermer</Button>
               </div>

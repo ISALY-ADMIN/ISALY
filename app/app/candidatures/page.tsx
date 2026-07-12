@@ -195,6 +195,15 @@ function CandidatureCard({ c, onContact, onIgnore, busy }: {
             {(c.profile.cert_level ?? 0) > 0 && (
               <CertificationBadge level={(c.profile.cert_level ?? 0) as CertLevel} size="sm" />
             )}
+            {(c.profile.cert_level ?? 0) >= 3 && (
+              <span title="Garant ou garantie loyer impayé vérifié par ISALY" style={{
+                fontSize: '10.5px', fontWeight: 800, padding: '3px 9px', borderRadius: '20px', fontFamily: OUTFIT,
+                background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.35)',
+                display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'help',
+              }}>
+                🛡 Garant vérifié
+              </span>
+            )}
             {c.compatibility != null && (
               <span style={{
                 fontSize: '11px', fontWeight: 800, padding: '3px 9px', borderRadius: '20px', fontFamily: OUTFIT,

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { createClient } from '@/lib/supabase/client'
+import { track } from '@/lib/analytics'
 
 // ─── Types ───────────────────────────────────────────────────
 type PropertyType = 'studio' | 't1' | 't2' | 't3' | 't4_plus' | 'maison'
@@ -402,6 +403,7 @@ export default function AnnonceWizard({ open, onClose, onSuccess }: {
       }
 
       try { localStorage.removeItem(DRAFT_KEY) } catch {}
+      if (draft.publish_now) track.listingPublished(draft.city)
       onSuccess(inserted.id, draft.publish_now ? 'published' : 'draft')
       resetAll()
     } catch (e: unknown) {

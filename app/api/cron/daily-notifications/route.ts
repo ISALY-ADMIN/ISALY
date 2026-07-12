@@ -80,6 +80,25 @@ export async function GET(req: Request) {
     }
   }
 
+  // ── 5. Mission 15 : expiration du mode recherche urgente ──
+  const { data: expiredUrgent } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('urgent_search_active', true)
+    .lt('urgent_search_expires_at', new Date().toISOString())
+
+  for (const p of expiredUrgent ?? []) {
+    await supabase.from('profiles').update({ urgent_search_active: false }).eq('id', p.id)
+    await supabase.from('notifications').insert({
+      user_id: p.id,
+      type: 'system',
+      title: 'Votre mode recherche urgente a expiré',
+      body: 'Toujours en recherche ? Réactivez-le depuis votre profil pour rester en tête du swipe.',
+      link: '/app/profil',
+    })
+    created++
+  }
+
   // ── 4. Loueur : annonces peu vues (hebdo : le lundi) ──
   if (isMonday) {
     const { data: listings } = await supabase

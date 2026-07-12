@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { MapPin, MessageCircle, Home, Star, ChevronRight, Users } from 'lucide-react'
+import { MapPin, MessageCircle, Home, Star, ChevronRight, Users, Shield } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadge'
 import { ReliabilityGauge } from '@/components/ui/ReliabilityScore'
@@ -22,6 +22,9 @@ interface PublicProfile {
   bio: string | null
   cert_level: number | null
   role: string | null
+  urgent_search_active: boolean | null
+  urgent_search_expires_at: string | null
+  urgent_search_available_from: string | null
 }
 
 interface Listing { id: string; title: string | null; city: string | null; rent: number | null; photos: string[] | null }
@@ -71,7 +74,7 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
       }
 
       const [{ data: p }, { data: ls }, leaseRes, convRes] = await Promise.all([
-        supabase.from('profiles').select('id, first_name, last_name, avatar_url, city, bio, cert_level, role').eq('id', userId).single(),
+        supabase.from('profiles').select('id, first_name, last_name, avatar_url, city, bio, cert_level, role, urgent_search_active, urgent_search_expires_at, urgent_search_available_from').eq('id', userId).single(),
         supabase.from('listings').select('id, title, city, rent, photos').eq('owner_id', userId).eq('is_active', true).limit(6),
         // Booléen via SECURITY DEFINER — les RLS leases restent owner/tenant-only
         supabase.rpc('has_active_lease', { uid: userId }).then(r => r, () => ({ data: null, error: true })),
@@ -120,6 +123,8 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
   const displayName = `${firstName} ${profile.last_name ? profile.last_name[0] + '.' : ''}`.trim()
   const initials = `${(profile.first_name?.[0] ?? 'U')}${(profile.last_name?.[0] ?? '')}`.toUpperCase()
   const certLevel = (profile.cert_level ?? 0) as CertLevel
+  const urgentActive = !!profile.urgent_search_active &&
+    (!profile.urgent_search_expires_at || new Date(profile.urgent_search_expires_at) > new Date())
 
   return (
     <>
@@ -145,6 +150,21 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
               )}
               <div className="flex flex-wrap items-center gap-2">
                 {certLevel > 0 && <CertificationBadge level={certLevel} size="md" />}
+                {certLevel >= 2 && (
+                  <span title="Identité vérifiée par ISALY" className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2.5 py-1 rounded-full cursor-help" style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.35)' }}>
+                    <Shield size={12} /> Identité vérifiée
+                  </span>
+                )}
+                {certLevel >= 3 && (
+                  <span title="Garant ou garantie loyer impayé vérifié par ISALY" className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2.5 py-1 rounded-full cursor-help" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.35)' }}>
+                    <Shield size={12} /> Garant vérifié
+                  </span>
+                )}
+                {urgentActive && (
+                  <span className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.35)' }}>
+                    🔥 Recherche active{profile.urgent_search_available_from ? ` — dès le ${new Date(profile.urgent_search_available_from).toLocaleDateString('fr-FR')}` : ''}
+                  </span>
+                )}
                 {inColoc && (
                   <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.35)' }}>
                     <Users size={12} /> Actuellement en colocation
