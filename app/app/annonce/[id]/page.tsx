@@ -96,7 +96,7 @@ export default function AnnonceDetailPage() {
           .from('swipes')
           .select('candidature_status, applied_at')
           .eq('swiper_id', user.id)
-          .eq('swiped_id', l.owner_id)
+          .eq('listing_id', l.id)
           .maybeSingle()
         if (cand?.applied_at) setMyCandidature((cand.candidature_status ?? 'pending') as CandidatureStatus)
       }

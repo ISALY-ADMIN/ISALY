@@ -63,12 +63,12 @@ export async function POST(request: Request) {
     applied_at: new Date().toISOString(),
   }
 
-  // Ligne swipe existante (swiper, swiped) ?
+  // Candidature existante pour CETTE annonce ? (clé unique swiper_id, listing_id)
   const { data: existing } = await supabase
     .from('swipes')
     .select('id, candidature_status')
     .eq('swiper_id', user.id)
-    .eq('swiped_id', listing.owner_id)
+    .eq('listing_id', listing.id)
     .maybeSingle()
 
   if (existing?.id) {
