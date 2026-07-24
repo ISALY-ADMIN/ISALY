@@ -117,12 +117,28 @@ export interface Listing {
   created_at: string
 }
 
+export type CandidatureStatus = 'pending' | 'accepted' | 'rejected' | 'waitlisted' | 'visit_proposed'
+
+export type EmploiSituation = 'salarie' | 'etudiant' | 'independant' | 'autre'
+
 export interface Swipe {
   id: string
   swiper_id: string | null
   swiped_id: string | null
   direction: SwipeDirection
   created_at: string
+  listing_id?: string | null
+  ignored_by_target?: boolean | null
+  // ── Candidature (migration 35) ──
+  motivation_message?: string | null
+  move_in_date?: string | null
+  lease_duration?: string | null
+  emploi_situation?: EmploiSituation | null
+  has_garant?: boolean | null
+  colocataires_count?: number | null
+  applied_at?: string | null
+  candidature_status?: CandidatureStatus | null
+  decided_at?: string | null
 }
 
 export interface Match {

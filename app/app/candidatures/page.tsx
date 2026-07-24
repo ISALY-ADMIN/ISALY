@@ -15,7 +15,8 @@ import CertificationBadge, { type CertLevel } from '@/components/ui/Certificatio
 import { BentoStyles, CountUp, cardBase } from '@/components/ui/Bento'
 import { createClient } from '@/lib/supabase/client'
 import { computeCompatibility } from '@/lib/matching'
-import type { SwipeDirection } from '@/types/database'
+import { statusMeta, emploiLabel } from '@/lib/candidatures'
+import type { SwipeDirection, CandidatureStatus, EmploiSituation } from '@/types/database'
 
 // ─── Types ───────────────────────────────────────────────────
 interface CandidateProfile {
@@ -51,6 +52,11 @@ interface Candidature {
   hasMatch: boolean
   conversationId: string | null
   compatibility: number | null
+  // ── Candidature (migration 35) ──
+  candidatureStatus: CandidatureStatus | null
+  applied: boolean
+  emploi: EmploiSituation | null
+  moveIn: string | null
 }
 
 type TabFilter = 'all' | 'pending' | 'contacted' | 'matched'
@@ -214,6 +220,13 @@ function CandidatureCard({ c, onContact, onIgnore, busy }: {
                 {c.compatibility}%
               </span>
             )}
+            {c.applied && c.candidatureStatus && (
+              <span style={{
+                fontSize: '10.5px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', fontFamily: OUTFIT,
+                background: statusMeta(c.candidatureStatus).bg, color: statusMeta(c.candidatureStatus).color,
+                border: `1px solid ${statusMeta(c.candidatureStatus).border}`, flexShrink: 0,
+              }}>{statusMeta(c.candidatureStatus).label}</span>
+            )}
             {c.hasMatch && (
               <span style={{
                 fontSize: '10.5px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px',
@@ -223,10 +236,26 @@ function CandidatureCard({ c, onContact, onIgnore, busy }: {
             )}
           </div>
 
-          {/* Ligne 2 : annonce concernée (mini) */}
+          {/* Critères de candidature (si postulé avec dossier) */}
+          {c.applied && (c.emploi || c.moveIn) && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '11.5px', color: 'rgba(255,255,255,0.55)' }}>
+              {c.emploi && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '3px 8px' }}>
+                  💼 {emploiLabel(c.emploi)}
+                </span>
+              )}
+              {c.moveIn && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '3px 8px' }}>
+                  📅 Dès le {new Date(c.moveIn).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Ligne 2 : annonce concernée (mini) → centre de décision */}
           {c.listing && (
             <Link
-              href={`/app/annonce/${c.listing.id}`}
+              href={`/app/mes-annonces/${c.listing.id}/candidatures`}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '10px',
                 textDecoration: 'none', color: 'rgba(255,255,255,0.75)',
@@ -376,7 +405,7 @@ function CandidaturesContent() {
     // 1. Charge les swipes reçus (candidatures)
     const { data: swipes } = await supabase
       .from('swipes')
-      .select('id, swiper_id, direction, created_at, ignored_by_target, listing_id')
+      .select('id, swiper_id, direction, created_at, ignored_by_target, listing_id, candidature_status, applied_at, emploi_situation, move_in_date')
       .eq('swiped_id', user.id)
       .in('direction', ['right', 'super'])
       .order('created_at', { ascending: false })
@@ -450,6 +479,10 @@ function CandidaturesContent() {
           hasMatch: !!mHit,
           conversationId: mHit?.conversationId ?? null,
           compatibility: cmp ? Math.round(cmp.score) : null,
+          candidatureStatus: (s as { candidature_status?: CandidatureStatus | null }).candidature_status ?? null,
+          applied: !!(s as { applied_at?: string | null }).applied_at,
+          emploi: (s as { emploi_situation?: EmploiSituation | null }).emploi_situation ?? null,
+          moveIn: (s as { move_in_date?: string | null }).move_in_date ?? null,
         } as Candidature
       })
       .filter((x): x is Candidature => x !== null)

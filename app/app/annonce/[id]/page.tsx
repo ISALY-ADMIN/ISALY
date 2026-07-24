@@ -13,6 +13,9 @@ import { listingOccupancy } from '@/lib/utils'
 import { getCoordsForCity, jitterCoords } from '@/lib/geo'
 import VisitBooking from '@/components/visits/VisitBooking'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
+import CandidatureModal from '@/components/listings/CandidatureModal'
+import { statusMeta } from '@/lib/candidatures'
+import type { CandidatureStatus } from '@/types/database'
 
 const SearchMap = dynamic(() => import('@/components/map/SearchMap'), { ssr: false })
 
@@ -73,6 +76,8 @@ export default function AnnonceDetailPage() {
   const [photoIdx, setPhotoIdx] = useState(0)
   const [notFound, setNotFound] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [showCandidature, setShowCandidature] = useState(false)
+  const [myCandidature, setMyCandidature] = useState<CandidatureStatus | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -84,6 +89,17 @@ export default function AnnonceDetailPage() {
 
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUserId(user?.id ?? null)
+
+      // Candidature existante du locataire sur cette annonce
+      if (user && l.owner_id && user.id !== l.owner_id) {
+        const { data: cand } = await supabase
+          .from('swipes')
+          .select('candidature_status, applied_at')
+          .eq('swiper_id', user.id)
+          .eq('swiped_id', l.owner_id)
+          .maybeSingle()
+        if (cand?.applied_at) setMyCandidature((cand.candidature_status ?? 'pending') as CandidatureStatus)
+      }
 
       // Vue d'annonce (rate-limitée : 1 / user / jour côté DB)
       fetch(`/api/listings/${l.id}/view`, { method: 'PATCH' }).catch(() => {})
@@ -191,6 +207,14 @@ export default function AnnonceDetailPage() {
   return (
     <div className="min-h-screen" style={{ background: 'transparent' }}>
       <Topbar title="Annonce" />
+      {showCandidature && listing && (
+        <CandidatureModal
+          listingId={listing.id}
+          listingTitle={listing.title || (listing.city ? `Colocation à ${listing.city}` : 'Annonce')}
+          onClose={() => setShowCandidature(false)}
+          onSubmitted={() => { setShowCandidature(false); setMyCandidature('pending') }}
+        />
+      )}
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
@@ -272,11 +296,34 @@ export default function AnnonceDetailPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 mb-8">
+        <div className="flex flex-wrap gap-3 mb-8">
+          {currentUserId && listing.owner_id && currentUserId !== listing.owner_id && (
+            myCandidature ? (
+              <div
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 sm:px-8 py-3 rounded-full text-[13.5px] font-extrabold cursor-default"
+                style={{
+                  background: statusMeta(myCandidature).bg,
+                  border: `1.5px solid ${statusMeta(myCandidature).border}`,
+                  color: statusMeta(myCandidature).color, fontFamily: "'Outfit', sans-serif",
+                }}
+                title="Statut de votre candidature"
+              >
+                <Emoji native="📩" size="14px" /> Candidature · {statusMeta(myCandidature).label}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCandidature(true)}
+                className="flex-1 sm:flex-none sm:px-10 py-3 rounded-full text-[14px] font-extrabold text-white border-none cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.35)', fontFamily: "'Outfit', sans-serif" }}
+              >
+                <Emoji native="📩" size="14px" /> Postuler à cette colocation
+              </button>
+            )
+          )}
           <button
             onClick={() => listing.owner_id && router.push(`/app/messages?owner=${listing.owner_id}&listing=${listing.id}`)}
-            className="flex-1 sm:flex-none sm:px-10 py-3 rounded-full text-[14px] font-extrabold text-white border-none cursor-pointer"
-            style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.35)', fontFamily: "'Outfit', sans-serif" }}
+            className="flex-1 sm:flex-none sm:px-8 py-3 rounded-full text-[13.5px] font-bold cursor-pointer transition-all"
+            style={{ background: 'transparent', border: '1.5px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.8)', fontFamily: "'Outfit', sans-serif" }}
           >
             <Emoji native="💬" size="14px" /> Contacter le loueur
           </button>

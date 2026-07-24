@@ -526,7 +526,7 @@ function ListingCard({ l, onToggle, onDelete, busy, candidatesCount }: {
           {/* Lien discret candidatures */}
           {candidatesCount > 0 && (
             <Link
-              href={`/app/candidatures?listing=${l.id}`}
+              href={`/app/mes-annonces/${l.id}/candidatures`}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '5px',
                 textDecoration: 'none',
