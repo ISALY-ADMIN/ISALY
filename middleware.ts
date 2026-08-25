@@ -18,14 +18,18 @@ const HIDDEN_LOUEUR_ROUTES = [
   '/app/boost',          // mise en avant payante d'une annonce
   '/app/baux',           // baux côté bailleur (le locataire passe par /app/bail)
   '/app/locataires',     // liste des locataires du bailleur
-  '/app/maintenance',    // traitement des signalements (≠ /app/declarer-probleme)
-  '/app/documents',      // modèles de documents — présents dans la nav loueur
-                         // uniquement ; la page elle-même n'a aucune garde de rôle.
+  '/app/maintenance',    // traitement des signalements côté gestion. La page a
+                         // sa propre garde : un locataire y est renvoyé vers
+                         // /app/declarer-probleme, qui reste ouvert.
 ]
-// NB : /app/loyers est volontairement absent de cette liste. La route est à
-// double usage — le loueur y est redirigé vers /app/baux?tab=loyers, mais le
-// locataire y consulte son historique de paiements (TenantLoyersClient), lien
-// présent sur /app/maison. La masquer casserait une fonction locataire.
+// Routes volontairement ABSENTES de cette liste — elles servent le locataire :
+//  · /app/loyers    — double usage : le loueur est redirigé vers /app/baux, le
+//                     locataire y lit son historique (TenantLoyersClient), lien
+//                     présent sur /app/maison.
+//  · /app/documents — coffre-fort personnel protégé par PIN. Une version
+//                     antérieure de ce pivot le masquait à tort : l'entrée
+//                     n'existait que dans la nav loueur, mais la fonction est
+//                     bien locataire. Route ouverte + entrée ajoutée à la nav.
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })

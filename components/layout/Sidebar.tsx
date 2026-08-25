@@ -42,6 +42,10 @@ const locataireSpaceItems: NavItem[] = [
   { icon: AlertTriangle, label: 'Déclarer un problème',  href: '/app/declarer-probleme',  id: 'declarer-probleme' },
   { icon: User,          label: 'Mon profil',            href: '/app/profil',             id: 'profil' },
   { icon: Bookmark,      label: 'Favoris',                href: '/app/favoris',           id: 'favoris' },
+  // Coffre-fort personnel (PIN) : c'est une fonction locataire, mais l'entrée
+  // n'existait que dans la nav loueur — donc inatteignable pour un locataire.
+  // Ajoutée ici pour que la route, désormais ouverte, soit réellement accessible.
+  { icon: Folder,        label: 'Mes documents',         href: '/app/documents',          id: 'documents' },
 ]
 const locataireAccountItems: NavItem[] = [
   { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
@@ -79,29 +83,17 @@ const loueurAccountItems: NavItem[] = [
 
 /**
  * [HIDDEN - PIVOT LOCATAIRE]
- * Interrupteur unique du pivot 100% locataire (matching coloc facon Tinder).
+ * Interrupteur du pivot 100% locataire (matching coloc facon Tinder).
  *
- * À `true`  : le switch de mode disparaît, le mode est forcé à 'locataire'
- *             quel que soit profiles.role, et la navigation se réduit à
- *             Swipe / Matches / Profil (+ Paramètres).
- * À `false` : tout revient exactement à l'état d'avant le pivot — les listes
- *             locataire ET loueur ci-dessus sont intactes et rebranchées
- *             automatiquement. Aucune autre modification n'est nécessaire.
+ * Périmètre strict : le switch de mode disparaît et le mode est forcé à
+ * 'locataire' quel que soit profiles.role. La navigation locataire reste
+ * COMPLÈTE — une version antérieure la réduisait à Swipe / Matches / Profil,
+ * ce qui masquait à tort des onglets locataire (Rechercher, Favoris, Ma
+ * maison, Déclarer un problème, Abonnements). C'est corrigé ici.
+ *
+ * À `false` : le switch et la navigation loueur reviennent à l'identique.
  */
 const PIVOT_LOCATAIRE: boolean = true
-
-// [HIDDEN - PIVOT LOCATAIRE] Navigation minimale du pivot.
-// Trois destinations, une par intention : swiper, voir ses matchs, se présenter.
-const pivotMainItems: NavItem[] = [
-  { icon: Flame,         label: 'Swipe',   href: '/app/swipe',    id: 'swipe' },
-  { icon: MessageCircle, label: 'Matches', href: '/app/messages', id: 'messages' },
-  { icon: User,          label: 'Profil',  href: '/app/profil',   id: 'profil' },
-]
-// Gardé hors de la nav principale mais accessible : sans lui, plus aucun accès
-// UI à la gestion du compte (résiliation, suppression, notifications).
-const pivotAccountItems: NavItem[] = [
-  { icon: Settings, label: 'Paramètres', href: '/app/parametres', id: 'parametres' },
-]
 
 interface UserData {
   firstName: string
@@ -303,37 +295,10 @@ export default function Sidebar() {
 
       {/* ── Scrollable nav ────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        {/* [HIDDEN - PIVOT LOCATAIRE] Navigation réduite à Swipe / Matches / Profil.
-            Les deux branches d'origine (loueur et locataire) sont conservées
-            telles quelles ci-dessous et redeviennent actives dès que
-            PIVOT_LOCATAIRE repasse à false. */}
-        {PIVOT_LOCATAIRE ? (
-          <>
-            {pivotMainItems.map(item => (
-              <NavLink
-                key={item.id} item={item} active={pathname === item.href}
-                collapsed={collapsed} unread={item.id === 'messages' ? unreadCount : 0}
-              />
-            ))}
-
-            {!collapsed && <NavSection label="Compte" />}
-            {pivotAccountItems.map(item => (
-              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
-            ))}
-
-            {userData.isAdmin && (
-              <>
-                {!collapsed && <NavSection label="Admin" />}
-                <NavLink
-                  item={{ icon: ShieldAlert, label: 'Administration', href: '/admin', id: 'admin' }}
-                  active={pathname.startsWith('/admin')}
-                  collapsed={collapsed}
-                  unread={0}
-                />
-              </>
-            )}
-          </>
-        ) : currentMode === 'loueur' ? (
+        {/* [HIDDEN - PIVOT LOCATAIRE] Aucune réduction de la navigation ici :
+            le mode étant forcé à 'locataire' plus haut, la branche loueur ne
+            peut pas se rendre, et la branche locataire s'affiche en entier. */}
+        {currentMode === 'loueur' ? (
           <>
             {!collapsed && <NavSection label="Gestion" />}
             {loueurGestionItems.map(item => (
@@ -455,12 +420,7 @@ export default function Sidebar() {
                 {displayName}
               </div>
               <div className="text-[11px]" style={{ color: '#6B7280' }}>
-                {/* [HIDDEN - PIVOT LOCATAIRE] Un seul mode existe : afficher
-                    « Mode Locataire » n'a plus de sens face à rien. On montre
-                    le rôle produit du moment. */}
-                {PIVOT_LOCATAIRE
-                  ? 'Voir mon profil'
-                  : currentMode === 'loueur' ? 'Mode Loueur' : 'Mode Locataire'}
+                {currentMode === 'loueur' ? 'Mode Loueur' : 'Mode Locataire'}
               </div>
             </div>
           )}
