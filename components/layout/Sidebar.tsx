@@ -14,9 +14,10 @@ import {
   CreditCard, Settings, LogOut, // [HIDDEN] parrainage : ré-ajouter Gift ici
 
   Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
-  ShieldAlert, Building2, AlertTriangle, Inbox,
+  ShieldAlert, Building2, AlertTriangle, Inbox, ChevronsLeft,
   type LucideIcon,
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface NavItem {
   icon: LucideIcon
@@ -252,45 +253,13 @@ export default function Sidebar() {
       {/* ── Header / toggle ───────────────────────────────── */}
       <div
         className="flex items-center flex-shrink-0 border-b"
-        style={{ borderColor: '#1F2937', padding: '14px 12px', gap: '8px', minHeight: '68px' }}
+        style={{
+          borderColor: '#1F2937', padding: '14px 12px', gap: '8px', minHeight: '68px',
+          justifyContent: collapsed ? 'center' : 'flex-end',
+        }}
       >
-        {!collapsed && (
-          <button
-            onClick={() => setCollapsed(true)}
-            style={{
-              marginLeft: 'auto', background: 'none', border: 'none',
-              color: '#6B7280', cursor: 'pointer', padding: '4px 6px',
-              borderRadius: '6px', transition: 'all 0.15s', flexShrink: 0,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1F2937' }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
-            title="Réduire"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
-            </svg>
-          </button>
-        )}
+        <SidebarToggle collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
       </div>
-
-      {/* Expand button (collapsed state) */}
-      {collapsed && (
-        <button
-          onClick={() => setCollapsed(false)}
-          style={{
-            background: 'none', border: 'none', borderBottom: '1px solid #1F2937',
-            color: '#6B7280', cursor: 'pointer', padding: '8px',
-            width: '100%', textAlign: 'center', transition: 'all 0.15s', flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#E5E7EB'; e.currentTarget.style.background = '#1F2937' }}
-          onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'none' }}
-          title="Développer"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
-          </svg>
-        </button>
-      )}
 
       {/* ── Mode Switcher — always visible when sidebar is expanded ── */}
       {!collapsed && (
@@ -470,6 +439,51 @@ function NavSubLink({ item, active }: { item: NavItem; active: boolean }) {
         {item.label}
       </span>
     </Link>
+  )
+}
+
+/**
+ * Bouton de repli / dépliage de la sidebar.
+ * Carré 28px, radius 10px (aligné sur Button.tsx), glass rgba blanc au repos
+ * et accent mint au hover. Le chevron double pivote de 180° selon l'état —
+ * une seule icône couvre les deux sens, la rotation porte le sens de l'action.
+ */
+function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const [hover, setHover] = useState(false)
+  const label = collapsed ? 'Développer le menu' : 'Réduire le menu'
+
+  return (
+    <motion.button
+      onClick={onToggle}
+      onHoverStart={() => setHover(true)}
+      onHoverEnd={() => setHover(false)}
+      whileTap={{ scale: 0.94 }}
+      animate={{
+        background:  hover ? 'rgba(16,185,129,0.10)' : 'rgba(255,255,255,0.04)',
+        borderColor: hover ? 'rgba(16,185,129,0.30)' : 'rgba(255,255,255,0.08)',
+      }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: '28px', height: '28px', flexShrink: 0, padding: 0,
+        borderRadius: '10px', borderWidth: '1px', borderStyle: 'solid',
+        cursor: 'pointer',
+      }}
+      title={label}
+      aria-label={label}
+      aria-expanded={!collapsed}
+    >
+      <motion.span
+        animate={{
+          rotate: collapsed ? 180 : 0,
+          color:  hover ? '#10B981' : 'rgba(255,255,255,0.45)',
+        }}
+        transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+        style={{ display: 'flex' }}
+      >
+        <ChevronsLeft size={15} strokeWidth={2} />
+      </motion.span>
+    </motion.button>
   )
 }
 
