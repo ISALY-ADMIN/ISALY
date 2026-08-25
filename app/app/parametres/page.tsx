@@ -18,6 +18,10 @@ import { useLease } from '@/contexts/LeaseContext'
 
 // ═══════════════ Constantes ═══════════════
 
+// [HIDDEN - PIVOT LOCATAIRE] Masque la bascule locataire/loueur des réglages.
+// Miroir de la constante de components/layout/Sidebar.tsx.
+const PIVOT_LOCATAIRE: boolean = true
+
 const OUTFIT = "'Outfit', sans-serif"
 
 interface ToggleDef {
@@ -388,11 +392,15 @@ export default function ParametresPage() {
 
             {/* ── 2. Mode & profil ── */}
             <Section icon={<UserCog size={14} />} title="Mode & profil">
-              <Row label="Mode d'utilisation" description="Basculez entre la recherche de colocation et la gestion de vos annonces">
-                <div style={{ width: 190, flexShrink: 0 }}>
-                  <ModeSwitcher currentMode={mode} onSwitch={handleModeSwitch} />
-                </div>
-              </Row>
+              {/* [HIDDEN - PIVOT LOCATAIRE] Bascule locataire/loueur masquée —
+                  un seul mode est actif côté UI. Row conservée telle quelle. */}
+              {!PIVOT_LOCATAIRE && (
+                <Row label="Mode d'utilisation" description="Basculez entre la recherche de colocation et la gestion de vos annonces">
+                  <div style={{ width: 190, flexShrink: 0 }}>
+                    <ModeSwitcher currentMode={mode} onSwitch={handleModeSwitch} />
+                  </div>
+                </Row>
+              )}
               <LinkRow href="/app/profil" label="Modifier mon profil" last />
             </Section>
 

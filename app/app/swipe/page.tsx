@@ -19,6 +19,11 @@ import { useToast } from '@/hooks/use-toast'
 import PushPermission from '@/components/notifications/PushPermission'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
 
+// [HIDDEN - PIVOT LOCATAIRE] Masque le sélecteur de mode du panneau de filtres.
+// Miroir de la constante de components/layout/Sidebar.tsx — repasser à false
+// pour restaurer le bloc « Je cherche en tant que ».
+const PIVOT_LOCATAIRE: boolean = true
+
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 const LIFESTYLE_TAGS = ['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail']
 
@@ -67,10 +72,14 @@ function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, l
       </div>
 
       {/* Mode */}
-      <div>
-        <div style={labelStyle}>Je cherche en tant que</div>
-        <ModeSwitcher currentMode={mode} onSwitch={onModeSwitch} />
-      </div>
+      {/* [HIDDEN - PIVOT LOCATAIRE] Le sélecteur « Je cherche en tant que »
+          n'a plus qu'une valeur possible pendant le pivot. Bloc conservé. */}
+      {!PIVOT_LOCATAIRE && (
+        <div>
+          <div style={labelStyle}>Je cherche en tant que</div>
+          <ModeSwitcher currentMode={mode} onSwitch={onModeSwitch} />
+        </div>
+      )}
 
       {/* Budget */}
       <div>

@@ -1,6 +1,32 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+/**
+ * [HIDDEN - PIVOT LOCATAIRE]
+ * Routes réservées au mode loueur, masquées le temps du pivot 100% locataire.
+ * Les pages, leurs composants et leurs routes API restent intacts : seul
+ * l'accès par URL est intercepté ici et renvoyé vers /app/swipe.
+ *
+ * Réversible : vider ce tableau (ou supprimer le bloc qui l'utilise plus bas)
+ * rétablit l'accès à l'identique, sans autre modification.
+ */
+const HIDDEN_LOUEUR_ROUTES = [
+  '/app/mes-annonces',   // + /[id]/candidatures, /[id]/editer, /nouveau
+  '/app/annonce',        // wizard de dépôt d'annonce (≠ /app/annonces/[id] public)
+  '/app/annonces',       // créneaux de visite gérés par le loueur
+  '/app/candidatures',   // candidatures reçues (vue loueur)
+  '/app/boost',          // mise en avant payante d'une annonce
+  '/app/baux',           // baux côté bailleur (le locataire passe par /app/bail)
+  '/app/locataires',     // liste des locataires du bailleur
+  '/app/maintenance',    // traitement des signalements (≠ /app/declarer-probleme)
+  '/app/documents',      // modèles de documents — présents dans la nav loueur
+                         // uniquement ; la page elle-même n'a aucune garde de rôle.
+]
+// NB : /app/loyers est volontairement absent de cette liste. La route est à
+// double usage — le loueur y est redirigé vers /app/baux?tab=loyers, mais le
+// locataire y consulte son historique de paiements (TenantLoyersClient), lien
+// présent sur /app/maison. La masquer casserait une fonction locataire.
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -44,6 +70,12 @@ export async function middleware(request: NextRequest) {
     return redirect('/auth/login')
   }
 
+  // [HIDDEN - PIVOT LOCATAIRE] Accès direct par URL aux écrans loueur → swipe.
+  // Placé après la garde d'auth pour ne pas court-circuiter la redirection login.
+  if (isAppRoute && HIDDEN_LOUEUR_ROUTES.some(r => pathname === r || pathname.startsWith(`${r}/`))) {
+    return redirect('/app/swipe')
+  }
+
   if (user) {
     // Fetch profile on routes where onboarding/admin state matters
     if (isAppRoute || isAdminRoute || isLoginOrRegister || isOnboarding || isRoot) {
@@ -67,10 +99,12 @@ export async function middleware(request: NextRequest) {
         return redirect('/app/dashboard-home')
       }
 
-      // Connected + done: bounce away from public/auth/onboarding pages → dashboard
-      // (le dashboard gère l'affichage selon le mode locataire/loueur)
+      // Connected + done: bounce away from public/auth/onboarding pages → swipe
+      // [HIDDEN - PIVOT LOCATAIRE] Le point d'entrée après connexion était
+      // /app/dashboard-home ; il devient /app/swipe, écran principal du pivot.
+      // La route dashboard-home reste vivante et accessible par URL.
       if (onboardingDone && (isRoot || isLoginOrRegister || isOnboarding)) {
-        return redirect('/app/dashboard-home')
+        return redirect('/app/swipe')
       }
 
       // Connected + not done: block /app/* until finalize runs (admin routes are exempt)

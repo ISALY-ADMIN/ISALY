@@ -21,8 +21,18 @@ interface OnboardingData {
   quiz_answers: Record<string, number>
 }
 
+/**
+ * [HIDDEN - PIVOT LOCATAIRE]
+ * Pivot 100% locataire : le choix « Locataire / Loueur » de l'étape 1 est
+ * masqué et le rôle est pré-rempli à 'locataire' pour les nouveaux comptes.
+ * Les profils déjà en base ne sont pas touchés.
+ * Repasser à `false` réaffiche le choix et restaure `role: ''`.
+ */
+const PIVOT_LOCATAIRE: boolean = true
+
 const DEFAULT: OnboardingData = {
-  role: '', first_name: '', last_name: '', age: '', city: '', profession: '', status: '',
+  role: PIVOT_LOCATAIRE ? 'locataire' : '',
+  first_name: '', last_name: '', age: '', city: '', profession: '', status: '',
   budget_min: 400, budget_max: 1000,
   move_in: '', duration: '', zones: [],
   quiz_answers: {},
@@ -179,20 +189,26 @@ type TogglePill = (k: 'zones', v: string, max?: number) => void
 function Step1({ d, upd }: { d: OnboardingData; upd: Upd }) {
   return (
     <div>
-      <FieldLabel>Je suis…</FieldLabel>
-      <div className="grid grid-cols-2 gap-2.5 mb-4">
-        {[{ em: '🔍', lbl: 'Locataire', val: 'locataire' }, { em: '🏠', lbl: 'Loueur', val: 'loueur' }].map(r => (
-          <button
-            key={r.val}
-            onClick={() => upd('role', r.val)}
-            className="p-4 rounded-[11px] border-2 cursor-pointer transition-all text-center"
-            style={{ borderColor: d.role === r.val ? '#4ECBA0' : '#E5E7EB', background: d.role === r.val ? '#ECFDF5' : '#fff' }}
-          >
-            <div className="text-[26px] mb-1"><Emoji native={r.em} size="26px" /></div>
-            <div className="text-[13px] font-bold">{r.lbl}</div>
-          </button>
-        ))}
-      </div>
+      {/* [HIDDEN - PIVOT LOCATAIRE] Choix du rôle masqué : tout nouveau compte
+          est locataire (role pré-rempli dans DEFAULT). Le bloc reste intact. */}
+      {!PIVOT_LOCATAIRE && (
+        <>
+          <FieldLabel>Je suis…</FieldLabel>
+          <div className="grid grid-cols-2 gap-2.5 mb-4">
+            {[{ em: '🔍', lbl: 'Locataire', val: 'locataire' }, { em: '🏠', lbl: 'Loueur', val: 'loueur' }].map(r => (
+              <button
+                key={r.val}
+                onClick={() => upd('role', r.val)}
+                className="p-4 rounded-[11px] border-2 cursor-pointer transition-all text-center"
+                style={{ borderColor: d.role === r.val ? '#4ECBA0' : '#E5E7EB', background: d.role === r.val ? '#ECFDF5' : '#fff' }}
+              >
+                <div className="text-[26px] mb-1"><Emoji native={r.em} size="26px" /></div>
+                <div className="text-[13px] font-bold">{r.lbl}</div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="grid grid-cols-2 gap-2.5 mb-2.5">
         <TxtInput placeholder="Prénom" value={d.first_name} onChange={v => upd('first_name', v)} />

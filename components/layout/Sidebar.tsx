@@ -77,6 +77,32 @@ const loueurAccountItems: NavItem[] = [
   { icon: Settings,   label: 'Paramètres',   href: '/app/parametres', id: 'parametres' },
 ]
 
+/**
+ * [HIDDEN - PIVOT LOCATAIRE]
+ * Interrupteur unique du pivot 100% locataire (matching coloc facon Tinder).
+ *
+ * À `true`  : le switch de mode disparaît, le mode est forcé à 'locataire'
+ *             quel que soit profiles.role, et la navigation se réduit à
+ *             Swipe / Matches / Profil (+ Paramètres).
+ * À `false` : tout revient exactement à l'état d'avant le pivot — les listes
+ *             locataire ET loueur ci-dessus sont intactes et rebranchées
+ *             automatiquement. Aucune autre modification n'est nécessaire.
+ */
+const PIVOT_LOCATAIRE: boolean = true
+
+// [HIDDEN - PIVOT LOCATAIRE] Navigation minimale du pivot.
+// Trois destinations, une par intention : swiper, voir ses matchs, se présenter.
+const pivotMainItems: NavItem[] = [
+  { icon: Flame,         label: 'Swipe',   href: '/app/swipe',    id: 'swipe' },
+  { icon: MessageCircle, label: 'Matches', href: '/app/messages', id: 'messages' },
+  { icon: User,          label: 'Profil',  href: '/app/profil',   id: 'profil' },
+]
+// Gardé hors de la nav principale mais accessible : sans lui, plus aucun accès
+// UI à la gestion du compte (résiliation, suppression, notifications).
+const pivotAccountItems: NavItem[] = [
+  { icon: Settings, label: 'Paramètres', href: '/app/parametres', id: 'parametres' },
+]
+
 interface UserData {
   firstName: string
   lastName: string
@@ -128,7 +154,11 @@ export default function Sidebar() {
           isAdmin:   data.is_admin   === true,
         })
         // Hydrate local mode state + keep LeaseContext in sync
-        const dbMode = data.role === 'loueur' ? 'loueur' : 'locataire'
+        // [HIDDEN - PIVOT LOCATAIRE] Le rôle en base n'est ni lu ni modifié :
+        // il reste tel quel pour un retour arrière, mais l'UI force 'locataire'.
+        const dbMode = PIVOT_LOCATAIRE
+          ? 'locataire'
+          : data.role === 'loueur' ? 'loueur' : 'locataire'
         setCurrentMode(dbMode)
         syncContextMode(dbMode)
       }
@@ -261,8 +291,11 @@ export default function Sidebar() {
         <SidebarToggle collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
       </div>
 
-      {/* ── Mode Switcher — always visible when sidebar is expanded ── */}
-      {!collapsed && (
+      {/* ── Mode Switcher — always visible when sidebar is expanded ──
+          [HIDDEN - PIVOT LOCATAIRE] Masqué le temps du pivot : un seul mode
+          existe côté UI. Le composant ModeSwitcher et handleModeSwitch sont
+          conservés intacts et se réaffichent dès que PIVOT_LOCATAIRE = false. */}
+      {!PIVOT_LOCATAIRE && !collapsed && (
         <div className="flex-shrink-0 px-3 pt-3 pb-1">
           <ModeSwitcher currentMode={currentMode} onSwitch={handleModeSwitch} />
         </div>
@@ -270,7 +303,37 @@ export default function Sidebar() {
 
       {/* ── Scrollable nav ────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        {currentMode === 'loueur' ? (
+        {/* [HIDDEN - PIVOT LOCATAIRE] Navigation réduite à Swipe / Matches / Profil.
+            Les deux branches d'origine (loueur et locataire) sont conservées
+            telles quelles ci-dessous et redeviennent actives dès que
+            PIVOT_LOCATAIRE repasse à false. */}
+        {PIVOT_LOCATAIRE ? (
+          <>
+            {pivotMainItems.map(item => (
+              <NavLink
+                key={item.id} item={item} active={pathname === item.href}
+                collapsed={collapsed} unread={item.id === 'messages' ? unreadCount : 0}
+              />
+            ))}
+
+            {!collapsed && <NavSection label="Compte" />}
+            {pivotAccountItems.map(item => (
+              <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed} unread={0} />
+            ))}
+
+            {userData.isAdmin && (
+              <>
+                {!collapsed && <NavSection label="Admin" />}
+                <NavLink
+                  item={{ icon: ShieldAlert, label: 'Administration', href: '/admin', id: 'admin' }}
+                  active={pathname.startsWith('/admin')}
+                  collapsed={collapsed}
+                  unread={0}
+                />
+              </>
+            )}
+          </>
+        ) : currentMode === 'loueur' ? (
           <>
             {!collapsed && <NavSection label="Gestion" />}
             {loueurGestionItems.map(item => (
@@ -392,7 +455,12 @@ export default function Sidebar() {
                 {displayName}
               </div>
               <div className="text-[11px]" style={{ color: '#6B7280' }}>
-                {currentMode === 'loueur' ? 'Mode Loueur' : 'Mode Locataire'}
+                {/* [HIDDEN - PIVOT LOCATAIRE] Un seul mode existe : afficher
+                    « Mode Locataire » n'a plus de sens face à rien. On montre
+                    le rôle produit du moment. */}
+                {PIVOT_LOCATAIRE
+                  ? 'Voir mon profil'
+                  : currentMode === 'loueur' ? 'Mode Loueur' : 'Mode Locataire'}
               </div>
             </div>
           )}

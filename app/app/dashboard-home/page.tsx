@@ -28,6 +28,15 @@ const NOTIF_ICONS: Record<string, string> = {
   match: '❤️', message: '💬', system: '🔔', alert: '🏠', view: '👁️',
 }
 
+/**
+ * [HIDDEN - PIVOT LOCATAIRE]
+ * Pivot 100% locataire : la grille loueur n'est plus rendue et le badge de mode
+ * disparaît. Rien n'est supprimé — LoueurGrid reste définie et fonctionnelle.
+ * Repasser cette constante à `false` restaure le dashboard bi-mode d'origine.
+ * (Miroir de la constante du même nom dans components/layout/Sidebar.tsx.)
+ */
+const PIVOT_LOCATAIRE: boolean = true
+
 // ═══════════════ Building blocks ═══════════════
 // (BentoCard, ModuleTitle, EmptyState, CountUp, AvatarStack, Skeleton → components/ui/Bento)
 
@@ -211,7 +220,9 @@ export default function DashboardHomePage() {
             </h1>
             <div style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.4)', textTransform: 'capitalize' }}>{today}</div>
           </div>
-          {data && (data.mode === 'loueur' ? (
+          {/* [HIDDEN - PIVOT LOCATAIRE] Le badge « Mode Loueur » ne peut plus
+              s'afficher : le mode est forcé côté UI. Le JSX reste en place. */}
+          {data && (!PIVOT_LOCATAIRE && data.mode === 'loueur' ? (
             <span style={{
               fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '20px',
               background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.35)',
@@ -244,7 +255,10 @@ export default function DashboardHomePage() {
             variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }}
             className="grid grid-cols-1 md:grid-cols-4 md:auto-rows-[148px] gap-4"
           >
-            {data.mode === 'locataire' ? <LocataireGrid d={data} /> : <LoueurGrid d={data} />}
+            {/* [HIDDEN - PIVOT LOCATAIRE] LoueurGrid (annonces, candidatures
+                reçues, maintenance, boost, avis) n'est plus rendue. La fonction
+                LoueurGrid et ses BentoCard restent définies plus bas, intactes. */}
+            {PIVOT_LOCATAIRE || data.mode === 'locataire' ? <LocataireGrid d={data} /> : <LoueurGrid d={data} />}
           </motion.div>
         )}
       </div>
