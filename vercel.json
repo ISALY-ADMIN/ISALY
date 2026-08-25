@@ -18,7 +18,7 @@
     },
     {
       "path": "/api/cron/search-alerts",
-      "schedule": "0 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/daily-notifications",
