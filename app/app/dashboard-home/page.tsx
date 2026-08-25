@@ -434,8 +434,11 @@ function LocataireGrid({ d }: { d: DashboardData }) {
       </BentoCard>
       */}
 
-      {/* ACTIVITÉ — 4x1 */}
-      <ActivityCard notifications={d.notifications} />
+      {/* ACTIVITÉ — 3x1, sur la même ligne que FAVORIS (1 + 3 = 4 colonnes).
+          La grille place FAVORIS en colonne 1 d'une nouvelle ligne : les
+          lignes 1 et 2 sont saturées par SWIPE (2x2) + MATCHS + MESSAGES,
+          puis BAIL (2x1). Les 3 colonnes restantes vont donc à l'activité. */}
+      <ActivityCard notifications={d.notifications} className="md:col-span-3" />
     </>
   )
 }
