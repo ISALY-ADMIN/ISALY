@@ -62,192 +62,18 @@ function CompletionRing({ pct }: { pct: number }) {
   )
 }
 
-/**
- * Anneau de complétion + libellé, groupés dans une puce cliquable.
- * L'anneau seul flottait dans le coin du header sans rien pour l'expliquer ;
- * accolé à son intitulé il devient un état lisible et actionnable.
- */
-function ProfileStatus({ pct }: { pct: number }) {
+/** Card compacte du dashboard : anneau de complétion + incitation. */
+function ProfileCard({ pct }: { pct: number }) {
   return (
-    <Link
-      href="/app/profil"
-      aria-label={`Profil complété à ${pct}% — compléter mon profil`}
-      style={{ textDecoration: 'none' }}
-    >
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
-          padding: '8px 16px 8px 8px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '18px',
-          transition: 'background 0.18s ease, border-color 0.18s ease',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = 'rgba(16,185,129,0.07)'
-          e.currentTarget.style.borderColor = 'rgba(16,185,129,0.28)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
-        }}
-      >
+    <BentoCard href="/app/profil" ariaLabel={`Profil complété à ${pct}% — compléter mon profil`}>
+      <ModuleTitle icon="🎯" label="PROFIL COMPLÉTÉ" />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '13px' }}>
         <CompletionRing pct={pct} />
-        <div>
-          <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '13px', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
-            Profil complété
-          </div>
-          <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.42)', marginTop: '2px' }}>
-            {pct >= 100 ? 'Ton profil est au top' : 'Complète-le pour mieux matcher'}
-          </div>
+        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.45, minWidth: 0 }}>
+          {pct >= 100 ? 'Ton profil est au top' : 'Complète-le pour mieux matcher'}
         </div>
       </div>
-    </Link>
-  )
-}
-
-/** Jours calendaires jusqu'à une date ISO — négatif si la date est passée. */
-function daysUntil(iso: string): number {
-  const target = new Date(iso)
-  const today = new Date()
-  target.setHours(0, 0, 0, 0)
-  today.setHours(0, 0, 0, 0)
-  return Math.round((target.getTime() - today.getTime()) / 86_400_000)
-}
-
-interface SummaryChipData {
-  key: string
-  icon: string
-  /** Nombre → animé au montage ; chaîne → affichée telle quelle. */
-  value: number | string
-  label: string
-  href: string
-  tone: 'mint' | 'amber'
-}
-
-/**
- * Sélectionne les indicateurs du bandeau d'accueil.
- *
- * Deux règles : n'exposer que des données réellement présentes dans la réponse
- * /api/dashboard (aucun chiffre inventé, aucune requête supplémentaire), et
- * classer par urgence — ce qui demande une action datée passe devant ce qui
- * n'est qu'un compteur. On garde les trois premiers pour ne pas noyer le titre.
- */
-function buildSummaryChips(d: DashboardData): SummaryChipData[] {
-  const chips: SummaryChipData[] = []
-
-  // 1. Bail à signer — action bloquante, toujours en tête.
-  if (d.lease && d.lease.status === 'pending_signature' && d.lease.awaitingMySignature) {
-    chips.push({
-      key: 'sign', icon: '✍️', value: 'À signer',
-      label: 'Ton bail t’attend', href: `/app/bail/${d.lease.id}`, tone: 'amber',
-    })
-  }
-
-  // 2. Échéance de loyer — seule donnée datée du dashboard, la plus utile au quotidien.
-  if (d.lease && d.lease.status === 'active' && d.lease.nextDue) {
-    const days = daysUntil(d.lease.nextDue)
-    if (days >= 0) {
-      chips.push({
-        key: 'rent',
-        icon: days <= 3 ? '⏰' : '📅',
-        value: days === 0 ? 'Aujourd’hui' : days,
-        label: days === 0 ? 'Loyer à régler' : `jour${days > 1 ? 's' : ''} avant le loyer`,
-        href: `/app/bail/${d.lease.id}`,
-        tone: days <= 3 ? 'amber' : 'mint',
-      })
-    }
-  }
-
-  // 3. Messages non lus.
-  if (d.unread.count > 0) {
-    chips.push({
-      key: 'unread', icon: '💬', value: d.unread.count,
-      label: `message${d.unread.count > 1 ? 's' : ''} non lu${d.unread.count > 1 ? 's' : ''}`,
-      href: '/app/messages', tone: 'mint',
-    })
-  }
-
-  // 4. Matchs — total réel. Le dashboard ne date pas les matchs : pas de
-  //    « cette semaine », qui serait une donnée inventée.
-  if (d.matches.count > 0) {
-    chips.push({
-      key: 'matches', icon: '❤️', value: d.matches.count,
-      label: `match${d.matches.count > 1 ? 's' : ''}`,
-      href: '/app/messages', tone: 'mint',
-    })
-  }
-
-  // 5. Nouvelles annonces compatibles — relance vers le swipe.
-  if (d.swipe && d.swipe.newListings > 0) {
-    chips.push({
-      key: 'listings', icon: '🏠', value: d.swipe.newListings,
-      label: `nouvelle${d.swipe.newListings > 1 ? 's' : ''} annonce${d.swipe.newListings > 1 ? 's' : ''}`,
-      href: '/app/swipe', tone: 'mint',
-    })
-  }
-
-  // 6. Favoris — filet de sécurité quand rien d'autre n'a de donnée.
-  if ((d.favorites?.count ?? 0) > 0) {
-    chips.push({
-      key: 'favorites', icon: '🔖', value: d.favorites!.count,
-      label: `favori${d.favorites!.count > 1 ? 's' : ''}`,
-      href: '/app/favoris', tone: 'mint',
-    })
-  }
-
-  return chips.slice(0, 3)
-}
-
-/** Indicateur compact du bandeau : pastille teintée + valeur + libellé. */
-function SummaryChip({ chip }: { chip: SummaryChipData }) {
-  const accent = chip.tone === 'amber'
-    ? { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.28)', hover: 'rgba(245,158,11,0.32)' }
-    : { bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.20)', hover: 'rgba(16,185,129,0.30)' }
-
-  return (
-    <Link href={chip.href} aria-label={`${chip.value} ${chip.label}`} style={{ textDecoration: 'none' }}>
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: '11px',
-          padding: '11px 16px 11px 11px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '16px',
-          transition: 'background 0.18s ease, border-color 0.18s ease, transform 0.18s ease',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.borderColor = accent.hover
-          e.currentTarget.style.transform = 'translateY(-2px)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
-          e.currentTarget.style.transform = ''
-        }}
-      >
-        <span
-          style={{
-            width: 30, height: 30, borderRadius: '10px', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: accent.bg, border: `1px solid ${accent.border}`,
-          }}
-          aria-hidden
-        >
-          <Emoji native={chip.icon} size="14px" />
-        </span>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '16px', fontWeight: 800, color: '#fff', lineHeight: 1.15 }}>
-            {typeof chip.value === 'number' ? <CountUp value={chip.value} /> : chip.value}
-          </div>
-          <div style={{
-            fontSize: '11.5px', color: 'rgba(255,255,255,0.42)', marginTop: '1px',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {chip.label}
-          </div>
-        </div>
-      </div>
-    </Link>
+    </BentoCard>
   )
 }
 
@@ -388,52 +214,11 @@ export default function DashboardHomePage() {
     }
   }, [load])
 
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Topbar title="Accueil" />
       <BentoStyles />
       <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '32px 24px 48px' }}>
-
-        {/* ── Header ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ marginBottom: '28px' }}
-        >
-          {/* Ligne 1 — salutation + état du profil */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-            <div>
-              <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>
-                Bonjour {data ? (data.profile.firstName || 'toi') : '…'}
-              </h1>
-              <div style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.4)', textTransform: 'capitalize' }}>{today}</div>
-            </div>
-            {/* [HIDDEN - PIVOT LOCATAIRE] Le badge « Mode Loueur » ne peut plus
-                s'afficher : le mode est forcé côté UI. Le JSX reste en place. */}
-            {data && (!PIVOT_LOCATAIRE && data.mode === 'loueur' ? (
-              <span style={{
-                fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '20px',
-                background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.35)',
-              }}><Emoji native="🏠" size="12px" /> Mode Loueur</span>
-            ) : (
-              <ProfileStatus pct={computeProfileCompletion(data.profile)} />
-            ))}
-          </div>
-
-          {/* Ligne 2 — indicateurs clés, uniquement ceux qui portent une donnée réelle */}
-          {data && (() => {
-            const chips = buildSummaryChips(data)
-            if (chips.length === 0) return null
-            return (
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '18px' }}>
-                {chips.map(c => <SummaryChip key={c.key} chip={c} />)}
-              </div>
-            )
-          })()}
-        </motion.div>
 
         {/* ── Guide première semaine (locataire) ── */}
         {data && data.mode === 'locataire' && (
@@ -635,11 +420,14 @@ function LocataireGrid({ d }: { d: DashboardData }) {
       </BentoCard>
       */}
 
-      {/* ACTIVITÉ — 3x1, sur la même ligne que FAVORIS (1 + 3 = 4 colonnes).
-          La grille place FAVORIS en colonne 1 d'une nouvelle ligne : les
-          lignes 1 et 2 sont saturées par SWIPE (2x2) + MATCHS + MESSAGES,
-          puis BAIL (2x1). Les 3 colonnes restantes vont donc à l'activité. */}
-      <ActivityCard notifications={d.notifications} className="md:col-span-3" />
+      {/* PROFIL COMPLÉTÉ — 1x1 */}
+      <ProfileCard pct={computeProfileCompletion(d.profile)} />
+
+      {/* ACTIVITÉ — 2x1. Dernière ligne : FAVORIS (1) + PROFIL (1) + ACTIVITÉ (2).
+          La grille place FAVORIS en colonne 1 d'une nouvelle ligne, les lignes
+          1 et 2 étant saturées par SWIPE (2x2) + MATCHS + MESSAGES, puis BAIL
+          (2x1). Les 2 colonnes restantes vont donc à l'activité. */}
+      <ActivityCard notifications={d.notifications} className="md:col-span-2" />
     </>
   )
 }
