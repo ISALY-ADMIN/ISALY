@@ -102,15 +102,21 @@ export default function BugReportWidget() {
 
   return (
     <>
-      {/* ── Bouton flottant ── */}
+      {/* ── Bouton flottant ──
+          Pilule icône + libellé à partir de `sm`, cercle 44px en dessous : sur
+          mobile la largeur est trop précieuse pour un élément permanent, et
+          aria-label/title portent alors seuls l'intitulé.
+          Fond translucide mint plutôt qu'aplat #10B981 : le bouton est visible
+          sur toutes les pages /app/*, il doit rester lisible sans concurrencer
+          les vraies actions (swipe, candidature…). */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Signaler un bug"
         title="Signaler un bug"
-        className="fixed flex items-center justify-center cursor-pointer transition-all"
+        className="fixed flex items-center justify-center gap-2 cursor-pointer transition-all w-11 sm:w-auto px-0 sm:px-4"
         style={{
           right: '20px', bottom: '20px', zIndex: 60,
-          width: '44px', height: '44px', borderRadius: '14px',
+          height: '44px', borderRadius: '9999px',
           background: 'rgba(16,185,129,0.10)',
           border: '1px solid rgba(16,185,129,0.28)',
           backdropFilter: 'blur(12px)',
@@ -128,7 +134,16 @@ export default function BugReportWidget() {
           e.currentTarget.style.borderColor = 'rgba(16,185,129,0.28)'
         }}
       >
-        <Bug size={19} />
+        <Bug size={17} />
+        <span
+          className="hidden sm:inline"
+          style={{
+            fontFamily: "'Outfit', sans-serif", fontSize: '13.5px',
+            fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: '-0.1px',
+          }}
+        >
+          Signaler un bug
+        </span>
       </button>
 
       {/* ── Modal ── */}
