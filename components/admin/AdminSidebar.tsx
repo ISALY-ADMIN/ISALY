@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, ShieldCheck, Megaphone,
-  Flag, CreditCard, ArrowLeft, FileCheck, Star, BarChart3, Bug,
+  Flag, CreditCard, ArrowLeft, FileCheck, Star, BarChart3, Bug, Archive,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -26,6 +26,7 @@ const navItems: NavItem[] = [
   { icon: Megaphone,       label: 'Annonces',        href: '/admin/annonces' },
   { icon: Flag,            label: 'Signalements',    href: '/admin/signalements', badgeKey: 'openReports' },
   { icon: Bug,             label: 'Bugs bêta',       href: '/admin/bug-reports' },
+  { icon: Archive,         label: 'Tickets archivés', href: '/admin/bug-reports/archives' },
   { icon: CreditCard,      label: 'Paiements',       href: '/admin/paiements' },
 ]
 
@@ -46,7 +47,10 @@ export default function AdminSidebar() {
 
   function isActive(href: string) {
     if (href === '/admin') return pathname === '/admin'
-    return pathname.startsWith(href)
+    if (!pathname.startsWith(href)) return false
+    // Une entrée parente ne s'allume pas quand une sous-route possède sa propre
+    // entrée : /admin/bug-reports/archives ne doit pas surligner « Bugs bêta ».
+    return !navItems.some(i => i.href !== href && i.href.length > href.length && pathname.startsWith(i.href))
   }
 
   return (
