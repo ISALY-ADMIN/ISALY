@@ -24,6 +24,12 @@ import Emoji, { EmojiText } from '@/components/ui/Emoji'
 // pour restaurer le bloc « Je cherche en tant que ».
 const PIVOT_LOCATAIRE: boolean = true
 
+// [HIDDEN - RECENTRAGE SWIPE] Masque la colonne de filtres de gauche (desktop)
+// pour recentrer la card de swipe entre la Sidebar et « Matchs récents ».
+// Distinct du pivot locataire : ici rien n'est lié au rôle, c'est un choix de
+// mise en page. Repasser à false restaure la colonne à l'identique.
+const HIDE_FILTER_SIDEBAR: boolean = true
+
 const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 const LIFESTYLE_TAGS = ['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail']
 
@@ -693,7 +699,9 @@ export default function SwipePage() {
   }
 
   function expandFilters() {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+    // [HIDDEN - RECENTRAGE SWIPE] Sans colonne de gauche, il n'y a plus rien à
+    // surligner sur desktop : on ouvre le drawer « Filtres » à toutes les tailles.
+    if (HIDE_FILTER_SIDEBAR || (typeof window !== 'undefined' && window.innerWidth < 1024)) {
       setShowFilters(true)
     } else {
       setHighlightFilters(true)
@@ -746,6 +754,11 @@ export default function SwipePage() {
       <div className="flex flex-1 overflow-hidden" style={{ background: '#0A0A0A' }}>
 
         {/* ── Colonne gauche : filtres (desktop) ── */}
+        {/* [HIDDEN - RECENTRAGE SWIPE] Colonne conservée telle quelle mais retirée
+            du rendu : compteur de profils, budget, ville, mode de vie et tri restent
+            joignables via le drawer « Filtres » (bouton au-dessus de la card).
+            Remettre HIDE_FILTER_SIDEBAR à false pour la réafficher. */}
+        {!HIDE_FILTER_SIDEBAR && (
         <aside className="hidden lg:flex flex-col flex-shrink-0 overflow-y-auto p-4" style={{ width: '260px' }}>
           <div
             className="rounded-3xl p-5 transition-all"
@@ -759,11 +772,22 @@ export default function SwipePage() {
             <FilterPanel {...filterPanelProps} />
           </div>
         </aside>
+        )}
 
         {/* ── Zone centrale ── */}
-        <main className="flex flex-col items-center flex-1 min-w-0 overflow-hidden px-3 pt-2 pb-3">
-          {/* Bouton filtres mobile */}
-          <div className="lg:hidden w-full flex justify-between items-center py-1.5 flex-shrink-0">
+        {/* [HIDDEN - RECENTRAGE SWIPE] La colonne de gauche ne consommant plus de
+            largeur, cette zone occupe tout l'espace entre la Sidebar et « Matchs
+            récents » : la card, centrée par `items-center`, devient le point focal.
+            Le padding latéral l'empêche de coller aux deux bords. */}
+        <main className="flex flex-col items-center flex-1 min-w-0 overflow-hidden px-3 lg:px-8 pt-2 pb-3">
+          {/* Barre compteur + accès aux filtres (drawer) */}
+          {/* [HIDDEN - RECENTRAGE SWIPE] Auparavant `lg:hidden` : c'est désormais le
+              seul point d'entrée vers les filtres sur desktop aussi. Elle est calée
+              sur la largeur de la card pour rester alignée avec elle. */}
+          <div
+            className={`${HIDE_FILTER_SIDEBAR ? 'flex' : 'flex lg:hidden'} justify-between items-center py-1.5 flex-shrink-0`}
+            style={{ width: 'min(460px, 92vw)' }}
+          >
             <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)' }}>
               {loading ? 'Recherche…' : `${remaining} profil${remaining > 1 ? 's' : ''} compatible${remaining > 1 ? 's' : ''}`}
             </span>
