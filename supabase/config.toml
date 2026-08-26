@@ -1,0 +1,16 @@
+# Configuration Supabase CLI — ISALY
+# Le projet distant est lié via `supabase link --project-ref <ref>` ; ce fichier
+# ne sert qu'à déclarer ce que la CLI doit connaître localement.
+
+project_id = "isaly"
+
+# ── Edge Function : trigger-bug-fix ──
+# Appelée par un Database Webhook sur INSERT dans public.bug_reports.
+#
+# verify_jwt = true : l'endpoint n'est pas ouvert à tout Internet. Le webhook
+# doit donc envoyer un en-tête Authorization: Bearer <clé> valide, à configurer
+# dans Supabase Dashboard > Database > Webhooks > HTTP Headers.
+[functions.trigger-bug-fix]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/trigger-bug-fix/index.ts"
