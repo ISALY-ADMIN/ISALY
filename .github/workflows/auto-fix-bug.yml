@@ -1,0 +1,187 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Correction automatisée d'un bug signalé en bêta.
+#
+# Chaîne complète :
+#   widget /app/*  →  INSERT bug_reports  →  Database Webhook Supabase
+#   →  Edge Function trigger-bug-fix  →  repository_dispatch (ici)
+#
+# Le ticket n'est passé en 'corrige' que si typecheck ET build passent après
+# l'intervention de l'agent. Sinon rien n'est committé et le ticket repart en
+# 'besoin_precision' avec le motif de l'échec.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: auto-fix-bug
+
+on:
+  repository_dispatch:
+    types: [bug-report-created]
+
+# Un seul auto-fix à la fois : deux jobs qui poussent sur main en parallèle
+# se marcheraient dessus. On ne coupe pas celui en cours, on l'attend.
+concurrency:
+  group: auto-fix-bug
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      BUG_REPORT_ID: ${{ github.event.client_payload.bug_report_id }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      # ── 1. Récupération du dépôt ──
+      # GH_PAT plutôt que GITHUB_TOKEN : un push signé par GITHUB_TOKEN ne
+      # redéclenche aucun workflow, et on veut que les hooks habituels voient
+      # le commit comme un commit normal.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
+          ref: main
+
+      # ── 2. Environnement Node ──
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 3. Agent de correction ──
+      - name: Run auto-fix agent
+        id: agent
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BUG_DESCRIPTION: ${{ github.event.client_payload.description }}
+          BUG_PAGE_URL: ${{ github.event.client_payload.page_url }}
+          BUG_USER_AGENT: ${{ github.event.client_payload.user_agent }}
+          BUG_BROWSER_CONTEXT: ${{ toJSON(github.event.client_payload.browser_context) }}
+        run: node scripts/auto-fix-agent.js
+
+      # Le résultat de l'agent est relu ici pour alimenter toutes les étapes
+      # suivantes, y compris les chemins d'échec.
+      - name: Read agent result
+        id: result
+        if: always()
+        run: |
+          if [ ! -f auto-fix-result.json ]; then
+            echo "finished=false" >> "$GITHUB_OUTPUT"
+            echo "error=L'agent n'a produit aucun resultat (crash avant ecriture)." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node -e '
+            const r = require("./auto-fix-result.json");
+            const fs = require("fs");
+            const set = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT, k + "<<__EOF__\n" + (v ?? "") + "\n__EOF__\n");
+            set("finished", String(r.finished === true));
+            set("diagnosis", r.diagnosis);
+            set("plan", r.plan);
+            set("summary", r.summary);
+            set("commit_message", r.commit_message);
+            set("confidence", r.confidence);
+            set("error", r.error);
+            set("changed_count", String((r.files_changed || []).length));
+          '
+
+      # ── 4. Vérification : rien ne part sans typecheck + build verts ──
+      - name: Typecheck and build
+        id: verify
+        if: steps.result.outputs.finished == 'true' && steps.result.outputs.changed_count != '0'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee verify.log
+          npm run build 2>&1 | tee -a verify.log
+
+      # ── 5. Commit et push (uniquement si tout est vert) ──
+      - name: Commit and push
+        id: push
+        if: steps.result.outputs.finished == 'true' && steps.result.outputs.changed_count != '0' && steps.verify.outcome == 'success'
+        env:
+          COMMIT_MESSAGE: ${{ steps.result.outputs.commit_message }}
+          BUG_ID: ${{ github.event.client_payload.bug_report_id }}
+        run: |
+          set -e
+          rm -f auto-fix-result.json verify.log
+          git config user.name "isaly-auto-fix[bot]"
+          git config user.email "auto-fix@isaly.local"
+
+          if git diff --quiet; then
+            echo "Aucune modification a committer."
+            echo "sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "${COMMIT_MESSAGE:-fix: correction automatique d un bug signale}" -m "Ticket bug_reports: ${BUG_ID}" -m "Correction generee automatiquement par l agent auto-fix."
+
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # ── 6. Retour dans Supabase — succès ──
+      - name: Mark ticket as fixed
+        if: steps.push.outcome == 'success' && steps.push.outputs.sha != ''
+        env:
+          BUG_STATUS: corrige
+          AI_DIAGNOSIS: ${{ steps.result.outputs.diagnosis }}
+          AI_PLAN: ${{ steps.result.outputs.plan }}
+          AI_REPORT: ${{ steps.result.outputs.summary }}
+          COMMIT_SHA: ${{ steps.push.outputs.sha }}
+        run: node scripts/update-bug-report.js
+
+      # ── 7. Retour dans Supabase — échec ──
+      # Couvre les quatre issues possibles : agent en erreur, agent qui conclut
+      # sans rien changer, vérification rouge, ou push impossible.
+      # Les textes sont assemblés par printf sur une seule ligne : un bloc YAML
+      # littéral ne tolère aucune ligne de continuation en colonne 0.
+      - name: Mark ticket as needing clarification
+        if: always() && !(steps.push.outcome == 'success' && steps.push.outputs.sha != '')
+        env:
+          BUG_STATUS: besoin_precision
+          AI_DIAGNOSIS: ${{ steps.result.outputs.diagnosis }}
+          AI_PLAN: ${{ steps.result.outputs.plan }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          AGENT_OUTCOME: ${{ steps.agent.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          AGENT_FINISHED: ${{ steps.result.outputs.finished }}
+          CHANGED_COUNT: ${{ steps.result.outputs.changed_count }}
+          AGENT_ERROR: ${{ steps.result.outputs.error }}
+          AGENT_SUMMARY: ${{ steps.result.outputs.summary }}
+        run: |
+          LOG_EXCERPT=""
+          if [ -f verify.log ]; then
+            LOG_EXCERPT="$(tail -c 3000 verify.log)"
+          fi
+
+          if [ "$AGENT_OUTCOME" != "success" ] || [ "$AGENT_FINISHED" != "true" ]; then
+            REASON="L'agent n'a pas abouti. ${AGENT_ERROR:-Aucun detail disponible.}"
+          elif [ "$CHANGED_COUNT" = "0" ]; then
+            REASON="L'agent n'a modifie aucun fichier : le signalement est probablement trop imprecis ou hors perimetre du code."
+          elif [ "$VERIFY_OUTCOME" != "success" ]; then
+            REASON="$(printf "La correction proposee ne compile pas (npm run typecheck / npm run build en echec). Rien n'a ete committe.\n\n--- extrait des logs ---\n%s" "$LOG_EXCERPT")"
+          else
+            REASON="La correction a ete validee mais le push a echoue."
+          fi
+
+          AI_REPORT="$(printf "%s\n\n%s\n\nExecution : %s" "$AGENT_SUMMARY" "$REASON" "$RUN_URL")"
+          export AI_REPORT
+          node scripts/update-bug-report.js
+
+      # ── 8. Le job échoue visiblement si la correction n'est pas partie ──
+      - name: Fail the run when nothing was shipped
+        if: always() && !(steps.push.outcome == 'success' && steps.push.outputs.sha != '')
+        run: |
+          echo "::warning::Aucune correction poussee pour le ticket ${BUG_REPORT_ID}. Ticket repasse en besoin_precision."
+          exit 1

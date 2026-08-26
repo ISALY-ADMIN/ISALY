@@ -36,3 +36,7 @@ graphify-out/
 
 # Supabase CLI — état local (project-ref, cache de version)
 supabase/.temp/
+
+# Sorties du workflow auto-fix (jamais committées)
+auto-fix-result.json
+verify.log
