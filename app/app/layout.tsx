@@ -1,6 +1,7 @@
 import Sidebar from '@/components/layout/Sidebar'
 import { LeaseProvider } from '@/contexts/LeaseContext'
 import { Toaster } from '@/components/ui/toaster'
+import BugReportWidget from '@/components/bug-report/BugReportWidget'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </div>
+      {/* Monté une seule fois ici : le bouton « signaler un bug » est présent
+          sur toutes les pages /app/* sans duplication par page (bêta). */}
+      <BugReportWidget />
       <Toaster />
     </LeaseProvider>
   )

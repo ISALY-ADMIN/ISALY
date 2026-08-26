@@ -213,6 +213,32 @@ export interface Payment {
   created_at: string
 }
 
+// ── Signalements de bugs bêta (migration 36) ──
+
+export type BugReportStatus = 'nouveau' | 'en_analyse' | 'en_correction' | 'corrige' | 'rejete' | 'besoin_precision'
+export type BugReportSeverity = 'non_classee' | 'mineur' | 'moyen' | 'critique'
+
+export interface BugReport {
+  id: string
+  /** Null quand le signalement vient d'un visiteur non connecté. */
+  user_id: string | null
+  description: string
+  screenshot_url: string | null
+  page_url: string
+  user_agent: string | null
+  /** Structure libre : résolution écran, viewport, dpr, langue, fuseau… */
+  browser_context: Record<string, unknown> | null
+  status: BugReportStatus
+  severity: BugReportSeverity
+  /** Colonnes remplies plus tard par l'agent IA de correction. */
+  ai_diagnosis: string | null
+  ai_plan: string | null
+  ai_report: string | null
+  commit_sha: string | null
+  created_at: string
+  updated_at: string
+}
+
 // Generic Supabase-compatible Database type
 export interface Database {
   public: {
@@ -261,6 +287,11 @@ export interface Database {
         Row: Payment
         Insert: Partial<Payment>
         Update: Partial<Payment>
+      }
+      bug_reports: {
+        Row: BugReport
+        Insert: Partial<BugReport>
+        Update: Partial<BugReport>
       }
     }
   }

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, ShieldCheck, Megaphone,
-  Flag, CreditCard, ArrowLeft, FileCheck, Star, BarChart3,
+  Flag, CreditCard, ArrowLeft, FileCheck, Star, BarChart3, Bug,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { icon: Star,            label: 'Avis',            href: '/admin/reviews',   badgeKey: 'reportedReviews' },
   { icon: Megaphone,       label: 'Annonces',        href: '/admin/annonces' },
   { icon: Flag,            label: 'Signalements',    href: '/admin/signalements', badgeKey: 'openReports' },
+  { icon: Bug,             label: 'Bugs bêta',       href: '/admin/bug-reports' },
   { icon: CreditCard,      label: 'Paiements',       href: '/admin/paiements' },
 ]
 
