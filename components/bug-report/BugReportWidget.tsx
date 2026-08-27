@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bug, X, Send, CheckCircle2 } from 'lucide-react'
+import { Bug, X, Send, CheckCircle2, ImagePlus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 /**
@@ -11,14 +11,16 @@ import { createClient } from '@/lib/supabase/client'
  *
  * Bouton flottant discret (bas-droit) monté une seule fois dans le layout
  * /app/*, donc présent sur toutes les pages sans duplication. Au clic : modal
- * compacte avec une description libre, le reste du contexte (URL, user agent,
- * résolution) étant capturé automatiquement en arrière-plan.
+ * compacte avec une description libre, une capture d'écran facultative, et le
+ * reste du contexte (URL, user agent, résolution) capturé automatiquement.
  *
  * Passer BETA_BUG_REPORT à false retire le widget sans toucher au layout.
  */
 const BETA_BUG_REPORT: boolean = true
 
 const MAX_DESCRIPTION = 2000
+const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024   // 5 Mo
+const SCREENSHOT_BUCKET = 'bug-screenshots'
 
 interface BrowserContext {
   screen: { width: number; height: number }
@@ -45,6 +47,20 @@ function captureBrowserContext(): BrowserContext {
   }
 }
 
+/** Extension de fichier déduite du type MIME, sans dépendance externe. */
+function extensionFor(file: File): string {
+  const fromName = file.name.includes('.') ? file.name.split('.').pop()! .toLowerCase() : ''
+  if (fromName && /^[a-z0-9]{2,5}$/.test(fromName)) return fromName
+  const fromType = file.type.split('/')[1]?.toLowerCase() ?? 'png'
+  return fromType === 'jpeg' ? 'jpg' : fromType.replace(/[^a-z0-9]/g, '') || 'png'
+}
+
+function humanSize(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${Math.round(bytes / 1024)} Ko`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+}
+
 export default function BugReportWidget() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -53,10 +69,47 @@ export default function BugReportWidget() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Capture d'écran facultative
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  /** Valide puis retient un fichier image (input ou presse-papier). */
+  const acceptFile = useCallback((candidate: File | null) => {
+    if (!candidate) return
+    if (!candidate.type.startsWith('image/')) {
+      setError('Seules les images sont acceptées.')
+      return
+    }
+    if (candidate.size > MAX_SCREENSHOT_BYTES) {
+      setError(`Image trop lourde (${humanSize(candidate.size)}). Maximum 5 Mo.`)
+      return
+    }
+    setError(null)
+    setFile(candidate)
+  }, [])
+
+  function clearFile() {
+    setFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  // Aperçu : object URL révoquée dès que le fichier change ou disparaît.
+  useEffect(() => {
+    if (!file) { setPreview(null); return }
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
   const close = useCallback(() => {
     setOpen(false)
     // Laisse l'animation de sortie se jouer avant de réarmer le formulaire.
-    setTimeout(() => { setDescription(''); setSent(false); setError(null) }, 250)
+    setTimeout(() => {
+      setDescription(''); setSent(false); setError(null)
+      setFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }, 250)
   }, [])
 
   // Échap pour fermer, cohérent avec les autres modals du projet.
@@ -66,6 +119,50 @@ export default function BugReportWidget() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
+
+  /**
+   * Collage d'une capture depuis le presse-papier. Écouté sur la modal entière
+   * (capture d'écran → Ctrl+V n'importe où dans le panneau), sans empêcher le
+   * collage de texte : on ne retient que le premier item de type image.
+   */
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const pasted = item.getAsFile()
+        if (pasted) {
+          e.preventDefault()
+          acceptFile(pasted)
+        }
+        return
+      }
+    }
+  }
+
+  /**
+   * Dépose la capture dans le bucket privé bug-screenshots.
+   * Chemin `<user_id>/…` pour un connecté (la policy de lecture autorise le
+   * propriétaire de son dossier), `anonyme/…` sinon — la policy d'insertion ne
+   * filtre pas sur le dossier, et les admins lisent tout le bucket.
+   * Renvoie le chemin de l'objet, pas une URL publique : le bucket est privé,
+   * la consultation passe par une URL signée côté admin.
+   */
+  async function uploadScreenshot(
+    supabase: ReturnType<typeof createClient>,
+    userId: string | null,
+  ): Promise<string> {
+    const folder = userId ?? 'anonyme'
+    const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extensionFor(file!)}`
+    const path = `${folder}/${name}`
+
+    const { error: uploadError } = await supabase.storage
+      .from(SCREENSHOT_BUCKET)
+      .upload(path, file!, { contentType: file!.type, upsert: false })
+
+    if (uploadError) throw uploadError
+    return path
+  }
 
   async function submit() {
     const text = description.trim()
@@ -78,6 +175,19 @@ export default function BugReportWidget() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
+      let screenshotPath: string | null = null
+      if (file) {
+        try {
+          screenshotPath = await uploadScreenshot(supabase, user?.id ?? null)
+        } catch {
+          // Le ticket n'est pas envoyé : la description reste saisie, l'auteur
+          // peut retirer l'image et renvoyer sans rien reperdre.
+          setError("L'envoi de la capture a échoué. Retire-la ou réessaie.")
+          setSending(false)
+          return
+        }
+      }
+
       const { error: insertError } = await supabase.from('bug_reports').insert({
         // Null si non connecté : la policy RLS l'autorise explicitement.
         user_id: user?.id ?? null,
@@ -85,6 +195,7 @@ export default function BugReportWidget() {
         page_url: window.location.href,
         user_agent: navigator.userAgent,
         browser_context: captureBrowserContext(),
+        screenshot_url: screenshotPath,
       })
 
       if (insertError) throw insertError
@@ -162,6 +273,7 @@ export default function BugReportWidget() {
               role="dialog"
               aria-modal="true"
               aria-label="Signaler un bug"
+              onPaste={handlePaste}
               initial={{ opacity: 0, y: 16, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
@@ -214,7 +326,7 @@ export default function BugReportWidget() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col" style={{ padding: '16px 18px 18px' }}>
+                <div className="flex flex-col overflow-y-auto" style={{ padding: '16px 18px 18px' }}>
                   <textarea
                     value={description}
                     onChange={e => setDescription(e.target.value)}
@@ -233,6 +345,80 @@ export default function BugReportWidget() {
                     onFocus={e => (e.target.style.borderColor = '#10B981')}
                     onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
                   />
+
+                  {/* ── Capture d'écran facultative ── */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => acceptFile(e.target.files?.[0] ?? null)}
+                  />
+
+                  {preview && file ? (
+                    <div
+                      className="flex items-center gap-3"
+                      style={{
+                        marginTop: '12px', padding: '10px', borderRadius: '14px',
+                        background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.22)',
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={preview}
+                        alt="Aperçu de la capture"
+                        style={{
+                          width: 52, height: 52, objectFit: 'cover', borderRadius: '10px',
+                          border: '1px solid rgba(255,255,255,0.12)', flexShrink: 0,
+                        }}
+                      />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: '12.5px', fontWeight: 600, color: '#fff',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {file.name || 'capture.png'}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
+                          {humanSize(file.size)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={clearFile}
+                        aria-label="Retirer la capture"
+                        title="Retirer la capture"
+                        className="flex items-center justify-center border-none cursor-pointer rounded-full flex-shrink-0"
+                        style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 w-full cursor-pointer transition-all"
+                      style={{
+                        marginTop: '12px', padding: '11px', borderRadius: '14px',
+                        fontSize: '13px', fontWeight: 600, fontFamily: "'Outfit', sans-serif",
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1.5px dashed rgba(255,255,255,0.16)',
+                        color: 'rgba(255,255,255,0.6)',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = 'rgba(16,185,129,0.45)'
+                        e.currentTarget.style.color = '#10B981'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)'
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.6)'
+                      }}
+                    >
+                      <ImagePlus size={15} />
+                      Joindre une capture <span style={{ opacity: 0.55 }}>ou Ctrl+V</span>
+                    </button>
+                  )}
 
                   {/* Contexte capturé — transparence sur ce qui part avec le ticket */}
                   <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.35)', margin: '10px 2px 0', lineHeight: 1.5 }}>
