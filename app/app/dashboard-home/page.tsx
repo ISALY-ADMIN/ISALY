@@ -209,7 +209,11 @@ export default function DashboardHomePage() {
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Topbar title="Accueil" />
       <BentoStyles />
-      <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '32px 24px 48px' }}>
+      {/* Conteneur centré dans l'espace laissé par la Sidebar.
+          1280px au lieu des 1080px des pages de liste (mes-annonces, favoris) :
+          la grille bento est en 4 colonnes, elle respire mal à 1080. `margin: 0
+          auto` centre, `width: 100%` garde le rétrécissement fluide en dessous. */}
+      <div style={{ maxWidth: '1280px', width: '100%', margin: '0 auto', padding: '32px 24px 48px', boxSizing: 'border-box' }}>
 
         {/* ── Guide première semaine (locataire) ── */}
         {data && data.mode === 'locataire' && (
