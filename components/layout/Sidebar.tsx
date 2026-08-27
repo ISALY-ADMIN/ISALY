@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLease } from '@/contexts/LeaseContext'
 import ModeSwitcher from '@/components/ModeSwitcher'
+import { canSwitchMode, roleToMode } from '@/lib/roles'
 import {
   Home, Flame, Search, MessageCircle, // [HIDDEN] carte : ré-ajouter Map ici
 
@@ -82,23 +83,19 @@ const loueurAccountItems: NavItem[] = [
 ]
 
 /**
- * [HIDDEN - PIVOT LOCATAIRE]
- * Interrupteur du pivot 100% locataire (matching coloc facon Tinder).
+ * Le pivot 100% locataire est annulé : le mode d'affichage découle désormais
+ * strictement de profiles.role, fixé par la question d'onboarding.
  *
- * Périmètre strict : le switch de mode disparaît et le mode est forcé à
- * 'locataire' quel que soit profiles.role. La navigation locataire reste
- * COMPLÈTE — une version antérieure la réduisait à Swipe / Matches / Profil,
- * ce qui masquait à tort des onglets locataire (Rechercher, Favoris, Ma
- * maison, Déclarer un problème, Abonnements). C'est corrigé ici.
- *
- * À `false` : le switch et la navigation loueur reviennent à l'identique.
+ * Seul le compte à double vue (lib/roles.ts) conserve un switch visible et
+ * peut basculer entre les deux navigations. Pour tout autre utilisateur, la
+ * navigation correspond à son rôle, sans bascule possible.
  */
-const PIVOT_LOCATAIRE: boolean = true
 
 interface UserData {
   firstName: string
   lastName: string
   role: string
+  email: string
   avatarUrl: string | null
   isAdmin: boolean
 }
@@ -114,7 +111,7 @@ export default function Sidebar() {
   const [tenantMaintenanceCount, setTenantMaintenanceCount] = useState(0)
   const [currentMode, setCurrentMode] = useState<'locataire' | 'loueur'>('locataire')
   const [userData, setUserData]     = useState<UserData>({
-    firstName: '', lastName: '', role: '', avatarUrl: null, isAdmin: false,
+    firstName: '', lastName: '', role: '', email: '', avatarUrl: null, isAdmin: false,
   })
 
   // Sync sidebar width to CSS variable so the main content margin reacts
@@ -142,15 +139,13 @@ export default function Sidebar() {
           firstName: data.first_name ?? '',
           lastName:  data.last_name  ?? '',
           role:      data.role       ?? '',
+          email:     user.email      ?? '',
           avatarUrl: data.avatar_url ?? null,
           isAdmin:   data.is_admin   === true,
         })
-        // Hydrate local mode state + keep LeaseContext in sync
-        // [HIDDEN - PIVOT LOCATAIRE] Le rôle en base n'est ni lu ni modifié :
-        // il reste tel quel pour un retour arrière, mais l'UI force 'locataire'.
-        const dbMode = PIVOT_LOCATAIRE
-          ? 'locataire'
-          : data.role === 'loueur' ? 'loueur' : 'locataire'
+        // Hydrate local mode state + keep LeaseContext in sync.
+        // Le rôle en base est la seule source de vérité du mode affiché.
+        const dbMode = roleToMode(data.role)
         setCurrentMode(dbMode)
         syncContextMode(dbMode)
       }
@@ -259,6 +254,7 @@ export default function Sidebar() {
     router.refresh()
   }
 
+  const dualView    = canSwitchMode(userData.email)
   const initials    = ((userData.firstName[0] ?? '') + (userData.lastName[0] ?? '')).toUpperCase() || '?'
   const displayName = `${userData.firstName} ${userData.lastName}`.trim() || 'Mon profil'
 
@@ -283,11 +279,10 @@ export default function Sidebar() {
         <SidebarToggle collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
       </div>
 
-      {/* ── Mode Switcher — always visible when sidebar is expanded ──
-          [HIDDEN - PIVOT LOCATAIRE] Masqué le temps du pivot : un seul mode
-          existe côté UI. Le composant ModeSwitcher et handleModeSwitch sont
-          conservés intacts et se réaffichent dès que PIVOT_LOCATAIRE = false. */}
-      {!PIVOT_LOCATAIRE && !collapsed && (
+      {/* ── Mode Switcher ──
+          Réservé au compte à double vue : un utilisateur normal a un rôle fixé
+          par l'onboarding et ne voit aucune bascule. */}
+      {dualView && !collapsed && (
         <div className="flex-shrink-0 px-3 pt-3 pb-1">
           <ModeSwitcher currentMode={currentMode} onSwitch={handleModeSwitch} />
         </div>
@@ -295,9 +290,7 @@ export default function Sidebar() {
 
       {/* ── Scrollable nav ────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        {/* [HIDDEN - PIVOT LOCATAIRE] Aucune réduction de la navigation ici :
-            le mode étant forcé à 'locataire' plus haut, la branche loueur ne
-            peut pas se rendre, et la branche locataire s'affiche en entier. */}
+        {/* La branche rendue suit strictement le mode, lui-même issu du rôle. */}
         {currentMode === 'loueur' ? (
           <>
             {!collapsed && <NavSection label="Gestion" />}

@@ -11,16 +11,13 @@ import {
 import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
 import ModeSwitcher from '@/components/ModeSwitcher'
+import { canSwitchMode } from '@/lib/roles'
 import AlertsSettings from '@/components/alerts/AlertsSettings'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useLease } from '@/contexts/LeaseContext'
 
 // ═══════════════ Constantes ═══════════════
-
-// [HIDDEN - PIVOT LOCATAIRE] Masque la bascule locataire/loueur des réglages.
-// Miroir de la constante de components/layout/Sidebar.tsx.
-const PIVOT_LOCATAIRE: boolean = true
 
 const OUTFIT = "'Outfit', sans-serif"
 
@@ -191,6 +188,7 @@ export default function ParametresPage() {
   const [email, setEmail] = useState('')
   const [googleLinked, setGoogleLinked] = useState(false)
   const [mode, setModeState] = useState<'locataire' | 'loueur'>('locataire')
+  const dualView = canSwitchMode(email)
   const [prefs, setPrefs] = useState<Record<string, boolean>>(DEFAULT_PREFS)
   const [resetSending, setResetSending] = useState(false)
 
@@ -392,9 +390,9 @@ export default function ParametresPage() {
 
             {/* ── 2. Mode & profil ── */}
             <Section icon={<UserCog size={14} />} title="Mode & profil">
-              {/* [HIDDEN - PIVOT LOCATAIRE] Bascule locataire/loueur masquée —
-                  un seul mode est actif côté UI. Row conservée telle quelle. */}
-              {!PIVOT_LOCATAIRE && (
+              {/* Bascule réservée au compte à double vue : le rôle d'un
+                  utilisateur normal est fixé par la question d'onboarding. */}
+              {dualView && (
                 <Row label="Mode d'utilisation" description="Basculez entre la recherche de colocation et la gestion de vos annonces">
                   <div style={{ width: 190, flexShrink: 0 }}>
                     <ModeSwitcher currentMode={mode} onSwitch={handleModeSwitch} />

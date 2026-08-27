@@ -28,15 +28,6 @@ const NOTIF_ICONS: Record<string, string> = {
   match: '❤️', message: '💬', system: '🔔', alert: '🏠', view: '👁️',
 }
 
-/**
- * [HIDDEN - PIVOT LOCATAIRE]
- * Pivot 100% locataire : la grille loueur n'est plus rendue et le badge de mode
- * disparaît. Rien n'est supprimé — LoueurGrid reste définie et fonctionnelle.
- * Repasser cette constante à `false` restaure le dashboard bi-mode d'origine.
- * (Miroir de la constante du même nom dans components/layout/Sidebar.tsx.)
- */
-const PIVOT_LOCATAIRE: boolean = true
-
 // ═══════════════ Building blocks ═══════════════
 // (BentoCard, ModuleTitle, EmptyState, CountUp, AvatarStack, Skeleton → components/ui/Bento)
 
@@ -241,10 +232,8 @@ export default function DashboardHomePage() {
             variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }}
             className="grid grid-cols-1 md:grid-cols-4 md:auto-rows-[148px] gap-4"
           >
-            {/* [HIDDEN - PIVOT LOCATAIRE] LoueurGrid (annonces, candidatures
-                reçues, maintenance, boost, avis) n'est plus rendue. La fonction
-                LoueurGrid et ses BentoCard restent définies plus bas, intactes. */}
-            {PIVOT_LOCATAIRE || data.mode === 'locataire' ? <LocataireGrid d={data} /> : <LoueurGrid d={data} />}
+            {/* La grille suit le mode issu de profiles.role. */}
+            {data.mode === 'locataire' ? <LocataireGrid d={data} /> : <LoueurGrid d={data} />}
           </motion.div>
         )}
       </div>

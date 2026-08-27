@@ -14,15 +14,11 @@ import { createClient } from '@/lib/supabase/client'
 import { profilesCompatibility } from '@/lib/matching'
 import { track } from '@/lib/analytics'
 import { listingOccupancy } from '@/lib/utils'
+import { canSwitchMode } from '@/lib/roles'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 import PushPermission from '@/components/notifications/PushPermission'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
-
-// [HIDDEN - PIVOT LOCATAIRE] Masque le sélecteur de mode du panneau de filtres.
-// Miroir de la constante de components/layout/Sidebar.tsx — repasser à false
-// pour restaurer le bloc « Je cherche en tant que ».
-const PIVOT_LOCATAIRE: boolean = true
 
 // [HIDDEN - RECENTRAGE SWIPE] Masque la colonne de filtres de gauche (desktop)
 // pour recentrer la card de swipe entre la Sidebar et « Matchs récents ».
@@ -58,9 +54,11 @@ interface FilterPanelProps {
   toggleLifestyle: (tag: string) => void
   mode: 'locataire' | 'loueur'
   onModeSwitch: (m: 'locataire' | 'loueur') => void
+  /** Seul le compte à double vue voit le sélecteur de mode. */
+  dualView: boolean
 }
 
-function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, lifestyle, toggleLifestyle, mode, onModeSwitch }: FilterPanelProps) {
+function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, lifestyle, toggleLifestyle, mode, onModeSwitch, dualView }: FilterPanelProps) {
   const labelStyle: React.CSSProperties = {
     fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px',
     color: 'rgba(255,255,255,0.35)', marginBottom: '10px',
@@ -78,9 +76,9 @@ function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, l
       </div>
 
       {/* Mode */}
-      {/* [HIDDEN - PIVOT LOCATAIRE] Le sélecteur « Je cherche en tant que »
-          n'a plus qu'une valeur possible pendant le pivot. Bloc conservé. */}
-      {!PIVOT_LOCATAIRE && (
+      {/* Sélecteur réservé au compte à double vue (lib/roles.ts) : le rôle
+          d'un utilisateur normal est fixé par la question d'onboarding. */}
+      {dualView && (
         <div>
           <div style={labelStyle}>Je cherche en tant que</div>
           <ModeSwitcher currentMode={mode} onSwitch={onModeSwitch} />
@@ -204,7 +202,7 @@ function GhostCard({ profile, depth }: { profile: SwipeProfile; depth: 1 | 2 }) 
 
 function MatchCelebration({ profile, me, onMessage, onClose }: {
   profile: SwipeProfile
-  me: { initials: string; avatarUrl: string | null }
+  me: { initials: string; avatarUrl: string | null; email: string | null }
   onMessage: () => void
   onClose: () => void
 }) {
@@ -412,7 +410,7 @@ export default function SwipePage() {
   const [filterSort, setFilterSort] = useState('match')
   const [lifestyle, setLifestyle] = useState<Set<string>>(new Set())
   const [undoIndex, setUndoIndex] = useState<number | null>(null)
-  const [me, setMe] = useState<{ initials: string; avatarUrl: string | null }>({ initials: '', avatarUrl: null })
+  const [me, setMe] = useState<{ initials: string; avatarUrl: string | null; email: string | null }>({ initials: '', avatarUrl: null, email: null })
   const [showSwipeTip, setShowSwipeTip] = useState(false)
 
   // Tooltip premier usage : une seule fois (localStorage)
@@ -603,6 +601,7 @@ export default function SwipePage() {
         setMe({
           initials: `${data.first_name?.[0] ?? ''}${data.last_name?.[0] ?? ''}`.toUpperCase(),
           avatarUrl: data.avatar_url ?? null,
+          email: user.email ?? null,
         })
       }
     })()
@@ -744,6 +743,7 @@ export default function SwipePage() {
     sort: filterSort, setSort: setFilterSort,
     lifestyle, toggleLifestyle,
     mode, onModeSwitch: handleModeSwitch,
+    dualView: canSwitchMode(me.email),
   }
 
   return (

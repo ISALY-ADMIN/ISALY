@@ -85,6 +85,12 @@ export interface Profile {
   onboarding_completed?: boolean
   is_admin?: boolean
   suspended?: boolean
+  /**
+   * Horodatage de la réponse à la question de rôle de l'onboarding
+   * (« Tu es plutôt… », migration 37). NULL = n'a jamais répondu : la question
+   * lui est reposée de façon bloquante à l'entrée dans /app/*.
+   */
+  role_confirmed_at?: string | null
   created_at: string
   /** Extended matching vector stored as JSONB. Populated from the full questionnaire. */
   matching_data?: import('@/lib/matching').MatchingData | null

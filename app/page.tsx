@@ -15,14 +15,6 @@ import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerCo
 import Emoji from '@/components/ui/Emoji'
 import { ARTICLES, readingTime } from '@/content/blog/articles'
 
-/**
- * [HIDDEN - PIVOT LOCATAIRE]
- * Masque les blocs de la landing qui s'adressent aux loueurs : le CTA
- * « Déposer une annonce » du hero et la grille tarifaire loueur.
- * Repasser à `false` les réaffiche à l'identique — rien n'a été supprimé.
- */
-const PIVOT_LOCATAIRE: boolean = true
-
 // ─── Styles partagés ─────────────────────────────────────────────────────────
 
 const glassCard: React.CSSProperties = {
@@ -306,16 +298,12 @@ export default function LandingPage() {
           >
             Trouver une coloc
           </Link>
-          {/* [HIDDEN - PIVOT LOCATAIRE] CTA secondaire « Déposer une annonce » :
-              il n'y a plus de parcours loueur à ouvrir. Bloc conservé. */}
-          {!PIVOT_LOCATAIRE && (
-            <Link href="/auth/register" style={ctaGhost}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
-            >
-              Déposer une annonce
-            </Link>
-          )}
+          <Link href="/auth/register" style={ctaGhost}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
+          >
+            Déposer une annonce
+          </Link>
         </motion.div>
 
         {/* Proof social */}
@@ -631,10 +619,6 @@ export default function LandingPage() {
           </div>
 
           {/* LOUEURS */}
-          {/* [HIDDEN - PIVOT LOCATAIRE] Offres payantes loueur (Essentiel 9,99€ /
-              Prioritaire 24,99€) retirées de la landing le temps du pivot.
-              Le JSX complet est conservé ci-dessous, à l'identique. */}
-          {!PIVOT_LOCATAIRE && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
               <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
@@ -701,7 +685,6 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-          )}
         </section>
       </ScrollReveal>
 

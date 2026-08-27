@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import MatchingQuiz from '@/components/quiz/MatchingQuiz'
 import type { MatchingData } from '@/lib/matching'
 import Emoji from '@/components/ui/Emoji'
+import { ROLE_CHOICES } from '@/lib/roles'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,17 +22,8 @@ interface OnboardingData {
   quiz_answers: Record<string, number>
 }
 
-/**
- * [HIDDEN - PIVOT LOCATAIRE]
- * Pivot 100% locataire : le choix « Locataire / Loueur » de l'étape 1 est
- * masqué et le rôle est pré-rempli à 'locataire' pour les nouveaux comptes.
- * Les profils déjà en base ne sont pas touchés.
- * Repasser à `false` réaffiche le choix et restaure `role: ''`.
- */
-const PIVOT_LOCATAIRE: boolean = true
-
 const DEFAULT: OnboardingData = {
-  role: PIVOT_LOCATAIRE ? 'locataire' : '',
+  role: '',
   first_name: '', last_name: '', age: '', city: '', profession: '', status: '',
   budget_min: 400, budget_max: 1000,
   move_in: '', duration: '', zones: [],
@@ -189,26 +181,35 @@ type TogglePill = (k: 'zones', v: string, max?: number) => void
 function Step1({ d, upd }: { d: OnboardingData; upd: Upd }) {
   return (
     <div>
-      {/* [HIDDEN - PIVOT LOCATAIRE] Choix du rôle masqué : tout nouveau compte
-          est locataire (role pré-rempli dans DEFAULT). Le bloc reste intact. */}
-      {!PIVOT_LOCATAIRE && (
-        <>
-          <FieldLabel>Je suis…</FieldLabel>
-          <div className="grid grid-cols-2 gap-2.5 mb-4">
-            {[{ em: '🔍', lbl: 'Locataire', val: 'locataire' }, { em: '🏠', lbl: 'Loueur', val: 'loueur' }].map(r => (
-              <button
-                key={r.val}
-                onClick={() => upd('role', r.val)}
-                className="p-4 rounded-[11px] border-2 cursor-pointer transition-all text-center"
-                style={{ borderColor: d.role === r.val ? '#4ECBA0' : '#E5E7EB', background: d.role === r.val ? '#ECFDF5' : '#fff' }}
-              >
-                <div className="text-[26px] mb-1"><Emoji native={r.em} size="26px" /></div>
-                <div className="text-[13px] font-bold">{r.lbl}</div>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+      {/* Première question de l'onboarding : elle fixe profiles.role, donc la
+          navigation et le dashboard que verra ce compte. Elle est obligatoire —
+          « Continuer » reste désactivé tant qu'aucun choix n'est fait. */}
+      <FieldLabel>Tu es plutôt…</FieldLabel>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
+        {ROLE_CHOICES.map(r => {
+          const selected = d.role === r.value
+          return (
+            <button
+              key={r.value}
+              onClick={() => upd('role', r.value)}
+              aria-pressed={selected}
+              className="p-4 rounded-[11px] border-2 cursor-pointer transition-all text-left"
+              style={{
+                borderColor: selected ? '#4ECBA0' : '#E5E7EB',
+                background: selected ? '#ECFDF5' : '#fff',
+              }}
+            >
+              <div className="text-[26px] mb-1"><Emoji native={r.emoji} size="26px" /></div>
+              <div className="text-[13px] font-bold" style={{ color: selected ? '#059669' : '#111827' }}>
+                {r.title}
+              </div>
+              <div className="text-[11.5px] mt-1 leading-snug" style={{ color: '#6B7280' }}>
+                {r.description}
+              </div>
+            </button>
+          )
+        })}
+      </div>
 
       <div className="grid grid-cols-2 gap-2.5 mb-2.5">
         <TxtInput placeholder="Prénom" value={d.first_name} onChange={v => upd('first_name', v)} />
@@ -461,6 +462,9 @@ export default function OnboardingPage() {
       city:        d.city        || null,
       budget_max:  d.budget_max,
       onboarding_completed: true,
+      // Trace la réponse à la question de rôle : sans elle, la garde de
+      // /app/* reposerait la question à ce compte (cf. RoleGate).
+      role_confirmed_at: new Date().toISOString(),
       matching_data,
     }
 
@@ -484,6 +488,10 @@ export default function OnboardingPage() {
       setTimeout(() => router.push('/auth/register'), 1400)
     }
   }
+
+  // Le rôle conditionne toute la suite du parcours : on ne laisse pas passer
+  // l'étape 1 sans réponse.
+  const canProceed = step !== 1 || d.role === 'locataire' || d.role === 'loueur'
 
   return (
     <div
@@ -558,9 +566,14 @@ export default function OnboardingPage() {
             )}
             <button
               onClick={next}
-              className="py-3 rounded-full text-[13.5px] font-semibold text-white border-none cursor-pointer transition-colors"
-              style={{ background: '#4ECBA0', flex: step > 1 ? 2 : 1 }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#2AA87C')}
+              disabled={!canProceed}
+              className="py-3 rounded-full text-[13.5px] font-semibold text-white border-none transition-colors"
+              style={{
+                background: '#4ECBA0', flex: step > 1 ? 2 : 1,
+                opacity: canProceed ? 1 : 0.45,
+                cursor: canProceed ? 'pointer' : 'not-allowed',
+              }}
+              onMouseEnter={e => { if (canProceed) e.currentTarget.style.background = '#2AA87C' }}
               onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
             >
               Continuer →
