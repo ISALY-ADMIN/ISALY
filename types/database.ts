@@ -66,6 +66,17 @@ export type PaymentStatus = 'pending' | 'succeeded' | 'failed'
 export type PlanType = 'assurance' | 'featured' | 'priority'
 export type SwipeDirection = 'left' | 'right' | 'super'
 
+/** Intent collecté à l'onboarding loueur (profiles.owner_intent, migration 38). */
+export interface OwnerIntent {
+  /** « J'ai un bien à publier maintenant », « Bientôt… », « Je regarde… ». */
+  timing: string | null
+  /** Appartement / maison en colocation, studio, plusieurs biens. */
+  property_type: string | null
+  /** Villes saisies librement par le loueur. */
+  cities: string[]
+  answered_at: string
+}
+
 export interface Profile {
   id: string
   email: string | null
@@ -91,6 +102,12 @@ export interface Profile {
    * lui est reposée de façon bloquante à l'entrée dans /app/*.
    */
   role_confirmed_at?: string | null
+  /**
+   * Réponses de la branche loueur de l'onboarding (migration 38) : à quel
+   * moment le loueur a un bien à publier, le type de bien, les villes visées.
+   * NULL pour un locataire, et pour tout compte créé avant la migration.
+   */
+  owner_intent?: OwnerIntent | null
   created_at: string
   /** Extended matching vector stored as JSONB. Populated from the full questionnaire. */
   matching_data?: import('@/lib/matching').MatchingData | null

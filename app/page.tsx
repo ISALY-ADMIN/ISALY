@@ -252,7 +252,9 @@ export default function LandingPage() {
           pointerEvents: 'none',
         }} />
 
-        {/* Badge animé */}
+        {/* [HIDDEN - DONNÉES NON DISPONIBLES] Badge animé "+500 colocations trouvées".
+            Valeur statique en dur, aucune source Supabase derrière. Réactiver le jour
+            où un vrai COUNT sur les matchs/baux conclus sera disponible.
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -268,6 +270,7 @@ export default function LandingPage() {
             <Emoji native="🏠" size="14px" /> +500 colocations trouvées
           </div>
         </motion.div>
+        */}
 
         {/* Titre */}
         <motion.h1 {...fadeUp(0.13)} style={{
@@ -306,7 +309,9 @@ export default function LandingPage() {
           </Link>
         </motion.div>
 
-        {/* Proof social */}
+        {/* [HIDDEN - DONNÉES NON DISPONIBLES] Proof social "Rejoignez 2 000+ colocataires".
+            Chiffre en dur + photos d'illustration, aucune source Supabase derrière.
+            Réactiver avec un vrai COUNT sur profiles.
         <motion.div {...fadeUp(0.37)} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex' }}>
             {['/pictures/meuf.jpg', '/pictures/mec.jpg', '/pictures/meuf2.jpg'].map((src, i) => (
@@ -323,6 +328,7 @@ export default function LandingPage() {
             Rejoignez <span style={{ color: '#fff', fontWeight: 600 }}>2 000+</span> colocataires
           </span>
         </motion.div>
+        */}
 
         {/* Scroll indicator */}
         <div style={{ position: 'absolute', bottom: '28px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
@@ -331,7 +337,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ 2. SOCIAL PROOF — stats count-up ═══ */}
+      {/* [HIDDEN - DONNÉES NON DISPONIBLES] Section 2. SOCIAL PROOF — stats count-up.
+          Les 4 valeurs sont des littéraux en dur passés à CountUpStat (500 / 2000 / 89% / 4.8★) :
+          l'animation ne lit aucune donnée Supabase. Pour réactiver, brancher un COUNT réel
+          (listings actifs, profiles vérifiés, matches) et repasser les vraies valeurs en props.
       <section style={{
         background: 'rgba(255,255,255,0.02)',
         borderTop: '1px solid rgba(255,255,255,0.06)',
@@ -354,6 +363,7 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      */}
 
       {/* MARQUEE */}
       <div style={{ padding: '28px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -474,7 +484,44 @@ export default function LandingPage() {
         </section>
       </ScrollReveal>
 
-      {/* ═══ 6. TÉMOIGNAGES ═══ */}
+      {/* ═══ 6. PREMIERS UTILISATEURS ═══ */}
+      <ScrollReveal delay={0}>
+        <section style={{ padding: '100px 24px', maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={sectionKicker}>LANCEMENT</div>
+            <h2 style={sectionTitle}>Rejoins les premiers utilisateurs d&apos;ISALY</h2>
+            <p style={{
+              fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8,
+              margin: '20px auto 36px', maxWidth: '560px',
+            }}>
+              ISALY vient d&apos;ouvrir. Pas encore de témoignages à afficher — juste une
+              plateforme prête, un matching qui tourne et une place à prendre parmi les
+              premiers colocataires et loueurs de la communauté.
+            </p>
+            <div style={{
+              ...glassCard, backdropFilter: 'blur(12px)',
+              padding: '32px 28px', maxWidth: '620px', margin: '0 auto',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px',
+            }}>
+              <p style={{ fontSize: '14.5px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, margin: 0 }}>
+                Crée ton profil, passe le test de compatibilité et découvre les colocs
+                qui te correspondent vraiment.
+              </p>
+              <Link href="/auth/register" style={ctaPrimary}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 60px rgba(16,185,129,0.55)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 0 40px rgba(16,185,129,0.35)' }}
+              >
+                Créer mon profil
+              </Link>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* [HIDDEN - TÉMOIGNAGES NON VÉRIFIÉS] Section 6. TÉMOIGNAGES.
+          Les 3 témoignages (Sophie M., Thomas R., Léa K.) ainsi que les scores de
+          compatibilité cités sont inventés : aucun utilisateur réel derrière, aucune
+          table d'avis. Réactiver uniquement avec des témoignages réels et consentis.
       <ScrollReveal delay={0}>
         <section style={{ padding: '100px 24px', maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -513,6 +560,7 @@ export default function LandingPage() {
           </StaggerContainer>
         </section>
       </ScrollReveal>
+      */}
 
       {/* ═══ NOS GUIDES (blog) ═══ */}
       <ScrollReveal delay={0}>

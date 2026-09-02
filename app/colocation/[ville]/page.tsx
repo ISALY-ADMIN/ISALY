@@ -136,6 +136,11 @@ export default async function ColocationVillePage({ params }: Props) {
 
   const cityGuides = getArticlesByCity(cityName)
 
+  // Ville sans aucune annonce active → toute la page bascule en état
+  // « bientôt disponible » plutôt que d'afficher une page vide identique
+  // à celle d'une ville déjà ouverte.
+  const isEmptyCity = all.length === 0
+
   const ADVANTAGES = [
     { icon: Heart, title: 'Matching compatible', desc: `Notre algorithme analyse 40+ critères de mode de vie pour vous proposer uniquement des colocataires compatibles à ${cityName}.` },
     { icon: FileCheck, title: 'Bail en ligne', desc: 'Rédaction conforme loi 89, signature électronique, quittances automatiques — zéro paperasse, tout est dans l’app.' },
@@ -165,15 +170,15 @@ export default async function ColocationVillePage({ params }: Props) {
         {/* ── Header SEO ── */}
         <div style={{ marginBottom: '36px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>
-            COLOCATION · {cityName.toUpperCase()}
+            {isEmptyCity ? `BIENTÔT DISPONIBLE · ${cityName.toUpperCase()}` : `COLOCATION · ${cityName.toUpperCase()}`}
           </div>
           <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 700, color: '#fff', margin: '0 0 12px', lineHeight: 1.1, letterSpacing: '-1px' }}>
             Colocation à {cityName}
           </h1>
           <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.55)', margin: '0 0 20px' }}>
-            {all.length > 0
+            {!isEmptyCity
               ? <>{all.length} annonce{all.length > 1 ? 's' : ''} disponible{all.length > 1 ? 's' : ''}{avgRent ? <> · Loyer moyen : <strong style={{ color: '#10B981' }}>{avgRent}€/mois</strong></> : null}</>
-              : `Trouvez votre colocation idéale à ${cityName} avec le matching intelligent ISALY.`}
+              : `ISALY n'a pas encore d'annonce active à ${cityName}. Inscris-toi pour être prévenu dès la première publication.`}
           </p>
 
           {/* Stats locales */}
@@ -194,16 +199,26 @@ export default async function ColocationVillePage({ params }: Props) {
         </div>
 
         {/* ── Grille d'annonces ── */}
-        {results.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 24px', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🔍" /></div>
-            <h2 style={{ fontSize: '22px', color: '#fff', marginBottom: '12px' }}>Pas encore d&apos;annonces à {cityName}</h2>
-            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', marginBottom: '28px' }}>
-              Soyez le premier à publier ou créez votre profil pour être alerté dès qu&apos;une annonce apparaît.
+        {isEmptyCity ? (
+          /* Aucune annonce active dans cette ville : état « bientôt disponible »
+             avec CTA de notification, plutôt qu'une page de résultats vide. */
+          <div style={{ textAlign: 'center', padding: '72px 24px', background: 'rgba(16,185,129,0.05)', borderRadius: '20px', border: '1px solid rgba(16,185,129,0.18)' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🚀" size="48px" /></div>
+            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>
+              Bientôt disponible à {cityName}
+            </h2>
+            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', maxWidth: '460px', margin: '0 auto 28px', lineHeight: 1.7 }}>
+              Aucune colocation n&apos;est encore publiée à {cityName}. Crée ton profil : tu seras
+              prévenu dès qu&apos;une annonce arrive, et tu seras dans les premiers à y répondre.
             </p>
-            <Link href="/auth/register" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600, padding: '13px 28px', borderRadius: '12px' }}>
-              Créer mon profil — gratuit →
-            </Link>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Link href={`/auth/register?ville=${params.ville}`} style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 700, padding: '13px 28px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
+                Me prévenir à {cityName} →
+              </Link>
+              <Link href="/auth/register" style={{ display: 'inline-block', background: 'transparent', color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '14px', fontWeight: 600, padding: '13px 28px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)' }}>
+                Publier la première annonce
+              </Link>
+            </div>
           </div>
         ) : (
           <>
@@ -309,12 +324,16 @@ export default async function ColocationVillePage({ params }: Props) {
         {/* ── CTA final ── */}
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '20px' }}>
           <h2 style={{ fontSize: '24px', color: '#fff', marginBottom: '12px' }}>
-            Trouvez votre colocataire idéal à {cityName}
+            {isEmptyCity
+              ? `Sois parmi les premiers à ${cityName}`
+              : `Trouvez votre colocataire idéal à ${cityName}`}
           </h2>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', maxWidth: '480px', margin: '0 auto 24px' }}>
-            Inscription gratuite · Matching sur 40+ critères · Résultats en 3 jours
+            {isEmptyCity
+              ? `Inscription gratuite · Ton profil est prêt dès l'ouverture de ${cityName}`
+              : 'Inscription gratuite · Matching sur 40+ critères'}
           </p>
-          <Link href="/auth/register" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 700, padding: '14px 32px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)' }}>
+          <Link href={isEmptyCity ? `/auth/register?ville=${params.ville}` : '/auth/register'} style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 700, padding: '14px 32px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)' }}>
             Commencer gratuitement →
           </Link>
         </div>

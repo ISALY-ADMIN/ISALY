@@ -20,6 +20,12 @@ interface OnboardingData {
   budget_min: number; budget_max: number
   move_in: string; duration: string; zones: string[]
   quiz_answers: Record<string, number>
+  // ── Branche loueur (role = 'loueur') ──
+  // Ces trois réponses remplacent entièrement l'étape « Ta recherche » et le
+  // test de compatibilité, qui n'ont aucun sens pour quelqu'un qui loue un bien.
+  owner_timing: string
+  owner_cities: string[]
+  owner_property_type: string
 }
 
 const DEFAULT: OnboardingData = {
@@ -28,28 +34,53 @@ const DEFAULT: OnboardingData = {
   budget_min: 400, budget_max: 1000,
   move_in: '', duration: '', zones: [],
   quiz_answers: {},
+  owner_timing: '', owner_cities: [], owner_property_type: '',
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_OPTS = ['Étudiant', 'Salarié CDI', 'Salarié CDD', 'Freelance', 'Auto-entrepreneur', 'Autre']
 
-const STEP_LABELS = [
+// Le parcours diverge après la question de rôle de l'étape 1 : un locataire
+// passe par sa recherche puis le test de compatibilité (3 étapes), un loueur
+// répond à 3 questions sur son bien et part directement créer son annonce
+// (2 étapes). stepCountFor() borne la reprise d'un brouillon selon le rôle.
+const STEP_LABELS_LOCATAIRE = [
   'Qui es-tu ?',
   'Ta recherche',
   'Ton test de compatibilité',
 ]
-const TOTAL = 3
+const STEP_LABELS_LOUEUR = [
+  'Qui es-tu ?',
+  'Ton projet de location',
+]
 
 // Message de récompense affiché à la fin de chaque étape
-const STEP_REWARDS = [
+const STEP_REWARDS_LOCATAIRE = [
   'Super ! Ton profil est en place 🎉',
   'Ta recherche est enregistrée ✨',
   'Ton score de compatibilité est calculé ✨',
 ]
+const STEP_REWARDS_LOUEUR = [
+  'Super ! Ton profil est en place 🎉',
+  'Ton espace loueur est prêt 🏠',
+]
+
+const OWNER_TIMING_OPTS = [
+  'J’ai un bien à publier maintenant',
+  'Bientôt, d’ici quelques semaines',
+  'Je regarde comment ça marche',
+]
+const OWNER_TYPE_OPTS = [
+  'Appartement en colocation',
+  'Maison en colocation',
+  'Studio / T1',
+  'Plusieurs biens',
+]
 
 /** Barre de progression gamifiée : cercles ✓ + segments animés (spring). */
-function ProgressSteps({ step }: { step: number }) {
+function ProgressSteps({ step, total }: { step: number; total: number }) {
+  const TOTAL = total
   return (
     <div className="flex items-center mb-3.5">
       {Array.from({ length: TOTAL }, (_, i) => {
@@ -176,7 +207,7 @@ function Pills({ opts, value, onSelect }: {
 // ─── Step components ──────────────────────────────────────────────────────────
 
 type Upd = <K extends keyof OnboardingData>(k: K, v: OnboardingData[K]) => void
-type TogglePill = (k: 'zones', v: string, max?: number) => void
+type TogglePill = (k: 'zones' | 'owner_cities', v: string, max?: number) => void
 
 function Step1({ d, upd }: { d: OnboardingData; upd: Upd }) {
   return (
@@ -324,7 +355,100 @@ function Step2({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill
   )
 }
 
+/**
+ * Étape 2 — branche loueur.
+ *
+ * Volontairement courte (3 questions) : l'objectif n'est pas de qualifier le
+ * loueur en profondeur mais de le mener au plus vite à sa première annonce.
+ * Aucune question orientée locataire ici (budget de recherche, date
+ * d'emménagement, compatibilité colocataire) : elles ne le concernent pas.
+ */
+function Step2Loueur({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill: TogglePill }) {
+  const [cityInput, setCityInput] = useState('')
+
+  function addCity() {
+    if (cityInput.trim()) {
+      togglePill('owner_cities', cityInput.trim())
+      setCityInput('')
+    }
+  }
+
+  return (
+    <div>
+      <FieldLabel>Où en es-tu ?</FieldLabel>
+      <Pills opts={OWNER_TIMING_OPTS} value={d.owner_timing} onSelect={v => upd('owner_timing', v)} />
+
+      <FieldLabel mt>Type de bien</FieldLabel>
+      <Pills opts={OWNER_TYPE_OPTS} value={d.owner_property_type} onSelect={v => upd('owner_property_type', v)} />
+
+      <FieldLabel mt>Dans quelle(s) ville(s) ?</FieldLabel>
+      <div className="flex gap-2 mb-2">
+        <input
+          value={cityInput}
+          onChange={e => setCityInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addCity()}
+          placeholder="Ex : Lyon, Villeurbanne… (Entrée)"
+          className="flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
+          style={{ borderColor: '#E5E7EB' }}
+          onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
+          onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+        />
+        <button
+          onClick={addCity}
+          className="px-3 py-2 rounded-[9px] text-[13px] font-bold text-white border-none cursor-pointer"
+          style={{ background: '#4ECBA0' }}
+        >
+          +
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {d.owner_cities.map(c => (
+          <span
+            key={c}
+            className="px-2.5 py-1 rounded-full text-[12px] font-medium flex items-center gap-1"
+            style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}
+          >
+            {c}
+            <button
+              onClick={() => togglePill('owner_cities', c)}
+              className="border-none bg-transparent cursor-pointer ml-0.5 text-[10px] leading-none"
+              style={{ color: '#059669' }}
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <div
+        className="rounded-[12px] p-3.5 text-[12.5px] leading-relaxed"
+        style={{ background: '#F9FAFB', border: '1px solid #F3F4F6', color: '#6B7280' }}
+      >
+        <Emoji native="🏠" size="14px" /> Juste après, on t&apos;emmène directement sur la
+        création de ta première annonce. Tu pourras l&apos;enregistrer en brouillon si tu
+        n&apos;as pas encore toutes les infos.
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
+
+/** Nombre d'étapes du parcours pour un rôle donné. */
+function stepCountFor(role: string | undefined | null): number {
+  return role === 'loueur' ? STEP_LABELS_LOUEUR.length : STEP_LABELS_LOCATAIRE.length
+}
+
+/**
+ * Destination de fin d'onboarding.
+ *
+ * Un loueur part droit sur la création d'annonce (/app/annonce, le formulaire
+ * mutualisé derrière « Publier une annonce ») : le dashboard swipe ne lui sert
+ * à rien tant qu'il n'a rien publié.
+ */
+function homeFor(role: string | undefined | null): string {
+  return role === 'loueur' ? '/app/annonce' : '/app/swipe'
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -344,12 +468,12 @@ export default function OnboardingPage() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('onboarding_draft, onboarding_step, onboarding_completed')
+          .select('role, onboarding_draft, onboarding_step, onboarding_completed')
           .eq('id', user.id)
           .single()
 
         if (profile?.onboarding_completed) {
-          router.push('/app/swipe')
+          router.push(homeFor(profile.role as string | undefined))
           return
         }
 
@@ -359,7 +483,8 @@ export default function OnboardingPage() {
           const localStep = (() => { try { const p = JSON.parse(localRaw ?? '{}'); return p.onboarding_step ?? 0 } catch { return 0 } })()
           if (profile.onboarding_step >= localStep) {
             setD({ ...DEFAULT, ...(draft as Partial<OnboardingData>) })
-            setStep(Math.min(profile.onboarding_step, TOTAL))
+            // Le brouillon d'un loueur ne compte que 2 étapes.
+            setStep(Math.min(profile.onboarding_step, stepCountFor(draft.role as string | undefined)))
             setResumeBanner(true)
             setTimeout(() => setResumeBanner(false), 4000)
             return
@@ -387,13 +512,13 @@ export default function OnboardingPage() {
             matching_data: saved.matching_data ?? null,
           })
           try { localStorage.removeItem('isaly_onboarding_data') } catch {}
-          router.push('/app/swipe')
+          router.push(homeFor(saved.role as string | undefined))
         }
         return
       }
       if (saved.onboarding_step && typeof saved.onboarding_step === 'number' && saved.onboarding_step > 1) {
         setD({ ...DEFAULT, ...(saved as Partial<OnboardingData>) })
-        setStep(Math.min(saved.onboarding_step as number, TOTAL))
+        setStep(Math.min(saved.onboarding_step as number, stepCountFor(saved.role as string | undefined)))
       }
     }
     loadDraft()
@@ -422,7 +547,7 @@ export default function OnboardingPage() {
     })
   }
 
-  function togglePill(key: 'zones', val: string, max?: number) {
+  function togglePill(key: 'zones' | 'owner_cities', val: string, max?: number) {
     setD(prev => {
       const arr = prev[key]
       const has = arr.includes(val)
@@ -433,7 +558,7 @@ export default function OnboardingPage() {
   }
 
   async function next() {
-    if (step >= TOTAL || reward) return
+    if (step >= total || reward) return
     const nextStep = step + 1
     try { localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, onboarding_step: nextStep })) } catch {}
     const supabase = createClient()
@@ -445,7 +570,7 @@ export default function OnboardingPage() {
       }).eq('id', user.id).then(() => {})
     }
     // Récompense de fin d'étape, puis transition
-    setReward(STEP_REWARDS[step - 1])
+    setReward(stepRewards[step - 1])
     setTimeout(() => {
       setReward(null)
       setStep(s => s + 1)
@@ -454,7 +579,7 @@ export default function OnboardingPage() {
 
   async function finish(matching_data: MatchingData) {
     setSaving(true)
-    setReward(STEP_REWARDS[2])
+    setReward(STEP_REWARDS_LOCATAIRE[2])
     const payload = {
       first_name:  d.first_name  || null,
       last_name:   d.last_name   || null,
@@ -489,9 +614,67 @@ export default function OnboardingPage() {
     }
   }
 
+  /**
+   * Fin de parcours loueur.
+   *
+   * Pas de matching_data : le vecteur de compatibilité est un objet de
+   * colocataire, il n'a pas d'équivalent côté loueur et reste donc NULL.
+   * Les réponses des 3 questions partent dans profiles.owner_intent (JSONB,
+   * migration 38) via une écriture séparée et best-effort : tant que la
+   * migration n'est pas jouée, l'onboarding se termine quand même.
+   */
+  async function finishLoueur() {
+    if (saving || reward) return
+    setSaving(true)
+    setReward(STEP_REWARDS_LOUEUR[1])
+
+    const ownerIntent = {
+      timing: d.owner_timing || null,
+      property_type: d.owner_property_type || null,
+      cities: d.owner_cities,
+      answered_at: new Date().toISOString(),
+    }
+    const payload = {
+      first_name:  d.first_name  || null,
+      last_name:   d.last_name   || null,
+      role:        d.role        || null,
+      city:        d.city        || null,
+      onboarding_completed: true,
+      role_confirmed_at: new Date().toISOString(),
+    }
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      await supabase.from('profiles').upsert({
+        id: user.id, email: user.email, ...payload,
+        onboarding_draft: null, onboarding_step: 0,
+      })
+      // Colonne absente (migration 38 pas encore jouée) : on ignore l'échec.
+      try {
+        await supabase.from('profiles').update({ owner_intent: ownerIntent }).eq('id', user.id)
+      } catch { /* noop */ }
+      try { localStorage.removeItem('isaly_onboarding_data') } catch {}
+      setTimeout(() => router.push('/app/annonce'), 1400)
+    } else {
+      try {
+        localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, ...payload, owner_intent: ownerIntent }))
+      } catch {}
+      setTimeout(() => router.push('/auth/register'), 1400)
+    }
+  }
+
   // Le rôle conditionne toute la suite du parcours : on ne laisse pas passer
   // l'étape 1 sans réponse.
+  const isLoueur = d.role === 'loueur'
+  const stepLabels = isLoueur ? STEP_LABELS_LOUEUR : STEP_LABELS_LOCATAIRE
+  const stepRewards = isLoueur ? STEP_REWARDS_LOUEUR : STEP_REWARDS_LOCATAIRE
+  const total = stepLabels.length
   const canProceed = step !== 1 || d.role === 'locataire' || d.role === 'loueur'
+  // Dernière étape loueur : au moins la question « Où en es-tu ? » doit être
+  // renseignée, les deux autres restent facultatives.
+  const canFinishLoueur = d.owner_timing !== '' && !saving
 
   return (
     <div
@@ -523,20 +706,30 @@ export default function OnboardingPage() {
         </div>
 
         {/* Progress bar gamifiée */}
-        <ProgressSteps step={step} />
+        <ProgressSteps step={step} total={total} />
 
         <div className="text-[10.5px] font-extrabold uppercase mb-1.5" style={{ letterSpacing: '2px', color: '#2AA87C' }}>
-          ÉTAPE {step} SUR {TOTAL}
+          ÉTAPE {step} SUR {total}
         </div>
         <h2 className="text-[24px] mb-4" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
-          {STEP_LABELS[step - 1]}
+          {stepLabels[step - 1]}
         </h2>
 
         {/* Scrollable step content */}
         <div className="overflow-y-auto" style={{ maxHeight: '440px', paddingRight: '2px' }}>
           {step === 1 && <Step1 d={d} upd={upd} />}
-          {step === 2 && <Step2 d={d} upd={upd} togglePill={togglePill} />}
-          {step === 3 && (
+          {/* Étape 2 : deux branches distinctes selon la réponse à la question de rôle. */}
+          {step === 2 && !isLoueur && <Step2 d={d} upd={upd} togglePill={togglePill} />}
+          {step === 2 && isLoueur && (
+            saving ? (
+              <div className="py-10 text-center text-[14px]" style={{ color: '#6B7280' }}>
+                Création de ton espace loueur…
+              </div>
+            ) : (
+              <Step2Loueur d={d} upd={upd} togglePill={togglePill} />
+            )
+          )}
+          {step === 3 && !isLoueur && (
             saving ? (
               <div className="py-10 text-center text-[14px]" style={{ color: '#6B7280' }}>
                 Création de ton profil…
@@ -553,7 +746,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Navigation */}
-        {step < TOTAL && (
+        {step < total && (
           <div className="flex gap-2.5 mt-5">
             {step > 1 && (
               <button
@@ -580,7 +773,35 @@ export default function OnboardingPage() {
             </button>
           </div>
         )}
-        {step === TOTAL && (
+        {/* Dernière étape loueur : le parcours se conclut sur la création
+            d'annonce, pas sur le dashboard swipe. */}
+        {step === total && isLoueur && (
+          <div className="flex gap-2.5 mt-5">
+            <button
+              onClick={() => setStep(1)}
+              disabled={saving}
+              className="flex-1 py-3 rounded-full text-[13.5px] font-semibold border-[1.5px] cursor-pointer bg-transparent"
+              style={{ borderColor: '#E5E7EB', color: '#374151' }}
+            >
+              ← Retour
+            </button>
+            <button
+              onClick={finishLoueur}
+              disabled={!canFinishLoueur}
+              className="py-3 rounded-full text-[13.5px] font-semibold text-white border-none transition-colors"
+              style={{
+                background: '#4ECBA0', flex: 2,
+                opacity: canFinishLoueur ? 1 : 0.45,
+                cursor: canFinishLoueur ? 'pointer' : 'not-allowed',
+              }}
+              onMouseEnter={e => { if (canFinishLoueur) e.currentTarget.style.background = '#2AA87C' }}
+              onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
+            >
+              Créer ma première annonce →
+            </button>
+          </div>
+        )}
+        {step === total && !isLoueur && (
           <div className="mt-4 text-center">
             <button
               onClick={() => setStep(2)}

@@ -11,11 +11,13 @@ import { canSwitchMode, roleToMode } from '@/lib/roles'
 import {
   Home, Flame, Search, MessageCircle, // [HIDDEN] carte : ré-ajouter Map ici
 
-  Folder, User, Megaphone, FileText, Bookmark,
+  // [HIDDEN] favoris : ré-ajouter Bookmark ici
+  Folder, User, Megaphone, FileText,
   CreditCard, Settings, LogOut, // [HIDDEN] parrainage : ré-ajouter Gift ici
 
   Users, ClipboardList, Wrench, Receipt, LayoutDashboard,
-  ShieldAlert, Building2, AlertTriangle, Inbox, ChevronsLeft,
+  // [HIDDEN] declarer-probleme : ré-ajouter AlertTriangle ici
+  ShieldAlert, Building2, Inbox, ChevronsLeft,
   type LucideIcon,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -40,16 +42,25 @@ const locataireMainItems: NavItem[] = [
 ]
 const locataireSpaceItems: NavItem[] = [
   { icon: Building2,     label: 'Ma maison',             href: '/app/maison',             id: 'maison' },
-  { icon: AlertTriangle, label: 'Déclarer un problème',  href: '/app/declarer-probleme',  id: 'declarer-probleme' },
+  // [HIDDEN - CONSOLIDÉ DANS MA MAISON] La déclaration de problème reste
+  // accessible depuis la carte dédiée de « Ma maison » (maison/page.tsx) et
+  // depuis le tableau de bord locataire. La route /app/declarer-probleme est
+  // intacte, seule l'entrée de navigation est retirée.
+  // { icon: AlertTriangle, label: 'Déclarer un problème',  href: '/app/declarer-probleme',  id: 'declarer-probleme' },
   { icon: User,          label: 'Mon profil',            href: '/app/profil',             id: 'profil' },
-  { icon: Bookmark,      label: 'Favoris',                href: '/app/favoris',           id: 'favoris' },
+  // [HIDDEN - CONSOLIDÉ DANS LE TABLEAU DE BORD] Les favoris ont déjà leur
+  // carte sur /app/dashboard-home. Route /app/favoris inchangée.
+  // { icon: Bookmark,      label: 'Favoris',                href: '/app/favoris',           id: 'favoris' },
   // Coffre-fort personnel (PIN) : c'est une fonction locataire, mais l'entrée
   // n'existait que dans la nav loueur — donc inatteignable pour un locataire.
   // Ajoutée ici pour que la route, désormais ouverte, soit réellement accessible.
   { icon: Folder,        label: 'Mes documents',         href: '/app/documents',          id: 'documents' },
 ]
 const locataireAccountItems: NavItem[] = [
-  { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
+  // [HIDDEN - CONSOLIDÉ DANS LE TABLEAU DE BORD] L'abonnement locataire a sa
+  // carte « statut boost et abonnement » sur /app/dashboard-home. L'entrée
+  // reste dans la nav loueur, pour qui c'est un usage courant.
+  // { icon: CreditCard, label: 'Abonnements', href: '/app/paiement',   id: 'paiement' },
   // [HIDDEN] parrainage - réactiver quand demandé
   // { icon: Gift,       label: 'Parrainage',  href: '/app/parrainage', id: 'parrainage' },
   { icon: Settings,   label: 'Paramètres',  href: '/app/parametres', id: 'parametres' },
@@ -61,7 +72,10 @@ const loueurGestionItems: NavItem[] = [
   // [HIDDEN] deposer-annonce - remplacé par le bouton dans mes-annonces
   // { icon: Megaphone,       label: 'Déposer une annonce', href: '/app/annonce',       id: 'annonce' },
   { icon: FileText,        label: 'Mes annonces',       href: '/app/mes-annonces',   id: 'mes-annonces' },
-  // [HIDDEN] candidatures - réactiver quand demandé
+  // [HIDDEN - CONSOLIDÉ DANS MES ANNONCES] Doublon avéré : les candidatures
+  // reçues se consultent annonce par annonce depuis /app/mes-annonces (lien
+  // « candidatures » sur chaque carte → /app/mes-annonces/[id]/candidatures),
+  // qui est le contexte utile. La route /app/candidatures reste en place.
   // { icon: Inbox,           label: 'Mes candidatures',   href: '/app/candidatures',   id: 'candidatures' },
   {
     icon: ClipboardList, label: 'Mes baux', href: '/app/baux', id: 'baux',
@@ -70,7 +84,11 @@ const loueurGestionItems: NavItem[] = [
       { icon: Receipt, label: 'Mes loyers',     href: '/app/loyers',     id: 'loyers' },
     ],
   },
-  { icon: Folder,          label: 'Mes documents',      href: '/app/documents',      id: 'documents' },
+  // [HIDDEN - CONSOLIDÉ DANS MES BAUX] Le coffre-fort et les modèles de
+  // documents sont déjà atteignables depuis /app/baux (baux/page.tsx). Côté
+  // loueur, c'est un usage ponctuel qui ne justifie pas une entrée de premier
+  // niveau ; l'entrée reste dans la nav locataire, dont c'est l'espace propre.
+  // { icon: Folder,          label: 'Mes documents',      href: '/app/documents',      id: 'documents' },
   { icon: Wrench,          label: 'Maintenance',        href: '/app/maintenance',    id: 'maintenance' },
 ]
 const loueurCommunicationItems: NavItem[] = [
@@ -333,8 +351,11 @@ export default function Sidebar() {
 
             {!collapsed && <NavSection label="Mon espace" />}
             {locataireSpaceItems.map(item => (
+              // Le compteur de signalements ouverts suit « Déclarer un problème »
+              // là où cette entrée a été consolidée, sinon le locataire perdrait
+              // l'alerte en même temps que l'entrée de navigation.
               <NavLink key={item.id} item={item} active={pathname === item.href} collapsed={collapsed}
-                unread={item.id === 'declarer-probleme' ? tenantMaintenanceCount : 0} />
+                unread={item.id === 'maison' ? tenantMaintenanceCount : 0} />
             ))}
 
             {!collapsed && <NavSection label="Compte" />}

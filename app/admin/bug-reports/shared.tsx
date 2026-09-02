@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
-  ChevronDown, GitCommit, ExternalLink, Loader2, X, Ban, Wrench, Undo2,
+  ChevronDown, GitCommit, ExternalLink, Loader2, X, Ban, Wrench, Undo2, ImageOff,
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import type { BugReportStatus, BugReportSeverity } from '@/types/database'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -39,6 +40,12 @@ export interface AdminBugReport {
   ai_plan: string | null
   ai_report: string | null
   commit_sha: string | null
+  /**
+   * Chemin de l'objet dans le bucket privé `bug-screenshots`
+   * (`<user_id>/…` ou `anonyme/…`), pas une URL : la consultation passe par
+   * une URL signée générée à l'ouverture du panneau de détail.
+   */
+  screenshot_url: string | null
   profiles: ReporterRef | ReporterRef[] | null
 }
 
@@ -428,6 +435,102 @@ function DetailField({ label, value, mono }: { label: string; value: string; mon
   )
 }
 
+/** Bucket privé où le widget de signalement dépose les captures. */
+const SCREENSHOT_BUCKET = 'bug-screenshots'
+/** Durée de vie de l'URL signée : le temps de regarder l'image, pas plus. */
+const SIGNED_URL_TTL = 300
+
+/**
+ * Capture d'écran jointe au signalement.
+ *
+ * Le bucket est privé : `screenshot_url` n'est qu'un chemin d'objet, il faut
+ * une URL signée pour l'afficher. Elle est générée au montage du panneau de
+ * détail et vit 5 minutes — au-delà, rouvrir le ticket en régénère une.
+ */
+function ScreenshotField({ path }: { path: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setUrl(null)
+    setFailed(false)
+
+    async function sign() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.storage
+          .from(SCREENSHOT_BUCKET)
+          .createSignedUrl(path, SIGNED_URL_TTL)
+        if (cancelled) return
+        // Objet supprimé du bucket, chemin invalide ou lien expiré côté API :
+        // on le dit plutôt que de laisser une image cassée.
+        if (error || !data?.signedUrl) setFailed(true)
+        else setUrl(data.signedUrl)
+      } catch {
+        if (!cancelled) setFailed(true)
+      }
+    }
+
+    sign()
+    return () => { cancelled = true }
+  }, [path])
+
+  return (
+    <div>
+      <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#4B5563', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+        Capture d&apos;écran
+      </div>
+
+      {failed ? (
+        <div
+          className="flex items-center gap-2"
+          style={{
+            fontSize: '12.5px', color: '#6B7280',
+            background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '12px', padding: '14px 16px',
+          }}
+        >
+          <ImageOff size={15} />
+          Capture indisponible — fichier manquant ou lien expiré.
+        </div>
+      ) : !url ? (
+        <div
+          className="flex items-center gap-2"
+          style={{
+            fontSize: '12.5px', color: '#6B7280',
+            background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '12px', padding: '14px 16px',
+          }}
+        >
+          <Loader2 size={15} className="animate-spin" />
+          Chargement de la capture…
+        </div>
+      ) : (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block no-underline"
+          style={{
+            borderRadius: '12px', overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(0,0,0,0.4)',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt="Capture d'écran jointe au signalement"
+            onError={() => setFailed(true)}
+            style={{ display: 'block', width: '100%', maxWidth: '100%', height: 'auto', maxHeight: '420px', objectFit: 'contain' }}
+          />
+        </a>
+      )}
+    </div>
+  )
+}
+
 export function DetailModal({ report, onClose, onChanged }: {
   report: AdminBugReport
   onClose: () => void
@@ -495,6 +598,9 @@ export function DetailModal({ report, onClose, onChanged }: {
             <DetailField label="Créé le" value={fullDate(report.created_at)} />
             <DetailField label="Mis à jour le" value={report.updated_at ? fullDate(report.updated_at) : '—'} />
           </div>
+
+          {/* Capture jointe : le bucket étant privé, l'URL est signée au montage. */}
+          {report.screenshot_url && <ScreenshotField path={report.screenshot_url} />}
 
           {report.user_agent && <DetailField label="User agent" value={report.user_agent} mono />}
 

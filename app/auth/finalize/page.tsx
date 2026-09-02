@@ -35,6 +35,8 @@ export default function FinalizePage() {
       const meta = user.user_metadata ?? {}
       const fullName: string = (meta.full_name as string) ?? (meta.name as string) ?? ''
 
+      const role = (onboardingData.role as string) ?? null
+
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         email: user.email,
@@ -47,10 +49,14 @@ export default function FinalizePage() {
           (meta.last_name as string) ||
           (fullName ? fullName.split(' ').slice(1).join(' ') || null : null),
         avatar_url: (meta.avatar_url as string) ?? (meta.picture as string) ?? null,
-        role: (onboardingData.role as string) ?? null,
+        role,
         city: (onboardingData.city as string) ?? null,
         budget_max: typeof onboardingData.budget_max === 'number' ? onboardingData.budget_max : null,
         onboarding_completed: true,
+        // L'utilisateur vient de répondre à la question de rôle dans
+        // l'onboarding : sans cet horodatage, RoleGate la lui reposerait
+        // immédiatement après l'inscription.
+        ...(role ? { role_confirmed_at: new Date().toISOString() } : {}),
         matching_data: onboardingData.matching_data ?? null,
       })
 
@@ -60,8 +66,18 @@ export default function FinalizePage() {
         return
       }
 
+      // Intent loueur collecté à l'onboarding (migration 38). Écriture séparée
+      // et best-effort : si la colonne n'existe pas encore, l'inscription
+      // aboutit quand même.
+      if (role === 'loueur' && onboardingData.owner_intent) {
+        try {
+          await supabase.from('profiles').update({ owner_intent: onboardingData.owner_intent }).eq('id', user.id)
+        } catch { /* noop */ }
+      }
+
       try { localStorage.removeItem('isaly_onboarding_data') } catch {}
-      router.push('/app/dashboard-home')
+      // Un loueur qui vient de s'inscrire part créer sa première annonce.
+      router.push(role === 'loueur' ? '/app/annonce' : '/app/dashboard-home')
     }
 
     finalize()
