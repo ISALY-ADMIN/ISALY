@@ -108,6 +108,23 @@ h1, h2, h3, .font-serif { font-family: 'DM Serif Display', serif; }
   box-shadow: 0 0 0 3px rgba(78, 203, 160, 0.12);
 }
 
+/* ── Champs sur thème clair ──────────────────────────────────
+   Le preflight Tailwind applique `color: inherit` aux input/textarea/select.
+   Comme <body> est en thème sombre (--text-primary: #fff), tout champ posé
+   sur un fond clair héritait du blanc → texte invisible pendant la saisie.
+   `.light-field` force une couleur de texte foncée + un placeholder gris. */
+.light-field,
+.light-field::placeholder {
+  font-family: 'Outfit', sans-serif;
+}
+.light-field {
+  color: #111827;
+}
+.light-field::placeholder {
+  color: #9CA3AF;
+  opacity: 1;
+}
+
 /* ── Dual range slider ───────────────────────────────────────── */
 .range-wrap {
   position: relative;

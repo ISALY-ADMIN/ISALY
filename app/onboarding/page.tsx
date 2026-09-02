@@ -170,8 +170,8 @@ function TxtInput({
     <input
       type={type} placeholder={placeholder} value={value}
       onChange={e => onChange(e.target.value)}
-      className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13px] outline-none"
-      style={{ borderColor: '#E5E7EB' }}
+      className="light-field w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13px] outline-none"
+      style={{ borderColor: '#E5E7EB', color: '#111827' }}
       onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
       onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
     />
@@ -320,8 +320,8 @@ function Step2({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill
           onChange={e => setZoneInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addZone()}
           placeholder="Ex : Lyon 2e, Part-Dieu… (Entrée)"
-          className="flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
-          style={{ borderColor: '#E5E7EB' }}
+          className="light-field flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
+          style={{ borderColor: '#E5E7EB', color: '#111827' }}
           onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
           onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
         />
@@ -388,8 +388,8 @@ function Step2Loueur({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togg
           onChange={e => setCityInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addCity()}
           placeholder="Ex : Lyon, Villeurbanne… (Entrée)"
-          className="flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
-          style={{ borderColor: '#E5E7EB' }}
+          className="light-field flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
+          style={{ borderColor: '#E5E7EB', color: '#111827' }}
           onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
           onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
         />

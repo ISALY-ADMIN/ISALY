@@ -110,7 +110,8 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
                 placeholder={field.placeholder}
                 value={form[field.key]}
                 onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                className="light-field"
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', boxSizing: 'border-box', color: '#111827' }}
                 onFocus={e => (e.target.style.borderColor = '#10B981')}
                 onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
               />
@@ -123,7 +124,8 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
               <select
                 value={form.duration}
                 onChange={e => setForm(f => ({ ...f, duration: e.target.value }))}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none' }}
+                className="light-field"
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', color: '#111827' }}
               >
                 {['1', '3', '6', '12', '24'].map(d => <option key={d} value={d}>{d} mois</option>)}
               </select>
@@ -133,7 +135,8 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
               <select
                 value={form.rooms}
                 onChange={e => setForm(f => ({ ...f, rooms: e.target.value }))}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none' }}
+                className="light-field"
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', color: '#111827' }}
               >
                 {['1', '2', '3', '4', '5'].map(r => <option key={r} value={r}>{r}</option>)}
               </select>
@@ -146,7 +149,8 @@ export default function ColocRequestModal({ onClose, otherUserId, otherName, cur
               value={form.message}
               onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
               rows={3}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+              className="light-field"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '14px', outline: 'none', resize: 'none', boxSizing: 'border-box', color: '#111827' }}
               onFocus={e => (e.target.style.borderColor = '#10B981')}
               onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
             />
