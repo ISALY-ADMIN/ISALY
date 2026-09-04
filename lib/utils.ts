@@ -50,3 +50,21 @@ export function listingOccupancy(l: {
   const total = l.capacity_total ?? Math.max(current + (l.rooms_available ?? 1), current)
   return { current, total }
 }
+
+/** Nom de marque, jamais affichable tel quel comme nom de personne. */
+const BRAND_NAMES = ['isaly', 'isaly immo', 'admin', 'support']
+
+/** Libellé neutre utilisé quand aucun prénom exploitable n'est disponible. */
+export const FALLBACK_OWNER_NAME = 'Loueur ISALY'
+
+/**
+ * Nom affichable d'un loueur sur une fiche publique.
+ * Un prénom vide, ou égal au nom de marque, ne doit jamais être rendu tel quel :
+ * « Proposé par ISALY » laisse croire que la plateforme est le bailleur.
+ */
+export function ownerDisplayName(firstName?: string | null): string {
+  const name = firstName?.trim() ?? ''
+  if (!name) return FALLBACK_OWNER_NAME
+  if (BRAND_NAMES.includes(name.toLowerCase())) return FALLBACK_OWNER_NAME
+  return name
+}

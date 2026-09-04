@@ -12,6 +12,7 @@ import Topbar from '@/components/layout/Topbar'
 import Button from '@/components/ui/Button'
 import { BentoStyles, cardBase } from '@/components/ui/Bento'
 import { createClient } from '@/lib/supabase/client'
+import { BILLING_ENABLED, BILLING_DISABLED_MESSAGE } from '@/lib/billing'
 
 // ─── Types ───────────────────────────────────────────────────
 interface ListingLite {
@@ -645,9 +646,39 @@ function StepPayment({ selectedListing, tier, processing, error, onCheckout }: {
 }
 
 export default function BoostPage() {
+  // Paiements coupés (cf. lib/billing.ts) : on affiche un état « bientôt
+  // disponible » plutôt qu'un tunnel de paiement qui n'activerait rien.
+  if (!BILLING_ENABLED) return <BoostUnavailable />
+
   return (
     <Suspense fallback={null}>
       <BoostContent />
     </Suspense>
+  )
+}
+
+function BoostUnavailable() {
+  return (
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Topbar title="Booster une annonce" />
+      <BentoStyles />
+      <div style={{ maxWidth: '560px', margin: '0 auto', padding: '64px 24px' }}>
+        <div style={{ ...cardBase, padding: '36px', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', width: 52, height: 52, borderRadius: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: '18px' }}>
+            <Sparkles size={22} strokeWidth={2} color="rgba(255,255,255,0.55)" />
+          </div>
+          <h1 style={{ fontFamily: OUTFIT, fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 10px' }}>
+            Mise en avant bientôt disponible
+          </h1>
+          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, margin: '0 0 24px' }}>
+            {BILLING_DISABLED_MESSAGE} Vos annonces restent publiées normalement et visibles
+            par tous les locataires.
+          </p>
+          <Button variant="primary" size="md" onClick={() => { window.location.href = '/app/mes-annonces' }}>
+            Revenir à mes annonces
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }

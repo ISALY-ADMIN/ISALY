@@ -7,9 +7,9 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export const PLANS = {
   assurance: {
-    name: 'Assurance dossier',
+    name: 'Commission de gestion du bail',
     price: 'percentage',
-    description: 'Dossier certifié + gestion bail complète',
+    description: '2,5 % du loyer mensuel, prélevés chaque mois pendant la durée du bail',
   },
   featured: {
     name: 'Annonce mise en avant',

@@ -1,12 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { safeCityFromSlug } from '@/lib/cities'
+import { ensureCityAlert } from '@/lib/searchAlerts'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next')
   const ref = searchParams.get('ref')
+  const ville = searchParams.get('ville')
 
   if (code) {
     const supabase = createClient()
@@ -30,6 +33,15 @@ export async function GET(request: Request) {
         },
         { onConflict: 'id' }
       )
+
+      // Inscription venue de /colocation/<ville> → alerte géographique
+      // consommée ensuite par le cron /api/cron/search-alerts
+      const alertCity = safeCityFromSlug(ville ?? meta.search_city)
+      if (alertCity) {
+        try {
+          await ensureCityAlert(supabase, data.user.id, alertCity)
+        } catch { /* non bloquant pour la connexion */ }
+      }
 
       // Apply referral if present (Google OAuth flow)
       if (ref) {

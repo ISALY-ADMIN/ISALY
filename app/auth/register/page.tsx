@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
 import { track } from '@/lib/analytics'
+import { cityNameFromSlug } from '@/lib/cities'
 
 function translateError(msg: string): string {
   if (!msg) return 'Une erreur inconnue est survenue.'
@@ -26,6 +27,14 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [emailSent, setEmailSent] = useState(false)
+  // `?ville=` posé par les pages SEO /colocation/<ville> : sert à créer
+  // l'alerte géographique qui déclenchera l'email à la première annonce.
+  // Lu côté client (comme `ref`) pour garder la page statiquement rendable.
+  const [villeSlug, setVilleSlug] = useState<string | null>(null)
+  useEffect(() => {
+    setVilleSlug(new URLSearchParams(window.location.search).get('ville'))
+  }, [])
+  const villeName = villeSlug ? cityNameFromSlug(villeSlug) : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,7 +46,7 @@ export default function RegisterPage() {
       email: form.email,
       password: form.password,
       options: {
-        data: { first_name: form.firstName, last_name: form.lastName },
+        data: { first_name: form.firstName, last_name: form.lastName, ...(villeSlug ? { search_city: villeSlug } : {}) },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
@@ -63,6 +72,15 @@ export default function RegisterPage() {
 
     // Email confirmation disabled in Supabase → session is immediate, redirect directly
     if (hasSession) {
+      if (villeSlug) {
+        try {
+          await fetch('/api/alerts/city', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ville: villeSlug }),
+          })
+        } catch { /* non bloquant : l'alerte est rejouable depuis les paramètres */ }
+      }
       router.push('/onboarding')
       return
     }
@@ -89,8 +107,12 @@ export default function RegisterPage() {
     setGoogleLoading(true)
     const supabase = createClient()
     const ref = new URLSearchParams(window.location.search).get('ref')
-    const callbackUrl = ref
-      ? `${window.location.origin}/auth/callback?ref=${encodeURIComponent(ref)}`
+    const cbParams = new URLSearchParams()
+    if (ref) cbParams.set('ref', ref)
+    if (villeSlug) cbParams.set('ville', villeSlug)
+    const qs = cbParams.toString()
+    const callbackUrl = qs
+      ? `${window.location.origin}/auth/callback?${qs}`
       : `${window.location.origin}/auth/callback`
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -133,6 +155,11 @@ export default function RegisterPage() {
               Déjà inscrit ?{' '}
               <Link href="/auth/login" style={{ color: '#10B981', textDecoration: 'none', fontWeight: 600 }}>Se connecter</Link>
             </p>
+            {villeName && (
+              <p style={{ marginTop: '14px', padding: '11px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '13px', color: '#6EE7B7', lineHeight: 1.5 }}>
+                <Emoji native="🔔" /> Une alerte <strong style={{ color: '#fff', fontWeight: 600 }}>{villeName}</strong> sera créée : tu recevras un email dès qu&apos;une annonce y est publiée.
+              </p>
+            )}
           </div>
 
           {/* Google OAuth */}

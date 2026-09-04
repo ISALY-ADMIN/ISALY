@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cache } from 'react'
-import { listingOccupancy } from '@/lib/utils'
+import { listingOccupancy, ownerDisplayName } from '@/lib/utils'
 import ShareButtons from './ShareButtons'
 import Emoji from '@/components/ui/Emoji'
 
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = (listing.photos as string[] | null)?.[0]
 
   return {
-    title: `${title} — ${listing.rent}€/mois | ISALY`,
+    title: `${title} — ${listing.rent}€/mois`,
     description: desc,
     openGraph: {
       title: `${title} — ${listing.rent}€/mois | ISALY`,
@@ -66,6 +66,8 @@ export default async function AnnoncePubliquePage({ params }: Props) {
   const photos = (listing.photos as string[] | null) ?? []
   const ownerRaw = listing.profiles
   const owner = (Array.isArray(ownerRaw) ? ownerRaw[0] : ownerRaw) as { first_name: string | null; avatar_url: string | null } | null
+  // Un prénom vide ou égal au nom de marque ne doit jamais s'afficher tel quel
+  const ownerName = ownerDisplayName(owner?.first_name)
   const publicUrl = `https://isaly.fr/annonce/${listing.id}`
 
   return (
@@ -163,17 +165,17 @@ export default async function AnnoncePubliquePage({ params }: Props) {
             )}
 
             {/* Loueur */}
-            {owner?.first_name && (
+            {owner && (
               <div style={{ padding: '20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 700, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                   {owner.avatar_url
-                    ? <Image src={owner.avatar_url} alt={owner.first_name ?? ''} width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : owner.first_name[0].toUpperCase()
+                    ? <Image src={owner.avatar_url} alt={ownerName} width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : ownerName[0].toUpperCase()
                   }
                 </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '2px' }}>
-                    Proposé par {owner.first_name}
+                    Proposé par {ownerName}
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
                     Membre ISALY · Profil certifié

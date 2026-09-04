@@ -19,7 +19,7 @@ export function generateMetadata({ params }: Props): Metadata {
   const article = getArticle(params.slug)
   if (!article) return {}
   return {
-    title: `${article.title} — ISALY Immo`,
+    title: article.title,
     description: article.excerpt,
     keywords: article.keywords,
     alternates: { canonical: `https://isaly.fr/blog/${article.slug}` },

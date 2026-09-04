@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import { BILLING_ENABLED, BILLING_DISABLED_MESSAGE } from '@/lib/billing'
 import { useLease } from '@/contexts/LeaseContext'
 import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 import Emoji from '@/components/ui/Emoji'
@@ -87,7 +88,9 @@ function SwiperPlusContent() {
 
         <div style={{ marginTop: '24px', padding: '18px', background: '#fff', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
           <div style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', lineHeight: 1.7 }}>
-            Paiement sécurisé par <strong>Stripe</strong> · Résiliation à tout moment · Sans engagement
+            {BILLING_ENABLED
+              ? <>Paiement sécurisé par <strong>Stripe</strong> · Résiliation à tout moment · Sans engagement</>
+              : BILLING_DISABLED_MESSAGE}
           </div>
         </div>
       </div>
@@ -196,20 +199,22 @@ function PaiementContent() {
                 ))}
               </div>
               <button
-                onClick={() => handleCheckout(plan.id)}
-                disabled={loading === plan.id}
+                onClick={() => BILLING_ENABLED && handleCheckout(plan.id)}
+                disabled={!BILLING_ENABLED || loading === plan.id}
                 style={{
                   width: '100%', padding: '12px',
-                  background: plan.highlighted ? `linear-gradient(135deg, ${plan.color}, #059669)` : '#fff',
-                  color: plan.highlighted ? '#fff' : plan.color,
-                  border: `2px solid ${plan.color}`,
+                  background: !BILLING_ENABLED ? '#E5E7EB' : plan.highlighted ? `linear-gradient(135deg, ${plan.color}, #059669)` : '#fff',
+                  color: !BILLING_ENABLED ? '#9CA3AF' : plan.highlighted ? '#fff' : plan.color,
+                  border: `2px solid ${!BILLING_ENABLED ? '#E5E7EB' : plan.color}`,
                   borderRadius: '10px', fontSize: '14px', fontWeight: 700,
-                  cursor: 'pointer', transition: 'all 0.2s',
+                  cursor: BILLING_ENABLED ? 'pointer' : 'not-allowed', transition: 'all 0.2s',
                   opacity: loading === plan.id ? 0.7 : 1,
                   fontFamily: "'Outfit', sans-serif",
                 }}
               >
-                {loading === plan.id ? <><Emoji native="⏳" /> Redirection...</> : `Choisir ${plan.name} →`}
+                {!BILLING_ENABLED
+                  ? 'Bientôt disponible'
+                  : loading === plan.id ? <><Emoji native="⏳" /> Redirection...</> : `Choisir ${plan.name} →`}
               </button>
             </div>
           ))}
@@ -217,7 +222,9 @@ function PaiementContent() {
 
         <div style={{ marginTop: '32px', padding: '20px', background: '#fff', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
           <div style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', lineHeight: 1.7 }}>
-            Paiement sécurisé par <strong>Stripe</strong> · Résiliation à tout moment · Sans engagement · Facturation mensuelle
+            {BILLING_ENABLED
+              ? <>Paiement sécurisé par <strong>Stripe</strong> · Résiliation à tout moment · Sans engagement · Facturation mensuelle</>
+              : BILLING_DISABLED_MESSAGE}
           </div>
         </div>
       </div>

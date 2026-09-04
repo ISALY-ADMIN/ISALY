@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
 import InstallBanner from '@/components/pwa/InstallBanner'
+import CookieConsent from '@/components/consent/CookieConsent'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -58,18 +59,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <Script
-        src="https://www.googletagmanager.com/gtag/js?id=G-JXZRTY71Y4"
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-JXZRTY71Y4');
-        `}
-      </Script>
       <Script id="register-sw" strategy="afterInteractive">
         {`
           if ('serviceWorker' in navigator) {
@@ -80,6 +69,7 @@ export default function RootLayout({
       <body>
         {children}
         <InstallBanner />
+        <CookieConsent />
       </body>
     </html>
   )

@@ -6,7 +6,7 @@ import type { BlogCategory } from '@/content/blog/types'
 import Emoji from '@/components/ui/Emoji'
 
 export const metadata: Metadata = {
-  title: 'ISALY Immo — Conseils, droits et guides colocation',
+  title: { absolute: 'ISALY Immo — Conseils, droits et guides colocation' },
   description: 'Conseils, droits et guides pour bien coloquer : prix, bail, colocataires, quartiers. Le blog colocation d’ISALY.',
   alternates: { canonical: 'https://isaly.fr/blog' },
   openGraph: {

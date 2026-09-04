@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import BoostSelector, { type BoostOption } from '@/components/listings/BoostSelector'
+import { BILLING_ENABLED } from '@/lib/billing'
 import Emoji from '@/components/ui/Emoji'
 
 interface FormData {
@@ -54,7 +55,7 @@ function AnnonceForm() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [boost, setBoost]                   = useState<BoostOption>('featured')
+  const [boost, setBoost]                   = useState<BoostOption>(BILLING_ENABLED ? 'featured' : 'standard')
   const [photos, setPhotos]                 = useState<(File | string)[]>([])
   const [photoPreviews, setPhotoPreviews]   = useState<string[]>([])
   const [publishing, setPublishing]         = useState(false)
@@ -108,7 +109,7 @@ function AnnonceForm() {
         non_fumeur:      data.non_fumeur == null ? '' : data.non_fumeur ? 'oui' : 'non',
         description:     data.description     ?? '',
       })
-      if (data.boost_type) setBoost(data.boost_type as BoostOption)
+      if (data.boost_type && BILLING_ENABLED) setBoost(data.boost_type as BoostOption)
       if (Array.isArray(data.photos) && data.photos.length > 0) {
         setPhotos(data.photos as string[])
         setPhotoPreviews(data.photos as string[])
@@ -178,8 +179,8 @@ function AnnonceForm() {
   }
 
   async function handleSubmit() {
-    if (!form.title.trim() || !form.rent || !form.city.trim()) {
-      alert('Titre, loyer et ville sont obligatoires.')
+    if (!form.title.trim() || !form.rent || !form.city.trim() || !(Number(form.surface) > 0)) {
+      alert('Titre, loyer, ville et surface sont obligatoires.')
       return
     }
     setPublishing(true)
@@ -230,7 +231,7 @@ function AnnonceForm() {
         router.push('/app/mes-annonces?updated=1')
       } else {
         // INSERT — actif directement si Standard, en attente de paiement sinon
-        const needsPayment = boost !== 'standard'
+        const needsPayment = BILLING_ENABLED && boost !== 'standard'
         const { data: inserted, error } = await supabase.from('listings').insert({
           owner_id:        user.id,
           title:           form.title || `Colocation à ${form.city}`,
@@ -348,7 +349,7 @@ function AnnonceForm() {
 
   const pageTitle = isEditing ? "Modifier l'annonce" : 'Mon annonce'
   const formTitle = isEditing ? 'Modifier mon annonce' : 'Déposer une annonce'
-  const needsPayment = !isEditing && boost !== 'standard'
+  const needsPayment = BILLING_ENABLED && !isEditing && boost !== 'standard'
   const submitLabel = publishing
     ? (needsPayment ? 'Redirection vers le paiement…' : isEditing ? 'Enregistrement…' : 'Publication en cours…')
     : boost === 'featured' && !isEditing ? 'Booster pour 9,99€/mois →'
@@ -478,8 +479,8 @@ function AnnonceForm() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <Field label="Surface (m²)">
-                <input type="number" value={form.surface} onChange={set('surface')} placeholder="75"
+              <Field label="Surface (m²) *">
+                <input type="number" min={1} required value={form.surface} onChange={set('surface')} placeholder="75"
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
                   style={inputStyle} onFocus={focus} onBlur={blur} />
               </Field>
@@ -604,6 +605,11 @@ function AnnonceForm() {
               {needsPayment && (
                 <p className="text-[11.5px] mt-2.5" style={{ color: '#9CA3AF' }}>
                   <Emoji native="💳" /> Vous serez redirigé vers Stripe pour finaliser l'abonnement. L'annonce sera activée dès le paiement confirmé.
+                </p>
+              )}
+              {!BILLING_ENABLED && (
+                <p className="text-[11.5px] mt-2.5" style={{ color: '#9CA3AF' }}>
+                  <Emoji native="🔧" /> Les formules de mise en avant sont temporairement indisponibles. Votre annonce est publiée en Standard, gratuitement et immédiatement visible.
                 </p>
               )}
             </div>

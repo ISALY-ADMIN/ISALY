@@ -40,3 +40,8 @@ supabase/.temp/
 # Sorties du workflow auto-fix (jamais committées)
 auto-fix-result.json
 verify.log
+
+# Captures et rapports des tests e2e
+e2e/**/shots/
+test-results/
+playwright-report/
