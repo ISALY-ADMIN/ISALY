@@ -223,6 +223,49 @@ export interface Lease {
   house_rules: string | null
   /** JSON complet du formulaire bail loi 89 (BailNonMeubleData) — regénération PDF fidèle. */
   bail_data: Record<string, unknown> | null
+  /** Régime du bail figé à la signature (migration 39) : true = meublé, false = non meublé, null = inconnu. */
+  meuble: boolean | null
+  created_at: string
+}
+
+// ── Préavis + commission par personne (migration 39) ──
+
+export type TypeLogement = 'meuble' | 'non_meuble'
+export type PreavisStatus = 'active' | 'cancelled' | 'applied'
+export type CommissionStopReason = 'lease_end' | 'preavis' | 'lease_ended_status' | 'manual'
+
+/**
+ * Commission de gestion ISALY — UNE ligne par locataire (pas par bail) : dans
+ * une colocation, le départ d'un colocataire n'arrête que sa propre part.
+ */
+export interface LeaseCommission {
+  id: string
+  lease_id: string
+  tenant_id: string
+  rate: number
+  /** Part de loyer imputée à ce locataire, figée à la création. */
+  share_rent: number | null
+  commission_active: boolean
+  started_at: string
+  stopped_at: string | null
+  stop_reason: CommissionStopReason | null
+  stripe_subscription_id: string | null
+  created_at: string
+}
+
+/** Déclaration de préavis du locataire — délai légal appliqué automatiquement. */
+export interface Preavis {
+  id: string
+  lease_id: string
+  tenant_id: string
+  /** Horodatée serveur, jamais saisie par le locataire. */
+  date_declaration: string
+  date_fin_effective: string
+  type_logement: TypeLogement
+  delai_mois: 1 | 3
+  status: PreavisStatus
+  cancelled_at: string | null
+  applied_at: string | null
   created_at: string
 }
 

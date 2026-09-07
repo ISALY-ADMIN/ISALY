@@ -31,6 +31,8 @@ interface Person { id: string; name: string; avatarUrl: string | null }
 interface OwnerInfo extends Person { rating: number | null; reviewCount: number }
 interface MaintenanceInfo { open: number; latest: { title: string; status: string; urgency: 'low' | 'normal' | 'urgent' } | null }
 interface DocItem { key: string; icon: string; label: string; sub: string; href?: string; storagePath?: string; url?: string }
+/** Préavis en cours du locataire connecté (migration 39) — null s'il n'en a pas déposé. */
+interface PreavisInfo { dateFinEffective: string; delaiMois: number }
 
 interface MaisonData {
   lease: MaisonLease
@@ -39,6 +41,7 @@ interface MaisonData {
   owner: OwnerInfo | null
   maintenance: MaintenanceInfo
   documents: DocItem[]
+  preavis: PreavisInfo | null
 }
 
 // ═══════════════ Helpers ═══════════════
@@ -104,6 +107,7 @@ const DEMO_DATA: MaisonData = {
     { key: 'q1', icon: '🧾', label: 'Quittance — juin 2026', sub: 'PDF' },
     { key: 'edl', icon: '🔑', label: 'État des lieux d’entrée', sub: 'PDF' },
   ],
+  preavis: null,
 }
 
 // ═══════════════ Page ═══════════════
@@ -136,7 +140,7 @@ export default function MaisonPage() {
     if (!active) { setData(null); setLoading(false); return }
     const lease = active as unknown as MaisonLease
 
-    const [paymentsRes, roommatesRes, ownerRes, reviewsRes, maintRes, edlRes] = await Promise.all([
+    const [paymentsRes, roommatesRes, ownerRes, reviewsRes, maintRes, edlRes, preavisRes] = await Promise.all([
       supabase.from('rent_payments').select('amount, month, status, due_date, paid_at, receipt_url')
         .eq('lease_id', lease.id).eq('tenant_id', user.id).order('month', { ascending: false }).limit(12),
       supabase.from('lease_roommates').select('profile_id').eq('lease_id', lease.id),
@@ -145,6 +149,8 @@ export default function MaisonPage() {
       supabase.from('maintenance_requests').select('title, status, urgency')
         .eq('lease_id', lease.id).neq('status', 'resolved').order('created_at', { ascending: false }),
       supabase.storage.from('leases').list(lease.id, { limit: 20 }),
+      supabase.from('preavis').select('date_fin_effective, delai_mois')
+        .eq('lease_id', lease.id).eq('tenant_id', user.id).eq('status', 'active').maybeSingle(),
     ])
 
     // Prochaine échéance : plus ancien paiement pending/late, sinon prochain 5 du mois
@@ -211,7 +217,14 @@ export default function MaisonPage() {
       })
     }
 
-    setData({ lease, nextRent, roommates, owner, maintenance, documents })
+    const preavis: PreavisInfo | null = preavisRes.data
+      ? {
+          dateFinEffective: preavisRes.data.date_fin_effective as string,
+          delaiMois: preavisRes.data.delai_mois as number,
+        }
+      : null
+
+    setData({ lease, nextRent, roommates, owner, maintenance, documents, preavis })
     setLoading(false)
   }, [])
 
@@ -333,7 +346,7 @@ export default function MaisonPage() {
   }
 
   // ── Tableau de bord bail actif ──
-  const { lease, nextRent, roommates, owner, maintenance, documents } = d
+  const { lease, nextRent, roommates, owner, maintenance, documents, preavis } = d
   const rentBadge = RENT_BADGE[nextRent.status]
   const dueIn = daysUntil(nextRent.dueDate)
   const remaining = monthsRemaining(lease.end_date)
@@ -493,6 +506,33 @@ export default function MaisonPage() {
             ) : (
               <EmptyState text="Aucune consigne laissée par le loueur." cta="Ouvrir le bail" />
             )}
+          </BentoCard>
+
+          {/* MON PRÉAVIS — 4x1 · acte engageant, il a sa propre page de confirmation */}
+          <BentoCard href="/app/preavis" ariaLabel="Mon préavis — déclarer mon départ du logement" className="md:col-span-4">
+            <ModuleTitle icon="📤" label="MON PRÉAVIS" />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
+              {preavis ? (
+                <>
+                  <span style={{
+                    fontSize: '11.5px', fontWeight: 800, padding: '5px 12px', borderRadius: '20px',
+                    background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)',
+                  }}>● Préavis en cours</span>
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
+                    Départ le <strong style={{ color: '#fff' }}>{formatDate(preavis.dateFinEffective)}</strong>
+                    {' '}· préavis de {preavis.delaiMois} mois
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
+                  Tu prévois de partir ? Déclare ton préavis ici — 1 mois si le logement est meublé, 3 mois sinon.
+                  La date de fin exacte t&apos;est affichée avant toute confirmation.
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981' }}>
+              {preavis ? 'Voir ou retirer mon préavis →' : 'Donner mon préavis →'}
+            </div>
           </BentoCard>
 
           {/* DOCUMENTS — 4x1 */}

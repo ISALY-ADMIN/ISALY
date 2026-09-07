@@ -193,3 +193,73 @@ export function resetPasswordTemplate(resetUrl: string): string {
   `
   return BASE.replace('{{BODY}}', body)
 }
+
+/** Préavis déposé par un locataire — notification au loueur (C2, migration 39). */
+export function preavisDeposeTemplate(
+  ownerFirstName: string,
+  tenantName: string,
+  address: string,
+  typeLogementLabel: string,
+  delaiMois: number,
+  dateFinLabel: string,
+  leaseUrl: string,
+): string {
+  const body = `
+    <div style="padding:36px 40px">
+      <h2 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700">Un préavis a été déposé 📤</h2>
+      <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.6">
+        Bonjour ${ownerFirstName || 'à vous'}, ${tenantName} vient de déclarer son préavis depuis son espace ISALY.
+      </p>
+      <div style="background:#fffbeb;border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid #fde68a">
+        <p style="margin:0 0 6px;font-size:14px;color:#111827;font-weight:700">${address}</p>
+        <p style="margin:0 0 4px;font-size:13px;color:#6b7280">
+          Logement ${typeLogementLabel} — préavis légal de ${delaiMois} mois
+        </p>
+        <p style="margin:0;font-size:15px;color:#111827;font-weight:700">
+          Fin du bail pour ce locataire : ${dateFinLabel}
+        </p>
+      </div>
+      <p style="margin:0 0 20px;font-size:12.5px;color:#9ca3af;line-height:1.55">
+        À cette date, la part de commission ISALY de ce locataire s'arrête automatiquement.
+        S'il s'agit d'une colocation, les autres colocataires ne sont pas concernés.
+        Le locataire peut se rétracter tant que cette date n'est pas atteinte — vous en seriez informé.
+      </p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="${leaseUrl}"
+          style="display:inline-block;background:linear-gradient(135deg,#4ECBA0,#2AA87C);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 36px;border-radius:50px;box-shadow:0 4px 16px rgba(78,203,160,.35)">
+          📄 Voir le bail concerné
+        </a>
+      </div>
+    </div>
+  `
+  return BASE.replace('{{BODY}}', body)
+}
+
+/** Préavis rétracté avant sa date d'effet — notification au loueur. */
+export function preavisAnnuleTemplate(
+  ownerFirstName: string,
+  tenantName: string,
+  address: string,
+  dateFinLabel: string,
+  leaseUrl: string,
+): string {
+  const body = `
+    <div style="padding:36px 40px">
+      <h2 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700">Un préavis a été retiré ↩️</h2>
+      <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.6">
+        Bonjour ${ownerFirstName || 'à vous'}, ${tenantName} a annulé le préavis qu'il avait déposé.
+        La fin de bail qui était prévue le ${dateFinLabel} n'aura pas lieu : le bail se poursuit normalement.
+      </p>
+      <div style="background:#f0fdf9;border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid #c6f0de">
+        <p style="margin:0;font-size:14px;color:#111827;font-weight:700">${address}</p>
+      </div>
+      <div style="text-align:center;margin:28px 0">
+        <a href="${leaseUrl}"
+          style="display:inline-block;background:linear-gradient(135deg,#4ECBA0,#2AA87C);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 36px;border-radius:50px;box-shadow:0 4px 16px rgba(78,203,160,.35)">
+          📄 Voir le bail concerné
+        </a>
+      </div>
+    </div>
+  `
+  return BASE.replace('{{BODY}}', body)
+}
