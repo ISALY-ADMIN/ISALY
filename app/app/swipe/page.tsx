@@ -6,12 +6,18 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SlidersHorizontal, RefreshCw, X, MessageCircle } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
-import SwipeCard, { SwipeProfile, SwipeCardHandle, SwipeDirection } from '@/components/swipe/SwipeCard'
+import ListingSwipeCard, {
+  SwipeListing,
+  ListingColocView,
+  ListingSwipeCardHandle,
+  SwipeDirection,
+} from '@/components/swipe/ListingSwipeCard'
+import ColocScoreModal from '@/components/swipe/ColocScoreModal'
 import SwipeActions from '@/components/swipe/SwipeActions'
 import MatchList, { MatchItem } from '@/components/swipe/MatchList'
+import CandidatureModal from '@/components/listings/CandidatureModal'
 import ModeSwitcher from '@/components/ModeSwitcher'
 import { createClient } from '@/lib/supabase/client'
-import { profilesCompatibility } from '@/lib/matching'
 import { track } from '@/lib/analytics'
 import { listingOccupancy } from '@/lib/utils'
 import { canSwitchMode } from '@/lib/roles'
@@ -26,8 +32,17 @@ import Emoji, { EmojiText } from '@/components/ui/Emoji'
 // mise en page. Repasser à false restaure la colonne à l'identique.
 const HIDE_FILTER_SIDEBAR: boolean = true
 
-const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
+// [HIDDEN - SWIPE LOGEMENTS] La page « Trouver » ne fait plus swiper que des
+// LOGEMENTS. Le swipe de profils seuls (profil-à-profil, via /api/match) est
+// retiré de la pile, pas supprimé : le code de chargement est conservé plus bas
+// derrière ce drapeau, et /api/match reste servi tel quel — il alimente encore
+// les alertes de match par email (app/api/cron/match-alerts) et sert de socle
+// aux compatibilités affichées ailleurs (candidatures, favoris, fiche annonce).
+// Repasser à true réinjecte les profils dans le deck, à l'identique.
+const SHOW_PROFILE_SWIPE: boolean = false
+
 const LIFESTYLE_TAGS = ['🌙 Couche-tard', '🌅 Lève-tôt', '🐾 Animaux ok', '🚭 Non-fumeur', '💼 CDI', '🏠 Télétravail']
+const MATCH_COLORS = ['#4ECBA0', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6']
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -71,7 +86,7 @@ function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, l
           {count}
         </div>
         <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
-          profil{count > 1 ? 's' : ''} compatible{count > 1 ? 's' : ''}
+          logement{count > 1 ? 's' : ''} à découvrir
         </div>
       </div>
 
@@ -174,8 +189,8 @@ function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, l
 
 /* ═══════════════ Ghost card (pile derrière) ═══════════════ */
 
-function GhostCard({ profile, depth }: { profile: SwipeProfile; depth: 1 | 2 }) {
-  const photo = profile.photos?.[0] ?? profile.photoUrl ?? null
+function GhostCard({ listing, depth }: { listing: SwipeListing; depth: 1 | 2 }) {
+  const photo = listing.photos[0] ?? null
   return (
     <motion.div
       className="absolute inset-0 pointer-events-none"
@@ -188,11 +203,9 @@ function GhostCard({ profile, depth }: { profile: SwipeProfile; depth: 1 | 2 }) 
         className="relative w-full h-full overflow-hidden"
         style={{ borderRadius: '24px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)' }}
       >
-        <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${profile.color}EE 0%, ${profile.color}66 100%)` }} />
-        {photo && (
-          <Image src={photo} alt="" fill sizes="460px" className="object-cover" draggable={false} />
-        )}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+        <div className="absolute inset-x-0 top-0" style={{ height: '46%', background: 'linear-gradient(160deg, #0f2e24 0%, #04160f 100%)' }}>
+          {photo && <Image src={photo} alt="" fill sizes="460px" className="object-cover" draggable={false} />}
+        </div>
       </div>
     </motion.div>
   )
@@ -200,8 +213,8 @@ function GhostCard({ profile, depth }: { profile: SwipeProfile; depth: 1 | 2 }) 
 
 /* ═══════════════ Match celebration ═══════════════ */
 
-function MatchCelebration({ profile, me, onMessage, onClose }: {
-  profile: SwipeProfile
+function MatchCelebration({ listing, me, onMessage, onClose }: {
+  listing: SwipeListing
   me: { initials: string; avatarUrl: string | null; email: string | null }
   onMessage: () => void
   onClose: () => void
@@ -217,7 +230,7 @@ function MatchCelebration({ profile, me, onMessage, onClose }: {
     })),
     [],
   )
-  const photo = profile.photos?.[0] ?? profile.photoUrl ?? null
+  const photo = listing.photos[0] ?? null
 
   return (
     <div
@@ -272,15 +285,15 @@ function MatchCelebration({ profile, me, onMessage, onClose }: {
             className="relative z-20 rounded-full flex items-center justify-center overflow-hidden"
             style={{
               width: 96, height: 96, border: '3px solid #10B981',
-              background: `linear-gradient(135deg, ${profile.color}, ${profile.color}99)`,
+              background: 'linear-gradient(135deg, #4ECBA0, #2AA87C)',
               boxShadow: '0 0 40px rgba(16,185,129,0.45)',
               fontFamily: "'Outfit', sans-serif", fontSize: '34px', fontWeight: 800, color: '#fff',
             }}
           >
             {photo ? (
-              <Image src={photo} alt={profile.name} width={96} height={96} className="w-full h-full object-cover" />
+              <Image src={photo} alt={listing.title} width={96} height={96} className="w-full h-full object-cover" />
             ) : (
-              profile.isListing ? <Emoji native="🏠" /> : profile.name[0]
+              <Emoji native="🏠" />
             )}
           </motion.div>
         </div>
@@ -299,9 +312,7 @@ function MatchCelebration({ profile, me, onMessage, onClose }: {
           transition={{ delay: 0.45 }}
           style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '32px', maxWidth: '320px' }}
         >
-          {profile.match != null
-            ? <>Toi et {profile.name.split(' ')[0]} êtes compatibles à <strong style={{ color: '#10B981' }}>{profile.match}%</strong> — envoyez un premier message !</>
-            : <>Toi et {profile.name.split(' ')[0]} êtes compatibles — envoyez un premier message !</>}
+          Le loueur de « {listing.title} » a répondu — envoyez un premier message !
         </motion.p>
 
         <motion.div
@@ -348,8 +359,8 @@ function EmptyState({ onExpandFilters, onRestart }: { onExpandFilters: () => voi
       <svg width="140" height="140" viewBox="0 0 140 140" fill="none" aria-hidden="true">
         <rect x="38" y="30" width="64" height="84" rx="12" stroke="rgba(16,185,129,0.4)" strokeWidth="2" fill="rgba(16,185,129,0.05)" transform="rotate(-8 70 72)" />
         <rect x="38" y="30" width="64" height="84" rx="12" stroke="#10B981" strokeWidth="2" fill="rgba(16,185,129,0.08)" transform="rotate(4 70 72)" />
-        <circle cx="70" cy="62" r="12" stroke="#10B981" strokeWidth="2" transform="rotate(4 70 72)" />
-        <path d="M52 96c4-8 12-12 18-12s14 4 18 12" stroke="#10B981" strokeWidth="2" strokeLinecap="round" transform="rotate(4 70 72)" />
+        <path d="M50 70 L70 52 L90 70" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(4 70 72)" />
+        <rect x="58" y="70" width="24" height="26" rx="3" stroke="#10B981" strokeWidth="2" transform="rotate(4 70 72)" />
         <circle cx="112" cy="34" r="3" fill="#10B981" opacity="0.6" />
         <circle cx="24" cy="52" r="2.5" fill="#10B981" opacity="0.4" />
         <circle cx="118" cy="96" r="2" fill="#10B981" opacity="0.5" />
@@ -359,7 +370,7 @@ function EmptyState({ onExpandFilters, onRestart }: { onExpandFilters: () => voi
           Tu as tout vu pour aujourd&apos;hui
         </h3>
         <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, maxWidth: '320px' }}>
-          De nouveaux colocataires arrivent chaque jour. Élargis tes filtres pour découvrir plus de profils.
+          De nouveaux logements sont publiés chaque jour. Élargis tes filtres pour en découvrir plus.
         </p>
       </div>
       <div className="flex flex-col gap-2.5 w-full" style={{ maxWidth: '280px' }}>
@@ -384,7 +395,7 @@ function EmptyState({ onExpandFilters, onRestart }: { onExpandFilters: () => voi
             background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)',
           }}
         >
-          <RefreshCw size={15} /> Revoir les profils
+          <RefreshCw size={15} /> Revoir les logements
         </button>
       </div>
     </div>
@@ -397,11 +408,15 @@ export default function SwipePage() {
   const router = useRouter()
   const { toast } = useToast()
   const { mode, setMode } = useLease()
-  const [profiles, setProfiles] = useState<SwipeProfile[]>([])
+  const [listings, setListings] = useState<SwipeListing[]>([])
+  const [colocByListing, setColocByListing] = useState<Record<string, ListingColocView>>({})
+  const [colocLoading, setColocLoading] = useState(true)
   const [matches, setMatches] = useState<MatchItem[]>([])
   const [index, setIndex] = useState(0)
   const [cardKey, setCardKey] = useState(0)
-  const [matchPopup, setMatchPopup] = useState<SwipeProfile | null>(null)
+  const [matchPopup, setMatchPopup] = useState<SwipeListing | null>(null)
+  const [scoreModal, setScoreModal] = useState<SwipeListing | null>(null)
+  const [applyModal, setApplyModal] = useState<SwipeListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [highlightFilters, setHighlightFilters] = useState(false)
@@ -424,107 +439,89 @@ export default function SwipePage() {
     try { localStorage.setItem('tooltip_swipe_seen', '1') } catch {}
   }
 
-  const cardRef = useRef<SwipeCardHandle>(null)
+  const cardRef = useRef<ListingSwipeCardHandle>(null)
   const swipeLock = useRef(false)
 
-  const fetchProfiles = useCallback(async () => {
+  const fetchListings = useCallback(async () => {
     try {
-      const profilesList: SwipeProfile[] = []
-
-      const res = await fetch('/api/match')
-      if (res.ok) {
-        const json = await res.json()
-        if (json.profiles) {
-          profilesList.push(...(json.profiles as Record<string, unknown>[]).map((p, i) => ({
-            id: p.id as string,
-            name: `${(p.first_name as string) ?? ''} ${((p.last_name as string) ?? '')[0] ?? ''}.`.trim(),
-            age: 0,
-            job: 'Colocataire',
-            city: (p.city as string) ?? 'Ville non renseignée',
-            rent: (p.budget_max as number) ?? 0,
-            // null = test non complété → l'UI affiche « ? », jamais un faux %
-            match: p.compatibilityScore != null ? Math.round(p.compatibilityScore as number) : null,
-            subScores: (p.matchBreakdown as SwipeProfile['subScores']) ?? null,
-            emoji: '👤',
-            color: MATCH_COLORS[i % MATCH_COLORS.length],
-            tags: (p.passions as string[]) ?? [],
-            bio: (p.bio as string) ?? '',
-            certLevel: (p.cert_level as 0 | 1 | 2 | 3) ?? 0,
-            urgent: !!p.urgent_search_active && !!p.urgent_search_expires_at &&
-              new Date(p.urgent_search_expires_at as string) > new Date(),
-          })))
-        }
+      // [HIDDEN - SWIPE LOGEMENTS] Chargement des profils seuls (/api/match).
+      // Conservé à l'identique, hors pile tant que SHOW_PROFILE_SWIPE est false.
+      if (SHOW_PROFILE_SWIPE) {
+        await fetch('/api/match').catch(() => null)
       }
 
       const supabase = createClient()
-      const [{ data: listingsData }, { data: { user } }] = await Promise.all([
-        supabase
-          .from('listings')
-          .select('id, title, city, neighborhood, rent, rooms_available, occupants_current, capacity_total, photos, owner_id, description')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(20),
-        supabase.auth.getUser(),
-      ])
+      const { data: listingsData } = await supabase
+        .from('listings')
+        .select('id, title, city, neighborhood, rent, surface, rooms_available, occupants_current, capacity_total, meuble, animaux_ok, non_fumeur, photos, owner_id, description, boost_type, created_at')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(20)
 
-      if (listingsData && listingsData.length > 0) {
-        // Compatibilité réelle : mon profil vs celui du loueur de chaque annonce
-        let myMatchProfile: { budget_max: number | null; matching_data: unknown } | null = null
-        const ownerById = new Map<string, { budget_max: number | null; matching_data: unknown }>()
-        const ownerIds = Array.from(new Set(listingsData.map(l => l.owner_id).filter(Boolean))) as string[]
-        if (user) {
-          const { data: matchProfiles } = await supabase
-            .from('profiles')
-            .select('id, budget_max, matching_data')
-            .in('id', [user.id, ...ownerIds])
-          for (const p of matchProfiles ?? []) {
-            if (p.id === user.id) myMatchProfile = p
-            else ownerById.set(p.id, p)
-          }
+      const mapped: SwipeListing[] = (listingsData ?? []).map(l => {
+        const { current, total } = listingOccupancy(l)
+        return {
+          id: l.id,
+          title: l.title || `Colocation à ${l.city ?? 'préciser'}`,
+          city: l.city ?? 'Ville non renseignée',
+          neighborhood: l.neighborhood ?? null,
+          rent: l.rent ?? 0,
+          surface: l.surface ?? null,
+          roomsAvailable: l.rooms_available ?? null,
+          meuble: l.meuble ?? null,
+          animauxOk: l.animaux_ok ?? null,
+          nonFumeur: l.non_fumeur ?? null,
+          photos: ((l.photos as string[] | null) ?? []).filter(Boolean),
+          ownerId: l.owner_id ?? null,
+          description: l.description ?? '',
+          occupancy: { current, total },
+          boostTier: (l.boost_type as string | null) ?? null,
         }
+      })
 
-        const listingProfiles: SwipeProfile[] = listingsData.map((l, i) => {
-          const owner = l.owner_id ? ownerById.get(l.owner_id) : undefined
-          const compat = myMatchProfile && owner ? profilesCompatibility(myMatchProfile, owner) : null
-          const { current, total } = listingOccupancy(l)
-          return {
-            id: l.id,
-            name: l.title || `Colocation à ${l.city}`,
-            age: 0,
-            job: 'Colocation',
-            city: l.neighborhood ? `${l.city} · ${l.neighborhood}` : l.city,
-            rent: l.rent ?? 0,
-            match: compat?.score ?? null,
-            subScores: compat?.breakdown ?? null,
-            emoji: '🏠',
-            color: MATCH_COLORS[i % MATCH_COLORS.length],
-            tags: [],
-            bio: l.description ?? '',
-            certLevel: 0 as const,
-            photoUrl: l.photos?.[0] ?? null,
-            photos: (l.photos as string[] | null) ?? [],
-            isListing: true,
-            ownerId: l.owner_id,
-            occupancy: { current, total },
-          }
-        })
-        profilesList.push(...listingProfiles)
+      let filtered = [...mapped]
+      if (filterBudget < 3000) filtered = filtered.filter(l => l.rent <= filterBudget || l.rent === 0)
+      if (filterCity.trim()) {
+        const needle = filterCity.toLowerCase()
+        filtered = filtered.filter(l =>
+          l.city.toLowerCase().includes(needle) || (l.neighborhood ?? '').toLowerCase().includes(needle))
       }
-
-      let filtered = [...profilesList]
-      if (filterBudget < 3000) filtered = filtered.filter(p => p.rent <= filterBudget || p.rent === 0)
-      if (filterCity.trim()) filtered = filtered.filter(p => p.city.toLowerCase().includes(filterCity.toLowerCase()))
-      const isFull = (p: SwipeProfile) => !!p.occupancy && p.occupancy.total - p.occupancy.current <= 0
       if (filterSort === 'price') filtered.sort((a, b) => a.rent - b.rent)
-      else filtered.sort((a, b) => (b.match ?? -1) - (a.match ?? -1))
       // Annonces complètes dépriorisées : toujours en fin de pile
+      const isFull = (l: SwipeListing) => l.occupancy.total - l.occupancy.current <= 0
       filtered.sort((a, b) => Number(isFull(a)) - Number(isFull(b)))
-      // Mission 15 : recherche urgente = tête de pile (tri stable, appliqué en dernier)
-      filtered.sort((a, b) => Number(!!b.urgent) - Number(!!a.urgent))
-      setProfiles(filtered)
-    } catch {}
-    setLoading(false)
+
+      setListings(filtered)
+      return filtered
+    } catch {
+      return [] as SwipeListing[]
+    } finally {
+      setLoading(false)
+    }
   }, [filterBudget, filterCity, filterSort])
+
+  /**
+   * Colocataires en place + scores, en une requête pour toute la pile.
+   * Un échec (migration 40 non exécutée, réseau) laisse simplement les cartes
+   * sans score : aucune ne bascule à tort en « logement vide » puisque la
+   * variante affichée distingue « aucun colocataire » de « pas de score ».
+   */
+  const fetchColocataires = useCallback(async (list: SwipeListing[]) => {
+    if (list.length === 0) { setColocLoading(false); return }
+    setColocLoading(true)
+    try {
+      const res = await fetch('/api/listings/colocataires', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingIds: list.map(l => l.id) }),
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setColocByListing((json.listings ?? {}) as Record<string, ListingColocView>)
+      }
+    } catch {}
+    setColocLoading(false)
+  }, [])
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -580,14 +577,15 @@ export default function SwipePage() {
 
   // Fetch initial + refetch (débouncé) quand les filtres changent
   useEffect(() => {
-    const t = setTimeout(() => {
-      fetchProfiles()
+    const t = setTimeout(async () => {
+      const list = await fetchListings()
       setIndex(0)
       setUndoIndex(null)
       setCardKey(k => k + 1)
+      fetchColocataires(list)
     }, 350)
     return () => clearTimeout(t)
-  }, [fetchProfiles])
+  }, [fetchListings, fetchColocataires])
 
   // Matchs + profil courant (avatar pour la célébration)
   useEffect(() => {
@@ -624,20 +622,19 @@ export default function SwipePage() {
     return () => { if (channel) supabase.removeChannel(channel) }
   }, [fetchMatches])
 
-  const profile = profiles[index]
-  const noMoreProfiles = !loading && index >= profiles.length
+  const listing = listings[index]
+  const noMoreListings = !loading && index >= listings.length
 
   async function handleSwipe(dir: SwipeDirection) {
     if (swipeLock.current) return
     swipeLock.current = true
     dismissSwipeTip()
-    const swiped = profiles[index]
+    const swiped = listings[index]
     const swipedIndex = index
     if (swiped) {
-      const targetType = swiped.isListing ? 'listing' as const : 'profile' as const
-      if (dir === 'right') track.swipeRight(targetType)
-      else if (dir === 'left') track.swipeLeft(targetType)
-      else track.superLike(targetType)
+      if (dir === 'right') track.swipeRight('listing')
+      else if (dir === 'left') track.swipeLeft('listing')
+      else track.superLike('listing')
       try {
         const res = await fetch('/api/swipe', {
           method: 'POST',
@@ -650,7 +647,7 @@ export default function SwipePage() {
           setTimeout(() => {
             setMatchPopup(swiped)
             fetchMatches()
-            toast({ title: 'Match ! 🎉', description: `Tu as un nouveau match avec ${swiped.name.split(' ')[0]} !`, duration: 3000 })
+            toast({ title: 'Match ! 🎉', description: `Tu as un nouveau match sur « ${swiped.title} » !`, duration: 3000 })
           }, 380)
         }
       } catch {}
@@ -670,13 +667,10 @@ export default function SwipePage() {
     setCardKey(k => k + 1)
   }
 
-  function goMessage(name: string) {
-    const current = matchPopup ?? profiles[index]
-    if (current?.isListing && current?.ownerId) {
-      router.push(`/app/messages?owner=${current.ownerId}`)
-    } else {
-      router.push(`/app/messages?with=${encodeURIComponent(name)}`)
-    }
+  function goMessage() {
+    const current = matchPopup ?? listings[index]
+    if (current?.ownerId) router.push(`/app/messages?owner=${current.ownerId}`)
+    else router.push('/app/messages')
   }
 
   function handleModeSwitch(newMode: 'locataire' | 'loueur') {
@@ -713,7 +707,7 @@ export default function SwipePage() {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target.isContentEditable) return
-      if (matchPopup) return
+      if (matchPopup || scoreModal || applyModal) return
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault(); cardRef.current?.swipe('left'); break
@@ -732,9 +726,9 @@ export default function SwipePage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matchPopup, undoIndex, index])
+  }, [matchPopup, scoreModal, applyModal, undoIndex, index])
 
-  const remaining = Math.max(0, profiles.length - index)
+  const remaining = Math.max(0, listings.length - index)
 
   const filterPanelProps: FilterPanelProps = {
     count: remaining,
@@ -755,7 +749,7 @@ export default function SwipePage() {
 
         {/* ── Colonne gauche : filtres (desktop) ── */}
         {/* [HIDDEN - RECENTRAGE SWIPE] Colonne conservée telle quelle mais retirée
-            du rendu : compteur de profils, budget, ville, mode de vie et tri restent
+            du rendu : compteur, budget, ville, mode de vie et tri restent
             joignables via le drawer « Filtres » (bouton au-dessus de la card).
             Remettre HIDE_FILTER_SIDEBAR à false pour la réafficher. */}
         {!HIDE_FILTER_SIDEBAR && (
@@ -775,21 +769,13 @@ export default function SwipePage() {
         )}
 
         {/* ── Zone centrale ── */}
-        {/* [HIDDEN - RECENTRAGE SWIPE] La colonne de gauche ne consommant plus de
-            largeur, cette zone occupe tout l'espace entre la Sidebar et « Matchs
-            récents » : la card, centrée par `items-center`, devient le point focal.
-            Le padding latéral l'empêche de coller aux deux bords. */}
         <main className="flex flex-col items-center flex-1 min-w-0 overflow-hidden px-3 lg:px-8 pt-2 pb-3">
-          {/* Barre compteur + accès aux filtres (drawer) */}
-          {/* [HIDDEN - RECENTRAGE SWIPE] Auparavant `lg:hidden` : c'est désormais le
-              seul point d'entrée vers les filtres sur desktop aussi. Elle est calée
-              sur la largeur de la card pour rester alignée avec elle. */}
           <div
             className={`${HIDE_FILTER_SIDEBAR ? 'flex' : 'flex lg:hidden'} justify-between items-center py-1.5 flex-shrink-0`}
             style={{ width: 'min(460px, 92vw)' }}
           >
             <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)' }}>
-              {loading ? 'Recherche…' : `${remaining} profil${remaining > 1 ? 's' : ''} compatible${remaining > 1 ? 's' : ''}`}
+              {loading ? 'Recherche…' : `${remaining} logement${remaining > 1 ? 's' : ''} à découvrir`}
             </span>
             <button
               onClick={() => setShowFilters(true)}
@@ -806,10 +792,10 @@ export default function SwipePage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
               <div className="text-5xl mb-3" style={{ animation: 'bop 1s ease infinite' }}><Emoji native="🏠" /></div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>Recherche de profils compatibles…</p>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>Recherche de logements…</p>
               <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Ça prend quelques secondes</p>
             </div>
-          ) : noMoreProfiles ? (
+          ) : noMoreListings ? (
             <div className="flex items-center justify-center flex-1">
               <EmptyState
                 onExpandFilters={expandFilters}
@@ -839,18 +825,20 @@ export default function SwipePage() {
                     }
                   `}</style>
                 )}
-                {profiles[index + 2] && <GhostCard profile={profiles[index + 2]} depth={2} />}
-                {profiles[index + 1] && <GhostCard profile={profiles[index + 1]} depth={1} />}
+                {listings[index + 2] && <GhostCard listing={listings[index + 2]} depth={2} />}
+                {listings[index + 1] && <GhostCard listing={listings[index + 1]} depth={1} />}
                 <div className="absolute inset-0" style={{ zIndex: 3 }}>
-                  <SwipeCard
-                    key={`${profile.id}-${cardKey}`}
+                  <ListingSwipeCard
+                    key={`${listing.id}-${cardKey}`}
                     ref={cardRef}
-                    profile={profile}
+                    listing={listing}
+                    coloc={colocByListing[listing.id] ?? null}
+                    colocLoading={colocLoading}
                     onSwipe={handleSwipe}
-                    onMessage={goMessage}
+                    onOpenScore={() => setScoreModal(listing)}
+                    onApply={() => setApplyModal(listing)}
                   />
                 </div>
-                {/* Tooltip premier usage */}
                 {showSwipeTip && (
                   <button
                     onClick={dismissSwipeTip}
@@ -940,13 +928,39 @@ export default function SwipePage() {
         )}
       </AnimatePresence>
 
+      {/* ── Détail du score de la coloc (E3) ── */}
+      <AnimatePresence>
+        {scoreModal && (
+          <ColocScoreModal
+            listingTitle={scoreModal.title}
+            averageScore={colocByListing[scoreModal.id]?.averageScore ?? null}
+            averageDimensions={colocByListing[scoreModal.id]?.averageDimensions ?? null}
+            roommates={colocByListing[scoreModal.id]?.roommates ?? []}
+            onClose={() => setScoreModal(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Candidature directe (logement vide) ── */}
+      {applyModal && (
+        <CandidatureModal
+          listingId={applyModal.id}
+          listingTitle={applyModal.title}
+          onClose={() => setApplyModal(null)}
+          onSubmitted={() => {
+            setApplyModal(null)
+            toast({ title: 'Candidature envoyée ✅', description: 'Le loueur a reçu ton dossier.', duration: 3000 })
+          }}
+        />
+      )}
+
       {/* ── Match celebration ── */}
       <AnimatePresence>
         {matchPopup && (
           <MatchCelebration
-            profile={matchPopup}
+            listing={matchPopup}
             me={me}
-            onMessage={() => { const p = matchPopup; setMatchPopup(null); goMessage(p.name) }}
+            onMessage={() => { setMatchPopup(null); goMessage() }}
             onClose={() => setMatchPopup(null)}
           />
         )}
