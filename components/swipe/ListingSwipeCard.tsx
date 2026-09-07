@@ -3,7 +3,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Bookmark, MapPin, Users, Ruler, DoorOpen, Sofa, CalendarDays } from 'lucide-react'
+import { Bookmark } from 'lucide-react'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 import Emoji from '@/components/ui/Emoji'
 import { getAvatarColor, getInitials, formatAvailability } from '@/lib/utils'
@@ -14,13 +14,16 @@ import type { RoommateScoreView } from '@/components/swipe/ColocScoreModal'
 /**
  * Carte de swipe LOGEMENT — la seule carte de la page « Trouver ».
  *
- * Trois blocs, dans l'ordre de la maquette : photo, « Infos appart »,
- * « Infos coloc ». Ce dernier a deux variantes, dictées par l'état réel du
+ * Habillage conforme à la maquette : carte claire, photo pleine en haut sans
+ * rien par-dessus, puis deux sections séparées par une étiquette centrée —
+ * « Infos appart », puis « Infos coloc ».
+ *
+ * Le bloc « Infos coloc » a deux variantes, dictées par l'état réel du
  * logement et non par un réglage d'affichage :
  *
  *   A. Occupé — au moins un colocataire rattaché à un bail actif. Remplissage
- *      X/Y, avatars empilés, badge de score cliquable (moyenne du visiteur avec
- *      chacun des colocataires en place).
+ *      X/Y, avatars des profils en place, pastille verte cliquable portant la
+ *      moyenne du visiteur avec chacun d'eux.
  *   B. Vide — aucun colocataire. Aucun algorithme n'est lancé : on candidate
  *      directement.
  *
@@ -33,6 +36,18 @@ import type { RoommateScoreView } from '@/components/swipe/ColocScoreModal'
  * touchée : elle reste intacte et fonctionnelle pour le jour où le swipe de
  * profils sera tranché.
  */
+
+// [HIDDEN - MAQUETTE SWIPE] La maquette impose une photo « bloc visuel pur » :
+// aucun texte, badge ni bouton par-dessus. Les surcouches qui vivaient sur la
+// photo (favori, badge de fiabilité du loueur, pastille « Complet », segments
+// de progression et chevrons du carrousel) sont donc retirées du rendu, pas
+// supprimées : le code est conservé ci-dessous derrière ce drapeau, ainsi que
+// le handler `toggleFavorite`. Repasser à true les réaffiche à l'identique.
+//
+// Ce qui survit sans surcouche visible : la navigation photo par zones de tap
+// invisibles et la touche Espace (`nextPhoto`), et l'information « complet »,
+// toujours lisible dans « Remplissage : X/Y ».
+const SHOW_PHOTO_OVERLAYS: boolean = false
 
 export interface SwipeListing {
   id: string
@@ -77,9 +92,9 @@ interface Props {
   /** Les colocataires sont encore en cours de chargement. */
   colocLoading: boolean
   onSwipe: (direction: SwipeDirection) => void
-  /** Clic sur le badge de score (variante A uniquement). */
+  /** Clic sur la pastille de score (variante A uniquement). */
   onOpenScore: () => void
-  /** Candidature directe (variante B, et bouton secondaire en variante A). */
+  /** Candidature directe (variante B). */
   onApply: () => void
 }
 
@@ -87,14 +102,24 @@ const SWIPE_THRESHOLD = 120
 const SPRING_BACK = { type: 'spring' as const, stiffness: 300, damping: 20 }
 const OUTFIT = "'Outfit', sans-serif"
 
+// ── Palette de la maquette ────────────────────────────────────────
+/** Fond clair de la carte, qui la détache du fond très sombre de la page. */
+const CARD_BG = '#E8E4E2'
+/** Taupe des blocs d'information et des étiquettes de section. */
+const PANEL = '#6D6260'
+const PANEL_TEXT = '#FFFFFF'
+const RULE = 'rgba(0,0,0,0.13)'
+/** Vert de la pastille de compatibilité. */
+const SCORE_GREEN = '#4ADE80'
+
 function Stamp({ label, color, rotate }: { label: string; color: string; rotate: number }) {
   return (
     <div
       style={{
         border: `4px solid ${color}`, color, padding: '6px 20px', borderRadius: 10,
         fontSize: 30, fontWeight: 900, letterSpacing: 4, fontFamily: OUTFIT,
-        transform: `rotate(${rotate}deg)`, background: 'rgba(0,0,0,0.15)',
-        textShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        transform: `rotate(${rotate}deg)`, background: 'rgba(255,255,255,0.35)',
+        textShadow: '0 2px 12px rgba(0,0,0,0.25)',
       }}
     >
       {label}
@@ -102,7 +127,40 @@ function Stamp({ label, color, rotate }: { label: string; color: string; rotate:
   )
 }
 
-/** Avatars empilés des colocataires en place. */
+/** Barre fine coupée par une étiquette centrée — séparateur de la maquette. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2.5" aria-hidden="false">
+      <span className="flex-1" style={{ height: 1, background: RULE }} />
+      <span
+        style={{
+          background: PANEL, color: PANEL_TEXT, fontFamily: OUTFIT,
+          fontSize: 11.5, fontWeight: 600, letterSpacing: 0.2,
+          padding: '3px 16px', borderRadius: 7, whiteSpace: 'nowrap',
+        }}
+      >
+        {children}
+      </span>
+      <span className="flex-1" style={{ height: 1, background: RULE }} />
+    </div>
+  )
+}
+
+/** Bloc d'information taupe, coins arrondis — conteneur des deux sections. */
+function Panel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: PANEL, color: PANEL_TEXT, borderRadius: 12,
+        padding: '10px 14px',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/** Avatars des colocataires déjà en place, empilés. */
 function RoommateStack({ roommates }: { roommates: RoommateScoreView[] }) {
   const shown = roommates.slice(0, 4)
   const extra = roommates.length - shown.length
@@ -113,15 +171,15 @@ function RoommateStack({ roommates }: { roommates: RoommateScoreView[] }) {
           key={r.id}
           className="rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
           style={{
-            width: 34, height: 34, marginLeft: i === 0 ? 0 : -10,
-            border: '2px solid #111111', zIndex: shown.length - i,
+            width: 28, height: 28, marginLeft: i === 0 ? 0 : -8,
+            border: `2px solid ${PANEL}`, zIndex: shown.length - i,
             background: getAvatarColor(r.name),
-            fontFamily: OUTFIT, fontSize: 12, fontWeight: 800, color: '#fff',
+            fontFamily: OUTFIT, fontSize: 10, fontWeight: 800, color: '#fff',
           }}
           title={r.name}
         >
           {r.avatarUrl
-            ? <Image src={r.avatarUrl} alt="" width={34} height={34} className="w-full h-full object-cover" />
+            ? <Image src={r.avatarUrl} alt="" width={28} height={28} className="w-full h-full object-cover" />
             : getInitials(r.name.split(' ')[0], r.name.split(' ')[1])}
         </div>
       ))}
@@ -129,9 +187,9 @@ function RoommateStack({ roommates }: { roommates: RoommateScoreView[] }) {
         <div
           className="rounded-full flex items-center justify-center flex-shrink-0"
           style={{
-            width: 34, height: 34, marginLeft: -10, border: '2px solid #111111',
-            background: 'rgba(255,255,255,0.14)', fontFamily: OUTFIT,
-            fontSize: 11.5, fontWeight: 800, color: 'rgba(255,255,255,0.8)',
+            width: 28, height: 28, marginLeft: -8, border: `2px solid ${PANEL}`,
+            background: 'rgba(255,255,255,0.22)', fontFamily: OUTFIT,
+            fontSize: 10, fontWeight: 800, color: '#fff',
           }}
         >
           +{extra}
@@ -218,24 +276,20 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
 
   const placesLeft = Math.max(0, listing.occupancy.total - listing.occupancy.current)
 
-  // Mois abrégé sur la carte : la puce reste sur une ligne. Même phrase que sur
-  // la fiche annonce, et rien du tout si la date n'est pas renseignée.
-  const availability = formatAvailability(listing.availableFrom, 'short')
-
+  // « Autres infos » : uniquement les champs renseignés, séparés par un point
+  // milieu. Un champ vide ne laisse ni tiret ni séparateur orphelin.
   const facts = [
-    listing.surface && listing.surface > 0
-      ? { icon: <Ruler size={13} />, label: `${listing.surface} m²` }
-      : null,
+    listing.surface && listing.surface > 0 ? `${listing.surface} m²` : null,
     listing.roomsAvailable && listing.roomsAvailable > 0
-      ? { icon: <DoorOpen size={13} />, label: `${listing.roomsAvailable} chambre${listing.roomsAvailable > 1 ? 's' : ''}` }
+      ? `${listing.roomsAvailable} chambre${listing.roomsAvailable > 1 ? 's' : ''}`
       : null,
-    listing.meuble !== null
-      ? { icon: <Sofa size={13} />, label: listing.meuble ? 'Meublé' : 'Non meublé' }
-      : null,
-    availability ? { icon: <CalendarDays size={13} />, label: availability } : null,
-    listing.animauxOk === true ? { icon: <Emoji native="🐾" size="13px" />, label: 'Animaux OK' } : null,
-    listing.nonFumeur === true ? { icon: <Emoji native="🚭" size="13px" />, label: 'Non-fumeur' } : null,
-  ].filter(Boolean) as Array<{ icon: React.ReactNode; label: string }>
+    listing.meuble !== null ? (listing.meuble ? 'Meublé' : 'Non meublé') : null,
+    formatAvailability(listing.availableFrom, 'short'),
+    listing.animauxOk === true ? 'Animaux OK' : null,
+    listing.nonFumeur === true ? 'Non-fumeur' : null,
+  ].filter(Boolean) as string[]
+
+  const place = listing.neighborhood ? `${listing.city} · ${listing.neighborhood}` : listing.city
 
   return (
     <motion.div
@@ -255,16 +309,16 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
         className="relative w-full h-full flex flex-col overflow-hidden"
         style={{
           borderRadius: 24,
-          background: '#111111',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: CARD_BG,
           boxShadow: '0 24px 70px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.3)',
         }}
       >
         {/* ═══════════ Bloc photo ═══════════ */}
-        <div className="relative flex-shrink-0" style={{ height: '46%', minHeight: 190 }}>
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, #0f2e24 0%, #04160f 100%)' }} />
+        {/* Bloc visuel pur : rien n'est écrit ni posé par-dessus (maquette). */}
+        <div className="relative flex-shrink-0" style={{ height: '47%', minHeight: 180 }}>
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, #CFCAC7 0%, #A9A29E 100%)' }} />
           {!currentPhoto && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ fontSize: 88 }}>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ fontSize: 76 }}>
               <Emoji native="🏠" />
             </div>
           )}
@@ -280,240 +334,165 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
               onError={() => setPhotoError(e => ({ ...e, [photoIndex]: true }))}
             />
           )}
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#111111] to-transparent pointer-events-none" />
 
-          {/* Segments (stories) */}
-          {photos.length > 1 && (
-            <div className="absolute top-3 inset-x-3 flex gap-1.5 z-20">
-              {photos.map((_, i) => (
-                <div key={i} className="flex-1 rounded-full overflow-hidden" style={{ height: 3, background: 'rgba(255,255,255,0.25)' }}>
-                  <div style={{ height: '100%', width: i === photoIndex ? '100%' : '0%', background: '#10B981', transition: 'width 0.2s' }} />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Zones de tap + chevrons */}
+          {/* Navigation photo : zones de tap invisibles, aucun élément visible.
+              La touche Espace fait la même chose via `nextPhoto`. */}
           {photos.length > 1 && (
             <>
               <div className="absolute left-0 top-0 bottom-0 w-[30%] z-10" onClick={() => { if (!isDragging.current) goPhoto(-1) }} />
               <div className="absolute right-0 top-0 bottom-0 w-[30%] z-10" onClick={() => { if (!isDragging.current) goPhoto(1) }} />
-              <button
-                onClick={() => goPhoto(-1)}
-                className="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"
-                style={{ background: 'rgba(0,0,0,0.4)', color: '#fff', backdropFilter: 'blur(4px)' }}
-                aria-label="Photo précédente"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={() => goPhoto(1)}
-                className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"
-                style={{ background: 'rgba(0,0,0,0.4)', color: '#fff', backdropFilter: 'blur(4px)' }}
-                aria-label="Photo suivante"
-              >
-                <ChevronRight size={18} />
-              </button>
             </>
           )}
 
-          {/* Badges */}
-          <div className="absolute z-20 flex items-center gap-2" style={{ top: photos.length > 1 ? 20 : 14, left: 14 }}>
-            {listing.ownerId && <ReliabilityBadge userId={listing.ownerId} size={26} />}
-            {placesLeft <= 0 && (
-              <span
+          {/* [HIDDEN - MAQUETTE SWIPE] Surcouches photo, conservées telles quelles. */}
+          {SHOW_PHOTO_OVERLAYS && (
+            <>
+              {photos.length > 1 && (
+                <div className="absolute top-3 inset-x-3 flex gap-1.5 z-20">
+                  {photos.map((_, i) => (
+                    <div key={i} className="flex-1 rounded-full overflow-hidden" style={{ height: 3, background: 'rgba(255,255,255,0.25)' }}>
+                      <div style={{ height: '100%', width: i === photoIndex ? '100%' : '0%', background: '#10B981', transition: 'width 0.2s' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="absolute z-20 flex items-center gap-2" style={{ top: 14, left: 14 }}>
+                {listing.ownerId && <ReliabilityBadge userId={listing.ownerId} size={26} />}
+                {placesLeft <= 0 && (
+                  <span
+                    style={{
+                      fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 10,
+                      background: 'rgba(156,163,175,0.25)', color: '#D1D5DB', border: '1px solid rgba(156,163,175,0.4)',
+                    }}
+                  >
+                    Complet
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={toggleFavorite}
+                className="absolute z-20 flex items-center justify-center w-9 h-9 rounded-full border-none cursor-pointer transition-all"
                 style={{
-                  fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 10,
-                  background: 'rgba(156,163,175,0.25)', color: '#D1D5DB', border: '1px solid rgba(156,163,175,0.4)',
+                  top: 14, right: 14,
+                  background: saved ? 'rgba(16,185,129,0.9)' : 'rgba(0,0,0,0.4)',
+                  color: '#fff', backdropFilter: 'blur(4px)',
                 }}
+                aria-label={saved ? 'Retirer des favoris' : 'Sauvegarder'}
               >
-                Complet
-              </span>
-            )}
-          </div>
-          <button
-            onClick={toggleFavorite}
-            className="absolute z-20 flex items-center justify-center w-9 h-9 rounded-full border-none cursor-pointer transition-all"
-            style={{
-              top: photos.length > 1 ? 20 : 14, right: 14,
-              background: saved ? 'rgba(16,185,129,0.9)' : 'rgba(0,0,0,0.4)',
-              color: '#fff', backdropFilter: 'blur(4px)',
-            }}
-            aria-label={saved ? 'Retirer des favoris' : 'Sauvegarder'}
-          >
-            <Bookmark size={16} fill={saved ? '#fff' : 'none'} />
-          </button>
-
-          {/* Stamps */}
-          <motion.div className="absolute top-10 left-6 z-30 pointer-events-none" style={{ opacity: likeOpacity }}>
-            <Stamp label="J'ADORE" color="#10B981" rotate={-12} />
-          </motion.div>
-          <motion.div className="absolute top-10 right-6 z-30 pointer-events-none" style={{ opacity: nopeOpacity }}>
-            <Stamp label="PASSE" color="#EF4444" rotate={12} />
-          </motion.div>
-          <motion.div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none" style={{ opacity: superOpacity }}>
-            <Stamp label="★ SUPER" color="#F59E0B" rotate={-6} />
-          </motion.div>
+                <Bookmark size={16} fill={saved ? '#fff' : 'none'} />
+              </button>
+            </>
+          )}
         </div>
 
         {/* ═══════════ Corps ═══════════ */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-3 pb-4 flex flex-col gap-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-2.5">
 
           {/* ── Infos appart ── */}
-          <section>
-            <h3 className="text-[10.5px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(255,255,255,0.38)' }}>
-              Infos appart
-            </h3>
-            <h2
-              className="truncate mb-1.5"
-              style={{ fontFamily: OUTFIT, fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}
-            >
-              {listing.title}
-            </h2>
-            <div className="flex items-center gap-1.5 text-[13px] mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              <MapPin size={13} className="flex-shrink-0" />
-              <span className="truncate">
-                {listing.neighborhood ? `${listing.city} · ${listing.neighborhood}` : listing.city}
-              </span>
+          <SectionLabel>Infos appart</SectionLabel>
+          <Panel>
+            <div className="flex items-baseline justify-between gap-3" style={{ fontSize: 13, fontWeight: 600 }}>
+              <span className="truncate">Lieu : {place}</span>
+              {listing.rent > 0 && (
+                <span className="flex-shrink-0">Prix : {listing.rent}€/mois TTC</span>
+              )}
             </div>
-            {listing.rent > 0 && (
-              <div className="mb-2.5" style={{ fontFamily: OUTFIT, fontSize: 19, fontWeight: 800, color: '#10B981' }}>
-                {listing.rent} €/mois{' '}
-                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.45)' }}>TTC</span>
-              </div>
-            )}
             {facts.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {facts.map(f => (
-                  <span
-                    key={f.label}
-                    className="inline-flex items-center gap-1.5 text-[12px] font-medium"
-                    style={{
-                      padding: '4px 10px', borderRadius: 20,
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: 'rgba(255,255,255,0.75)',
-                    }}
-                  >
-                    <span className="inline-flex" style={{ color: 'rgba(255,255,255,0.5)' }}>{f.icon}</span>
-                    {f.label}
-                  </span>
-                ))}
+              <div className="mt-1.5" style={{ fontSize: 12.5, fontWeight: 500, color: 'rgba(255,255,255,0.88)' }}>
+                Autres infos : {facts.join(' · ')}
               </div>
             )}
-            {listing.description && (
-              <>
-                <button
-                  onClick={() => setShowDescription(s => !s)}
-                  className="mt-2.5 border-none cursor-pointer bg-transparent p-0 text-[12px] font-semibold"
-                  style={{ color: '#10B981', fontFamily: OUTFIT }}
-                >
-                  {showDescription ? 'Masquer la description ▾' : 'Voir la description ▸'}
-                </button>
-                {showDescription && (
-                  <p className="mt-1.5 text-[12.5px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                    {listing.description}
-                  </p>
-                )}
-              </>
+            {showDescription && listing.description && (
+              <p className="mt-2" style={{ fontSize: 12, lineHeight: 1.55, color: 'rgba(255,255,255,0.8)' }}>
+                {listing.description}
+              </p>
             )}
-          </section>
+          </Panel>
 
           {/* ── Infos coloc ── */}
-          <section
-            className="rounded-[16px] p-3.5"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <h3 className="text-[10.5px] font-bold uppercase tracking-[0.14em] mb-2.5" style={{ color: 'rgba(255,255,255,0.38)' }}>
-              Infos coloc
-            </h3>
-
+          <SectionLabel>Infos coloc</SectionLabel>
+          <Panel>
             {colocLoading ? (
-              <div className="flex items-center gap-2 text-[12.5px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                <span className="inline-block rounded-full animate-pulse" style={{ width: 34, height: 34, background: 'rgba(255,255,255,0.08)' }} />
+              <div className="flex items-center gap-2" style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.75)' }}>
+                <span className="inline-block rounded-full animate-pulse" style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.2)' }} />
                 Chargement des colocataires…
               </div>
             ) : occupied ? (
               /* ══ Variante A — logement occupé ══ */
-              <>
-                <div className="flex items-center gap-1.5 text-[12.5px] mb-3" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                  <Users size={13} />
-                  Remplissage :{' '}
-                  <strong style={{ color: '#fff', fontFamily: OUTFIT }}>
-                    {listing.occupancy.current}/{listing.occupancy.total}
-                  </strong>
-                  {placesLeft > 0 && (
-                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>
-                      · {placesLeft} place{placesLeft > 1 ? 's' : ''} libre{placesLeft > 1 ? 's' : ''}
-                    </span>
-                  )}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>
+                    Remplissage : {listing.occupancy.current}/{listing.occupancy.total}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>Profil actuel :</span>
+                    <RoommateStack roommates={roommates} />
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-3">
-                  <RoommateStack roommates={roommates} />
-
-                  <button
-                    onClick={() => { if (!isDragging.current) onOpenScore() }}
-                    className="flex items-center gap-2 border-none cursor-pointer transition-all flex-shrink-0"
-                    style={{
-                      padding: '8px 14px', borderRadius: 20, fontFamily: OUTFIT,
-                      background: coloc?.averageScore != null ? 'rgba(16,185,129,0.16)' : 'rgba(255,255,255,0.07)',
-                      border: `1px solid ${coloc?.averageScore != null ? 'rgba(16,185,129,0.5)' : 'rgba(255,255,255,0.15)'}`,
-                    }}
-                    title="Voir le détail de la compatibilité"
-                  >
-                    <span
-                      style={{
-                        fontSize: 17, fontWeight: 800,
-                        color: coloc?.averageScore != null ? '#10B981' : 'rgba(255,255,255,0.5)',
-                      }}
-                    >
-                      {coloc?.averageScore != null ? `${coloc.averageScore}%` : '?'}
-                    </span>
-                    <span className="text-[11.5px] font-semibold" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                      Détail
-                    </span>
-                  </button>
-                </div>
-
-                {coloc?.averageScore == null && (
-                  <p className="mt-2.5 text-[11.5px] leading-snug" style={{ color: 'rgba(255,255,255,0.42)' }}>
-                    Score indisponible tant que le questionnaire de compatibilité n’est pas complété
-                    des deux côtés.
-                  </p>
-                )}
-              </>
+                <button
+                  onClick={() => { if (!isDragging.current) onOpenScore() }}
+                  className="flex items-center justify-center rounded-full border-none cursor-pointer flex-shrink-0 transition-transform active:scale-95"
+                  style={{
+                    width: 52, height: 52,
+                    background: coloc?.averageScore != null ? SCORE_GREEN : 'rgba(255,255,255,0.22)',
+                    fontFamily: OUTFIT, fontSize: coloc?.averageScore != null ? 15 : 18,
+                    fontWeight: 800, color: '#fff',
+                  }}
+                  aria-label="Voir le détail de la compatibilité"
+                  title="Voir le détail de la compatibilité"
+                >
+                  {coloc?.averageScore != null ? `${coloc.averageScore}%` : '?'}
+                </button>
+              </div>
             ) : (
               /* ══ Variante B — logement vide (ou colocataires hors ISALY) ══ */
-              <>
-                <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              <div className="flex flex-col gap-2.5">
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0 }}>
                   {undisclosedOccupants ? (
                     <>
                       Le loueur déclare {listing.occupancy.current} personnes sur place, mais aucune
-                      n’est encore rattachée à un bail ISALY — pas de score de compatibilité
-                      possible pour l’instant.
+                      n’est rattachée à un bail ISALY — pas de score de compatibilité possible.
                     </>
                   ) : (
-                    <>
-                      Aucun colocataire pour l’instant — sois le premier à postuler.
-                    </>
+                    <>Aucun colocataire pour l’instant — sois le premier à postuler.</>
                   )}
                 </p>
                 <button
                   onClick={() => { if (!isDragging.current) onApply() }}
-                  className="w-full flex items-center justify-center gap-2 border-none cursor-pointer"
+                  className="w-full border-none cursor-pointer transition-transform active:scale-[0.98]"
                   style={{
-                    padding: 11, borderRadius: 12, fontSize: 14, fontWeight: 700,
-                    fontFamily: OUTFIT, color: '#fff',
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
-                    boxShadow: '0 4px 16px rgba(16,185,129,0.35)',
+                    padding: 10, borderRadius: 10, fontSize: 13.5, fontWeight: 700,
+                    fontFamily: OUTFIT, color: '#1F2A24', background: SCORE_GREEN,
                   }}
                 >
                   Postuler
                 </button>
-              </>
+              </div>
             )}
-          </section>
+          </Panel>
+
+          {coloc?.averageScore == null && occupied && (
+            <p style={{ fontSize: 11.5, lineHeight: 1.45, color: 'rgba(0,0,0,0.45)' }}>
+              Score indisponible tant que le questionnaire de compatibilité n’est pas complété
+              des deux côtés.
+            </p>
+          )}
+        </div>
+
+        {/* ── Tampons de swipe ──
+            Sous la photo, qui doit rester vierge : retour visuel du geste
+            uniquement, jamais affiché au repos. */}
+        <div className="absolute inset-x-0 z-30 pointer-events-none flex items-center justify-center" style={{ top: '47%', bottom: 0 }}>
+          <motion.div className="absolute" style={{ opacity: likeOpacity }}>
+            <Stamp label="J'ADORE" color="#10B981" rotate={-12} />
+          </motion.div>
+          <motion.div className="absolute" style={{ opacity: nopeOpacity }}>
+            <Stamp label="PASSE" color="#EF4444" rotate={12} />
+          </motion.div>
+          <motion.div className="absolute" style={{ opacity: superOpacity }}>
+            <Stamp label="★ SUPER" color="#F59E0B" rotate={-6} />
+          </motion.div>
         </div>
       </div>
     </motion.div>

@@ -199,11 +199,13 @@ function GhostCard({ listing, depth }: { listing: SwipeListing; depth: 1 | 2 }) 
       transition={{ type: 'spring', stiffness: 260, damping: 24 }}
       style={{ zIndex: depth === 1 ? 2 : 1 }}
     >
+      {/* Même enveloppe claire que la carte de tête : la pile doit se lire
+          comme un empilement du même objet, pas comme deux habillages. */}
       <div
         className="relative w-full h-full overflow-hidden"
-        style={{ borderRadius: '24px', background: '#111111', border: '1px solid rgba(255,255,255,0.08)' }}
+        style={{ borderRadius: '24px', background: '#E8E4E2' }}
       >
-        <div className="absolute inset-x-0 top-0" style={{ height: '46%', background: 'linear-gradient(160deg, #0f2e24 0%, #04160f 100%)' }}>
+        <div className="absolute inset-x-0 top-0" style={{ height: '47%', background: 'linear-gradient(160deg, #CFCAC7 0%, #A9A29E 100%)' }}>
           {photo && <Image src={photo} alt="" fill sizes="460px" className="object-cover" draggable={false} />}
         </div>
       </div>
