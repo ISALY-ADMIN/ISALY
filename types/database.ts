@@ -128,6 +128,8 @@ export interface Listing {
   occupants_current: number
   /** Capacité totale de la colocation (null = déduite de rooms_available). */
   capacity_total: number | null
+  /** Date de disponibilité (migration 41). null = non renseignée par le loueur. */
+  available_from: string | null
   /** Critères de vie (null = non renseigné par le loueur). */
   meuble: boolean | null
   animaux_ok: boolean | null

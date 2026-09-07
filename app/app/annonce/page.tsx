@@ -18,6 +18,8 @@ interface FormData {
   rooms_available: string
   occupants_current: string
   capacity_total: string
+  /** Date ISO 'YYYY-MM-DD' issue de <input type="date">. '' = non renseignée. */
+  available_from: string
   /** '' = non renseigné, 'oui' | 'non' */
   meuble: string
   animaux_ok: string
@@ -65,6 +67,7 @@ function AnnonceForm() {
   const [form, setForm] = useState<FormData>({
     title: '', rent: '', charges: '', city: '', neighborhood: '',
     surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '',
+    available_from: '',
     meuble: '', animaux_ok: '', non_fumeur: '', description: '',
   })
 
@@ -104,6 +107,9 @@ function AnnonceForm() {
         rooms_available: data.rooms_available != null ? String(data.rooms_available) : '1',
         occupants_current: data.occupants_current != null ? String(data.occupants_current) : '1',
         capacity_total:  data.capacity_total  != null ? String(data.capacity_total)  : '',
+        // La colonne est un DATE : on ne garde que 'YYYY-MM-DD', seule forme
+        // acceptée par <input type="date">.
+        available_from:  data.available_from ? String(data.available_from).slice(0, 10) : '',
         meuble:          data.meuble     == null ? '' : data.meuble     ? 'oui' : 'non',
         animaux_ok:      data.animaux_ok == null ? '' : data.animaux_ok ? 'oui' : 'non',
         non_fumeur:      data.non_fumeur == null ? '' : data.non_fumeur ? 'oui' : 'non',
@@ -213,6 +219,7 @@ function AnnonceForm() {
             rooms_available: Number(form.rooms_available) || 1,
             occupants_current: Number(form.occupants_current) || 1,
             capacity_total:  Number(form.capacity_total) || null,
+            available_from:  form.available_from || null,
             meuble:          triState(form.meuble),
             animaux_ok:      triState(form.animaux_ok),
             non_fumeur:      triState(form.non_fumeur),
@@ -244,6 +251,7 @@ function AnnonceForm() {
           rooms_available: Number(form.rooms_available) || 1,
           occupants_current: Number(form.occupants_current) || 1,
           capacity_total:  Number(form.capacity_total) || null,
+          available_from:  form.available_from || null,
           meuble:          triState(form.meuble),
           animaux_ok:      triState(form.animaux_ok),
           non_fumeur:      triState(form.non_fumeur),
@@ -332,7 +340,7 @@ function AnnonceForm() {
               <button
                 onClick={() => {
                   setPublished(false)
-                  setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '', meuble: '', animaux_ok: '', non_fumeur: '', description: '' })
+                  setForm({ title: '', rent: '', charges: '', city: '', neighborhood: '', surface: '', rooms_available: '1', occupants_current: '1', capacity_total: '', available_from: '', meuble: '', animaux_ok: '', non_fumeur: '', description: '' })
                   setPhotoPreviews([])
                   setPhotos([])
                 }}
@@ -505,6 +513,18 @@ function AnnonceForm() {
                 <input type="number" min="1" value={form.capacity_total} onChange={set('capacity_total')} placeholder="4"
                   className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
                   style={inputStyle} onFocus={focus} onBlur={blur} />
+              </Field>
+            </div>
+
+            {/* Facultatif : une annonce sans date ferme reste publiable. */}
+            <div className="mb-4">
+              <Field label="Disponible à partir du">
+                <input type="date" value={form.available_from} onChange={set('available_from')}
+                  className="w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13.5px] outline-none transition-colors"
+                  style={inputStyle} onFocus={focus} onBlur={blur} />
+                <p className="mt-1.5 text-[11.5px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Facultatif — laisse vide si tu ne connais pas encore la date.
+                </p>
               </Field>
             </div>
 

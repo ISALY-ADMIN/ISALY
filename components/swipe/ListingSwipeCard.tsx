@@ -3,10 +3,10 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Bookmark, MapPin, Users, Ruler, DoorOpen, Sofa } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Bookmark, MapPin, Users, Ruler, DoorOpen, Sofa, CalendarDays } from 'lucide-react'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 import Emoji from '@/components/ui/Emoji'
-import { getAvatarColor, getInitials } from '@/lib/utils'
+import { getAvatarColor, getInitials, formatAvailability } from '@/lib/utils'
 import { colocCardState } from '@/lib/colocMatching'
 import type { DimensionScores } from '@/lib/matching'
 import type { RoommateScoreView } from '@/components/swipe/ColocScoreModal'
@@ -43,6 +43,8 @@ export interface SwipeListing {
   rent: number
   surface: number | null
   roomsAvailable: number | null
+  /** Date ISO 'YYYY-MM-DD' (listings.available_from) ; null = non renseignée. */
+  availableFrom: string | null
   meuble: boolean | null
   animauxOk: boolean | null
   nonFumeur: boolean | null
@@ -216,6 +218,10 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
 
   const placesLeft = Math.max(0, listing.occupancy.total - listing.occupancy.current)
 
+  // Mois abrégé sur la carte : la puce reste sur une ligne. Même phrase que sur
+  // la fiche annonce, et rien du tout si la date n'est pas renseignée.
+  const availability = formatAvailability(listing.availableFrom, 'short')
+
   const facts = [
     listing.surface && listing.surface > 0
       ? { icon: <Ruler size={13} />, label: `${listing.surface} m²` }
@@ -226,6 +232,7 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
     listing.meuble !== null
       ? { icon: <Sofa size={13} />, label: listing.meuble ? 'Meublé' : 'Non meublé' }
       : null,
+    availability ? { icon: <CalendarDays size={13} />, label: availability } : null,
     listing.animauxOk === true ? { icon: <Emoji native="🐾" size="13px" />, label: 'Animaux OK' } : null,
     listing.nonFumeur === true ? { icon: <Emoji native="🚭" size="13px" />, label: 'Non-fumeur' } : null,
   ].filter(Boolean) as Array<{ icon: React.ReactNode; label: string }>

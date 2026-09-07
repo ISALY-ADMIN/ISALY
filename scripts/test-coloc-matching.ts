@@ -7,6 +7,7 @@
  *   2. la variante du bloc « Infos coloc » (occupé / vide / occupants inconnus).
  */
 import { aggregateColocScores, colocCardState, averageDimensionScores } from '../lib/colocMatching'
+import { formatAvailability } from '../lib/utils'
 import { computeCompatibility, buildMatchingData, type DimensionScores } from '../lib/matching'
 
 let failures = 0
@@ -72,6 +73,25 @@ check('aucun colocataire, occupants_current = 0 → variante B (vide)',
   colocCardState({ identifiedRoommates: 0, declaredOccupants: 0 }), 'empty')
 check('aucun colocataire mais 3 occupants déclarés → occupants inconnus, pas « vide »',
   colocCardState({ identifiedRoommates: 0, declaredOccupants: 3 }), 'undisclosed')
+
+console.log('\n── Date de disponibilité (migration 41) ──')
+const iso = (offsetDays: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+check('date absente → rien à afficher (pas de tiret)', formatAvailability(null), null)
+check('chaîne vide → rien à afficher', formatAvailability(''), null)
+check('valeur illisible → rien à afficher', formatAvailability('bientôt'), null)
+check("aujourd'hui → « Disponible maintenant »", formatAvailability(iso(0)), 'Disponible maintenant')
+check('hier → « Disponible maintenant »', formatAvailability(iso(-1)), 'Disponible maintenant')
+check('il y a un an → « Disponible maintenant »', formatAvailability(iso(-365)), 'Disponible maintenant')
+check('demain → « Disponible à partir du … »',
+  formatAvailability(iso(1))?.startsWith('Disponible à partir du '), true)
+check('date future avec horodatage → date seule conservée',
+  formatAvailability('2099-10-01T00:00:00Z'), 'Disponible à partir du 1 octobre 2099')
+check('format court → mois abrégé pour la puce de la carte',
+  formatAvailability('2099-10-01', 'short'), 'Disponible à partir du 1 oct. 2099')
 
 console.log('\n── Chaîne complète : profil visiteur vs colocataire ──')
 // Le moteur existant est réutilisé tel quel : profil du visiteur contre profil

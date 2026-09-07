@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cache } from 'react'
-import { listingOccupancy, ownerDisplayName } from '@/lib/utils'
+import { listingOccupancy, ownerDisplayName, formatAvailability } from '@/lib/utils'
 import ShareButtons from './ShareButtons'
 import Emoji from '@/components/ui/Emoji'
 
@@ -18,7 +18,7 @@ const getListing = cache(async (id: string) => {
     .from('listings')
     .select(`
       id, title, description, city, neighborhood, rent, charges, surface,
-      rooms_available, occupants_current, capacity_total, photos, boost_type, is_active, created_at,
+      rooms_available, occupants_current, capacity_total, available_from, photos, boost_type, is_active, created_at,
       owner_id,
       profiles:owner_id (
         first_name, avatar_url
@@ -69,6 +69,8 @@ export default async function AnnoncePubliquePage({ params }: Props) {
   // Un prénom vide ou égal au nom de marque ne doit jamais s'afficher tel quel
   const ownerName = ownerDisplayName(owner?.first_name)
   const publicUrl = `https://isaly.fr/annonce/${listing.id}`
+  // null si le loueur n'a pas renseigné de date : la puce n'est alors pas rendue.
+  const availability = formatAvailability(listing.available_from)
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', fontFamily: "'Outfit', sans-serif", color: '#fff' }}>
@@ -146,6 +148,7 @@ export default async function AnnoncePubliquePage({ params }: Props) {
                 ...(listing.surface ? [{ icon: '📐', label: `${listing.surface}m²` }] : []),
                 ...(listing.rooms_available ? [{ icon: '🚪', label: `${listing.rooms_available} chambre${listing.rooms_available > 1 ? 's' : ''} dispo` }] : []),
                 { icon: '👥', label: `${listingOccupancy(listing).current}/${listingOccupancy(listing).total} places` },
+                ...(availability ? [{ icon: '📅', label: availability }] : []),
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 16px', fontSize: '14px', fontWeight: 600 }}>
                   <span><Emoji native={s.icon} /></span>

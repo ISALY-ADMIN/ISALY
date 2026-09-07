@@ -51,6 +51,44 @@ export function listingOccupancy(l: {
   return { current, total }
 }
 
+/**
+ * Libellé de disponibilité d'une annonce (listings.available_from, migration 41).
+ *
+ * Renvoie `null` si la date n'est pas renseignée : l'appelant n'affiche alors
+ * rien du tout — pas de tiret, pas de « non renseigné », même règle que les
+ * autres champs facultatifs de la carte.
+ *
+ * Une date passée ou celle du jour devient « Disponible maintenant » : garder
+ * « à partir du 3 mars » six mois après le 3 mars ferait passer une annonce
+ * libre pour une annonce à venir.
+ *
+ * La date est comparée au jour près et construite composante par composante :
+ * `new Date('2026-10-01')` est interprété en UTC et retomberait sur le 30
+ * septembre pour un lecteur à l'ouest de Greenwich.
+ */
+export function formatAvailability(
+  availableFrom?: string | null,
+  format: 'long' | 'short' = 'long',
+): string | null {
+  if (!availableFrom) return null
+  const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(availableFrom)
+  if (!parts) return null
+
+  const target = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
+  if (Number.isNaN(target.getTime())) return null
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (target.getTime() <= today.getTime()) return 'Disponible maintenant'
+
+  const label = new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: format === 'short' ? 'short' : 'long',
+    year: 'numeric',
+  }).format(target)
+  return `Disponible à partir du ${label}`
+}
+
 /** Nom de marque, jamais affichable tel quel comme nom de personne. */
 const BRAND_NAMES = ['isaly', 'isaly immo', 'admin', 'support']
 

@@ -453,7 +453,7 @@ export default function SwipePage() {
       const supabase = createClient()
       const { data: listingsData } = await supabase
         .from('listings')
-        .select('id, title, city, neighborhood, rent, surface, rooms_available, occupants_current, capacity_total, meuble, animaux_ok, non_fumeur, photos, owner_id, description, boost_type, created_at')
+        .select('id, title, city, neighborhood, rent, surface, rooms_available, occupants_current, capacity_total, available_from, meuble, animaux_ok, non_fumeur, photos, owner_id, description, boost_type, created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(20)
@@ -468,6 +468,7 @@ export default function SwipePage() {
           rent: l.rent ?? 0,
           surface: l.surface ?? null,
           roomsAvailable: l.rooms_available ?? null,
+          availableFrom: l.available_from ?? null,
           meuble: l.meuble ?? null,
           animauxOk: l.animaux_ok ?? null,
           nonFumeur: l.non_fumeur ?? null,
