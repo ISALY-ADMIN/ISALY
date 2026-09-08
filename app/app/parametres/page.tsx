@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
-  Bell, ChevronRight, ExternalLink, KeyRound, LifeBuoy, Lock,
+  ArrowLeftRight, Bell, ChevronRight, ExternalLink, KeyRound, LifeBuoy, Lock,
   Mail, Moon, Palette, ShieldCheck, Trash2, UserCog, X,
 } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
@@ -188,6 +188,7 @@ export default function ParametresPage() {
   const [email, setEmail] = useState('')
   const [googleLinked, setGoogleLinked] = useState(false)
   const [mode, setModeState] = useState<'locataire' | 'loueur'>('locataire')
+  const [modeSwitching, setModeSwitching] = useState(false)
   const dualView = canSwitchMode(email)
   const [prefs, setPrefs] = useState<Record<string, boolean>>(DEFAULT_PREFS)
   const [resetSending, setResetSending] = useState(false)
@@ -242,16 +243,50 @@ export default function ParametresPage() {
     })
   }
 
-  /** Même mécanique que la sidebar : optimiste + contexte + PATCH silencieux. */
+  /**
+   * Bascule de vue, ouverte à TOUS les utilisateurs (plus seulement au compte
+   * de démonstration). Même mécanique que la sidebar : optimiste, contexte
+   * synchronisé, puis PATCH.
+   *
+   * La destination change par rapport à l'ancienne version : on partait sur un
+   * `window.location.reload()` qui laissait l'utilisateur sur les paramètres,
+   * sans rien montrer de la vue qu'il venait de choisir. On l'emmène désormais
+   * sur le tableau de bord, qui rend la variante du nouveau mode — c'est ce que
+   * fait déjà la pastille du Sidebar.
+   *
+   * `window.location.assign` plutôt que `router.push` : la navigation Next
+   * conserverait le Sidebar et le LeaseContext déjà montés avec l'ancien rôle,
+   * alors que tous deux lisent `profiles.role` une seule fois, au montage.
+   *
+   * Ce PATCH n'écrit que `role`. Il ne touche pas `role_confirmed_at`, donc il
+   * ne peut pas réveiller la modal RoleGate.
+   */
   function handleModeSwitch(newMode: 'locataire' | 'loueur') {
-    if (newMode === mode) return
+    if (newMode === mode || modeSwitching) return
+    setModeSwitching(true)
     setModeState(newMode)
     syncContextMode(newMode)
     fetch('/api/profile/mode', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: newMode }),
-    }).finally(() => window.location.reload())
+    })
+      .then(res => {
+        if (!res.ok) throw new Error()
+        window.location.assign('/app/dashboard-home')
+      })
+      .catch(() => {
+        // Échec réseau : on remet l'affichage sur le mode réellement en base
+        // plutôt que de laisser croire à une bascule qui n'a pas eu lieu.
+        setModeState(mode)
+        syncContextMode(mode)
+        setModeSwitching(false)
+        toast({
+          title: 'La bascule a échoué',
+          description: 'Ton mode n’a pas été changé. Réessaie dans un instant.',
+          variant: 'destructive',
+        })
+      })
   }
 
   async function sendPasswordReset() {
@@ -390,15 +425,39 @@ export default function ParametresPage() {
 
             {/* ── 2. Mode & profil ── */}
             <Section icon={<UserCog size={14} />} title="Mode & profil">
-              {/* Bascule réservée au compte à double vue : le rôle d'un
-                  utilisateur normal est fixé par la question d'onboarding. */}
-              {dualView && (
-                <Row label="Mode d'utilisation" description="Basculez entre la recherche de colocation et la gestion de vos annonces">
+              {/* Bascule de vue, ouverte à TOUS depuis la généralisation.
+                  Réversible à volonté : ce n'est pas un changement de statut,
+                  et elle ne repose jamais la question de l'onboarding.
+
+                  Le compte de démonstration garde en plus la pastille à deux
+                  positions, qui donne accès aux deux modes d'un seul geste ;
+                  pour les autres, un bouton vers l'autre vue est plus lisible
+                  que deux segments dont l'un est déjà actif. */}
+              <Row
+                label="Mode d'utilisation"
+                description={
+                  mode === 'loueur'
+                    ? 'Tu es actuellement en vue Loueur : tu publies des annonces et gères tes candidatures.'
+                    : 'Tu es actuellement en vue Locataire : tu cherches une colocation et postules aux annonces.'
+                }
+              >
+                {dualView ? (
                   <div style={{ width: 190, flexShrink: 0 }}>
                     <ModeSwitcher currentMode={mode} onSwitch={handleModeSwitch} />
                   </div>
-                </Row>
-              )}
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-shrink-0"
+                    onClick={() => handleModeSwitch(mode === 'loueur' ? 'locataire' : 'loueur')}
+                    loading={modeSwitching}
+                  >
+                    {!modeSwitching && <ArrowLeftRight size={13} />}
+                    {mode === 'loueur' ? 'Passer en vue Locataire' : 'Passer en vue Loueur'}
+                  </Button>
+                )}
+              </Row>
               <LinkRow href="/app/profil" label="Modifier mon profil" last />
             </Section>
 
