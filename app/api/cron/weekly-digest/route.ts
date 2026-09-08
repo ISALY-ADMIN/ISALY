@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { computeProfileCompletion } from '@/lib/profileCompletion'
+import { formatAvailability } from '@/lib/utils'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -111,11 +112,14 @@ export async function GET(req: Request) {
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`).gte('created_at', weekAgo),
       user.city
         ? supabase.from('listings')
-            .select('id, title, city, rent, photos')
+            // `*` volontaire : nommer available_from ferait disparaître la
+            // section « annonces recommandées » tant que la migration 41 n'est
+            // pas exécutée.
+            .select('*')
             .eq('is_active', true).ilike('city', `%${user.city}%`)
             .gte('created_at', weekAgo)
             .order('created_at', { ascending: false }).limit(3)
-        : Promise.resolve({ data: [] as { id: string; title: string | null; city: string | null; rent: number | null; photos: string[] | null }[] }),
+        : Promise.resolve({ data: [] as { id: string; title: string | null; city: string | null; rent: number | null; photos: string[] | null; available_from: string | null }[] }),
     ])
 
     const completion = computeProfileCompletion({
@@ -146,6 +150,7 @@ export async function GET(req: Request) {
                 <td>
                   <div style="color: #fff; font-weight: 600; font-size: 14px;">${l.title ?? `Colocation à ${l.city}`}</div>
                   <div style="color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 2px;">📍 ${l.city} · <span style="color: #10B981; font-weight: 700;">${l.rent ?? '—'}€/mois</span></div>
+                  ${formatAvailability(l.available_from) ? `<div style="color: rgba(255,255,255,0.4); font-size: 11.5px; margin-top: 3px;">📅 ${formatAvailability(l.available_from)}</div>` : ''}
                 </td>
               </tr></table>
             </a>

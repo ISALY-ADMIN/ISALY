@@ -316,7 +316,8 @@ export default function AnnonceWizard({ open, onClose, onSuccess }: {
         const rent = Number(draft.rent)
         const cur = Number(draft.occupants_current)
         const tot = Number(draft.capacity_total)
-        return rent > 0 && tot > 0 && cur <= tot
+        const surface = Number(draft.surface)
+        return rent > 0 && surface > 0 && tot > 0 && cur <= tot
       }
       case 3: return true
       case 4: return photos.length >= 1
@@ -328,7 +329,7 @@ export default function AnnonceWizard({ open, onClose, onSuccess }: {
     if (!canGoNext()) {
       const msgs: Record<number, string> = {
         1: 'Renseignez le type, le titre et la ville pour continuer.',
-        2: "Le loyer et la capacité doivent être valides (actuels ≤ places au total).",
+        2: "Le loyer, la surface et la capacité doivent être valides (actuels ≤ places au total).",
         4: 'Ajoutez au moins une photo pour continuer.',
       }
       setError(msgs[draft.step] ?? 'Complétez les champs obligatoires.')
@@ -613,9 +614,9 @@ export default function AnnonceWizard({ open, onClose, onSuccess }: {
                   {draft.step === 2 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <Field label="Surface (m²)">
+                        <Field label="Surface (m²) *">
                           <input
-                            type="number" min={0} value={draft.surface}
+                            type="number" min={1} required value={draft.surface}
                             onChange={e => setDraft(d => ({ ...d, surface: e.target.value }))}
                             placeholder="42" style={inputStyle}
                             onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.4)')}

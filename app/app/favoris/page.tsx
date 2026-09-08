@@ -11,6 +11,7 @@ import CertificationBadge, { type CertLevel } from '@/components/ui/Certificatio
 import { IsalyScoreBadge } from '@/components/ui/IsalyScore'
 import { BentoStyles, CountUp } from '@/components/ui/Bento'
 import { createClient } from '@/lib/supabase/client'
+import { formatAvailability } from '@/lib/utils'
 import { computeCompatibility } from '@/lib/matching'
 import type { Listing } from '@/types/database'
 
@@ -125,6 +126,8 @@ function ListingCard({ l, compat, onRemove }: { l: Listing; compat: number | nul
     l.city,
     l.surface ? `${l.surface} m²` : null,
     l.rooms_available != null ? `${l.rooms_available} ch. dispo` : null,
+    // Absente si le loueur n'a pas renseigné de date : pas de séparateur orphelin.
+    formatAvailability(l.available_from, 'short'),
   ].filter(Boolean).join(' · ')
 
   return (

@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { profilesCompatibility, type UiBreakdown } from '@/lib/matching'
 import { getCoordsForCity, jitterCoords } from '@/lib/geo'
-import { listingOccupancy } from '@/lib/utils'
+import { listingOccupancy, isAvailableNow } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,7 +75,19 @@ export async function GET(req: Request) {
 
   console.log(`[recherche] user=${user.id.slice(0, 8)} rows=${rows?.length ?? 0} err=${listErr?.message ?? 'none'} filters={city:'${city}', budget:${budgetMax}, q:'${q}'}`)
 
-  const listings = rows ?? []
+  // ── « Disponible maintenant » : filtre STRICT, exception assumée ──
+  // Les autres cases à cocher ne font que remonter les annonces. Celle-ci
+  // promet une exclusion dans son libellé : une annonce libre en janvier n'est
+  // pas « disponible maintenant », la classer plus bas ne suffit pas.
+  //
+  // Filtré ici et non dans la requête SQL : tant que la migration 41 n'est pas
+  // exécutée, la colonne `available_from` n'existe pas et un `.or()` dessus
+  // ferait échouer toute la recherche. Non renseignée = disponible (voir
+  // isAvailableNow), donc le filtre dégrade proprement en « tout passe ».
+  const allListings = rows ?? []
+  const listings = dispo
+    ? allListings.filter(l => isAvailableNow(l.available_from as string | null | undefined))
+    : allListings
 
   // Compatibilité réelle avec le loueur de chaque annonce
   const ownerIds = Array.from(new Set(listings.map(l => l.owner_id).filter(Boolean))) as string[]
@@ -112,6 +124,9 @@ export async function GET(req: Request) {
     if (meuble && l.meuble === true) score += 20
     if (animaux && l.animaux_ok === true) score += 20
     if (nonFumeur && l.non_fumeur === true) score += 20
+    // Le filtre strict ci-dessus a déjà écarté les dates futures ; ce bonus
+    // garde son sens propre : parmi les annonces disponibles, celles où il
+    // reste une place remontent devant les colocations complètes.
     if (dispo && remaining > 0) score += 20
     if (compatOnly && c) score += 20
     if (rooms > 0 && roomCount >= rooms) score += 20

@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cache } from 'react'
-import { listingOccupancy } from '@/lib/utils'
+import { listingOccupancy, ownerDisplayName, formatAvailability } from '@/lib/utils'
 import ShareButtons from './ShareButtons'
 import Emoji from '@/components/ui/Emoji'
 
@@ -16,10 +16,11 @@ const getListing = cache(async (id: string) => {
   const supabase = createClient()
   const { data } = await supabase
     .from('listings')
+    // `*` volontaire plutôt qu'une liste de colonnes : nommer available_from
+    // ferait échouer la requête — et donc renvoyer un 404 sur toutes les
+    // annonces — tant que la migration 41 n'est pas exécutée.
     .select(`
-      id, title, description, city, neighborhood, rent, charges, surface,
-      rooms_available, occupants_current, capacity_total, photos, boost_type, is_active, created_at,
-      owner_id,
+      *,
       profiles:owner_id (
         first_name, avatar_url
       )
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = (listing.photos as string[] | null)?.[0]
 
   return {
-    title: `${title} — ${listing.rent}€/mois | ISALY`,
+    title: `${title} — ${listing.rent}€/mois`,
     description: desc,
     openGraph: {
       title: `${title} — ${listing.rent}€/mois | ISALY`,
@@ -66,7 +67,11 @@ export default async function AnnoncePubliquePage({ params }: Props) {
   const photos = (listing.photos as string[] | null) ?? []
   const ownerRaw = listing.profiles
   const owner = (Array.isArray(ownerRaw) ? ownerRaw[0] : ownerRaw) as { first_name: string | null; avatar_url: string | null } | null
+  // Un prénom vide ou égal au nom de marque ne doit jamais s'afficher tel quel
+  const ownerName = ownerDisplayName(owner?.first_name)
   const publicUrl = `https://isaly.fr/annonce/${listing.id}`
+  // null si le loueur n'a pas renseigné de date : la puce n'est alors pas rendue.
+  const availability = formatAvailability(listing.available_from)
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', fontFamily: "'Outfit', sans-serif", color: '#fff' }}>
@@ -144,6 +149,7 @@ export default async function AnnoncePubliquePage({ params }: Props) {
                 ...(listing.surface ? [{ icon: '📐', label: `${listing.surface}m²` }] : []),
                 ...(listing.rooms_available ? [{ icon: '🚪', label: `${listing.rooms_available} chambre${listing.rooms_available > 1 ? 's' : ''} dispo` }] : []),
                 { icon: '👥', label: `${listingOccupancy(listing).current}/${listingOccupancy(listing).total} places` },
+                ...(availability ? [{ icon: '📅', label: availability }] : []),
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 16px', fontSize: '14px', fontWeight: 600 }}>
                   <span><Emoji native={s.icon} /></span>
@@ -163,17 +169,17 @@ export default async function AnnoncePubliquePage({ params }: Props) {
             )}
 
             {/* Loueur */}
-            {owner?.first_name && (
+            {owner && (
               <div style={{ padding: '20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 700, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                   {owner.avatar_url
-                    ? <Image src={owner.avatar_url} alt={owner.first_name ?? ''} width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : owner.first_name[0].toUpperCase()
+                    ? <Image src={owner.avatar_url} alt={ownerName} width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : ownerName[0].toUpperCase()
                   }
                 </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '2px' }}>
-                    Proposé par {owner.first_name}
+                    Proposé par {ownerName}
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
                     Membre ISALY · Profil certifié
@@ -234,6 +240,24 @@ export default async function AnnoncePubliquePage({ params }: Props) {
             url: publicUrl,
             address: { '@type': 'PostalAddress', addressLocality: listing.city ?? undefined, addressCountry: 'FR' },
             ...(photos[0] ? { image: photos[0] } : {}),
+            // Date de disponibilité : `availabilityStarts` n'existe pas sur
+            // RealEstateListing (qui dérive de WebPage et ne porte que
+            // datePosted / leaseLength). Schema.org la définit sur Offer, et
+            // RealEstateListing est justement décrite comme « a listing that
+            // describes one or more real-estate Offers » : elle doit donc être
+            // portée par un nœud Offer imbriqué. businessFunction LeaseOut
+            // précise qu'il s'agit d'une location, pas d'une vente.
+            // Le nœud n'est émis que si la date existe — sinon aucun balisage.
+            ...(listing.available_from
+              ? {
+                  offers: {
+                    '@type': 'Offer',
+                    businessFunction: 'https://purl.org/goodrelations/v1#LeaseOut',
+                    availabilityStarts: listing.available_from,
+                    ...(listing.rent ? { price: listing.rent, priceCurrency: 'EUR' } : {}),
+                  },
+                }
+              : {}),
           }),
         }}
       />

@@ -50,3 +50,82 @@ export function listingOccupancy(l: {
   const total = l.capacity_total ?? Math.max(current + (l.rooms_available ?? 1), current)
   return { current, total }
 }
+
+/**
+ * Parse une date de disponibilité 'YYYY-MM-DD' au jour près.
+ *
+ * Construite composante par composante volontairement : `new Date('2026-10-01')`
+ * est interprété en UTC et retomberait sur le 30 septembre pour un lecteur à
+ * l'ouest de Greenwich. Renvoie `null` si la valeur est absente ou illisible.
+ */
+function parseAvailabilityDate(availableFrom?: string | null): Date | null {
+  if (!availableFrom) return null
+  const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(availableFrom)
+  if (!parts) return null
+  const target = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
+  return Number.isNaN(target.getTime()) ? null : target
+}
+
+/**
+ * Le logement est-il disponible dès aujourd'hui ?
+ *
+ * Source de vérité du filtre « Disponible maintenant » de la recherche, pour
+ * qu'il ne puisse pas diverger du libellé affiché par `formatAvailability`.
+ *
+ * Renvoie `true` quand aucune date n'est connue : une annonce sans date reste
+ * candidate. L'inverse exclurait de la recherche toutes les annonces publiées
+ * avant la migration 41 — l'absence d'information n'est pas une indisponibilité.
+ * Même raisonnement pour une valeur illisible : on n'exclut pas sur un doute.
+ */
+export function isAvailableNow(availableFrom?: string | null): boolean {
+  const target = parseAvailabilityDate(availableFrom)
+  if (!target) return true
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return target.getTime() <= today.getTime()
+}
+
+/**
+ * Libellé de disponibilité d'une annonce (listings.available_from, migration 41).
+ *
+ * Renvoie `null` si la date n'est pas renseignée : l'appelant n'affiche alors
+ * rien du tout — pas de tiret, pas de « non renseigné », même règle que les
+ * autres champs facultatifs de la carte.
+ *
+ * Une date passée ou celle du jour devient « Disponible maintenant » : garder
+ * « à partir du 3 mars » six mois après le 3 mars ferait passer une annonce
+ * libre pour une annonce à venir.
+ */
+export function formatAvailability(
+  availableFrom?: string | null,
+  format: 'long' | 'short' = 'long',
+): string | null {
+  const target = parseAvailabilityDate(availableFrom)
+  if (!target) return null
+  if (isAvailableNow(availableFrom)) return 'Disponible maintenant'
+
+  const label = new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: format === 'short' ? 'short' : 'long',
+    year: 'numeric',
+  }).format(target)
+  return `Disponible à partir du ${label}`
+}
+
+/** Nom de marque, jamais affichable tel quel comme nom de personne. */
+const BRAND_NAMES = ['isaly', 'isaly immo', 'admin', 'support']
+
+/** Libellé neutre utilisé quand aucun prénom exploitable n'est disponible. */
+export const FALLBACK_OWNER_NAME = 'Loueur ISALY'
+
+/**
+ * Nom affichable d'un loueur sur une fiche publique.
+ * Un prénom vide, ou égal au nom de marque, ne doit jamais être rendu tel quel :
+ * « Proposé par ISALY » laisse croire que la plateforme est le bailleur.
+ */
+export function ownerDisplayName(firstName?: string | null): string {
+  const name = firstName?.trim() ?? ''
+  if (!name) return FALLBACK_OWNER_NAME
+  if (BRAND_NAMES.includes(name.toLowerCase())) return FALLBACK_OWNER_NAME
+  return name
+}

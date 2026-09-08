@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { RotateCcw, X, Star, Heart, Info } from 'lucide-react'
+import { RotateCcw, X, Star, Heart, Info, Bookmark } from 'lucide-react'
 
 interface SwipeActionsProps {
   onUndo: () => void
@@ -10,6 +10,10 @@ interface SwipeActionsProps {
   onSuperLike: () => void
   onLike: () => void
   onInfo: () => void
+  /** Favori de la carte courante. Descendu ici depuis la photo, qui doit
+   *  rester vierge (maquette) — mêmes appels, autre emplacement. */
+  onFavorite: () => void
+  isFavorite: boolean
 }
 
 interface ActionButtonProps {
@@ -45,7 +49,7 @@ function ActionButton({ onClick, size, label, disabled, glow, style, children }:
   )
 }
 
-export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onLike, onInfo }: SwipeActionsProps) {
+export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onLike, onInfo, onFavorite, isFavorite }: SwipeActionsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -53,7 +57,10 @@ export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onL
       transition={{ duration: 0.4, delay: 0.2 }}
       className="flex flex-col items-center gap-2 flex-shrink-0"
     >
-      <div className="flex items-center justify-center gap-4">
+      {/* Six boutons depuis l'ajout du favori : à 16 px d'écart la rangée
+          mesure 380 px et déborde d'un écran de 360 px. L'écart est resserré
+          sous 640 px, rétabli au-dessus. */}
+      <div className="flex items-center justify-center gap-2.5 sm:gap-4">
         {/* Undo */}
         <ActionButton
           onClick={onUndo}
@@ -113,6 +120,19 @@ export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onL
           style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
         >
           <Info size={18} />
+        </ActionButton>
+
+        {/* Favori — anciennement posé sur la photo */}
+        <ActionButton
+          onClick={onFavorite}
+          size={44}
+          label={isFavorite ? 'Retirer des favoris' : 'Sauvegarder en favori'}
+          glow="0 0 20px rgba(16,185,129,0.35)"
+          style={isFavorite
+            ? { background: 'rgba(16,185,129,0.9)', border: '1.5px solid rgba(16,185,129,0.9)', color: '#fff' }
+            : { background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
+        >
+          <Bookmark size={18} fill={isFavorite ? '#fff' : 'none'} />
         </ActionButton>
       </div>
 

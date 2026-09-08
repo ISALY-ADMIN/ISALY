@@ -6,41 +6,11 @@ import Image from 'next/image'
 import { Heart, FileCheck, ShieldCheck } from 'lucide-react'
 import Emoji from '@/components/ui/Emoji'
 import { getArticlesByCity } from '@/content/blog/articles'
+import { CITIES, slugifyCity, cityNameFromSlug } from '@/lib/cities'
 
 export const revalidate = 3600
 
-const CITIES: Record<string, string> = {
-  paris: 'Paris',
-  marseille: 'Marseille',
-  lyon: 'Lyon',
-  toulouse: 'Toulouse',
-  nice: 'Nice',
-  nantes: 'Nantes',
-  montpellier: 'Montpellier',
-  strasbourg: 'Strasbourg',
-  bordeaux: 'Bordeaux',
-  lille: 'Lille',
-  rennes: 'Rennes',
-  reims: 'Reims',
-  toulon: 'Toulon',
-  'saint-etienne': 'Saint-Étienne',
-  'le-havre': 'Le Havre',
-  grenoble: 'Grenoble',
-  dijon: 'Dijon',
-  angers: 'Angers',
-  nimes: 'Nîmes',
-  'clermont-ferrand': 'Clermont-Ferrand',
-}
-
 const MAIN_CITIES = ['paris', 'lyon', 'marseille', 'bordeaux', 'toulouse', 'nantes', 'lille', 'strasbourg']
-
-function slugify(city: string): string {
-  return city.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-}
-
-function unslugify(slug: string): string {
-  return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-')
-}
 
 export async function generateStaticParams() {
   const slugs = new Set(Object.keys(CITIES))
@@ -54,7 +24,7 @@ export async function generateStaticParams() {
     )
     const { data } = await supabase.from('listings').select('city').eq('is_active', true).limit(1000)
     for (const l of data ?? []) {
-      if (l.city) slugs.add(slugify(l.city))
+      if (l.city) slugs.add(slugifyCity(l.city))
     }
   } catch { /* build sans DB : villes statiques uniquement */ }
   return Array.from(slugs).map(ville => ({ ville }))
@@ -64,12 +34,10 @@ interface Props {
   params: { ville: string }
 }
 
-function cityNameOf(slug: string): string {
-  return CITIES[slug] ?? unslugify(slug)
-}
+
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const cityName = cityNameOf(params.ville)
+  const cityName = cityNameFromSlug(params.ville)
 
   let count = 0
   let ogPhoto: string | null = null
@@ -86,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   } catch {}
 
   return {
-    title: `Colocation à ${cityName} — ISALY`,
+    title: `Colocation à ${cityName}`,
     description: `Trouvez votre colocation à ${cityName} avec ISALY. ${count > 0 ? `${count} annonce${count > 1 ? 's' : ''} disponible${count > 1 ? 's' : ''}, ` : ''}matching intelligent, bail en ligne.`,
     alternates: { canonical: `https://isaly.fr/colocation/${params.ville}` },
     openGraph: {
@@ -104,7 +72,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const BOOST_RANK: Record<string, number> = { priority: 0, featured: 1, standard: 2 }
 
 export default async function ColocationVillePage({ params }: Props) {
-  const cityName = cityNameOf(params.ville)
+  const cityName = cityNameFromSlug(params.ville)
 
   const supabase = createClient()
   const { data: listings } = await supabase
@@ -251,7 +219,7 @@ export default async function ColocationVillePage({ params }: Props) {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ fontSize: '18px', fontWeight: 700, color: '#10B981' }}>{l.rent}€<span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>/mois</span></div>
-                          {l.surface != null && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{l.surface}m²</div>}
+                          {(l.surface ?? 0) > 0 && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{l.surface}m²</div>}
                         </div>
                       </div>
                     </div>
@@ -260,7 +228,7 @@ export default async function ColocationVillePage({ params }: Props) {
               })}
             </div>
             <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-              <Link href="/auth/register" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 700, padding: '14px 32px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)' }}>
+              <Link href={`/auth/register?ville=${params.ville}`} style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 700, padding: '14px 32px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)' }}>
                 Voir toutes les annonces à {cityName} →
               </Link>
             </div>
@@ -333,7 +301,7 @@ export default async function ColocationVillePage({ params }: Props) {
               ? `Inscription gratuite · Ton profil est prêt dès l'ouverture de ${cityName}`
               : 'Inscription gratuite · Matching sur 40+ critères'}
           </p>
-          <Link href={isEmptyCity ? `/auth/register?ville=${params.ville}` : '/auth/register'} style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 700, padding: '14px 32px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)' }}>
+          <Link href={`/auth/register?ville=${params.ville}`} style={{ display: 'inline-block', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 700, padding: '14px 32px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)' }}>
             Commencer gratuitement →
           </Link>
         </div>

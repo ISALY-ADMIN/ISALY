@@ -1,5 +1,6 @@
 'use client'
 import Emoji from '@/components/ui/Emoji'
+import { BILLING_ENABLED } from '@/lib/billing'
 
 export type BoostOption = 'standard' | 'featured' | 'priority'
 
@@ -69,6 +70,11 @@ interface Props {
 }
 
 export default function BoostSelector({ selected, onSelect, disabled }: Props) {
+  // Paiements coupés (cf. lib/billing.ts) : les formules payantes restent
+  // visibles mais non sélectionnables, plutôt que de mener à un paiement
+  // qui n'activerait jamais l'annonce.
+  const isLocked = (id: BoostOption) => !BILLING_ENABLED && id !== 'standard'
+
   return (
     <div style={{
       display: 'grid',
@@ -77,32 +83,35 @@ export default function BoostSelector({ selected, onSelect, disabled }: Props) {
     }}>
       {BOOST_CARDS.map(card => {
         const isSelected = selected === card.id
+        const locked = isLocked(card.id)
+        const inactive = disabled || locked
         return (
           <button
             key={card.id}
             type="button"
-            onClick={() => !disabled && onSelect(card.id)}
-            disabled={disabled}
+            onClick={() => !inactive && onSelect(card.id)}
+            disabled={inactive}
+            aria-disabled={inactive}
             style={{
               background: isSelected ? card.bgSelected : 'rgba(255,255,255,0.04)',
               border: `${isSelected ? '2px' : '1px'} solid ${isSelected ? card.borderSelected : 'rgba(255,255,255,0.08)'}`,
               borderRadius: '16px',
               padding: '20px 16px',
-              cursor: disabled ? 'not-allowed' : 'pointer',
+              cursor: inactive ? 'not-allowed' : 'pointer',
               textAlign: 'left',
               transition: 'all 0.2s ease',
-              opacity: disabled ? 0.6 : 1,
+              opacity: inactive ? 0.55 : 1,
               transform: isSelected && card.id === 'featured' ? 'scale(1.02)' : 'scale(1)',
               width: '100%',
             }}
             onMouseEnter={e => {
-              if (!disabled && !isSelected) {
+              if (!inactive && !isSelected) {
                 (e.currentTarget as HTMLElement).style.borderColor = card.borderSelected
                 ;(e.currentTarget as HTMLElement).style.background = card.bgSelected.replace('0.08', '0.04')
               }
             }}
             onMouseLeave={e => {
-              if (!disabled && !isSelected) {
+              if (!inactive && !isSelected) {
                 (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'
                 ;(e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'
               }
@@ -116,7 +125,7 @@ export default function BoostSelector({ selected, onSelect, disabled }: Props) {
                 color: card.badgeColor, background: card.badgeBg,
                 textTransform: 'uppercase', letterSpacing: '0.5px', flexShrink: 0,
               }}>
-                {card.badge}
+                {locked ? 'Bientôt' : card.badge}
               </span>
             </div>
 
@@ -126,9 +135,14 @@ export default function BoostSelector({ selected, onSelect, disabled }: Props) {
             </div>
 
             {/* Price */}
-            <div style={{ fontSize: '17px', fontWeight: 800, color: card.priceColor, marginBottom: '12px' }}>
+            <div style={{ fontSize: '17px', fontWeight: 800, color: locked ? '#9CA3AF' : card.priceColor, marginBottom: locked ? '4px' : '12px' }}>
               {card.price}
             </div>
+            {locked && (
+              <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '12px', lineHeight: 1.4 }}>
+                Bientôt disponible
+              </div>
+            )}
 
             {/* Features */}
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { CookieSettingsLink } from '@/components/consent/CookieConsent'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { User, Heart, FileCheck, X, Check, Star } from 'lucide-react'
@@ -647,9 +648,9 @@ export default function LandingPage() {
                 <div style={{ flex: 1, minWidth: '280px' }}>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: '#10B981', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>LOCATAIRE</div>
                   <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(44px, 6vw, 64px)', fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: '6px' }}>Gratuit</div>
-                  <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', marginBottom: '24px' }}>pour toujours — aucune carte requise</div>
+                  <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', marginBottom: '24px' }}>jusqu&apos;à la signature du bail — aucune carte requise</div>
                   <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '400px', margin: '0 0 24px' }}>
-                    Swipe, matche, contacte les loueurs et gère ton bail. Tout est gratuit. On prend uniquement <span style={{ color: '#10B981', fontWeight: 600 }}>2,5% du loyer mensuel</span> à la signature du bail — comme une assurance dossier incluse.
+                    Swipe, matche, contacte les loueurs, monte ton dossier : tout est gratuit tant que tu n&apos;as pas signé. Une fois le bail signé, on prélève <span style={{ color: '#10B981', fontWeight: 600 }}>2,5&nbsp;% du loyer chaque mois</span>, automatiquement, pendant toute la durée du bail. Pas de frais de dossier, pas de forfait déguisé.
                   </p>
                   <Link href="/auth/register" style={{ ...ctaPrimary, fontSize: '15px', padding: '13px 28px' }}>
                     Commencer gratuitement →
@@ -853,6 +854,7 @@ export default function LandingPage() {
                 onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
               >{link.label}</Link>
             ))}
+            <CookieSettingsLink />
           </div>
         </div>
       </footer>

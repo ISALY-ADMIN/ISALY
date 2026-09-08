@@ -10,8 +10,10 @@ import CertificationBadge, { CertLevel } from '@/components/ui/CertificationBadg
 import { ReliabilityGauge } from '@/components/ui/ReliabilityScore'
 import { IsalyScoreGauge } from '@/components/ui/IsalyScore'
 import ReviewStars from '@/components/ui/ReviewStars'
+import CompatibilityBreakdown from '@/components/matching/CompatibilityBreakdown'
 import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
+import type { DimensionScores } from '@/lib/matching'
 
 interface PublicProfile {
   id: string
@@ -28,6 +30,21 @@ interface PublicProfile {
 }
 
 interface Listing { id: string; title: string | null; city: string | null; rent: number | null; photos: string[] | null }
+
+/**
+ * Compatibilité visiteur ↔ personne consultée (E4).
+ * Calculée côté serveur (/api/compatibility/[id]) : le `matching_data` de la
+ * personne consultée ne descend jamais dans le navigateur.
+ * `available: false` = l'un des deux questionnaires n'est pas complété — on
+ * l'annonce au lieu d'afficher un score inventé.
+ */
+interface CompatibilityView {
+  available: boolean
+  reason?: string
+  score?: number
+  dimensions?: DimensionScores
+  conflicts?: string[]
+}
 
 const CARD: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
@@ -59,6 +76,7 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
   const [inColoc, setInColoc] = useState(false)
   const [hasConversation, setHasConversation] = useState(false)
   const [isMe, setIsMe] = useState(false)
+  const [compat, setCompat] = useState<CompatibilityView | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -71,6 +89,13 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
       // Vue de profil (rate-limitée : 1 / user / jour côté DB)
       if (user && user.id !== userId) {
         fetch(`/api/profiles/${userId}/view`, { method: 'PATCH' }).catch(() => {})
+        // Compatibilité : affichée dès qu'elle est calculable, quel que soit le
+        // chemin d'arrivée (swipe, messages, lien direct) — pas seulement en
+        // venant de la modale de score.
+        fetch(`/api/compatibility/${userId}`)
+          .then(r => (r.ok ? r.json() : null))
+          .then(j => { if (j) setCompat(j as CompatibilityView) })
+          .catch(() => {})
       }
 
       const [{ data: p }, { data: ls }, leaseRes, convRes] = await Promise.all([
@@ -189,6 +214,45 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
         <div style={{ marginBottom: '16px' }}>
           <IsalyScoreGauge userId={profile.id} />
         </div>
+
+        {/* ── Compatibilité avec cette personne (E4) ── */}
+        {/* Même détail par dimension que la modale de score du swipe, mais pour
+            cette personne seule au lieu d'une moyenne. Absente si le visiteur
+            regarde sa propre fiche, ou si l'un des deux questionnaires manque. */}
+        {!isMe && compat?.available && compat.dimensions && (
+          <Card delay={0.03}>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                Votre compatibilité
+              </h2>
+              <span
+                className="text-[22px] font-extrabold"
+                style={{ fontFamily: "'Outfit', sans-serif", color: '#10B981', lineHeight: 1 }}
+              >
+                {compat.score}%
+              </span>
+            </div>
+            <CompatibilityBreakdown dimensions={compat.dimensions} conflicts={compat.conflicts ?? []} />
+          </Card>
+        )}
+        {!isMe && compat && !compat.available && compat.reason === 'test_incomplete' && (
+          <Card delay={0.03}>
+            <h2 className="text-[13px] font-bold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Votre compatibilité
+            </h2>
+            <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Le détail de compatibilité demande que vous ayez tous les deux répondu au
+              questionnaire. Tant que ce n’est pas le cas, aucun score n’est affiché.
+            </p>
+            <button
+              onClick={() => router.push('/app/quiz')}
+              className="text-[13px] font-bold border-none cursor-pointer px-4 py-2.5 rounded-full text-white"
+              style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+            >
+              Répondre au questionnaire
+            </button>
+          </Card>
+        )}
 
         {/* ── Score de fiabilité (loueur) ── */}
         {profile.role === 'loueur' && (

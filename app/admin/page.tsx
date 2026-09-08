@@ -37,6 +37,7 @@ async function getStats() {
     matchesRes, matchesTodayRes, matchesWeekRes,
     activeLeasesRes,
     dossiersRes, reportsRes, pendingDocsRes, reportedReviewsRes, maintenanceRes,
+    commissionsRes,
     stripeRevenue,
   ] = await Promise.all([
     admin.from('profiles').select('*', { count: 'exact', head: true }),
@@ -57,11 +58,23 @@ async function getStats() {
     admin.from('user_documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     admin.from('user_reviews').select('*', { count: 'exact', head: true }).eq('reported', true),
     admin.from('maintenance_requests').select('*', { count: 'exact', head: true }).eq('status', 'sent'),
+    // Parts de commission encore actives (migration 39) — une ligne par locataire.
+    admin.from('lease_commissions').select('share_rent, rate').eq('commission_active', true),
     getStripeRevenueThisMonth(),
   ])
 
   const activeLeases = (activeLeasesRes.data ?? []) as { monthly_rent: number | null }[]
   const totalRent = activeLeases.reduce((s, l) => s + (l.monthly_rent ?? 0), 0)
+
+  // CA estimé : somme des parts de commission ENCORE actives, pour que l'arrêt
+  // d'un colocataire (préavis ou fin de bail) se voie immédiatement ici.
+  // Repli sur 2,5 % du loyer des baux actifs tant qu'aucune part n'est
+  // enregistrée — la facturation n'a jamais tourné (BILLING_ENABLED = false),
+  // la table peut donc être vide alors que des baux sont bien actifs.
+  const commissions = (commissionsRes.data ?? []) as { share_rent: number | null; rate: number | null }[]
+  const estimatedRevenue = commissions.length > 0
+    ? Math.round(commissions.reduce((s, c) => s + (c.share_rent ?? 0) * (c.rate ?? 0.025), 0))
+    : Math.round(totalRent * 0.025)
 
   return {
     users: usersRes.count ?? 0,
@@ -73,7 +86,7 @@ async function getStats() {
     matchesToday: matchesTodayRes.count ?? 0,
     matchesWeek: matchesWeekRes.count ?? 0,
     activeLeases: activeLeases.length,
-    estimatedRevenue: Math.round(totalRent * 0.025),
+    estimatedRevenue,
     stripeRevenue,
     pendingVerifications: dossiersRes.count ?? 0,
     openReports: reportsRes.count ?? 0,

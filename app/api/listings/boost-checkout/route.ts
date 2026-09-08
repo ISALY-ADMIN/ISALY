@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
+import { BILLING_ENABLED, BILLING_DISABLED_MESSAGE } from '@/lib/billing'
 
 export async function POST(request: Request) {
+  // Cf. lib/billing.ts : sans webhook, l'annonce resterait invisible après paiement.
+  if (!BILLING_ENABLED) {
+    return NextResponse.json({ error: BILLING_DISABLED_MESSAGE }, { status: 503 })
+  }
+
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
