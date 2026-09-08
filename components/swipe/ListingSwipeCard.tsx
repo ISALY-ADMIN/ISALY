@@ -3,7 +3,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Bookmark, Images } from 'lucide-react'
+import { Bookmark, ChevronLeft, ChevronRight, Images } from 'lucide-react'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 import Emoji from '@/components/ui/Emoji'
 import { getAvatarColor, getInitials, formatAvailability } from '@/lib/utils'
@@ -48,6 +48,14 @@ import type { RoommateScoreView } from '@/components/swipe/ColocScoreModal'
 // Ce qui survit sans surcouche visible : la navigation photo par zones de tap
 // invisibles et la touche Espace (`nextPhoto`), et l'information « complet »,
 // toujours lisible dans « Remplissage : X/Y ».
+//
+// EXCEPTION ASSUMÉE à la règle « rien sur la photo » : les deux chevrons de
+// navigation sont revenus sur les bords de l'image, hors de ce drapeau. Les
+// zones de tap fonctionnaient, mais rien n'indiquait qu'elles existaient — la
+// pastille « x/y photos » annonce le nombre, pas le geste pour y accéder. Ils
+// sont volontairement discrets (pastille noire translucide, 32 px) et ne
+// s'affichent qu'à partir de deux photos. Le reste de la règle tient : aucun
+// texte, aucun badge, aucun favori sur l'image.
 const SHOW_PHOTO_OVERLAYS: boolean = false
 
 export interface SwipeListing {
@@ -352,6 +360,49 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
             <>
               <div className="absolute left-0 top-0 bottom-0 w-[30%] z-10" onClick={() => { if (!isDragging.current) goPhoto(-1) }} />
               <div className="absolute right-0 top-0 bottom-0 w-[30%] z-10" onClick={() => { if (!isDragging.current) goPhoto(1) }} />
+            </>
+          )}
+
+          {/* Flèches de navigation : rendu VISIBLE du geste que les zones de tap
+              ci-dessus portaient déjà en aveugle — mêmes appels à `goPhoto`, même
+              condition d'affichage que la pastille « x/y photos », qui reste en
+              place et garde le rôle de compteur.
+
+              Posées au-dessus des zones de tap (z-20 sur z-10) : la flèche gauche
+              recouvre la zone gauche, la droite la zone droite. Le recouvrement
+              est sans conséquence, chaque paire déclenche la même action, et un
+              clic sur le bouton ne retombe pas sur la zone — ce sont des frères,
+              pas des parents.
+
+              Discrètes en permanence plutôt que révélées au survol : `group-hover`
+              ne se déclenche jamais sur un écran tactile, et cette carte est
+              d'abord mobile. Des flèches en `opacity-0` y seraient inatteignables.
+              Elles se renforcent au survol, là où le survol existe.
+
+              Nommées « Photo précédente / suivante » sans compteur : la pastille
+              porte déjà « Photo suivante — x sur y », et deux boutons au nom
+              accessible identique seraient indiscernables au lecteur d'écran.
+              Le compteur reste donc à la pastille, dont c'est le rôle. */}
+          {photos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => { if (!isDragging.current) goPhoto(-1) }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-8 h-8 rounded-full border-none cursor-pointer opacity-75 hover:opacity-100 transition-opacity"
+                style={{ background: 'rgba(0,0,0,0.42)', color: '#fff', backdropFilter: 'blur(4px)' }}
+                aria-label="Photo précédente"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => { if (!isDragging.current) goPhoto(1) }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-8 h-8 rounded-full border-none cursor-pointer opacity-75 hover:opacity-100 transition-opacity"
+                style={{ background: 'rgba(0,0,0,0.42)', color: '#fff', backdropFilter: 'blur(4px)' }}
+                aria-label="Photo suivante"
+              >
+                <ChevronRight size={18} />
+              </button>
             </>
           )}
 
