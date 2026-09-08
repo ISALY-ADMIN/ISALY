@@ -57,7 +57,10 @@ export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onL
       transition={{ duration: 0.4, delay: 0.2 }}
       className="flex flex-col items-center gap-2 flex-shrink-0"
     >
-      <div className="flex items-center justify-center gap-4">
+      {/* Six boutons depuis l'ajout du favori : à 16 px d'écart la rangée
+          mesure 380 px et déborde d'un écran de 360 px. L'écart est resserré
+          sous 640 px, rétabli au-dessus. */}
+      <div className="flex items-center justify-center gap-2.5 sm:gap-4">
         {/* Undo */}
         <ActionButton
           onClick={onUndo}

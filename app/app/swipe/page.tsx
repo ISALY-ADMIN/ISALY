@@ -597,6 +597,29 @@ export default function SwipePage() {
     return () => clearTimeout(t)
   }, [fetchListings, fetchColocataires])
 
+  // Favoris déjà enregistrés : sans ce chargement, une annonce déjà en favori
+  // s'afficherait décochée jusqu'au premier clic — et ce clic la RETIRERAIT
+  // des favoris tout en allumant le bouton, l'API étant un toggle. L'état
+  // initial n'est donc pas cosmétique.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/favorites')
+        if (!res.ok) return
+        const json = await res.json()
+        const saved: Record<string, boolean> = {}
+        for (const f of (json.favorites ?? []) as { target_id: string; target_type: string }[]) {
+          if (f.target_type === 'listing' && f.target_id) saved[f.target_id] = true
+        }
+        // Les bascules faites pendant le chargement font autorité : elles sont
+        // confirmées par le serveur, la liste initiale peut déjà être périmée.
+        if (!cancelled) setFavorites(prev => ({ ...saved, ...prev }))
+      } catch {}
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   // Matchs + profil courant (avatar pour la célébration)
   useEffect(() => {
     fetchMatches()
