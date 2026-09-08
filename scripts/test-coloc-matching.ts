@@ -7,7 +7,7 @@
  *   2. la variante du bloc « Infos coloc » (occupé / vide / occupants inconnus).
  */
 import { aggregateColocScores, colocCardState, averageDimensionScores } from '../lib/colocMatching'
-import { formatAvailability } from '../lib/utils'
+import { formatAvailability, isAvailableNow } from '../lib/utils'
 import { computeCompatibility, buildMatchingData, type DimensionScores } from '../lib/matching'
 
 let failures = 0
@@ -92,6 +92,22 @@ check('date future avec horodatage → date seule conservée',
   formatAvailability('2099-10-01T00:00:00Z'), 'Disponible à partir du 1 octobre 2099')
 check('format court → mois abrégé pour la puce de la carte',
   formatAvailability('2099-10-01', 'short'), 'Disponible à partir du 1 oct. 2099')
+
+console.log('\n── Filtre « Disponible maintenant » (recherche) ──')
+// Le filtre exclut désormais réellement : il doit être d'accord avec le libellé
+// affiché par formatAvailability, sinon on retombe sur le bug corrigé en G1.
+check('sans date → retenue (absence ≠ indisponibilité)', isAvailableNow(null), true)
+check('chaîne vide → retenue', isAvailableNow(''), true)
+check('valeur illisible → retenue (on n’exclut pas sur un doute)', isAvailableNow('bientôt'), true)
+check("aujourd'hui → retenue", isAvailableNow(iso(0)), true)
+check('hier → retenue', isAvailableNow(iso(-1)), true)
+check('demain → EXCLUE', isAvailableNow(iso(1)), false)
+check('dans six mois → EXCLUE', isAvailableNow(iso(180)), false)
+check(
+  'filtre et libellé toujours d’accord sur une date future',
+  isAvailableNow(iso(30)) === (formatAvailability(iso(30)) === 'Disponible maintenant'),
+  true,
+)
 
 console.log('\n── Chaîne complète : profil visiteur vs colocataire ──')
 // Le moteur existant est réutilisé tel quel : profil du visiteur contre profil

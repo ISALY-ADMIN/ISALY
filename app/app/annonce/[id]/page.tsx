@@ -9,7 +9,7 @@ import Topbar from '@/components/layout/Topbar'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { createClient } from '@/lib/supabase/client'
 import { profilesCompatibility, type ProfileCompatibility } from '@/lib/matching'
-import { listingOccupancy } from '@/lib/utils'
+import { listingOccupancy, formatAvailability } from '@/lib/utils'
 import { getCoordsForCity, jitterCoords } from '@/lib/geo'
 import VisitBooking from '@/components/visits/VisitBooking'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
@@ -32,6 +32,8 @@ interface ListingRow {
   rooms_available: number | null
   occupants_current?: number | null
   capacity_total?: number | null
+  /** Date de disponibilité (migration 41) ; null = non renseignée. */
+  available_from?: string | null
   meuble?: boolean | null
   animaux_ok?: boolean | null
   non_fumeur?: boolean | null
@@ -285,6 +287,9 @@ export default function AnnonceDetailPage() {
             listing.surface ? `📐 ${listing.surface} m²` : null,
             listing.rooms_available ? `🚪 ${listing.rooms_available} chambre${listing.rooms_available > 1 ? 's' : ''} dispo` : null,
             `👥 ${occ.current}/${occ.total} places${remaining <= 0 ? ' · Complet' : ''}`,
+            // Rien si la date n'est pas renseignée — même règle que les autres
+            // puces facultatives de cette ligne.
+            formatAvailability(listing.available_from) ? `📅 ${formatAvailability(listing.available_from)}` : null,
             listing.charges ? `⚡ ${listing.charges}€ charges` : null,
             ...amenities,
           ].filter(Boolean).map(s => (

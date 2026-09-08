@@ -16,10 +16,11 @@ const getListing = cache(async (id: string) => {
   const supabase = createClient()
   const { data } = await supabase
     .from('listings')
+    // `*` volontaire plutôt qu'une liste de colonnes : nommer available_from
+    // ferait échouer la requête — et donc renvoyer un 404 sur toutes les
+    // annonces — tant que la migration 41 n'est pas exécutée.
     .select(`
-      id, title, description, city, neighborhood, rent, charges, surface,
-      rooms_available, occupants_current, capacity_total, available_from, photos, boost_type, is_active, created_at,
-      owner_id,
+      *,
       profiles:owner_id (
         first_name, avatar_url
       )
@@ -239,6 +240,24 @@ export default async function AnnoncePubliquePage({ params }: Props) {
             url: publicUrl,
             address: { '@type': 'PostalAddress', addressLocality: listing.city ?? undefined, addressCountry: 'FR' },
             ...(photos[0] ? { image: photos[0] } : {}),
+            // Date de disponibilité : `availabilityStarts` n'existe pas sur
+            // RealEstateListing (qui dérive de WebPage et ne porte que
+            // datePosted / leaseLength). Schema.org la définit sur Offer, et
+            // RealEstateListing est justement décrite comme « a listing that
+            // describes one or more real-estate Offers » : elle doit donc être
+            // portée par un nœud Offer imbriqué. businessFunction LeaseOut
+            // précise qu'il s'agit d'une location, pas d'une vente.
+            // Le nœud n'est émis que si la date existe — sinon aucun balisage.
+            ...(listing.available_from
+              ? {
+                  offers: {
+                    '@type': 'Offer',
+                    businessFunction: 'https://purl.org/goodrelations/v1#LeaseOut',
+                    availabilityStarts: listing.available_from,
+                    ...(listing.rent ? { price: listing.rent, priceCurrency: 'EUR' } : {}),
+                  },
+                }
+              : {}),
           }),
         }}
       />

@@ -455,7 +455,9 @@ export default function SwipePage() {
       const supabase = createClient()
       const { data: listingsData } = await supabase
         .from('listings')
-        .select('id, title, city, neighborhood, rent, surface, rooms_available, occupants_current, capacity_total, available_from, meuble, animaux_ok, non_fumeur, photos, owner_id, description, boost_type, created_at')
+        // `*` volontaire : nommer available_from viderait toute la pile tant
+        // que la migration 41 n'est pas exécutée.
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(20)

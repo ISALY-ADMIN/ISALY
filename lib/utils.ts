@@ -52,6 +52,40 @@ export function listingOccupancy(l: {
 }
 
 /**
+ * Parse une date de disponibilité 'YYYY-MM-DD' au jour près.
+ *
+ * Construite composante par composante volontairement : `new Date('2026-10-01')`
+ * est interprété en UTC et retomberait sur le 30 septembre pour un lecteur à
+ * l'ouest de Greenwich. Renvoie `null` si la valeur est absente ou illisible.
+ */
+function parseAvailabilityDate(availableFrom?: string | null): Date | null {
+  if (!availableFrom) return null
+  const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(availableFrom)
+  if (!parts) return null
+  const target = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
+  return Number.isNaN(target.getTime()) ? null : target
+}
+
+/**
+ * Le logement est-il disponible dès aujourd'hui ?
+ *
+ * Source de vérité du filtre « Disponible maintenant » de la recherche, pour
+ * qu'il ne puisse pas diverger du libellé affiché par `formatAvailability`.
+ *
+ * Renvoie `true` quand aucune date n'est connue : une annonce sans date reste
+ * candidate. L'inverse exclurait de la recherche toutes les annonces publiées
+ * avant la migration 41 — l'absence d'information n'est pas une indisponibilité.
+ * Même raisonnement pour une valeur illisible : on n'exclut pas sur un doute.
+ */
+export function isAvailableNow(availableFrom?: string | null): boolean {
+  const target = parseAvailabilityDate(availableFrom)
+  if (!target) return true
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return target.getTime() <= today.getTime()
+}
+
+/**
  * Libellé de disponibilité d'une annonce (listings.available_from, migration 41).
  *
  * Renvoie `null` si la date n'est pas renseignée : l'appelant n'affiche alors
@@ -61,25 +95,14 @@ export function listingOccupancy(l: {
  * Une date passée ou celle du jour devient « Disponible maintenant » : garder
  * « à partir du 3 mars » six mois après le 3 mars ferait passer une annonce
  * libre pour une annonce à venir.
- *
- * La date est comparée au jour près et construite composante par composante :
- * `new Date('2026-10-01')` est interprété en UTC et retomberait sur le 30
- * septembre pour un lecteur à l'ouest de Greenwich.
  */
 export function formatAvailability(
   availableFrom?: string | null,
   format: 'long' | 'short' = 'long',
 ): string | null {
-  if (!availableFrom) return null
-  const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(availableFrom)
-  if (!parts) return null
-
-  const target = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
-  if (Number.isNaN(target.getTime())) return null
-
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  if (target.getTime() <= today.getTime()) return 'Disponible maintenant'
+  const target = parseAvailabilityDate(availableFrom)
+  if (!target) return null
+  if (isAvailableNow(availableFrom)) return 'Disponible maintenant'
 
   const label = new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',
