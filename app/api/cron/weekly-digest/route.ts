@@ -64,15 +64,25 @@ export async function GET(req: Request) {
     const email = authData?.user?.email
     if (!email) continue
 
-    if (user.role === 'loueur') {
-      // ── Version LOUEUR : candidatures + vues + CTA boost ──
-      const { data: myListings } = await supabase
-        .from('listings')
-        .select('id, title')
-        .eq('owner_id', user.id)
-        .eq('is_active', true)
-      if (!myListings?.length) continue
+    // Depuis que la bascule de vue est ouverte à tous (/app/parametres), un
+    // compte peut porter role = 'loueur' sans avoir jamais publié : il a
+    // simplement voulu regarder l'autre interface. La requête est donc hissée
+    // hors de la branche pour servir d'aiguillage.
+    const { data: myListings } = user.role === 'loueur'
+      ? await supabase
+          .from('listings')
+          .select('id, title')
+          .eq('owner_id', user.id)
+          .eq('is_active', true)
+      : { data: null as { id: string; title: string | null }[] | null }
 
+    // `myListings?.length` remplace l'ancien `if (!myListings?.length) continue`
+    // placé DANS la branche : ce `continue` sortait de l'itération, si bien
+    // qu'un loueur sans annonce ne recevait plus aucun e-mail — ni le digest
+    // loueur, ni celui de locataire qu'il recevait avant de basculer. Il
+    // retombe désormais sur la version locataire, juste en dessous.
+    if (user.role === 'loueur' && myListings?.length) {
+      // ── Version LOUEUR : candidatures + vues + CTA boost ──
       const [{ count: candidatures }, { count: views }] = await Promise.all([
         supabase.from('swipes').select('id', { count: 'exact', head: true })
           .eq('swiped_id', user.id).in('direction', ['right', 'super']).gte('created_at', weekAgo),

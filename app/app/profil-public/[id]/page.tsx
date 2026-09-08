@@ -254,8 +254,17 @@ export default function ProfilPublicPage({ params }: { params: { id: string } })
           </Card>
         )}
 
-        {/* ── Score de fiabilité (loueur) ── */}
-        {profile.role === 'loueur' && (
+        {/* ── Score de fiabilité (loueur) ──
+            Conditionné aux annonces réellement en ligne, et non à
+            `profile.role`. Depuis que la bascule de vue est ouverte à tous, ce
+            rôle traduit la vue choisie à l'instant t : un curieux passé en vue
+            loueur se serait vu attribuer une jauge de fiabilité de bailleur sur
+            sa fiche publique, visible de tous, sans avoir jamais rien loué.
+            `listings` ne contient que les annonces actives (requête plus haut,
+            `.eq('is_active', true)`), aucune requête supplémentaire n'est donc
+            nécessaire. Bénéfice de bord : un loueur repassé en vue locataire
+            conserve sa jauge, ce que la condition sur le rôle lui retirait. */}
+        {listings.length > 0 && (
           <div style={{ marginBottom: '16px' }}>
             <ReliabilityGauge userId={profile.id} />
           </div>
