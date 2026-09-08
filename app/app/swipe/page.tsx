@@ -20,6 +20,7 @@ import ModeSwitcher from '@/components/ModeSwitcher'
 import { createClient } from '@/lib/supabase/client'
 import { track } from '@/lib/analytics'
 import { listingOccupancy } from '@/lib/utils'
+import { toggleListingFavorite } from '@/lib/favorites'
 import { canSwitchMode } from '@/lib/roles'
 import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
@@ -413,6 +414,10 @@ export default function SwipePage() {
   const [listings, setListings] = useState<SwipeListing[]>([])
   const [colocByListing, setColocByListing] = useState<Record<string, ListingColocView>>({})
   const [colocLoading, setColocLoading] = useState(true)
+  // Favoris de la pile : le bouton est passé sous la carte (SwipeActions), donc
+  // son état ne peut plus vivre dans la carte. Clé = id d'annonce, valeur =
+  // état confirmé PAR LE SERVEUR (/api/favorites est un vrai toggle).
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({})
   const [matches, setMatches] = useState<MatchItem[]>([])
   const [index, setIndex] = useState(0)
   const [cardKey, setCardKey] = useState(0)
@@ -665,6 +670,15 @@ export default function SwipePage() {
     }, 380)
   }
 
+  async function handleFavorite() {
+    const current = listings[index]
+    if (!current) return
+    const next = await toggleListingFavorite(current.id)
+    // `null` = appel échoué : on laisse l'état inchangé plutôt que d'afficher
+    // un favori qui n'a pas été enregistré.
+    if (next !== null) setFavorites(f => ({ ...f, [current.id]: next }))
+  }
+
   function handleUndo() {
     if (undoIndex === null) return
     setIndex(undoIndex)
@@ -870,6 +884,8 @@ export default function SwipePage() {
                 onSuperLike={() => cardRef.current?.swipe('super')}
                 onLike={() => cardRef.current?.swipe('right')}
                 onInfo={() => cardRef.current?.toggleDetails()}
+                onFavorite={handleFavorite}
+                isFavorite={!!favorites[listing.id]}
               />
             </>
           )}

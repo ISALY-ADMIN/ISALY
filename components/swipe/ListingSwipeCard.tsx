@@ -3,11 +3,12 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Bookmark } from 'lucide-react'
+import { Bookmark, Images } from 'lucide-react'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 import Emoji from '@/components/ui/Emoji'
 import { getAvatarColor, getInitials, formatAvailability } from '@/lib/utils'
 import { colocCardState } from '@/lib/colocMatching'
+import { toggleListingFavorite } from '@/lib/favorites'
 import type { DimensionScores } from '@/lib/matching'
 import type { RoommateScoreView } from '@/components/swipe/ColocScoreModal'
 
@@ -256,13 +257,13 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
     }
   }
 
+  // [HIDDEN - MAQUETTE SWIPE] Conservé pour le bouton favori masqué ci-dessous.
+  // Le favori visible vit désormais dans SwipeActions, sous la carte, et passe
+  // par le même `toggleListingFavorite` : le bouton a changé de place, pas de
+  // comportement.
   async function toggleFavorite() {
-    setSaved(s => !s)
-    await fetch('/api/favorites', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_id: listing.id, target_type: 'listing' }),
-    }).catch(() => {})
+    const next = await toggleListingFavorite(listing.id)
+    if (next !== null) setSaved(next)
   }
 
   // ── État du logement (règle isolée dans lib/colocMatching.ts) ──
@@ -285,8 +286,12 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
       : null,
     listing.meuble !== null ? (listing.meuble ? 'Meublé' : 'Non meublé') : null,
     formatAvailability(listing.availableFrom, 'short'),
-    listing.animauxOk === true ? 'Animaux OK' : null,
-    listing.nonFumeur === true ? 'Non-fumeur' : null,
+    // [HIDDEN - MAQUETTE SWIPE] « Animaux OK » et « Non-fumeur » sortent de
+    // cette ligne : la maquette y liste surface, chambres, meublé et
+    // disponibilité, rien d'autre. Les champs restent sur SwipeListing et
+    // sont toujours affichés par la fiche annonce ; seul ce bloc les tait.
+    //   listing.animauxOk === true ? 'Animaux OK' : null,
+    //   listing.nonFumeur === true ? 'Non-fumeur' : null,
   ].filter(Boolean) as string[]
 
   const place = listing.neighborhood ? `${listing.city} · ${listing.neighborhood}` : listing.city
@@ -310,12 +315,18 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
         style={{
           borderRadius: 24,
           background: CARD_BG,
+          // La photo est encadrée : le fond clair de la carte reste visible
+          // tout autour d'elle, elle n'affleure aucun bord.
+          padding: 10,
           boxShadow: '0 24px 70px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.3)',
         }}
       >
         {/* ═══════════ Bloc photo ═══════════ */}
         {/* Bloc visuel pur : rien n'est écrit ni posé par-dessus (maquette). */}
-        <div className="relative flex-shrink-0" style={{ height: '47%', minHeight: 180 }}>
+        <div
+          className="relative flex-shrink-0 overflow-hidden"
+          style={{ height: '47%', minHeight: 180, borderRadius: 16 }}
+        >
           <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, #CFCAC7 0%, #A9A29E 100%)' }} />
           {!currentPhoto && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ fontSize: 76 }}>
@@ -386,7 +397,7 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
         </div>
 
         {/* ═══════════ Corps ═══════════ */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-2.5">
+        <div className="flex-1 min-h-0 overflow-y-auto px-1 pt-3 pb-1 flex flex-col gap-2.5">
 
           {/* ── Infos appart ── */}
           <SectionLabel>Infos appart</SectionLabel>
@@ -401,6 +412,26 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
               <div className="mt-1.5" style={{ fontSize: 12.5, fontWeight: 500, color: 'rgba(255,255,255,0.88)' }}>
                 Autres infos : {facts.join(' · ')}
               </div>
+            )}
+            {/* Galerie : seul repère visible des photos multiples, désormais ici
+                et non sur l'image, qui doit rester vierge. Affichée uniquement
+                s'il y a plus d'une photo ; un clic avance d'une photo, comme la
+                touche Espace et les zones de tap. */}
+            {photos.length > 1 && (
+              <button
+                onClick={() => { if (!isDragging.current) goPhoto(1) }}
+                className="mt-2 inline-flex items-center gap-1.5 border-none cursor-pointer"
+                style={{
+                  padding: '4px 10px', borderRadius: 20, fontFamily: OUTFIT,
+                  fontSize: 11.5, fontWeight: 700,
+                  background: 'rgba(255,255,255,0.16)', color: PANEL_TEXT,
+                }}
+                aria-label={`Photo suivante — ${photoIndex + 1} sur ${photos.length}`}
+                title="Voir les photos suivantes"
+              >
+                <Images size={13} />
+                {photoIndex + 1}/{photos.length} photos
+              </button>
             )}
             {showDescription && listing.description && (
               <p className="mt-2" style={{ fontSize: 12, lineHeight: 1.55, color: 'rgba(255,255,255,0.8)' }}>
