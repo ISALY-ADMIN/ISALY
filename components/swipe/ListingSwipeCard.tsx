@@ -49,14 +49,36 @@ import type { RoommateScoreView } from '@/components/swipe/ColocScoreModal'
 // invisibles et la touche Espace (`nextPhoto`), et l'information « complet »,
 // toujours lisible dans « Remplissage : X/Y ».
 //
-// EXCEPTION ASSUMÉE à la règle « rien sur la photo » : les deux chevrons de
-// navigation sont revenus sur les bords de l'image, hors de ce drapeau. Les
-// zones de tap fonctionnaient, mais rien n'indiquait qu'elles existaient — la
-// pastille « x/y photos » annonce le nombre, pas le geste pour y accéder. Ils
-// sont volontairement discrets (pastille noire translucide, 32 px) et ne
-// s'affichent qu'à partir de deux photos. Le reste de la règle tient : aucun
-// texte, aucun badge, aucun favori sur l'image.
+// EXCEPTIONS ASSUMÉES à la règle « rien sur la photo » — deux, et deux
+// seulement, chacune derrière son propre drapeau pour qu'on puisse la reprendre
+// sans toucher aux autres surcouches :
+//   · les deux chevrons de navigation sur les bords de l'image ;
+//   · les segments de progression en haut de l'image (ci-dessous).
+// Le reste de la règle tient : aucun texte, aucun badge, aucun favori sur la
+// photo. Le badge de fiabilité, la pastille « Complet » et le favori restent
+// donc masqués par SHOW_PHOTO_OVERLAYS.
 const SHOW_PHOTO_OVERLAYS: boolean = false
+
+/**
+ * Segments de progression façon « story », en haut de la photo.
+ *
+ * Ce bloc vivait sous SHOW_PHOTO_OVERLAYS ; il en est sorti pour être réactivé
+ * SEUL, sans ramener le badge de fiabilité ni la pastille « Complet » qui
+ * partageaient ce drapeau. Il remplace la pastille « x/y photos » du bloc
+ * « Infos appart » : un compteur écrit disait le nombre de photos, les segments
+ * montrent en plus où l'on se trouve, au moment où l'on navigue et à l'endroit
+ * où l'on regarde.
+ */
+const SHOW_PHOTO_SEGMENTS: boolean = true
+
+/**
+ * [HIDDEN - SEGMENTS] Pastille « x/y photos » du bloc « Infos appart ».
+ *
+ * Retirée du rendu au profit des segments ci-dessus, qui portent la même
+ * information de façon plus directe. Conservée, pas supprimée : le bouton et
+ * son `goPhoto(1)` restent intacts derrière ce drapeau.
+ */
+const SHOW_PHOTO_COUNT_PILL: boolean = false
 
 export interface SwipeListing {
   id: string
@@ -406,18 +428,51 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
             </>
           )}
 
+          {/* Segments de progression — une barre par photo, celle en cours
+              remplie. Même condition d'affichage que les chevrons.
+
+              Couleurs revues par rapport à la version d'origine, qui vivait sur
+              l'ancienne carte sombre. Un rail d'une seule couleur ne peut pas
+              marcher partout : en blanc il disparaît sur une photo claire, en
+              noir sur une photo sombre — les deux ont été constatés au
+              navigateur. Le rail reste donc clair, pour tenir sur les photos
+              sombres, et porte une ombre franche qui le détoure sur les photos
+              claires. Le remplissage garde le vert de la marque. */}
+          {SHOW_PHOTO_SEGMENTS && photos.length > 1 && (
+            <div
+              className="absolute top-3 inset-x-3 flex gap-1.5 z-20 pointer-events-none"
+              aria-hidden="true"
+            >
+              {photos.map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1 rounded-full overflow-hidden"
+                  style={{
+                    height: 3,
+                    background: 'rgba(255,255,255,0.55)',
+                    boxShadow: '0 0 2px rgba(0,0,0,0.55)',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: i === photoIndex ? '100%' : '0%',
+                      background: '#10B981',
+                      transition: 'width 0.2s',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* [HIDDEN - MAQUETTE SWIPE] Surcouches photo, conservées telles quelles. */}
           {SHOW_PHOTO_OVERLAYS && (
             <>
-              {photos.length > 1 && (
-                <div className="absolute top-3 inset-x-3 flex gap-1.5 z-20">
-                  {photos.map((_, i) => (
-                    <div key={i} className="flex-1 rounded-full overflow-hidden" style={{ height: 3, background: 'rgba(255,255,255,0.25)' }}>
-                      <div style={{ height: '100%', width: i === photoIndex ? '100%' : '0%', background: '#10B981', transition: 'width 0.2s' }} />
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Les segments de progression qui vivaient ici sont remontés
+                  au-dessus, sous leur propre drapeau SHOW_PHOTO_SEGMENTS : ils
+                  sont réactivés, contrairement au badge et à la pastille
+                  « Complet » qui suivent, toujours masqués. */}
               <div className="absolute z-20 flex items-center gap-2" style={{ top: 14, left: 14 }}>
                 {listing.ownerId && <ReliabilityBadge userId={listing.ownerId} size={26} />}
                 {placesLeft <= 0 && (
@@ -464,11 +519,13 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
                 Autres infos : {facts.join(' · ')}
               </div>
             )}
-            {/* Galerie : seul repère visible des photos multiples, désormais ici
-                et non sur l'image, qui doit rester vierge. Affichée uniquement
-                s'il y a plus d'une photo ; un clic avance d'une photo, comme la
-                touche Espace et les zones de tap. */}
-            {photos.length > 1 && (
+            {/* [HIDDEN - SEGMENTS] Pastille « x/y photos ».
+                Elle était le seul repère des photos multiples tant que l'image
+                devait rester vierge ; les segments de progression, remis en haut
+                de la photo, disent maintenant la même chose et en montrent
+                davantage — la position courante, pas seulement le total.
+                Conservée derrière son drapeau, avec son `goPhoto(1)`. */}
+            {SHOW_PHOTO_COUNT_PILL && photos.length > 1 && (
               <button
                 onClick={() => { if (!isDragging.current) goPhoto(1) }}
                 className="mt-2 inline-flex items-center gap-1.5 border-none cursor-pointer"
