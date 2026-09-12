@@ -197,7 +197,7 @@ export default function SwipeModal({ open, onClose, listings }: Props) {
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', textAlign: 'center', padding: 32, gap: 14,
             }}>
-              <h3 className="home-serif" style={{
+              <h3 className="isaly-serif" style={{
                 fontFamily: "'Fraunces', serif", fontWeight: 500, fontSize: 24,
                 margin: 0, color: '#F6F3F0',
               }}>

@@ -48,7 +48,6 @@ const INK_FAINT = 'rgba(246,243,240,0.38)'
 const LINE = 'rgba(255,255,255,0.1)'
 const ACCENT = '#4ADE80'
 const ACCENT_INK = '#08170F'
-const SERIF = "'Fraunces', serif"
 const SANS = "'Outfit', sans-serif"
 
 const WRAP: React.CSSProperties = {
@@ -135,10 +134,6 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
           apostrophes d'un enfant de <style> côté serveur (&#x27;) mais pas au
           rendu client, ce qui casse l'hydratation de toute la page. */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* Le sélecteur global * { font-family: Outfit !important } de
-           globals.css écrase tout : on rouvre une porte, uniquement pour les
-           titres serif de cette page. */
-        .home-serif { font-family: ${SERIF} !important; }
         .home-scroll::-webkit-scrollbar { width: 6px; }
         .home-scroll::-webkit-scrollbar-thumb { background: ${LINE}; border-radius: 10px; }
         .home-lcard { transition: transform 0.18s ease; }
@@ -192,12 +187,12 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
       {/* ══════════ HERO + RECHERCHE ══════════ */}
       <section style={{ padding: '54px 0 40px', textAlign: 'center' }}>
         <div style={WRAP}>
-          <p className="home-serif" style={{
+          <p className="isaly-serif" style={{
             fontStyle: 'italic', fontWeight: 500, fontSize: 17, color: ACCENT, margin: '0 0 10px',
           }}>
             Ta coloc idéale existe déjà
           </p>
-          <h1 className="home-serif" style={{
+          <h1 className="isaly-serif" style={{
             fontWeight: 500, fontSize: 'clamp(32px, 5vw, 52px)', lineHeight: 1.08,
             letterSpacing: '-0.01em', margin: '0 auto 34px', maxWidth: 700,
           }}>
@@ -283,7 +278,7 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
             marginBottom: 20, gap: 16, flexWrap: 'wrap',
           }}>
             <div>
-              <h2 className="home-serif" style={{ fontWeight: 500, fontSize: 24, margin: 0 }}>
+              <h2 className="isaly-serif" style={{ fontWeight: 500, fontSize: 24, margin: 0 }}>
                 {headline}
               </h2>
               <p style={{ margin: '4px 0 0', color: INK_DIM, fontSize: 14 }}>
@@ -361,7 +356,7 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
           gap: 48, alignItems: 'center',
         }}>
           <div>
-            <h2 className="home-serif" style={{
+            <h2 className="isaly-serif" style={{
               fontWeight: 500, fontSize: 'clamp(26px, 3.4vw, 36px)', lineHeight: 1.15, margin: '0 0 14px',
             }}>
               Le logement, tout le monde sait le trouver. Les bonnes personnes, non.

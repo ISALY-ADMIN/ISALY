@@ -55,7 +55,7 @@ function CtaButton({ href, children, large = false }: { href: string; children: 
 function StepsContent() {
   return (
     <>
-      <h2 className="home-serif" style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 26, margin: '0 0 8px' }}>
+      <h2 className="isaly-serif" style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 26, margin: '0 0 8px' }}>
         Comment ça marche
       </h2>
       <p style={{ color: 'rgba(246,243,240,0.62)', fontSize: 14.5, margin: '0 0 26px' }}>
@@ -64,7 +64,7 @@ function StepsContent() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {STEPS.map(s => (
           <div key={s.n}>
-            <p className="home-serif" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 22, color: ACCENT, margin: '0 0 4px' }}>
+            <p className="isaly-serif" style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 22, color: ACCENT, margin: '0 0 4px' }}>
               {s.n}
             </p>
             <h3 style={{ fontSize: 15, margin: '0 0 4px', fontWeight: 600 }}>{s.title}</h3>
@@ -84,7 +84,7 @@ function StepsContent() {
 function TrustContent() {
   return (
     <>
-      <h2 className="home-serif" style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 26, margin: '0 0 8px' }}>
+      <h2 className="isaly-serif" style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 26, margin: '0 0 8px' }}>
         Notre communauté
       </h2>
       <p style={{ color: 'rgba(246,243,240,0.62)', fontSize: 14.5, margin: '0 0 26px' }}>
@@ -99,7 +99,7 @@ function TrustContent() {
 function CtaContent() {
   return (
     <>
-      <h2 className="home-serif" style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 26, margin: '0 0 8px' }}>
+      <h2 className="isaly-serif" style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 26, margin: '0 0 8px' }}>
         Ta coloc idéale existe déjà. Reste à la trouver.
       </h2>
       <p style={{ color: 'rgba(246,243,240,0.62)', fontSize: 14.5, margin: '0 0 26px' }}>
