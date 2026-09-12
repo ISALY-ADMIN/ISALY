@@ -78,6 +78,31 @@ const OWNER_TYPE_OPTS = [
   'Plusieurs biens',
 ]
 
+/* ── Thème sombre ────────────────────────────────────────────────────────────
+ * Aucune valeur inventée : toutes viennent déjà du projet.
+ *   · #0A0A0A, la page — /app/quiz, la page d'accueil, l'ancienne landing ;
+ *   · rgba(255,255,255,0.04) / 0.08, surfaces et bordures — la variante `dark`
+ *     de MatchingQuiz (components/quiz/MatchingQuiz.tsx), que l'étape 3 rend ;
+ *   · #10B981 / #059669 et rgba(16,185,129,0.10), l'accent de l'app.
+ *
+ * Le texte des boutons pleins est sombre et non blanc : sur #10B981, du blanc
+ * plafonne autour de 2,5:1 alors que #08170F dépasse 7:1. Le contraste décide,
+ * pas l'habitude.
+ */
+const BG = '#0A0A0A'
+const SURFACE = 'rgba(255,255,255,0.04)'
+const SURFACE_SOFT = 'rgba(255,255,255,0.06)'
+const BORDER = 'rgba(255,255,255,0.08)'
+const BORDER_STRONG = 'rgba(255,255,255,0.15)'
+const TEXT = '#fff'
+const TEXT_DIM = 'rgba(255,255,255,0.62)'
+const TEXT_FAINT = 'rgba(255,255,255,0.45)'
+const ACCENT = '#10B981'
+const ACCENT_DEEP = '#059669'
+const ACCENT_SOFT = 'rgba(16,185,129,0.10)'
+const ACCENT_BORDER = 'rgba(16,185,129,0.45)'
+const ACCENT_INK = '#08170F'
+
 /** Barre de progression gamifiée : cercles ✓ + segments animés (spring). */
 function ProgressSteps({ step, total }: { step: number; total: number }) {
   const TOTAL = total
@@ -92,20 +117,22 @@ function ProgressSteps({ step, total }: { step: number; total: number }) {
               className="flex items-center justify-center rounded-full flex-shrink-0 transition-colors duration-300"
               style={{
                 width: 24, height: 24, fontSize: 11.5, fontWeight: 800,
-                background: done ? '#10B981' : current ? '#ECFDF5' : '#F3F4F6',
-                border: `2px solid ${done || current ? '#10B981' : '#E5E7EB'}`,
-                color: done ? '#fff' : current ? '#059669' : '#9CA3AF',
+                background: done ? ACCENT : current ? ACCENT_SOFT : SURFACE_SOFT,
+                border: `2px solid ${done || current ? ACCENT : BORDER}`,
+                // TEXT_DIM et non TEXT_FAINT : sur SURFACE_SOFT, 0.45
+                // d'opacité tombe à 4,49:1, juste sous le seuil AA de 4,5.
+                color: done ? ACCENT_INK : current ? ACCENT : TEXT_DIM,
               }}
             >
               {done ? <Check size={13} strokeWidth={3} /> : i + 1}
             </div>
             {i < TOTAL - 1 && (
-              <div className="flex-1 mx-1.5 rounded-full overflow-hidden" style={{ height: 3, background: '#E5E7EB' }}>
+              <div className="flex-1 mx-1.5 rounded-full overflow-hidden" style={{ height: 3, background: BORDER }}>
                 <motion.div
                   initial={false}
                   animate={{ scaleX: done ? 1 : 0 }}
                   transition={{ type: 'spring', stiffness: 180, damping: 26 }}
-                  style={{ height: '100%', background: '#10B981', transformOrigin: 'left', borderRadius: 999 }}
+                  style={{ height: '100%', background: ACCENT, transformOrigin: 'left', borderRadius: 999 }}
                 />
               </div>
             )}
@@ -124,7 +151,7 @@ function StepReward({ message }: { message: string }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-[24px]"
-      style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(4px)' }}
     >
       <motion.div
         initial={{ scale: 0.4, opacity: 0 }}
@@ -140,7 +167,7 @@ function StepReward({ message }: { message: string }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
         className="text-[16px] font-bold text-center px-8"
-        style={{ color: '#111827', fontFamily: "'Outfit', sans-serif" }}
+        style={{ color: TEXT, fontFamily: "'Outfit', sans-serif" }}
       >
         {message}
       </motion.div>
@@ -154,7 +181,7 @@ function FieldLabel({ children, mt }: { children: string; mt?: boolean }) {
   return (
     <div
       className={`text-[11px] font-extrabold uppercase tracking-[1.5px] mb-2${mt ? ' mt-4' : ''}`}
-      style={{ color: '#9CA3AF' }}
+      style={{ color: TEXT_FAINT }}
     >
       {children}
     </div>
@@ -170,10 +197,10 @@ function TxtInput({
     <input
       type={type} placeholder={placeholder} value={value}
       onChange={e => onChange(e.target.value)}
-      className="light-field w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13px] outline-none"
-      style={{ borderColor: '#E5E7EB', color: '#111827' }}
-      onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-      onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+      className="dark-field w-full px-3.5 py-2.5 border-[1.5px] rounded-[9px] text-[13px] outline-none"
+      style={{ borderColor: BORDER_STRONG, color: TEXT, background: SURFACE }}
+      onFocus={e => (e.target.style.borderColor = ACCENT)}
+      onBlur={e => (e.target.style.borderColor = BORDER_STRONG)}
     />
   )
 }
@@ -192,9 +219,9 @@ function Pills({ opts, value, onSelect }: {
           onClick={() => onSelect(opt)}
           className="px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer transition-all"
           style={{
-            background: isSelected(opt) ? '#ECFDF5' : '#F9FAFB',
-            borderColor: isSelected(opt) ? '#4ECBA0' : '#E5E7EB',
-            color: isSelected(opt) ? '#059669' : '#374151',
+            background: isSelected(opt) ? ACCENT_SOFT : SURFACE,
+            borderColor: isSelected(opt) ? ACCENT_BORDER : BORDER,
+            color: isSelected(opt) ? ACCENT : TEXT_DIM,
           }}
         >
           {opt}
@@ -226,15 +253,15 @@ function Step1({ d, upd }: { d: OnboardingData; upd: Upd }) {
               aria-pressed={selected}
               className="p-4 rounded-[11px] border-2 cursor-pointer transition-all text-left"
               style={{
-                borderColor: selected ? '#4ECBA0' : '#E5E7EB',
-                background: selected ? '#ECFDF5' : '#fff',
+                borderColor: selected ? ACCENT_BORDER : BORDER,
+                background: selected ? ACCENT_SOFT : SURFACE,
               }}
             >
               <div className="text-[26px] mb-1"><Emoji native={r.emoji} size="26px" /></div>
-              <div className="text-[13px] font-bold" style={{ color: selected ? '#059669' : '#111827' }}>
+              <div className="text-[13px] font-bold" style={{ color: selected ? ACCENT : TEXT }}>
                 {r.title}
               </div>
-              <div className="text-[11.5px] mt-1 leading-snug" style={{ color: '#6B7280' }}>
+              <div className="text-[11.5px] mt-1 leading-snug" style={{ color: TEXT_FAINT }}>
                 {r.description}
               </div>
             </button>
@@ -273,28 +300,28 @@ function Step2({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill
   return (
     <div>
       <FieldLabel>Budget mensuel</FieldLabel>
-      <div className="rounded-[12px] p-4 mb-4" style={{ background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
-        <div className="text-center text-[15px] font-bold mb-3" style={{ color: '#2AA87C' }}>
+      <div className="rounded-[12px] p-4 mb-4" style={{ background: SURFACE, border: `1px solid ${BORDER}` }}>
+        <div className="text-center text-[15px] font-bold mb-3" style={{ color: ACCENT }}>
           Entre {d.budget_min}€ et {d.budget_max}€/mois
         </div>
         <div className="mb-2.5">
-          <div className="flex justify-between text-[11.5px] mb-1" style={{ color: '#6B7280' }}>
+          <div className="flex justify-between text-[11.5px] mb-1" style={{ color: TEXT_FAINT }}>
             <span>Minimum</span><span className="font-semibold">{d.budget_min}€</span>
           </div>
           <input
             type="range" min={300} max={2000} step={50} value={d.budget_min}
             onChange={e => upd('budget_min', Math.min(Number(e.target.value), d.budget_max - 50))}
-            className="w-full" style={{ accentColor: '#4ECBA0' }}
+            className="w-full" style={{ accentColor: ACCENT }}
           />
         </div>
         <div>
-          <div className="flex justify-between text-[11.5px] mb-1" style={{ color: '#6B7280' }}>
+          <div className="flex justify-between text-[11.5px] mb-1" style={{ color: TEXT_FAINT }}>
             <span>Maximum</span><span className="font-semibold">{d.budget_max}€</span>
           </div>
           <input
             type="range" min={300} max={2000} step={50} value={d.budget_max}
             onChange={e => upd('budget_max', Math.max(Number(e.target.value), d.budget_min + 50))}
-            className="w-full" style={{ accentColor: '#4ECBA0' }}
+            className="w-full" style={{ accentColor: ACCENT }}
           />
         </div>
       </div>
@@ -320,15 +347,15 @@ function Step2({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill
           onChange={e => setZoneInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addZone()}
           placeholder="Ex : Lyon 2e, Part-Dieu… (Entrée)"
-          className="light-field flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
-          style={{ borderColor: '#E5E7EB', color: '#111827' }}
-          onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-          onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+          className="dark-field flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
+          style={{ borderColor: BORDER_STRONG, color: TEXT, background: SURFACE }}
+          onFocus={e => (e.target.style.borderColor = ACCENT)}
+          onBlur={e => (e.target.style.borderColor = BORDER_STRONG)}
         />
         <button
           onClick={addZone}
-          className="px-3 py-2 rounded-[9px] text-[13px] font-bold text-white border-none cursor-pointer"
-          style={{ background: '#4ECBA0' }}
+          className="px-3 py-2 rounded-[9px] text-[13px] font-bold border-none cursor-pointer"
+          style={{ background: ACCENT, color: ACCENT_INK }}
         >
           +
         </button>
@@ -338,13 +365,13 @@ function Step2({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill
           <span
             key={z}
             className="px-2.5 py-1 rounded-full text-[12px] font-medium flex items-center gap-1"
-            style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}
+            style={{ background: ACCENT_SOFT, color: ACCENT, border: `1px solid ${ACCENT_BORDER}` }}
           >
             {z}
             <button
               onClick={() => togglePill('zones', z)}
               className="border-none bg-transparent cursor-pointer ml-0.5 text-[10px] leading-none"
-              style={{ color: '#059669' }}
+              style={{ color: ACCENT }}
             >
               ✕
             </button>
@@ -388,15 +415,15 @@ function Step2Loueur({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togg
           onChange={e => setCityInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addCity()}
           placeholder="Ex : Lyon, Villeurbanne… (Entrée)"
-          className="light-field flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
-          style={{ borderColor: '#E5E7EB', color: '#111827' }}
-          onFocus={e => (e.target.style.borderColor = '#4ECBA0')}
-          onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+          className="dark-field flex-1 px-3 py-2 rounded-[9px] text-[13px] border outline-none"
+          style={{ borderColor: BORDER_STRONG, color: TEXT, background: SURFACE }}
+          onFocus={e => (e.target.style.borderColor = ACCENT)}
+          onBlur={e => (e.target.style.borderColor = BORDER_STRONG)}
         />
         <button
           onClick={addCity}
-          className="px-3 py-2 rounded-[9px] text-[13px] font-bold text-white border-none cursor-pointer"
-          style={{ background: '#4ECBA0' }}
+          className="px-3 py-2 rounded-[9px] text-[13px] font-bold border-none cursor-pointer"
+          style={{ background: ACCENT, color: ACCENT_INK }}
         >
           +
         </button>
@@ -406,13 +433,13 @@ function Step2Loueur({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togg
           <span
             key={c}
             className="px-2.5 py-1 rounded-full text-[12px] font-medium flex items-center gap-1"
-            style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}
+            style={{ background: ACCENT_SOFT, color: ACCENT, border: `1px solid ${ACCENT_BORDER}` }}
           >
             {c}
             <button
               onClick={() => togglePill('owner_cities', c)}
               className="border-none bg-transparent cursor-pointer ml-0.5 text-[10px] leading-none"
-              style={{ color: '#059669' }}
+              style={{ color: ACCENT }}
             >
               ✕
             </button>
@@ -422,7 +449,7 @@ function Step2Loueur({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togg
 
       <div
         className="rounded-[12px] p-3.5 text-[12.5px] leading-relaxed"
-        style={{ background: '#F9FAFB', border: '1px solid #F3F4F6', color: '#6B7280' }}
+        style={{ background: SURFACE, border: `1px solid ${BORDER}`, color: TEXT_DIM }}
       >
         <Emoji native="🏠" size="14px" /> Juste après, on t&apos;emmène directement sur la
         création de ta première annonce. Tu pourras l&apos;enregistrer en brouillon si tu
@@ -679,11 +706,15 @@ export default function OnboardingPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-5"
-      style={{ background: 'linear-gradient(135deg, #edfaf4, #f7f8fa)' }}
+      style={{ background: BG }}
     >
       <div
-        className="bg-white rounded-[24px] w-full relative"
-        style={{ padding: '36px 40px', boxShadow: '0 8px 36px rgba(0,0,0,.13)', maxWidth: '560px' }}
+        className="rounded-[24px] w-full relative"
+        style={{
+          padding: '36px 40px', maxWidth: '560px',
+          background: SURFACE, border: `1px solid ${BORDER}`,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+        }}
       >
         {/* Récompense de fin d'étape */}
         <AnimatePresence>
@@ -692,7 +723,7 @@ export default function OnboardingPage() {
 
         {/* Resume banner */}
         {resumeBanner && (
-          <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#10B981', textAlign: 'center' }}>
+          <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: ACCENT, textAlign: 'center' }}>
             On reprend où tu t&apos;étais arrêté ✓
           </div>
         )}
@@ -708,10 +739,13 @@ export default function OnboardingPage() {
         {/* Progress bar gamifiée */}
         <ProgressSteps step={step} total={total} />
 
-        <div className="text-[10.5px] font-extrabold uppercase mb-1.5" style={{ letterSpacing: '2px', color: '#2AA87C' }}>
+        <div className="text-[10.5px] font-extrabold uppercase mb-1.5" style={{ letterSpacing: '2px', color: ACCENT }}>
           ÉTAPE {step} SUR {total}
         </div>
-        <h2 className="text-[24px] mb-4" style={{ fontFamily: "'DM Serif Display', serif", color: '#111827' }}>
+        {/* `isaly-serif` et non un fontFamily inline : globals.css force Outfit
+            sur tous les h1-h6 avec !important, la déclaration inline qui vivait
+            ici (DM Serif Display) n'a donc jamais été appliquée. */}
+        <h2 className="isaly-serif text-[26px] mb-4" style={{ color: TEXT, fontWeight: 500 }}>
           {stepLabels[step - 1]}
         </h2>
 
@@ -722,7 +756,7 @@ export default function OnboardingPage() {
           {step === 2 && !isLoueur && <Step2 d={d} upd={upd} togglePill={togglePill} />}
           {step === 2 && isLoueur && (
             saving ? (
-              <div className="py-10 text-center text-[14px]" style={{ color: '#6B7280' }}>
+              <div className="py-10 text-center text-[14px]" style={{ color: TEXT_FAINT }}>
                 Création de ton espace loueur…
               </div>
             ) : (
@@ -731,11 +765,12 @@ export default function OnboardingPage() {
           )}
           {step === 3 && !isLoueur && (
             saving ? (
-              <div className="py-10 text-center text-[14px]" style={{ color: '#6B7280' }}>
+              <div className="py-10 text-center text-[14px]" style={{ color: TEXT_FAINT }}>
                 Création de ton profil…
               </div>
             ) : (
               <MatchingQuiz
+                dark
                 initialAnswers={Object.keys(d.quiz_answers).length > 0 ? d.quiz_answers : undefined}
                 onProgress={answers => upd('quiz_answers', answers)}
                 onComplete={finish}
@@ -752,7 +787,7 @@ export default function OnboardingPage() {
               <button
                 onClick={() => setStep(s => s - 1)}
                 className="flex-1 py-3 rounded-full text-[13.5px] font-semibold border-[1.5px] cursor-pointer bg-transparent"
-                style={{ borderColor: '#E5E7EB', color: '#374151' }}
+                style={{ borderColor: BORDER_STRONG, color: TEXT_DIM }}
               >
                 ← Retour
               </button>
@@ -760,14 +795,14 @@ export default function OnboardingPage() {
             <button
               onClick={next}
               disabled={!canProceed}
-              className="py-3 rounded-full text-[13.5px] font-semibold text-white border-none transition-colors"
+              className="py-3 rounded-full text-[13.5px] font-bold border-none transition-colors"
               style={{
-                background: '#4ECBA0', flex: step > 1 ? 2 : 1,
+                background: ACCENT, color: ACCENT_INK, flex: step > 1 ? 2 : 1,
                 opacity: canProceed ? 1 : 0.45,
                 cursor: canProceed ? 'pointer' : 'not-allowed',
               }}
-              onMouseEnter={e => { if (canProceed) e.currentTarget.style.background = '#2AA87C' }}
-              onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
+              onMouseEnter={e => { if (canProceed) e.currentTarget.style.background = ACCENT_DEEP }}
+              onMouseLeave={e => (e.currentTarget.style.background = ACCENT)}
             >
               Continuer →
             </button>
@@ -781,21 +816,21 @@ export default function OnboardingPage() {
               onClick={() => setStep(1)}
               disabled={saving}
               className="flex-1 py-3 rounded-full text-[13.5px] font-semibold border-[1.5px] cursor-pointer bg-transparent"
-              style={{ borderColor: '#E5E7EB', color: '#374151' }}
+              style={{ borderColor: BORDER_STRONG, color: TEXT_DIM }}
             >
               ← Retour
             </button>
             <button
               onClick={finishLoueur}
               disabled={!canFinishLoueur}
-              className="py-3 rounded-full text-[13.5px] font-semibold text-white border-none transition-colors"
+              className="py-3 rounded-full text-[13.5px] font-bold border-none transition-colors"
               style={{
-                background: '#4ECBA0', flex: 2,
+                background: ACCENT, color: ACCENT_INK, flex: 2,
                 opacity: canFinishLoueur ? 1 : 0.45,
                 cursor: canFinishLoueur ? 'pointer' : 'not-allowed',
               }}
-              onMouseEnter={e => { if (canFinishLoueur) e.currentTarget.style.background = '#2AA87C' }}
-              onMouseLeave={e => (e.currentTarget.style.background = '#4ECBA0')}
+              onMouseEnter={e => { if (canFinishLoueur) e.currentTarget.style.background = ACCENT_DEEP }}
+              onMouseLeave={e => (e.currentTarget.style.background = ACCENT)}
             >
               Créer ma première annonce →
             </button>
@@ -806,7 +841,7 @@ export default function OnboardingPage() {
             <button
               onClick={() => setStep(2)}
               className="cursor-pointer bg-transparent border-none text-[12.5px] font-semibold"
-              style={{ color: '#9CA3AF' }}
+              style={{ color: TEXT_FAINT }}
             >
               ← Revenir à ma recherche
             </button>

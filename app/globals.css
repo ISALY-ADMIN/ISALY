@@ -6,6 +6,25 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   font-weight: 700;
 }
 
+/* ── Échappatoires au `!important` ci-dessus ─────────────────────────────────
+   Les deux règles ci-dessus forcent Outfit sur TOUT, y compris sur un
+   `fontFamily` inline. Les titres serif de l'identité ISALY ont donc besoin
+   d'une classe de même poids pour exister. */
+.isaly-serif {
+  font-family: 'Fraunces', serif !important;
+  font-weight: 500;
+}
+
+/* Pendant sombre de `.light-field` : sur un champ à fond sombre, le
+   `color: #111827` de .light-field rend la saisie illisible. Même problème,
+   fond inverse — d'où une classe dédiée plutôt qu'un réglage au cas par cas. */
+.dark-field {
+  color: #fff;
+}
+.dark-field::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
