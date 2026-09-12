@@ -3,18 +3,44 @@
 import { motion } from 'framer-motion'
 import { RotateCcw, X, Star, Heart, Info, Bookmark } from 'lucide-react'
 
-interface SwipeActionsProps {
+/**
+ * Deux variantes, une seule rangée de boutons.
+ *
+ * `full` (défaut) — /app/swipe, utilisateur connecté : les six boutons.
+ * `visitor` — aperçu de la page d'accueil : seuls « Passer » et « J'adore ».
+ *
+ * [HIDDEN - VISITEUR] Les quatre autres ne sont pas supprimés, ils ne sont pas
+ * rendus dans cette variante. Chacun suppose un compte : Annuler rejoue un
+ * swipe déjà enregistré, Superlike et Favori écrivent en base, Info ouvre la
+ * description d'une carte qu'un visiteur ne peut de toute façon pas suivre.
+ * Les montrer à quelqu'un sans compte promettrait une action impossible.
+ *
+ * Le type est une union discriminée plutôt qu'une liste de props optionnelles :
+ * la variante visiteur ne peut pas recevoir de gestionnaire inutile, et la
+ * variante complète ne peut pas en oublier un.
+ */
+interface CommonProps {
+  onPass: () => void
+  onLike: () => void
+}
+
+interface FullProps extends CommonProps {
+  variant?: 'full'
   onUndo: () => void
   canUndo: boolean
-  onPass: () => void
   onSuperLike: () => void
-  onLike: () => void
   onInfo: () => void
   /** Favori de la carte courante. Descendu ici depuis la photo, qui doit
    *  rester vierge (maquette) — mêmes appels, autre emplacement. */
   onFavorite: () => void
   isFavorite: boolean
 }
+
+interface VisitorProps extends CommonProps {
+  variant: 'visitor'
+}
+
+type SwipeActionsProps = FullProps | VisitorProps
 
 interface ActionButtonProps {
   onClick: () => void
@@ -49,7 +75,10 @@ function ActionButton({ onClick, size, label, disabled, glow, style, children }:
   )
 }
 
-export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onLike, onInfo, onFavorite, isFavorite }: SwipeActionsProps) {
+export default function SwipeActions(props: SwipeActionsProps) {
+  const { onPass, onLike } = props
+  const full = props.variant !== 'visitor'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -62,16 +91,18 @@ export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onL
           sous 640 px, rétabli au-dessus. */}
       <div className="flex items-center justify-center gap-2.5 sm:gap-4">
         {/* Undo */}
-        <ActionButton
-          onClick={onUndo}
-          disabled={!canUndo}
-          size={44}
-          label="Annuler le dernier swipe"
-          glow="0 0 20px rgba(255,255,255,0.15)"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
-        >
-          <RotateCcw size={18} />
-        </ActionButton>
+        {full && (
+          <ActionButton
+            onClick={props.onUndo}
+            disabled={!props.canUndo}
+            size={44}
+            label="Annuler le dernier swipe"
+            glow="0 0 20px rgba(255,255,255,0.15)"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
+          >
+            <RotateCcw size={18} />
+          </ActionButton>
+        )}
 
         {/* Passer */}
         <ActionButton
@@ -85,15 +116,17 @@ export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onL
         </ActionButton>
 
         {/* Superlike */}
-        <ActionButton
-          onClick={onSuperLike}
-          size={48}
-          label="Superlike"
-          glow="0 0 24px rgba(245,158,11,0.45)"
-          style={{ background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.5)', color: '#F59E0B' }}
-        >
-          <Star size={22} fill="currentColor" />
-        </ActionButton>
+        {full && (
+          <ActionButton
+            onClick={props.onSuperLike}
+            size={48}
+            label="Superlike"
+            glow="0 0 24px rgba(245,158,11,0.45)"
+            style={{ background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.5)', color: '#F59E0B' }}
+          >
+            <Star size={22} fill="currentColor" />
+          </ActionButton>
+        )}
 
         {/* J'adore */}
         <ActionButton
@@ -112,37 +145,46 @@ export default function SwipeActions({ onUndo, canUndo, onPass, onSuperLike, onL
         </ActionButton>
 
         {/* Info */}
-        <ActionButton
-          onClick={onInfo}
-          size={44}
-          label="Voir les détails"
-          glow="0 0 20px rgba(255,255,255,0.15)"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
-        >
-          <Info size={18} />
-        </ActionButton>
+        {full && (
+          <ActionButton
+            onClick={props.onInfo}
+            size={44}
+            label="Voir les détails"
+            glow="0 0 20px rgba(255,255,255,0.15)"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
+          >
+            <Info size={18} />
+          </ActionButton>
+        )}
 
         {/* Favori — anciennement posé sur la photo */}
-        <ActionButton
-          onClick={onFavorite}
-          size={44}
-          label={isFavorite ? 'Retirer des favoris' : 'Sauvegarder en favori'}
-          glow="0 0 20px rgba(16,185,129,0.35)"
-          style={isFavorite
-            ? { background: 'rgba(16,185,129,0.9)', border: '1.5px solid rgba(16,185,129,0.9)', color: '#fff' }
-            : { background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
-        >
-          <Bookmark size={18} fill={isFavorite ? '#fff' : 'none'} />
-        </ActionButton>
+        {full && (
+          <ActionButton
+            onClick={props.onFavorite}
+            size={44}
+            label={props.isFavorite ? 'Retirer des favoris' : 'Sauvegarder en favori'}
+            glow="0 0 20px rgba(16,185,129,0.35)"
+            style={props.isFavorite
+              ? { background: 'rgba(16,185,129,0.9)', border: '1.5px solid rgba(16,185,129,0.9)', color: '#fff' }
+              : { background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)' }}
+          >
+            <Bookmark size={18} fill={props.isFavorite ? '#fff' : 'none'} />
+          </ActionButton>
+        )}
       </div>
 
-      {/* Hints clavier — desktop uniquement */}
-      <div
-        className="hidden md:block text-center"
-        style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: "'Outfit', sans-serif", letterSpacing: '0.3px' }}
-      >
-        ← Passer&nbsp;&nbsp;&nbsp;→ J&apos;adore&nbsp;&nbsp;&nbsp;↑ Super&nbsp;&nbsp;&nbsp;Z Annuler&nbsp;&nbsp;&nbsp;Espace Photo
-      </div>
+      {/* Hints clavier — desktop uniquement, et variante complète uniquement :
+          les raccourcis sont câblés par /app/swipe, pas par la modale de la
+          page d'accueil. Les afficher au visiteur annoncerait des touches
+          sans effet. */}
+      {full && (
+        <div
+          className="hidden md:block text-center"
+          style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: "'Outfit', sans-serif", letterSpacing: '0.3px' }}
+        >
+          ← Passer&nbsp;&nbsp;&nbsp;→ J&apos;adore&nbsp;&nbsp;&nbsp;↑ Super&nbsp;&nbsp;&nbsp;Z Annuler&nbsp;&nbsp;&nbsp;Espace Photo
+        </div>
+      )}
     </motion.div>
   )
 }

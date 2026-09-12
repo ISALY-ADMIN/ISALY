@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
 import { track } from '@/lib/analytics'
 import { cityNameFromSlug } from '@/lib/cities'
+import { registerContextMessage } from '@/lib/registerContext'
 
 function translateError(msg: string): string {
   if (!msg) return 'Une erreur inconnue est survenue.'
@@ -31,10 +32,19 @@ export default function RegisterPage() {
   // l'alerte géographique qui déclenchera l'email à la première annonce.
   // Lu côté client (comme `ref`) pour garder la page statiquement rendable.
   const [villeSlug, setVilleSlug] = useState<string | null>(null)
+  // `?contexte=` posé par l'aperçu de swipe de la page d'accueil : rappelle le
+  // geste qui a mené ici (j'adore / passer / postuler). Purement éditorial —
+  // aucune donnée n'en dépend, contrairement à `ville` qui crée une alerte.
+  // Lu de la même façon, pour la même raison : garder la page rendable en
+  // statique.
+  const [contexte, setContexte] = useState<string | null>(null)
   useEffect(() => {
-    setVilleSlug(new URLSearchParams(window.location.search).get('ville'))
+    const params = new URLSearchParams(window.location.search)
+    setVilleSlug(params.get('ville'))
+    setContexte(params.get('contexte'))
   }, [])
   const villeName = villeSlug ? cityNameFromSlug(villeSlug) : null
+  const contexteMessage = registerContextMessage(contexte)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -155,6 +165,11 @@ export default function RegisterPage() {
               Déjà inscrit ?{' '}
               <Link href="/auth/login" style={{ color: '#10B981', textDecoration: 'none', fontWeight: 600 }}>Se connecter</Link>
             </p>
+            {contexteMessage && (
+              <p style={{ marginTop: '14px', padding: '11px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '13px', color: '#6EE7B7', lineHeight: 1.5 }}>
+                <Emoji native="💚" /> {contexteMessage}
+              </p>
+            )}
             {villeName && (
               <p style={{ marginTop: '14px', padding: '11px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '13px', color: '#6EE7B7', lineHeight: 1.5 }}>
                 <Emoji native="🔔" /> Une alerte <strong style={{ color: '#fff', fontWeight: 600 }}>{villeName}</strong> sera créée : tu recevras un email dès qu&apos;une annonce y est publiée.
