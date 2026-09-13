@@ -152,31 +152,32 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
           .home-sf { width: 100% !important; }
           .home-submit { width: 100% !important; justify-content: center !important; margin: 4px 0 0 !important; }
         }
+        /* Nav étroite : « Mettre mon logement en location » passe seul sur une
+           seconde ligne pleine largeur au lieu de faire replier tous les boutons. */
+        @media (max-width: 640px) {
+          .home-nav { flex-wrap: wrap; height: auto !important; padding-block: 12px !important; gap: 10px 6px !important; }
+          .home-nav-actions { display: contents !important; }
+          .home-nav-btn { padding: 0 13px !important; }
+          .home-nav-brand { margin-right: auto; }
+          .home-nav-host { order: 3; flex-basis: 100%; }
+        }
       ` }} />
 
       {/* ══════════ NAV ══════════ */}
       <header style={{ borderBottom: `1px solid ${LINE}` }}>
-        <div style={{ ...WRAP, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68, gap: 16 }}>
-          <Link href="/" aria-label="ISALY — accueil" style={{ display: 'flex', alignItems: 'center' }}>
-            <Image src="/LOGO_ISALY.png" alt="ISALY" height={26} width={82}
-              style={{ width: 'auto', height: 26, objectFit: 'contain' }} priority />
+        <div className="home-nav" style={{ ...WRAP, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68, gap: 16 }}>
+          <Link href="/" aria-label="ISALY — accueil" className="home-nav-brand" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <BrandLockup size={32} color={INK} priority />
           </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link href="/app/annonce" style={{
-              color: INK_DIM, textDecoration: 'none', fontSize: 13.5, fontWeight: 500,
-              padding: '8px 12px',
-            }}>
+          <div className="home-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link href="/app/annonce" className="home-nav-btn home-nav-host" style={NAV_BTN_OUTLINE}>
               Mettre mon logement en location
             </Link>
-            <Link href="/auth/login" style={{
-              color: INK, textDecoration: 'none', fontSize: 13.5, fontWeight: 600,
-              padding: '9px 16px', borderRadius: 100, border: `1px solid ${LINE}`,
-            }}>
+            <Link href="/auth/login" className="home-nav-btn" style={NAV_BTN_OUTLINE}>
               Se connecter
             </Link>
-            <Link href="/auth/register" style={{
-              background: ACCENT, color: ACCENT_INK, textDecoration: 'none',
-              fontSize: 13.5, fontWeight: 700, padding: '10px 18px', borderRadius: 100,
+            <Link href="/auth/register" className="home-nav-btn" style={{
+              ...NAV_BTN, background: ACCENT, color: ACCENT_INK, fontWeight: 700, padding: '0 18px',
             }}>
               S&apos;inscrire
             </Link>
@@ -187,11 +188,13 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
       {/* ══════════ HERO + RECHERCHE ══════════ */}
       <section style={{ padding: '54px 0 40px', textAlign: 'center' }}>
         <div style={WRAP}>
+          {/* [HIDDEN] eyebrow du hero - réactiver quand demandé
           <p className="isaly-serif" style={{
             fontStyle: 'italic', fontWeight: 500, fontSize: 17, color: ACCENT, margin: '0 0 10px',
           }}>
             Ta coloc idéale existe déjà
           </p>
+          */}
           <h1 className="isaly-serif" style={{
             fontWeight: 500, fontSize: 'clamp(32px, 5vw, 52px)', lineHeight: 1.08,
             letterSpacing: '-0.01em', margin: '0 auto 34px', maxWidth: 700,
@@ -264,9 +267,11 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
             </button>
           </form>
 
+          {/* [HIDDEN] renvoi vers le test sous la recherche - réactiver quand demandé
           <p style={{ margin: '18px 0 0', fontSize: 13.5, color: INK_FAINT }}>
             Ou réponds au test de personnalité pour voir ton score de compatibilité sur chaque logement ↓
           </p>
+          */}
         </div>
       </section>
 
@@ -413,9 +418,8 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
           ...WRAP, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexWrap: 'wrap', gap: '16px 28px', color: INK_FAINT, fontSize: 13,
         }}>
-          <Link href="/" aria-label="ISALY — accueil" style={{ display: 'flex', alignItems: 'center' }}>
-            <Image src="/LOGO_ISALY.png" alt="ISALY" height={24} width={76}
-              style={{ width: 'auto', height: 24, objectFit: 'contain', opacity: 0.8 }} />
+          <Link href="/" aria-label="ISALY — accueil" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <BrandLockup size={28} color={INK_DIM} />
           </Link>
 
           {/* Les trois fenêtres de la maquette */}
@@ -486,6 +490,47 @@ const sfInput: React.CSSProperties = {
   fontSize: 13, color: INK, marginTop: 1, background: 'transparent',
   border: 'none', outline: 'none', padding: 0, width: '100%', fontFamily: SANS,
   colorScheme: 'dark',
+}
+
+// ── Boutons de la nav : même hauteur pour les trois, quel que soit le contour ──
+const NAV_BTN: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  height: 40, boxSizing: 'border-box', padding: '0 16px', borderRadius: 100,
+  fontSize: 13.5, lineHeight: 1, textDecoration: 'none', whiteSpace: 'nowrap',
+}
+const NAV_BTN_OUTLINE: React.CSSProperties = {
+  ...NAV_BTN, color: INK, fontWeight: 600, border: `1px solid ${LINE}`,
+}
+
+// ── Logo + wordmark ─────────────────────────────────────────────────────────
+/**
+ * LOGO_ISALY.png est un carré menthe de 164 px à coins vifs. Le conteneur de
+ * taille fixe l'empêche d'être comprimé par le flex (il tombait à 18 × 26 px
+ * en mobile) et lui donne un rayon d'icône d'application, un quart du côté.
+ * L'image est demandée au double de sa taille d'affichage : next/image sert
+ * alors 2× la largeur, ce qui reste net jusqu'aux écrans 3x.
+ *
+ * Wordmark en Fraunces, la serif des titres, plutôt qu'en Outfit : c'est un
+ * élément de marque, pas de l'interface.
+ */
+function BrandLockup({ size, color, priority = false }: { size: number; color: string; priority?: boolean }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: Math.round(size * 0.3) }}>
+      <span style={{
+        display: 'block', width: size, height: size, flexShrink: 0,
+        borderRadius: size / 4, overflow: 'hidden',
+      }}>
+        <Image src="/LOGO_ISALY.png" alt="" width={size * 2} height={size * 2} priority={priority}
+          style={{ display: 'block', width: '100%', height: '100%' }} />
+      </span>
+      <span className="isaly-serif" style={{
+        fontWeight: 600, fontSize: Math.round(size * 0.66), letterSpacing: '0.04em',
+        lineHeight: 1, color,
+      }}>
+        ISALY
+      </span>
+    </span>
+  )
 }
 
 // ── Card de logement (maquette : .lcard) ────────────────────────────────────
