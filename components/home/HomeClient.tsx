@@ -443,7 +443,8 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
           {/* Liens légaux existants — conservés tels quels, RGPD inclus */}
           <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', alignItems: 'center' }}>
             {[
-              { label: 'Mentions légales', href: '/mentions-legales' },
+              // [HIDDEN] mentions-legales - réactiver quand l'identité de l'éditeur sera complétée
+              // { label: 'Mentions légales', href: '/mentions-legales' },
               { label: 'CGU', href: '/cgu' },
               { label: 'Confidentialité', href: '/confidentialite' },
               { label: 'Contact', href: '/contact' },
