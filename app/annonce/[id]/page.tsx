@@ -7,6 +7,8 @@ import { cache } from 'react'
 import { listingOccupancy, ownerDisplayName, formatAvailability } from '@/lib/utils'
 import ShareButtons from './ShareButtons'
 import Emoji from '@/components/ui/Emoji'
+import ListingMiniMap from '@/components/home/ListingMiniMap'
+import { getCoordsForCity, jitterCoords } from '@/lib/geo'
 
 interface Props {
   params: { id: string }
@@ -72,6 +74,14 @@ export default async function AnnoncePubliquePage({ params }: Props) {
   const publicUrl = `https://isaly.fr/annonce/${listing.id}`
   // null si le loueur n'a pas renseigné de date : la puce n'est alors pas rendue.
   const availability = formatAvailability(listing.available_from)
+  // Position BRUITÉE ici, côté serveur (jitterCoords, ~±500 m, déterministe par
+  // annonce) : c'est la seule qui part au navigateur. Même règle que
+  // /api/home-search et /app/annonce/[id] ; à défaut de coordonnées, le centre
+  // de la ville, bruité lui aussi.
+  const exactCoords = listing.latitude != null && listing.longitude != null
+    ? [Number(listing.latitude), Number(listing.longitude)] as [number, number]
+    : getCoordsForCity(listing.city ?? '')
+  const approxCoords = exactCoords ? jitterCoords(exactCoords, listing.id) : null
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', fontFamily: "'Outfit', sans-serif", color: '#fff' }}>
@@ -157,6 +167,19 @@ export default async function AnnoncePubliquePage({ params }: Props) {
                 </div>
               ))}
             </div>
+
+            {/* Localisation — sous les caractéristiques, pleine largeur de la colonne */}
+            {approxCoords && (
+              <div style={{ marginBottom: '28px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Localisation</h2>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: '0 0 12px' }}>
+                  Zone approximative — l&apos;adresse exacte est partagée après validation de ton dossier.
+                </p>
+                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <ListingMiniMap coords={approxCoords} height={260} interactive />
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             {listing.description && (
