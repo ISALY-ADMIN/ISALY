@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
+// [HIDDEN] carte SearchMap : ré-ajouter `import dynamic from 'next/dynamic'`
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import Topbar from '@/components/layout/Topbar'
@@ -16,8 +16,11 @@ import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
 import CandidatureModal from '@/components/listings/CandidatureModal'
 import { statusMeta } from '@/lib/candidatures'
 import type { CandidatureStatus } from '@/types/database'
+import ListingMiniMap from '@/components/home/ListingMiniMap'
 
-const SearchMap = dynamic(() => import('@/components/map/SearchMap'), { ssr: false })
+// [HIDDEN - REMPLACÉE PAR LA CARTE PLAN IGN] Carte de recherche réutilisée pour
+// une seule annonce : fond Google, zoom France (6) et marqueur « 1 ann. ».
+// const SearchMap = dynamic(() => import('@/components/map/SearchMap'), { ssr: false })
 
 interface ListingRow {
   id: string
@@ -453,6 +456,10 @@ export default function AnnonceDetailPage() {
               <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: '15px', fontWeight: 700, color: '#fff' }}><Emoji native="📍" size="15px" /> Localisation</div>
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Zone approximative — l&apos;adresse exacte est partagée après le match.</div>
             </div>
+            {/* Même carte que la fiche publique : Plan IGN, un pin sur la
+                position bruitée (approxCoords, jitterCoords ~±500 m). */}
+            <ListingMiniMap coords={approxCoords} height={280} interactive />
+            {/* [HIDDEN - REMPLACÉE PAR LA CARTE PLAN IGN]
             <div style={{ height: '280px' }}>
               <SearchMap
                 items={[{ id: listing.id, title, rent: listing.rent ?? 0, photo: photos[0] ?? null, coords: approxCoords }]}
@@ -460,6 +467,7 @@ export default function AnnonceDetailPage() {
                 onMarkerClick={() => {}}
               />
             </div>
+            */}
           </div>
         )}
 

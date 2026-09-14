@@ -4,39 +4,39 @@ import { useEffect, useRef, useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 
 /**
- * Petite carte « Plan IGN » sous chaque card de logement de la page d'accueil.
+ * Petite carte « Plan IGN » centrée sur un logement, avec un seul pin.
  *
- * Remplace la grande carte globale (HomeMap, masquée). Fond Géoplateforme IGN
- * via le SDK officiel geoportal-extensions-leaflet, greffé sur le Leaflet déjà
- * en place : pas de changement de librairie de base.
+ * Utilisée sur les fiches annonce (publique /annonce/[id] et interne
+ * /app/annonce/[id]). Elle a d'abord vécu sous chaque card de la page
+ * d'accueil ; cet usage est masqué [HIDDEN] dans HomeClient.
  *
- * ── CLÉ GÉOPORTAIL — À CONFIGURER AVANT QUE LA CARTE FONCTIONNE ────────────
- * La clé est lue dans NEXT_PUBLIC_GEOPORTAIL_API_KEY. Elle doit être :
- *   1. créée sur https://cartes.gouv.fr (espace personnel → clés d'accès) ;
- *   2. ajoutée aux variables d'environnement Vercel (Production + Preview) sous
- *      ce nom exact, puis un redéploiement lancé : une variable NEXT_PUBLIC_
- *      est figée dans le bundle au build, l'ajouter sans redéployer ne suffit pas.
- * Sans clé, ni le SDK ni aucune tuile ne sont chargés : la carte affiche
- * « Carte indisponible ». Si le service de tuiles répond en erreur ou si le SDK
- * ne se charge pas, même message : la page ne plante jamais à cause de la carte.
- * ─────────────────────────────────────────────────────────────────────────
+ * Tuiles : service WMTS PUBLIC de la Géoplateforme IGN (data.geopf.fr/wmts),
+ * sans clé d'API. Le Plan IGN est une ressource publique ; une clé ferait au
+ * contraire basculer vers data.geopf.fr/private/wmts, réservé aux ressources
+ * restreintes, qui refuserait la couche. Pas de SDK non plus : pour afficher
+ * une seule couche WMTS, un L.tileLayer suffit, là où le SDK
+ * geoportal-extensions-leaflet pesait ~630 Ko minifié.
  *
- * Non interactive : ni zoom, ni déplacement, ni molette, et `pointer-events:
- * none` sur la carte — le défilement de la page n'est jamais capturé et un clic
- * traverse jusqu'au lien de la card.
+ * Si le service de tuiles répond en erreur, la carte affiche « Carte
+ * indisponible » : la page ne plante jamais à cause d'elle.
  *
- * Confidentialité : `coords` est la position déjà BRUITÉE par jitterCoords
- * (~±500 m) dans /api/home-search. L'adresse exacte n'est jamais transmise au
- * client pour un visiteur non connecté ; ce composant n'en reçoit pas d'autre.
+ * Confidentialité : `coords` doit être la position déjà BRUITÉE par
+ * jitterCoords (~±500 m), calculée côté serveur ou par l'appelant. Ce
+ * composant n'affiche jamais d'autre position ; l'adresse exacte n'est
+ * partagée qu'après validation du dossier.
  */
 
-const GEOPORTAIL_API_KEY = process.env.NEXT_PUBLIC_GEOPORTAIL_API_KEY ?? ''
-const PLAN_IGN = 'GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'
-/** Assez près pour que le Plan IGN dessine le bâti, assez loin pour que le
- *  bruit de ±500 m reste une « zone » et pas une adresse. */
-const ZOOM = 15
+const PLAN_IGN_URL =
+  'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
+  + '&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png'
+  + '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'
 
-type Leaflet = typeof import('leaflet')
+/* [HIDDEN - REMPLACÉ PAR LES TUILES PUBLIQUES DIRECTES] Chargement via le SDK
+   geoportal-extensions-leaflet, conditionné à NEXT_PUBLIC_GEOPORTAIL_API_KEY.
+   La clé bloquait l'affichage (« Carte indisponible » tant qu'elle manquait)
+   alors que le Plan IGN n'en demande pas. Pour y revenir : réactiver ce bloc
+   et remplacer L.tileLayer(PLAN_IGN_URL, …) par L.geoportalLayer.WMTS(…).
+const GEOPORTAIL_API_KEY = process.env.NEXT_PUBLIC_GEOPORTAIL_API_KEY ?? ''
 type GeoportalLeaflet = Leaflet & {
   geoportalLayer: {
     WMTS: (
@@ -45,8 +45,6 @@ type GeoportalLeaflet = Leaflet & {
     ) => import('leaflet').TileLayer
   }
 }
-
-/** Le SDK (~2 Mo) n'est chargé qu'une fois, et seulement si une clé existe. */
 let sdk: Promise<GeoportalLeaflet> | null = null
 function loadGeoportal(): Promise<GeoportalLeaflet> {
   if (!sdk) {
@@ -56,9 +54,26 @@ function loadGeoportal(): Promise<GeoportalLeaflet> {
   }
   return sdk
 }
+*/
+
+/** Assez près pour que le Plan IGN dessine le bâti, assez loin pour que le
+ *  bruit de ±500 m reste une « zone » et pas une adresse. */
+const ZOOM = 15
+
+type Leaflet = typeof import('leaflet')
+
+let leaflet: Promise<Leaflet> | null = null
+function loadLeaflet(): Promise<Leaflet> {
+  if (!leaflet) {
+    leaflet = import('leaflet')
+      .then(mod => ((mod as { default?: Leaflet }).default ?? mod) as Leaflet)
+    leaflet.catch(() => { leaflet = null })
+  }
+  return leaflet
+}
 
 const PIN_SVG = `
-  <svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
+  <svg width="28" height="37" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 1C5.9 1 1 5.9 1 11.9 1 20.2 12 31 12 31s11-10.8 11-19.1C23 5.9 18.1 1 12 1z"
       fill="#16A34A" stroke="#FFFFFF" stroke-width="1.6"/>
     <circle cx="12" cy="12" r="4.2" fill="#FFFFFF"/>
@@ -66,10 +81,17 @@ const PIN_SVG = `
 
 const MUTED = 'rgba(32,27,24,0.58)'
 
-export default function ListingMiniMap({ coords, height = 170 }: {
-  /** Position approximative (déjà bruitée côté serveur), ou null si inconnue. */
+export default function ListingMiniMap({ coords, height = 170, interactive = false }: {
+  /** Position approximative (déjà bruitée), ou null si inconnue. */
   coords: [number, number] | null
   height?: number
+  /**
+   * false (défaut) : carte figée, `pointer-events: none`, pour un contexte où
+   * elle ne doit rien capturer. true : boutons +/−, double-clic et pincement ;
+   * glisser seulement à la souris (au doigt, il bloquerait le défilement de la
+   * page). La molette reste désactivée dans les deux cas.
+   */
+  interactive?: boolean
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -77,9 +99,9 @@ export default function ListingMiniMap({ coords, height = 170 }: {
 
   const lat = coords?.[0]
   const lng = coords?.[1]
-  const unavailable = !GEOPORTAIL_API_KEY || lat == null || lng == null || failed
+  const unavailable = lat == null || lng == null || failed
 
-  // Jusqu'à 24 cards : on n'instancie une carte qu'à l'approche de l'écran.
+  // N'instancie la carte qu'à l'approche de l'écran.
   useEffect(() => {
     if (unavailable) return
     const el = hostRef.current
@@ -99,47 +121,43 @@ export default function ListingMiniMap({ coords, height = 170 }: {
     let cancelled = false
     let map: import('leaflet').Map | null = null
 
-    loadGeoportal().then(L => {
+    loadLeaflet().then(L => {
       if (cancelled) return
       map = L.map(el, {
         center: [lat, lng], zoom: ZOOM,
-        dragging: false, zoomControl: false, scrollWheelZoom: false,
-        doubleClickZoom: false, touchZoom: false, boxZoom: false,
-        keyboard: false, attributionControl: false,
+        // Plafond à 16 : plus près, le pin désignerait un immeuble précis
+        // alors que la position est bruitée de ±500 m. Plancher à 11 : on
+        // reste à l'échelle de la ville.
+        minZoom: 11, maxZoom: 16,
+        scrollWheelZoom: false, boxZoom: false, keyboard: false,
+        dragging: interactive && !L.Browser.mobile,
+        touchZoom: interactive, doubleClickZoom: interactive,
+        zoomControl: false, attributionControl: false,
       })
-      // La clé conditionne l'activation (plus haut) mais n'est PAS transmise
-      // aux tuiles : le Plan IGN est une ressource publique de la
-      // Géoplateforme, servie par data.geopf.fr/wmts. Dès qu'on passe `apiKey`
-      // au SDK sans getConfig (fichier de config de plusieurs Mo), il bascule
-      // sur data.geopf.fr/private/wmts, qui ne sert que les ressources
-      // restreintes — la carte serait alors refusée même avec une clé valide.
-      // Format explicite : le défaut du SDK (jpeg) ne correspond pas au png
-      // du Plan IGN.
-      const layer = L.geoportalLayer.WMTS(
-        { layer: PLAN_IGN },
-        { format: 'image/png', style: 'normal' },
-      )
-      // Une tuile en erreur AVANT toute tuile chargée = clé refusée ou service
-      // injoignable → message propre. Une erreur isolée plus tard est ignorée.
+      if (interactive) L.control.zoom({ position: 'topright' }).addTo(map)
+
+      const layer = L.tileLayer(PLAN_IGN_URL, { minZoom: 11, maxZoom: 16, tileSize: 256 })
+      // Une tuile en erreur AVANT toute tuile chargée = service injoignable
+      // → message propre. Une erreur isolée plus tard est ignorée.
       let loaded = false
       layer.on('tileload', () => { loaded = true })
       layer.on('tileerror', () => { if (!loaded && !cancelled) setFailed(true) })
       layer.addTo(map)
+
       L.marker([lat, lng], {
         interactive: false, keyboard: false,
-        icon: L.divIcon({ html: PIN_SVG, className: '', iconSize: [24, 32], iconAnchor: [12, 31] }),
+        icon: L.divIcon({ html: PIN_SVG, className: '', iconSize: [28, 37], iconAnchor: [14, 36] }),
       }).addTo(map)
     }).catch(() => { if (!cancelled) setFailed(true) })
 
     return () => { cancelled = true; map?.remove() }
-  }, [visible, unavailable, lat, lng])
+  }, [visible, unavailable, lat, lng, interactive])
 
   if (unavailable) {
     return (
       <div style={{
         height, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(32,27,24,0.05)', color: MUTED, fontSize: 11.5,
-        borderTop: '1px solid rgba(32,27,24,0.08)',
+        background: '#E7E1DB', color: MUTED, fontSize: 12,
       }}>
         Carte indisponible
       </div>
@@ -148,21 +166,28 @@ export default function ListingMiniMap({ coords, height = 170 }: {
 
   return (
     // isolation : les panneaux Leaflet ont des z-index de 400 à 1000 ; sans
-    // contexte d'empilement propre ils passeraient au-dessus de la modale swipe.
-    <div style={{ position: 'relative', height, isolation: 'isolate', borderTop: '1px solid rgba(32,27,24,0.08)' }}>
+    // contexte d'empilement propre ils passeraient au-dessus des modales et
+    // des barres de navigation collantes.
+    <div style={{ position: 'relative', height, isolation: 'isolate' }}>
       <div
         ref={hostRef}
-        aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, background: '#E7E1DB', pointerEvents: 'none' }}
+        aria-label={interactive ? 'Carte de la zone approximative du logement' : undefined}
+        aria-hidden={interactive ? undefined : true}
+        style={{
+          // zIndex 0 : contexte d'empilement propre à Leaflet, les pastilles
+          // (zIndex 1) passent donc toujours au-dessus des tuiles et contrôles.
+          position: 'absolute', inset: 0, zIndex: 0, background: '#E7E1DB',
+          pointerEvents: interactive ? 'auto' : 'none',
+        }}
       />
-      <span style={{ ...TAG, left: 6 }}>Position approximative</span>
-      <span style={{ ...TAG, right: 6 }}>© IGN</span>
+      <span style={{ ...TAG, left: 8 }}>Position approximative</span>
+      <span style={{ ...TAG, right: 8 }}>© IGN – Plan IGN</span>
     </div>
   )
 }
 
 const TAG: React.CSSProperties = {
-  position: 'absolute', bottom: 6, zIndex: 1, pointerEvents: 'none',
-  fontSize: 9.5, fontWeight: 600, lineHeight: 1, padding: '3px 6px', borderRadius: 100,
-  background: 'rgba(255,255,255,0.85)', color: MUTED,
+  position: 'absolute', bottom: 8, zIndex: 1, pointerEvents: 'none',
+  fontSize: 10, fontWeight: 600, lineHeight: 1, padding: '4px 7px', borderRadius: 100,
+  background: 'rgba(255,255,255,0.88)', color: MUTED,
 }

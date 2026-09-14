@@ -8,7 +8,7 @@ import { Heart, Lock, Search, KeyRound, ArrowRight, House, Maximize2 } from 'luc
 import { CookieSettingsLink } from '@/components/consent/CookieConsent'
 import SwipeModal from '@/components/home/SwipeModal'
 import SwipeDeck from '@/components/home/SwipeDeck'
-import ListingMiniMap from '@/components/home/ListingMiniMap'
+// [HIDDEN] mini-carte des cards : ré-ajouter `import ListingMiniMap from '@/components/home/ListingMiniMap'`
 import InfoModal, { type InfoModalKey } from '@/components/home/InfoModal'
 import type { HomeSearchResult, HomeSearchResponse } from '@/app/api/home-search/route'
 
@@ -20,8 +20,8 @@ import type { HomeSearchResult, HomeSearchResponse } from '@/app/api/home-search
  *
  *   · les cards, les pins et la fenêtre swipe affichent de VRAIES annonces
  *     (/api/home-search), pas les tableaux en dur de la maquette ;
- *   · chaque card porte sa propre petite carte Plan IGN (ListingMiniMap), à
- *     la place de la grande carte globale de la maquette ;
+ *   · pas de grande carte globale : la localisation (carte Plan IGN,
+ *     ListingMiniMap) est sur la fiche annonce, les cards restent photo + infos ;
  *   · le swipe réutilise components/swipe/ListingSwipeCard, pas la fausse
  *     carte HTML de la maquette (qui portait le bug de chevauchement), et il
  *     est jouable directement dans la page, à côté de la grille.
@@ -393,8 +393,8 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
             </aside>
 
             {/* [HIDDEN - REMPLACÉE PAR UNE CARTE PAR ANNONCE] Vraie carte globale.
-                Remplacée par ListingMiniMap dans chaque card et par la pile
-                swipe ci-dessus. HomeMap.tsx est intact.
+                Remplacée par la pile swipe ci-dessus ; la localisation est
+                sur la fiche annonce (ListingMiniMap). HomeMap.tsx est intact.
             <div className="home-map-pane" style={{
               position: 'sticky', top: 20, height: 680, borderRadius: 20,
               overflow: 'hidden', background: '#1B1917', border: `1px solid ${LINE}`,
@@ -672,8 +672,12 @@ function ListingCard({ listing, onHover }: {
           )}
         </div>
       </div>
-      {/* Position déjà bruitée côté serveur (jitterCoords) — jamais l'adresse exacte. */}
+      {/* [HIDDEN - DÉPLACÉE SUR LA FICHE ANNONCE] Mini-carte sous chaque card :
+          elle cassait le rythme de la grille (photo + infos). Elle vit
+          désormais sur /annonce/[id] et /app/annonce/[id]. Pour la remettre,
+          décommenter ce bloc et l'import de ListingMiniMap.
       <ListingMiniMap coords={listing.coords} height={160} />
+      */}
     </Link>
   )
 }
