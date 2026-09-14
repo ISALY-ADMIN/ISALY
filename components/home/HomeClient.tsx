@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import dynamic from 'next/dynamic'
-import { Heart, Lock, Search, KeyRound, ArrowRight } from 'lucide-react'
+// [HIDDEN] grande carte globale : ré-ajouter `import dynamic from 'next/dynamic'`
+import { Heart, Lock, Search, KeyRound, ArrowRight, House, Maximize2 } from 'lucide-react'
 import { CookieSettingsLink } from '@/components/consent/CookieConsent'
 import SwipeModal from '@/components/home/SwipeModal'
+import SwipeDeck from '@/components/home/SwipeDeck'
+import ListingMiniMap from '@/components/home/ListingMiniMap'
 import InfoModal, { type InfoModalKey } from '@/components/home/InfoModal'
 import type { HomeSearchResult, HomeSearchResponse } from '@/app/api/home-search/route'
 
@@ -18,11 +20,17 @@ import type { HomeSearchResult, HomeSearchResponse } from '@/app/api/home-search
  *
  *   · les cards, les pins et la fenêtre swipe affichent de VRAIES annonces
  *     (/api/home-search), pas les tableaux en dur de la maquette ;
- *   · la carte est une vraie carte Leaflet, pas le SVG illustratif ;
- *   · la fenêtre swipe réutilise components/swipe/ListingSwipeCard, pas la
- *     fausse carte HTML de la maquette (qui portait le bug de chevauchement).
+ *   · chaque card porte sa propre petite carte Plan IGN (ListingMiniMap), à
+ *     la place de la grande carte globale de la maquette ;
+ *   · le swipe réutilise components/swipe/ListingSwipeCard, pas la fausse
+ *     carte HTML de la maquette (qui portait le bug de chevauchement), et il
+ *     est jouable directement dans la page, à côté de la grille.
  */
 
+/* [HIDDEN - REMPLACÉE PAR UNE CARTE PAR ANNONCE] Grande carte globale de la
+   page d'accueil. components/home/HomeMap.tsx est intact ; pour la réactiver,
+   décommenter ce bloc, l'import de `dynamic`, `mapItems` et le bloc
+   `home-map-pane` dans la section résultats.
 // La carte ne doit jamais partir en rendu serveur : Leaflet touche `window`.
 const HomeMap = dynamic(() => import('@/components/home/HomeMap'), {
   ssr: false,
@@ -35,6 +43,7 @@ const HomeMap = dynamic(() => import('@/components/home/HomeMap'), {
     </div>
   ),
 })
+*/
 
 // ── Jetons de la maquette ────────────────────────────────────────────────────
 const BG = '#0A0A0A'
@@ -48,6 +57,11 @@ const INK_FAINT = 'rgba(246,243,240,0.38)'
 const LINE = 'rgba(255,255,255,0.1)'
 const ACCENT = '#4ADE80'
 const ACCENT_INK = '#08170F'
+/** Teinte chaude de la charte : --warning (#F59E0B) de globals.css, déjà
+ *  utilisée pour « ★ SUPER ». Réservée ici au parcours loueur. */
+const HOST = '#F59E0B'
+const HOST_LINE = 'rgba(245,158,11,0.55)'
+const HOST_BG = 'rgba(245,158,11,0.10)'
 const SANS = "'Outfit', sans-serif"
 
 const WRAP: React.CSSProperties = {
@@ -117,12 +131,14 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
     }
   }, [results, pill])
 
+  /* [HIDDEN - GRANDE CARTE GLOBALE] marqueurs de HomeMap
   const mapItems = useMemo(
     () => shown
       .filter(r => r.coords !== null)
       .map(r => ({ id: r.id, rent: r.rent, coords: r.coords as [number, number], city: r.city })),
     [shown],
   )
+  */
 
   const headline = searchedCity
     ? `${total} logement${total > 1 ? 's' : ''} à ${searchedCity}`
@@ -139,11 +155,17 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
         .home-lcard { transition: transform 0.18s ease; }
         .home-lcard:hover { transform: translateY(-3px); }
         .home-pill { transition: background 0.15s ease, color 0.15s ease; }
+        .home-nav-host { transition: background 0.15s ease, border-color 0.15s ease; }
+        .home-nav-host:hover { background: rgba(245,158,11,0.18) !important; border-color: ${HOST} !important; }
+        .home-fullscreen:hover { color: ${INK} !important; border-color: rgba(255,255,255,0.28) !important; }
         .leaflet-container { background: #1B1917; }
         @media (max-width: 900px) {
           .home-results-grid { grid-template-columns: 1fr !important; }
           .home-map-pane { height: 320px !important; position: relative !important; top: 0 !important; }
           .home-listing-scroll { max-height: none !important; overflow: visible !important; }
+          /* La pile swipe passe AU-DESSUS de la grille (déroulée en entier en
+             mobile, elle la repousserait très loin), centrée, à la largeur de /app/swipe. */
+          .home-swipe-pane { order: -1; max-width: 460px; width: 100%; justify-self: center; }
         }
         @media (max-width: 560px) {
           .home-listing-scroll { grid-template-columns: 1fr !important; }
@@ -153,9 +175,11 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
           .home-submit { width: 100% !important; justify-content: center !important; margin: 4px 0 0 !important; }
         }
         /* Nav étroite : « Mettre mon logement en location » passe seul sur une
-           seconde ligne pleine largeur au lieu de faire replier tous les boutons. */
-        @media (max-width: 640px) {
-          .home-nav { flex-wrap: wrap; height: auto !important; padding-block: 12px !important; gap: 10px 6px !important; }
+           seconde ligne pleine largeur au lieu de faire replier tous les boutons.
+           820 px et non 640 : le bouton est désormais centré entre deux colonnes
+           égales, ce qui demande plus de largeur que l'ancien alignement à droite. */
+        @media (max-width: 820px) {
+          .home-nav { display: flex !important; flex-wrap: wrap; height: auto !important; padding-block: 12px !important; gap: 10px 6px !important; }
           .home-nav-actions { display: contents !important; }
           .home-nav-btn { padding: 0 13px !important; }
           .home-nav-brand { margin-right: auto; }
@@ -165,14 +189,18 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
 
       {/* ══════════ NAV ══════════ */}
       <header style={{ borderBottom: `1px solid ${LINE}` }}>
-        <div className="home-nav" style={{ ...WRAP, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68, gap: 16 }}>
-          <Link href="/" aria-label="ISALY — accueil" className="home-nav-brand" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        {/* Trois colonnes 1fr · auto · 1fr : les deux colonnes latérales étant
+            égales, le bouton loueur est centré sur la barre au pixel près, quelle
+            que soit la largeur du logo ou des boutons de droite. */}
+        <div className="home-nav" style={{ ...WRAP, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', height: 68, gap: 16 }}>
+          <Link href="/" aria-label="ISALY — accueil" className="home-nav-brand" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', justifySelf: 'start' }}>
             <BrandLockup size={32} color={INK} priority />
           </Link>
-          <div className="home-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link href="/app/annonce" className="home-nav-btn home-nav-host" style={NAV_BTN_OUTLINE}>
-              Mettre mon logement en location
-            </Link>
+          <Link href="/app/annonce" className="home-nav-btn home-nav-host" style={NAV_BTN_HOST}>
+            <House size={14} strokeWidth={2.2} aria-hidden="true" />
+            Mettre mon logement en location
+          </Link>
+          <div className="home-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, justifySelf: 'end' }}>
             <Link href="/auth/login" className="home-nav-btn" style={NAV_BTN_OUTLINE}>
               Se connecter
             </Link>
@@ -334,7 +362,39 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
               ))}
             </div>
 
-            {/* ── Vraie carte ── */}
+            {/* ── Swipe jouable, directement dans la page ──
+                Même pile que la fenêtre plein écran (SwipeDeck), sur les
+                résultats filtrés par les pastilles. « Voir en plein écran »
+                ouvre la modale existante pour qui préfère l'immersion. */}
+            <aside className="home-swipe-pane" aria-label="Aperçu du mode swipe" style={{ minWidth: 0 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 12, marginBottom: 12,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: INK_DIM }}>
+                  Swipe les logements
+                </span>
+                <button
+                  type="button"
+                  className="home-fullscreen"
+                  onClick={() => setSwipeOpen(true)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    background: 'transparent', color: INK_DIM, border: `1px solid ${LINE}`,
+                    borderRadius: 100, padding: '6px 12px', fontSize: 12.5, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: SANS,
+                  }}
+                >
+                  <Maximize2 size={13} aria-hidden="true" />
+                  Voir en plein écran
+                </button>
+              </div>
+              <SwipeDeck key={`${pill}-${shown[0]?.id ?? 'vide'}`} listings={shown} cardHeight="540px" />
+            </aside>
+
+            {/* [HIDDEN - REMPLACÉE PAR UNE CARTE PAR ANNONCE] Vraie carte globale.
+                Remplacée par ListingMiniMap dans chaque card et par la pile
+                swipe ci-dessus. HomeMap.tsx est intact.
             <div className="home-map-pane" style={{
               position: 'sticky', top: 20, height: 680, borderRadius: 20,
               overflow: 'hidden', background: '#1B1917', border: `1px solid ${LINE}`,
@@ -350,6 +410,7 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
                 après validation de ton dossier.
               </div>
             </div>
+            */}
           </div>
         </div>
       </section>
@@ -471,7 +532,8 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
         </div>
       </footer>
 
-      <SwipeModal open={swipeOpen} onClose={() => setSwipeOpen(false)} listings={results} />
+      {/* `shown` et non `results` : le plein écran reprend la carte de la pile en ligne. */}
+      <SwipeModal open={swipeOpen} onClose={() => setSwipeOpen(false)} listings={shown} />
       <InfoModal openKey={infoKey} onClose={() => setInfoKey(null)} />
     </div>
   )
@@ -500,6 +562,12 @@ const NAV_BTN: React.CSSProperties = {
 }
 const NAV_BTN_OUTLINE: React.CSSProperties = {
   ...NAV_BTN, color: INK, fontWeight: 600, border: `1px solid ${LINE}`,
+}
+/** Bouton loueur : même gabarit que les deux autres, teinte ambre pour qu'un
+ *  propriétaire le repère sans le confondre avec les boutons locataires. */
+const NAV_BTN_HOST: React.CSSProperties = {
+  ...NAV_BTN, gap: 7, color: HOST, fontWeight: 600,
+  border: `1px solid ${HOST_LINE}`, background: HOST_BG,
 }
 
 // ── Logo + wordmark ─────────────────────────────────────────────────────────
@@ -604,6 +672,8 @@ function ListingCard({ listing, onHover }: {
           )}
         </div>
       </div>
+      {/* Position déjà bruitée côté serveur (jitterCoords) — jamais l'adresse exacte. */}
+      <ListingMiniMap coords={listing.coords} height={160} />
     </Link>
   )
 }
