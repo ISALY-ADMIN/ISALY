@@ -9,7 +9,8 @@ import { useLease } from '@/contexts/LeaseContext'
 import ModeSwitcher from '@/components/ModeSwitcher'
 import { canSwitchMode, roleToMode } from '@/lib/roles'
 import {
-  Home, Flame, Search, MessageCircle, // [HIDDEN] carte : ré-ajouter Map ici
+  Home, Flame, MessageCircle, // [HIDDEN] carte : ré-ajouter Map ici
+  // [HIDDEN] rechercher : ré-ajouter Search ici
 
   // [HIDDEN] favoris : ré-ajouter Bookmark ici
   Folder, User, Megaphone, FileText,
@@ -35,7 +36,11 @@ interface NavItem {
 const locataireMainItems: NavItem[] = [
   { icon: Home,          label: 'Tableau de bord', href: '/app/dashboard-home', id: 'dashboard-home' },
   { icon: Flame,         label: 'Trouver',     href: '/app/swipe',          id: 'swipe' },
-  { icon: Search,        label: 'Rechercher',  href: '/app/recherche',      id: 'recherche' },
+  // [HIDDEN - REMPLACÉ PAR LA PAGE D'ACCUEIL] La recherche publique de la page
+  // d'accueil tient désormais ce rôle. La route /app/recherche reste intacte et
+  // accessible par URL directe (et par les liens internes qui y pointent) ;
+  // seule l'entrée de navigation est retirée.
+  // { icon: Search,        label: 'Rechercher',  href: '/app/recherche',      id: 'recherche' },
   // [HIDDEN] carte - réactiver quand demandé
   // { icon: Map,           label: 'Carte',       href: '/app/carte',          id: 'carte' },
   { icon: MessageCircle, label: 'Messages',    href: '/app/messages',       id: 'messages' },

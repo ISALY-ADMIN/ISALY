@@ -28,6 +28,7 @@
     "clsx": "^2.1.1",
     "emoji-mart": "^5.6.0",
     "framer-motion": "^12.40.0",
+    "geoportal-extensions-leaflet": "^2.4.3",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.17.0",
