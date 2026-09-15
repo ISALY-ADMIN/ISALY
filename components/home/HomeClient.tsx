@@ -366,14 +366,22 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
                 Même pile que la fenêtre plein écran (SwipeDeck), sur les
                 résultats filtrés par les pastilles. « Voir en plein écran »
                 ouvre la modale existante pour qui préfère l'immersion. */}
-            <aside className="home-swipe-pane" aria-label="Aperçu du mode swipe" style={{ minWidth: 0 }}>
+            <aside className="home-swipe-pane" aria-labelledby="home-swipe-title" style={{ minWidth: 0 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                gap: 12, marginBottom: 12,
+                gap: 12, flexWrap: 'wrap',
               }}>
+                {/* [HIDDEN - SWIPE INTUITIF] Libellé discret, remplacé par le
+                    titre et la sous-ligne ci-dessous : le geste doit être
+                    expliqué AVANT que le visiteur touche la carte.
                 <span style={{ fontSize: 13, fontWeight: 600, color: INK_DIM }}>
                   Swipe les logements
                 </span>
+                */}
+                {/* Même traitement que le titre de la section résultats. */}
+                <h3 id="home-swipe-title" className="isaly-serif" style={{ fontWeight: 500, fontSize: 24, margin: 0 }}>
+                  Essaie le swipe
+                </h3>
                 <button
                   type="button"
                   className="home-fullscreen"
@@ -389,6 +397,9 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
                   Voir en plein écran
                 </button>
               </div>
+              <p style={{ margin: '4px 0 16px', color: INK_DIM, fontSize: 14, lineHeight: 1.5 }}>
+                Glisse à droite si ça te plaît, à gauche sinon — ou utilise les boutons.
+              </p>
               <SwipeDeck key={`${pill}-${shown[0]?.id ?? 'vide'}`} listings={shown} cardHeight="540px" />
             </aside>
 

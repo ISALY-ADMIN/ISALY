@@ -14,6 +14,7 @@ import ListingSwipeCard, {
 } from '@/components/swipe/ListingSwipeCard'
 import ColocScoreModal from '@/components/swipe/ColocScoreModal'
 import SwipeActions from '@/components/swipe/SwipeActions'
+import { useSwipeTip, SwipeTipKeyframes, SwipeTipBadge } from '@/components/swipe/SwipeTip'
 import MatchList, { MatchItem } from '@/components/swipe/MatchList'
 import CandidatureModal from '@/components/listings/CandidatureModal'
 import ModeSwitcher from '@/components/ModeSwitcher'
@@ -433,18 +434,9 @@ export default function SwipePage() {
   const [lifestyle, setLifestyle] = useState<Set<string>>(new Set())
   const [undoIndex, setUndoIndex] = useState<number | null>(null)
   const [me, setMe] = useState<{ initials: string; avatarUrl: string | null; email: string | null }>({ initials: '', avatarUrl: null, email: null })
-  const [showSwipeTip, setShowSwipeTip] = useState(false)
-
-  // Tooltip premier usage : une seule fois (localStorage)
-  useEffect(() => {
-    try { if (!localStorage.getItem('tooltip_swipe_seen')) setShowSwipeTip(true) } catch {}
-  }, [])
-
-  function dismissSwipeTip() {
-    if (!showSwipeTip) return
-    setShowSwipeTip(false)
-    try { localStorage.setItem('tooltip_swipe_seen', '1') } catch {}
-  }
+  // Tooltip premier usage : une seule fois (localStorage). Logique et pastille
+  // partagées avec la pile swipe de l'accueil (components/swipe/SwipeTip).
+  const { showSwipeTip, dismissSwipeTip } = useSwipeTip()
 
   const cardRef = useRef<ListingSwipeCardHandle>(null)
   const swipeLock = useRef(false)
@@ -854,19 +846,7 @@ export default function SwipePage() {
                   animation: showSwipeTip ? 'tip-wobble 1.6s ease 0.6s 2' : undefined,
                 }}
               >
-                {showSwipeTip && (
-                  <style>{`
-                    @keyframes tip-wobble {
-                      0%, 100% { transform: rotate(0deg); }
-                      25% { transform: rotate(-2.5deg); }
-                      75% { transform: rotate(2.5deg); }
-                    }
-                    @keyframes tip-pulse {
-                      0%, 100% { opacity: 1; }
-                      50% { opacity: 0.65; }
-                    }
-                  `}</style>
-                )}
+                {showSwipeTip && <SwipeTipKeyframes />}
                 {listings[index + 2] && <GhostCard listing={listings[index + 2]} depth={2} />}
                 {listings[index + 1] && <GhostCard listing={listings[index + 1]} depth={1} />}
                 <div className="absolute inset-0" style={{ zIndex: 3 }}>
@@ -881,23 +861,7 @@ export default function SwipePage() {
                     onApply={() => setApplyModal(listing)}
                   />
                 </div>
-                {showSwipeTip && (
-                  <button
-                    onClick={dismissSwipeTip}
-                    className="absolute border-none cursor-pointer"
-                    style={{
-                      bottom: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 10,
-                      background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(8px)',
-                      border: '1px solid rgba(16,185,129,0.4)', borderRadius: '100px',
-                      padding: '10px 20px', fontSize: '13.5px', fontWeight: 700, color: '#fff',
-                      fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
-                      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-                      animation: 'tip-pulse 2s ease infinite',
-                    }}
-                  >
-                    ← Passe · Like →
-                  </button>
-                )}
+                {showSwipeTip && <SwipeTipBadge onDismiss={dismissSwipeTip} />}
               </div>
 
               <SwipeActions
