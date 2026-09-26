@@ -7,6 +7,7 @@ import { Heart, FileCheck, ShieldCheck } from 'lucide-react'
 import Emoji from '@/components/ui/Emoji'
 import { getArticlesByCity } from '@/content/blog/articles'
 import { CITIES, slugifyCity, cityNameFromSlug } from '@/lib/cities'
+import RiseText from '@/components/motion/RiseText'
 
 export const revalidate = 3600
 
@@ -141,7 +142,7 @@ export default async function ColocationVillePage({ params }: Props) {
             {isEmptyCity ? `BIENTÔT DISPONIBLE · ${cityName.toUpperCase()}` : `COLOCATION · ${cityName.toUpperCase()}`}
           </div>
           <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 700, color: '#fff', margin: '0 0 12px', lineHeight: 1.1, letterSpacing: '-1px' }}>
-            Colocation à {cityName}
+            <RiseText mode="load" text={`Colocation à ${cityName}`} />
           </h1>
           <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.55)', margin: '0 0 20px' }}>
             {!isEmptyCity
@@ -173,7 +174,7 @@ export default async function ColocationVillePage({ params }: Props) {
           <div style={{ textAlign: 'center', padding: '72px 24px', background: 'rgba(16,185,129,0.05)', borderRadius: '20px', border: '1px solid rgba(16,185,129,0.18)' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🚀" size="48px" /></div>
             <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>
-              Bientôt disponible à {cityName}
+              <RiseText text={`Bientôt disponible à ${cityName}`} />
             </h2>
             <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', maxWidth: '460px', margin: '0 auto 28px', lineHeight: 1.7 }}>
               Aucune colocation n&apos;est encore publiée à {cityName}. Crée ton profil : tu seras
@@ -238,7 +239,7 @@ export default async function ColocationVillePage({ params }: Props) {
         {/* ── Pourquoi ISALY ── */}
         <div style={{ marginTop: '48px', marginBottom: '48px' }}>
           <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 34px)', fontWeight: 700, color: '#fff', textAlign: 'center', margin: '0 0 40px', letterSpacing: '-0.5px' }}>
-            Pourquoi choisir ISALY à {cityName} ?
+            <RiseText text={`Pourquoi choisir ISALY à ${cityName} ?`} />
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
             {ADVANTAGES.map(a => {
@@ -292,9 +293,9 @@ export default async function ColocationVillePage({ params }: Props) {
         {/* ── CTA final ── */}
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '20px' }}>
           <h2 style={{ fontSize: '24px', color: '#fff', marginBottom: '12px' }}>
-            {isEmptyCity
+            <RiseText text={isEmptyCity
               ? `Sois parmi les premiers à ${cityName}`
-              : `Trouvez votre colocataire idéal à ${cityName}`}
+              : `Trouvez votre colocataire idéal à ${cityName}`} />
           </h2>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', maxWidth: '480px', margin: '0 auto 24px' }}>
             {isEmptyCity

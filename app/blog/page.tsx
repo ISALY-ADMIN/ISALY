@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { ARTICLES, CATEGORIES, readingTime } from '@/content/blog/articles'
 import type { BlogCategory } from '@/content/blog/types'
 import Emoji from '@/components/ui/Emoji'
+import RiseText from '@/components/motion/RiseText'
 
 export const metadata: Metadata = {
   title: { absolute: 'ISALY Immo — Conseils, droits et guides colocation' },
@@ -58,7 +59,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>LE BLOG</div>
-          <h1 style={{ fontSize: 'clamp(34px, 5vw, 52px)', fontWeight: 700, margin: '0 0 14px', letterSpacing: '-1px' }}>ISALY Immo</h1>
+          <h1 style={{ fontSize: 'clamp(34px, 5vw, 52px)', fontWeight: 700, margin: '0 0 14px', letterSpacing: '-1px' }}><RiseText mode="load" text="ISALY Immo" /></h1>
           <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
             Conseils, droits et guides pour bien coloquer
           </p>
@@ -131,7 +132,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
 
         {/* CTA */}
         <div style={{ textAlign: 'center', marginTop: '64px', padding: '48px 24px', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '20px' }}>
-          <h2 style={{ fontSize: '24px', margin: '0 0 12px' }}>Prêt à passer de la théorie à la pratique ?</h2>
+          <h2 style={{ fontSize: '24px', margin: '0 0 12px' }}><RiseText text="Prêt à passer de la théorie à la pratique ?" /></h2>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px' }}>
             Trouvez votre coloc idéale avec le matching intelligent ISALY — gratuit pour les locataires.
           </p>

@@ -10,6 +10,8 @@ import MatchingQuiz from '@/components/quiz/MatchingQuiz'
 import type { MatchingData } from '@/lib/matching'
 import Emoji from '@/components/ui/Emoji'
 import { ROLE_CHOICES } from '@/lib/roles'
+import RiseText from '@/components/motion/RiseText'
+import { DUR, EASE_OUT, EASE_SPRING, INSTANT, SPRING, useMotionReduced } from '@/lib/motion'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,6 +108,7 @@ const ACCENT_INK = '#08170F'
 /** Barre de progression gamifiée : cercles ✓ + segments animés (spring). */
 function ProgressSteps({ step, total }: { step: number; total: number }) {
   const TOTAL = total
+  const reduced = useMotionReduced()
   return (
     <div className="flex items-center mb-3.5">
       {Array.from({ length: TOTAL }, (_, i) => {
@@ -113,7 +116,11 @@ function ProgressSteps({ step, total }: { step: number; total: number }) {
         const current = i === step - 1
         return (
           <div key={i} className="flex items-center" style={{ flex: i < TOTAL - 1 ? 1 : 'none' }}>
-            <div
+            <motion.div
+              // Étape validée : la pastille fait un petit « pop » (ressort).
+              initial={false}
+              animate={{ scale: done && !reduced ? [1, 1.22, 1] : 1 }}
+              transition={reduced ? INSTANT : { duration: DUR.element, ease: EASE_SPRING }}
               className="flex items-center justify-center rounded-full flex-shrink-0 transition-colors duration-300"
               style={{
                 width: 24, height: 24, fontSize: 11.5, fontWeight: 800,
@@ -125,13 +132,13 @@ function ProgressSteps({ step, total }: { step: number; total: number }) {
               }}
             >
               {done ? <Check size={13} strokeWidth={3} /> : i + 1}
-            </div>
+            </motion.div>
             {i < TOTAL - 1 && (
               <div className="flex-1 mx-1.5 rounded-full overflow-hidden" style={{ height: 3, background: BORDER }}>
                 <motion.div
                   initial={false}
                   animate={{ scaleX: done ? 1 : 0 }}
-                  transition={{ type: 'spring', stiffness: 180, damping: 26 }}
+                  transition={reduced ? INSTANT : SPRING.fill}
                   style={{ height: '100%', background: ACCENT, transformOrigin: 'left', borderRadius: 999 }}
                 />
               </div>
@@ -480,6 +487,7 @@ function homeFor(role: string | undefined | null): string {
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
+  const motionReduced = useMotionReduced()
   const [d, setD] = useState<OnboardingData>(DEFAULT)
   const [saving, setSaving] = useState(false)
   const [resumeBanner, setResumeBanner] = useState(false)
@@ -746,11 +754,19 @@ export default function OnboardingPage() {
             sur tous les h1-h6 avec !important, la déclaration inline qui vivait
             ici (DM Serif Display) n'a donc jamais été appliquée. */}
         <h2 className="isaly-serif text-[26px] mb-4" style={{ color: TEXT, fontWeight: 500 }}>
-          {stepLabels[step - 1]}
+          <RiseText key={step} mode="load" text={stepLabels[step - 1]} />
         </h2>
 
         {/* Scrollable step content */}
         <div className="overflow-y-auto" style={{ maxHeight: '440px', paddingRight: '2px' }}>
+          {/* Changement d'étape : le contenu monte en place (pas de sortie
+              animée, pour ne jamais retarder l'étape suivante). */}
+          <motion.div
+            key={step}
+            initial={motionReduced ? false : { y: 22, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: DUR.element, ease: EASE_OUT }}
+          >
           {step === 1 && <Step1 d={d} upd={upd} />}
           {/* Étape 2 : deux branches distinctes selon la réponse à la question de rôle. */}
           {step === 2 && !isLoueur && <Step2 d={d} upd={upd} togglePill={togglePill} />}
@@ -778,6 +794,7 @@ export default function OnboardingPage() {
               />
             )
           )}
+          </motion.div>
         </div>
 
         {/* Navigation */}

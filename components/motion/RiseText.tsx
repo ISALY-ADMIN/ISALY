@@ -35,7 +35,7 @@ export default function RiseText({ text, mode = 'view', delay = 0, startIndex = 
   const ref = useRef<HTMLSpanElement>(null)
   const seen = useInViewOnce(ref)
   const words = text.split(/\s+/).filter(Boolean)
-  const className = mode === 'load' ? 'm-rise-now' : `m-rise${seen ? ' is-in' : ''}`
+  const className = `m-text ${mode === 'load' ? 'm-rise-now' : `m-rise${seen ? ' is-in' : ''}`}`
 
   return (
     <span ref={ref} className={className} style={vars({ '--m-d': `${delay}ms` })}>
@@ -61,7 +61,7 @@ export default function RiseText({ text, mode = 'view', delay = 0, startIndex = 
  */
 export function DropText({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
-    <span style={vars({ '--m-d': `${delay}ms` })}>
+    <span className="m-text" style={vars({ '--m-d': `${delay}ms` })}>
       <span className="sr-only">{text}</span>
       <span className="m-drop-word" aria-hidden="true">
         {Array.from(text).map((c, i) => (

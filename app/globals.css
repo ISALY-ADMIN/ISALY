@@ -522,6 +522,11 @@ button, a[role="button"] {
    hidden prend son bord bas comme ligne de base, ce qui décalerait le texte.
    Le rembourrage (compensé par une marge négative, donc sans effet sur la
    mise en page) évite de rogner accents et jambages. */
+/* Les morceaux héritent la police du titre : sans cela, la règle
+   `* { font-family: Outfit !important }` en tête de fichier les attraperait
+   et un titre en .isaly-serif passerait en Outfit. */
+.m-text,
+.m-text * { font-family: inherit !important; }
 .m-rise-mask,
 .m-drop-word {
   display: inline-block;
@@ -542,8 +547,8 @@ button, a[role="button"] {
 /* Chute d'une lettre : accélération (gravité), impact, écrasement, petit
    rebond, stabilisation. Chaque segment porte sa propre courbe. */
 @keyframes m-drop {
-  0%   { transform: translateY(-1.1em) scale(0.92, 1.12); opacity: 0; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
-  14%  { opacity: 1; }
+  0%   { transform: translateY(-0.85em) scale(0.92, 1.12); opacity: 0; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  26%  { opacity: 1; }
   44%  { transform: translateY(0) scale(0.96, 1.06); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
   56%  { transform: translateY(0) scale(1.16, 0.8); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
   72%  { transform: translateY(-0.16em) scale(0.97, 1.04); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }

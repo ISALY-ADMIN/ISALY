@@ -9,6 +9,7 @@ import {
   buildMatchingData,
   type MatchingData,
 } from '@/lib/matching'
+import { DUR, EASE_OUT, SPRING, INSTANT, useMotionReduced } from '@/lib/motion'
 
 interface MatchingQuizProps {
   /** Palette sombre (app) ou claire (onboarding). */
@@ -38,6 +39,7 @@ export default function MatchingQuiz({ dark = false, initialAnswers, onProgress,
     return Math.min(s, QUIZ_TOTAL_STEPS - 1)
   })
   const [direction, setDirection] = useState(1)
+  const reduced = useMotionReduced()
 
   const isDealbreaker = step >= QUIZ_QUESTIONS.length
   const question = isDealbreaker
@@ -100,15 +102,39 @@ export default function MatchingQuiz({ dark = false, initialAnswers, onProgress,
 
   return (
     <div>
-      {/* Progress bar fine mint */}
-      <div className="mb-1.5" style={{ height: '4px', borderRadius: '2px', background: c.track, overflow: 'hidden' }}>
-        <div
-          style={{
-            height: '100%', borderRadius: '2px', background: MINT,
-            width: `${Math.round(((step + 1) / QUIZ_TOTAL_STEPS) * 100)}%`,
-            transition: 'width 0.3s ease',
-          }}
-        />
+      {/* Progression en segments, un par question. Chaque segment se
+          remplit avec un ressort (scaleX, jamais la largeur) et donne un petit
+          coup vertical au moment où il se remplit. La largeur totale reste
+          celle de l'ancienne barre continue. */}
+      <div
+        className="mb-1.5 flex"
+        style={{ gap: 3, height: 4 }}
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={QUIZ_TOTAL_STEPS}
+        aria-valuenow={step + 1}
+        aria-label="Progression du questionnaire"
+      >
+        {Array.from({ length: QUIZ_TOTAL_STEPS }, (_, i) => {
+          const filled = i <= step
+          return (
+            <motion.div
+              key={i}
+              className="flex-1"
+              initial={false}
+              animate={{ scaleY: filled && !reduced ? [1, 1.9, 1] : 1 }}
+              transition={reduced ? INSTANT : { duration: DUR.element, ease: EASE_OUT }}
+              style={{ height: '100%', borderRadius: 2, background: c.track, overflow: 'hidden' }}
+            >
+              <motion.div
+                initial={false}
+                animate={{ scaleX: filled ? 1 : 0 }}
+                transition={reduced ? INSTANT : SPRING.fill}
+                style={{ height: '100%', background: MINT, transformOrigin: 'left', borderRadius: 2 }}
+              />
+            </motion.div>
+          )
+        })}
       </div>
       <div className="flex items-center justify-between mb-4">
         <span style={{ fontSize: '11.5px', fontWeight: 700, color: MINT, letterSpacing: '1px' }}>
@@ -122,10 +148,13 @@ export default function MatchingQuiz({ dark = false, initialAnswers, onProgress,
           <motion.div
             key={question.id}
             custom={direction}
-            initial={{ x: direction > 0 ? 60 : -60, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: direction > 0 ? -60 : 60, opacity: 0 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            // La question sortante monte et s'efface ; la suivante monte
+            // depuis le masque (conteneur en overflow hidden). En arrière, le
+            // sens s'inverse. Mouvement réduit : simple fondu court.
+            initial={reduced ? { opacity: 0 } : { y: direction > 0 ? 44 : -44, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={reduced ? { opacity: 0 } : { y: direction > 0 ? -28 : 28, opacity: 0 }}
+            transition={{ duration: reduced ? DUR.micro : DUR.element, ease: EASE_OUT }}
           >
             <h3
               className="mb-4"
@@ -138,10 +167,15 @@ export default function MatchingQuiz({ dark = false, initialAnswers, onProgress,
               {question.options.map((opt, i) => {
                 const active = isSelected(i)
                 return (
-                  <button
+                  <motion.button
                     key={i}
                     onClick={() => select(i)}
-                    className="text-left cursor-pointer transition-all"
+                    // Réponse choisie : léger écrasement, puis retour en ressort.
+                    initial={false}
+                    whileTap={reduced ? undefined : { scale: 0.96, transition: { duration: DUR.micro, ease: EASE_OUT } }}
+                    animate={active && !reduced ? { scaleX: [1, 1.02, 1], scaleY: [1, 0.94, 1] } : { scaleX: 1, scaleY: 1 }}
+                    transition={reduced ? INSTANT : { duration: 0.28, ease: EASE_OUT }}
+                    className="text-left cursor-pointer transition-colors"
                     style={{
                       padding: '14px 16px', borderRadius: '14px', fontSize: '14.5px', fontWeight: 500,
                       fontFamily: "'Outfit', sans-serif",
@@ -153,7 +187,7 @@ export default function MatchingQuiz({ dark = false, initialAnswers, onProgress,
                     onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = c.cardBorder }}
                   >
                     {opt}
-                  </button>
+                  </motion.button>
                 )
               })}
             </div>

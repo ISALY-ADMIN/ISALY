@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import RiseText from '@/components/motion/RiseText'
 
 export default function CguPage() {
   return (
@@ -14,7 +15,7 @@ export default function CguPage() {
       </nav>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '80px 24px' }}>
         <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>LÉGAL</div>
-        <h1 style={{ fontSize: '48px', fontWeight: 700, marginBottom: '48px', letterSpacing: '-1px' }}>Conditions Générales d&apos;Utilisation</h1>
+        <h1 style={{ fontSize: '48px', fontWeight: 700, marginBottom: '48px', letterSpacing: '-1px' }}><RiseText mode="load" text="Conditions Générales d'Utilisation" /></h1>
         {[
           { title: '1. Objet', content: "Les présentes CGU définissent les conditions d'utilisation de la plateforme ISALY, service de mise en relation pour la colocation. En créant un compte, vous acceptez ces conditions." },
           { title: '2. Inscription', content: "L'accès au service nécessite la création d'un compte. Vous vous engagez à fournir des informations exactes et à les maintenir à jour. Tout compte créé avec de fausses informations peut être supprimé." },
@@ -25,7 +26,7 @@ export default function CguPage() {
           { title: '7. Droit applicable', content: "Les présentes CGU sont soumises au droit français. Tout litige relève de la compétence des tribunaux français." },
         ].map((section, i) => (
           <div key={i} style={{ marginBottom: '40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#fff', marginBottom: '12px' }}>{section.title}</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#fff', marginBottom: '12px' }}><RiseText text={section.title} /></h2>
             <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, margin: 0 }}>{section.content}</p>
           </div>
         ))}
