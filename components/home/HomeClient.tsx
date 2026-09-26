@@ -10,6 +10,8 @@ import SwipeModal from '@/components/home/SwipeModal'
 import SwipeDeck from '@/components/home/SwipeDeck'
 // [HIDDEN] mini-carte des cards : ré-ajouter `import ListingMiniMap from '@/components/home/ListingMiniMap'`
 import InfoModal, { type InfoModalKey } from '@/components/home/InfoModal'
+import RiseText, { DropText } from '@/components/motion/RiseText'
+import BrandLogoDraw from '@/components/motion/BrandLogoDraw'
 import type { HomeSearchResult, HomeSearchResponse } from '@/app/api/home-search/route'
 
 /**
@@ -194,7 +196,7 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
             que soit la largeur du logo ou des boutons de droite. */}
         <div className="home-nav" style={{ ...WRAP, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', height: 68, gap: 16 }}>
           <Link href="/" aria-label="ISALY — accueil" className="home-nav-brand" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', justifySelf: 'start' }}>
-            <BrandLockup size={32} color={INK} priority />
+            <BrandLockup size={32} color={INK} priority drawOnce />
           </Link>
           <Link href="/app/annonce" className="home-nav-btn home-nav-host" style={NAV_BTN_HOST}>
             <House size={14} strokeWidth={2.2} aria-hidden="true" />
@@ -227,7 +229,12 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
             fontWeight: 500, fontSize: 'clamp(32px, 5vw, 52px)', lineHeight: 1.08,
             letterSpacing: '-0.01em', margin: '0 auto 34px', maxWidth: 700,
           }}>
-            Trouve un logement, avec les bonnes personnes dedans.
+            {/* Le mot clé tombe lettre à lettre (DropText) pendant que le reste
+                de la phrase monte de son masque. CSS pur : se joue dès le
+                premier affichage, sans attendre l'hydratation. < 1,2 s. */}
+            <RiseText mode="load" text="Trouve un logement, avec les bonnes" />{' '}
+            <DropText text="personnes" delay={320} />{' '}
+            <RiseText mode="load" text="dedans." startIndex={6} delay={120} />
           </h1>
 
           <form
@@ -312,7 +319,7 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
           }}>
             <div>
               <h2 className="isaly-serif" style={{ fontWeight: 500, fontSize: 24, margin: 0 }}>
-                {headline}
+                <RiseText key={headline} text={headline} />
               </h2>
               <p style={{ margin: '4px 0 0', color: INK_DIM, fontSize: 14 }}>
                 Classés par compatibilité pour les logements déjà occupés
@@ -380,7 +387,7 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
                 */}
                 {/* Même traitement que le titre de la section résultats. */}
                 <h3 id="home-swipe-title" className="isaly-serif" style={{ fontWeight: 500, fontSize: 24, margin: 0 }}>
-                  Essaie le swipe
+                  <RiseText text="Essaie le swipe" />
                 </h3>
                 <button
                   type="button"
@@ -436,7 +443,7 @@ export default function HomeClient({ initialResults, initialTotal }: Props) {
             <h2 className="isaly-serif" style={{
               fontWeight: 500, fontSize: 'clamp(26px, 3.4vw, 36px)', lineHeight: 1.15, margin: '0 0 14px',
             }}>
-              Le logement, tout le monde sait le trouver. Les bonnes personnes, non.
+              <RiseText text="Le logement, tout le monde sait le trouver. Les bonnes personnes, non." />
             </h2>
             <p style={{ color: INK_DIM, fontSize: 15, lineHeight: 1.6, margin: '0 0 24px' }}>
               Chaque annonce occupée affiche ta compatibilité réelle avec les colocataires
@@ -592,15 +599,20 @@ const NAV_BTN_HOST: React.CSSProperties = {
  * Wordmark en Fraunces, la serif des titres, plutôt qu'en Outfit : c'est un
  * élément de marque, pas de l'interface.
  */
-function BrandLockup({ size, color, priority = false }: { size: number; color: string; priority?: boolean }) {
+function BrandLockup({ size, color, priority = false, drawOnce = false }: {
+  size: number; color: string; priority?: boolean
+  /** Première visite de la session : le contour de la maison se dessine. */
+  drawOnce?: boolean
+}) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: Math.round(size * 0.3) }}>
       <span style={{
         display: 'block', width: size, height: size, flexShrink: 0,
-        borderRadius: size / 4, overflow: 'hidden',
+        borderRadius: size / 4, overflow: 'hidden', position: 'relative',
       }}>
         <Image src="/LOGO_ISALY.png" alt="" width={size * 2} height={size * 2} priority={priority}
           style={{ display: 'block', width: '100%', height: '100%' }} />
+        {drawOnce && <BrandLogoDraw />}
       </span>
       <span className="isaly-serif" style={{
         fontWeight: 600, fontSize: Math.round(size * 0.66), letterSpacing: '0.04em',

@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { RotateCcw, X, Star, Heart, Info, Bookmark } from 'lucide-react'
+import { DUR, EASE_OUT, SPRING, INSTANT, useMotionReduced } from '@/lib/motion'
 
 /**
  * Deux variantes, une seule rangée de boutons.
@@ -48,20 +50,37 @@ interface ActionButtonProps {
   label: string
   disabled?: boolean
   glow?: string
+  /** Anneau vert qui s'élargit et disparaît à chaque pression (« J'adore »). */
+  ring?: boolean
   style: React.CSSProperties
   children: React.ReactNode
 }
 
-function ActionButton({ onClick, size, label, disabled, glow, style, children }: ActionButtonProps) {
+/**
+ * Pression = écrasement (scale 0,86, 150 ms), puis retour en ressort avec un
+ * léger dépassement (SPRING.press). Mouvement réduit : ni écrasement ni
+ * anneau, le bouton reste un bouton.
+ */
+function ActionButton({ onClick, size, label, disabled, glow, ring, style, children }: ActionButtonProps) {
+  const reduced = useMotionReduced()
+  // Chaque pression remonte un anneau neuf (clé) : deux pressions rapides
+  // donnent deux anneaux, sans état à nettoyer.
+  const [rings, setRings] = useState(0)
+  const pressable = !disabled && !reduced
+
   return (
     <motion.button
-      onClick={onClick}
+      onClick={() => {
+        if (ring && pressable) setRings(n => n + 1)
+        onClick()
+      }}
       disabled={disabled}
       aria-label={label}
       title={label}
       whileHover={disabled ? undefined : { scale: 1.1, boxShadow: glow }}
-      whileTap={disabled ? undefined : { scale: 0.95 }}
-      className="flex items-center justify-center rounded-full cursor-pointer flex-shrink-0"
+      whileTap={pressable ? { scale: 0.86, transition: { duration: DUR.micro, ease: EASE_OUT } } : undefined}
+      transition={reduced ? INSTANT : SPRING.press}
+      className="relative flex items-center justify-center rounded-full cursor-pointer flex-shrink-0"
       style={{
         width: size,
         height: size,
@@ -71,6 +90,7 @@ function ActionButton({ onClick, size, label, disabled, glow, style, children }:
       }}
     >
       {children}
+      {ring && rings > 0 && <span key={rings} className="m-ring" aria-hidden="true" />}
     </motion.button>
   )
 }
@@ -133,6 +153,7 @@ export default function SwipeActions(props: SwipeActionsProps) {
           onClick={onLike}
           size={64}
           label="J'adore"
+          ring
           glow="0 0 32px rgba(16,185,129,0.65)"
           style={{
             background: 'linear-gradient(135deg, #10B981, #059669)',
@@ -182,7 +203,7 @@ export default function SwipeActions(props: SwipeActionsProps) {
           className="hidden md:block text-center"
           style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: "'Outfit', sans-serif", letterSpacing: '0.3px' }}
         >
-          ← Passer&nbsp;&nbsp;&nbsp;→ J&apos;adore&nbsp;&nbsp;&nbsp;↑ Super&nbsp;&nbsp;&nbsp;Z Annuler&nbsp;&nbsp;&nbsp;Espace Photo
+          ← Passer&nbsp;&nbsp;&nbsp;→ J&apos;adore&nbsp;&nbsp;&nbsp;↑ Super&nbsp;&nbsp;&nbsp;Z Annuler&nbsp;&nbsp;&nbsp;F Favori&nbsp;&nbsp;&nbsp;Espace Photo
         </div>
       )}
     </motion.div>

@@ -44,7 +44,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr">
+    // suppressHydrationWarning : BrandLogoDraw pose une classe sur <html>
+    // avant l'hydratation (logo déjà dessiné dans la session).
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#10B981" />
@@ -58,6 +60,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&display=swap" rel="stylesheet" />
+        {/* Sans JavaScript, RiseText ne recevrait jamais sa classe d'entrée :
+            on neutralise l'état caché plutôt que de laisser des titres vides. */}
+        <noscript dangerouslySetInnerHTML={{ __html: '<style>.m-rise .m-rise-word{transform:none!important;opacity:1!important}</style>' }} />
       </head>
       <Script id="register-sw" strategy="afterInteractive">
         {`
