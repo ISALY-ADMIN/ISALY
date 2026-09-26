@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import RiseText from '@/components/motion/RiseText'
 
 export default function ConfidentialitePage() {
   return (
@@ -14,7 +15,7 @@ export default function ConfidentialitePage() {
       </nav>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '80px 24px' }}>
         <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>LÉGAL</div>
-        <h1 style={{ fontSize: '48px', fontWeight: 700, marginBottom: '48px', letterSpacing: '-1px' }}>Politique de confidentialité</h1>
+        <h1 style={{ fontSize: '48px', fontWeight: 700, marginBottom: '48px', letterSpacing: '-1px' }}><RiseText mode="load" text="Politique de confidentialité" /></h1>
         {[
           { title: '1. Collecte des données', content: "ISALY collecte les informations que vous nous fournissez lors de votre inscription : nom, prénom, adresse email, et les données de votre questionnaire de compatibilité. Ces informations sont nécessaires au fonctionnement du service de matching." },
           { title: '2. Utilisation des données', content: "Vos données sont utilisées exclusivement pour vous proposer des profils compatibles, gérer votre compte, et améliorer notre algorithme de matching. Nous ne vendons jamais vos données à des tiers." },
@@ -24,7 +25,7 @@ export default function ConfidentialitePage() {
           { title: '6. Contact', content: "Pour toute question relative à vos données personnelles, vous pouvez nous contacter via le formulaire de contact disponible sur le site." },
         ].map((section, i) => (
           <div key={i} style={{ marginBottom: '40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#fff', marginBottom: '12px' }}>{section.title}</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#fff', marginBottom: '12px' }}><RiseText text={section.title} /></h2>
             <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, margin: 0 }}>{section.content}</p>
           </div>
         ))}

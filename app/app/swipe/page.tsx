@@ -27,6 +27,8 @@ import { useLease } from '@/contexts/LeaseContext'
 import { useToast } from '@/hooks/use-toast'
 import PushPermission from '@/components/notifications/PushPermission'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
+import MatchBurst from '@/components/motion/MatchBurst'
+import { EASE_SPRING, INSTANT, SPRING, useMotionReduced } from '@/lib/motion'
 
 // [HIDDEN - RECENTRAGE SWIPE] Masque la colonne de filtres de gauche (desktop)
 // pour recentrer la card de swipe entre la Sidebar et « Matchs récents ».
@@ -192,13 +194,16 @@ function FilterPanel({ count, budget, setBudget, city, setCity, sort, setSort, l
 /* ═══════════════ Ghost card (pile derrière) ═══════════════ */
 
 function GhostCard({ listing, depth }: { listing: SwipeListing; depth: 1 | 2 }) {
+  const reduced = useMotionReduced()
   const photo = listing.photos[0] ?? null
   return (
     <motion.div
       className="absolute inset-0 pointer-events-none"
       initial={false}
       animate={{ scale: depth === 1 ? 0.95 : 0.9, y: depth === 1 ? 12 : 24, opacity: depth === 1 ? 0.6 : 0.3 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+      // Quand la carte de tête part, la pile avance d'un rang avec le même
+      // ressort que la carte qui remonte en place (SPRING.settle).
+      transition={reduced ? INSTANT : SPRING.settle}
       style={{ zIndex: depth === 1 ? 2 : 1 }}
     >
       {/* Même enveloppe claire que la carte de tête : la pile doit se lire
@@ -216,6 +221,9 @@ function GhostCard({ listing, depth }: { listing: SwipeListing; depth: 1 | 2 }) 
 }
 
 /* ═══════════════ Match celebration ═══════════════ */
+
+/** [HIDDEN - MOTION DESIGN] Ancienne pluie de confettis, voir MatchCelebration. */
+const SHOW_CONFETTI_RAIN: boolean = false
 
 function MatchCelebration({ listing, me, onMessage, onClose }: {
   listing: SwipeListing
@@ -235,6 +243,7 @@ function MatchCelebration({ listing, me, onMessage, onClose }: {
     [],
   )
   const photo = listing.photos[0] ?? null
+  const reduced = useMotionReduced()
 
   return (
     <div
@@ -248,7 +257,10 @@ function MatchCelebration({ listing, me, onMessage, onClose }: {
           100% { transform: translateY(108vh) rotate(720deg); opacity: 0.2; }
         }
       `}</style>
-      {confetti.map((c, i) => (
+      {/* [HIDDEN - MOTION DESIGN] Pluie de confettis en boucle infinie,
+          remplacée par l'explosion unique de MatchBurst (< 1 s, qui respecte
+          le mouvement réduit). Réactiver : passer SHOW_CONFETTI_RAIN à true. */}
+      {SHOW_CONFETTI_RAIN && confetti.map((c, i) => (
         <div
           key={i}
           className="absolute pointer-events-none"
@@ -262,8 +274,16 @@ function MatchCelebration({ listing, me, onMessage, onClose }: {
       ))}
 
       <div className="flex flex-col items-center text-center" onClick={e => e.stopPropagation()}>
-        {/* Avatars qui se rejoignent */}
-        <div className="relative flex items-center justify-center mb-8" style={{ height: '110px' }}>
+        {/* Avatars qui se rejoignent. La pastille grandit (dépassement puis
+            stabilisation), l'onde de choc et les éclats partent de son centre. */}
+        <motion.div
+          className="relative flex items-center justify-center mb-8"
+          style={{ height: '110px' }}
+          initial={reduced ? false : { scale: 0.55 }}
+          animate={{ scale: 1 }}
+          transition={reduced ? INSTANT : { duration: 0.5, ease: EASE_SPRING }}
+        >
+          <MatchBurst />
           <motion.div
             initial={{ x: -110, opacity: 0, scale: 0.6 }}
             animate={{ x: -28, opacity: 1, scale: 1 }}
@@ -300,7 +320,7 @@ function MatchCelebration({ listing, me, onMessage, onClose }: {
               <Emoji native="🏠" />
             )}
           </motion.div>
-        </div>
+        </motion.div>
 
         <motion.h2
           initial={{ opacity: 0, y: 16, scale: 0.9 }}
@@ -755,6 +775,11 @@ export default function SwipePage() {
         case 'Z':
         case 'Backspace':
           e.preventDefault(); handleUndo(); break
+        case 'f':
+        case 'F':
+          // Ctrl/Cmd+F reste la recherche du navigateur.
+          if (e.ctrlKey || e.metaKey || e.altKey) return
+          e.preventDefault(); handleFavorite(); break
       }
     }
     window.addEventListener('keydown', onKey)

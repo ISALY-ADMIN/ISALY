@@ -6,6 +6,7 @@ import { ARTICLES, getArticle, getAdjacent, readingTime } from '@/content/blog/a
 import type { Block } from '@/content/blog/types'
 import ShareButtons from '@/components/blog/ShareButtons'
 import Emoji from '@/components/ui/Emoji'
+import RiseText from '@/components/motion/RiseText'
 
 export function generateStaticParams() {
   return ARTICLES.map(a => ({ slug: a.slug }))
@@ -117,7 +118,7 @@ export default function BlogArticlePage({ params }: Props) {
             {article.category} · {readingTime(article)} min de lecture
           </div>
           <h1 style={{ fontSize: 'clamp(30px, 4.5vw, 44px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-1px', margin: '0 0 14px' }}>
-            {article.title}
+            <RiseText mode="load" text={article.title} />
           </h1>
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
             Publié le {new Date(article.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}

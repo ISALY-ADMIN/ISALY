@@ -500,3 +500,118 @@ button, a[role="button"] {
 .fade-up-2 { animation-delay: 0.10s; }
 .fade-up-3 { animation-delay: 0.15s; }
 .fade-up-4 { animation-delay: 0.20s; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOTION — langage d'animation ISALY (voir lib/motion.ts, mêmes valeurs).
+   Squash & stretch, arcs, follow-through, textes qui montent d'un masque.
+   On n'anime que transform et opacity. Tout l'état « caché » vit sous
+   prefers-reduced-motion: no-preference : avec reduce, le contenu est
+   simplement là. Sans JavaScript, app/layout.tsx neutralise l'état caché.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --m-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --m-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --m-micro: 150ms;
+  --m-element: 350ms;
+  --m-section: 600ms;
+  --m-stagger: 70ms;
+}
+
+/* ── RiseText : chaque mot dans un masque ────────────────────────────────
+   `vertical-align: top` et non baseline : un inline-block en overflow
+   hidden prend son bord bas comme ligne de base, ce qui décalerait le texte.
+   Le rembourrage (compensé par une marge négative, donc sans effet sur la
+   mise en page) évite de rogner accents et jambages. */
+/* Les morceaux héritent la police du titre : sans cela, la règle
+   `* { font-family: Outfit !important }` en tête de fichier les attraperait
+   et un titre en .isaly-serif passerait en Outfit. */
+.m-text,
+.m-text * { font-family: inherit !important; }
+.m-rise-mask,
+.m-drop-word {
+  display: inline-block;
+  vertical-align: top;
+  padding: 0.1em 0 0.16em;
+  margin: -0.1em 0 -0.16em;
+}
+.m-rise-mask { overflow: hidden; }
+.m-rise-word,
+.m-drop-char { display: inline-block; }
+.m-drop-word { white-space: nowrap; }
+.m-drop-char { transform-origin: 50% 88%; }
+
+@keyframes m-rise {
+  from { transform: translateY(120%); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+/* Chute d'une lettre : accélération (gravité), impact, écrasement, petit
+   rebond, stabilisation. Chaque segment porte sa propre courbe. */
+@keyframes m-drop {
+  0%   { transform: translateY(-0.85em) scale(0.92, 1.12); opacity: 0; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  26%  { opacity: 1; }
+  44%  { transform: translateY(0) scale(0.96, 1.06); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  56%  { transform: translateY(0) scale(1.16, 0.8); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  72%  { transform: translateY(-0.16em) scale(0.97, 1.04); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  86%  { transform: translateY(0) scale(1.05, 0.95); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes m-ring {
+  from { transform: scale(1); opacity: 0.85; }
+  to   { transform: scale(1.9); opacity: 0; }
+}
+@keyframes m-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes m-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes m-fade-out {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Déclenché à l'apparition (RiseText ajoute .is-in). */
+  .m-rise .m-rise-word {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+  .m-rise.is-in .m-rise-word {
+    transform: none;
+    opacity: 1;
+    transition:
+      transform var(--m-section) var(--m-ease-out),
+      opacity var(--m-element) var(--m-ease-out);
+    transition-delay: calc(var(--m-d, 0ms) + var(--i, 0) * var(--m-stagger));
+  }
+  /* Déclenché au premier affichage, sans attendre JavaScript (hero). */
+  .m-rise-now .m-rise-word {
+    animation: m-rise var(--m-section) var(--m-ease-out) both;
+    animation-delay: calc(var(--m-d, 0ms) + var(--i, 0) * var(--m-stagger));
+  }
+  .m-drop-char {
+    animation: m-drop 560ms linear both;
+    animation-delay: calc(var(--m-d, 0ms) + var(--i, 0) * 40ms);
+  }
+  .m-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    border: 2px solid #4ADE80;
+    pointer-events: none;
+    animation: m-ring 520ms var(--m-ease-out) forwards;
+  }
+  .m-pulse { animation: m-pulse 380ms var(--m-ease-spring); }
+  .m-logo-draw path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: m-draw 950ms var(--m-ease-out) 120ms forwards;
+  }
+  .m-logo-cover { animation: m-fade-out 280ms ease 1050ms forwards; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-ring, .m-logo-cover { display: none; }
+}
+/* Logo déjà dessiné dans cette session (script en ligne de BrandLogoDraw). */
+.m-logo-seen .m-logo-cover { display: none; }

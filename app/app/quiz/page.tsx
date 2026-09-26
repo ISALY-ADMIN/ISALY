@@ -8,6 +8,7 @@ import Topbar from '@/components/layout/Topbar'
 import MatchingQuiz from '@/components/quiz/MatchingQuiz'
 import { createClient } from '@/lib/supabase/client'
 import { hasCompletedTest, DIMENSION_LABELS, DIMENSIONS, type MatchingData } from '@/lib/matching'
+import SpringBar from '@/components/motion/SpringBar'
 
 export default function QuizPage() {
   const router = useRouter()
@@ -90,14 +91,15 @@ export default function QuizPage() {
                 Test enregistré !
               </div>
               <div className="flex flex-col gap-2.5 mb-7 text-left">
-                {DIMENSIONS.map(dim => (
+                {DIMENSIONS.map((dim, i) => (
                   <div key={dim}>
                     <div className="flex justify-between mb-1">
                       <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.55)' }}>{DIMENSION_LABELS[dim]}</span>
                       <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981' }}>{result.scores[dim]}</span>
                     </div>
-                    <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)' }}>
-                      <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #10B981, #059669)', width: `${result.scores[dim]}%` }} />
+                    {/* Les dimensions se déploient depuis zéro, l'une après l'autre. */}
+                    <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                      <SpringBar value={result.scores[dim]} background="linear-gradient(90deg, #10B981, #059669)" delay={0.25 + i * 0.09} />
                     </div>
                   </div>
                 ))}

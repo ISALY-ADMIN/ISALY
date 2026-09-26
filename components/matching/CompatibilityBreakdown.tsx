@@ -1,6 +1,7 @@
 'use client'
 
 import { DIMENSIONS, DIMENSION_LABELS, type DimensionScores } from '@/lib/matching'
+import SpringBar from '@/components/motion/SpringBar'
 
 /**
  * Détail d'un score de compatibilité, dimension par dimension.
@@ -46,7 +47,7 @@ interface Props {
 export default function CompatibilityBreakdown({ dimensions, conflicts = [], withHints = true }: Props) {
   return (
     <div className="flex flex-col gap-3.5">
-      {DIMENSIONS.map(dim => {
+      {DIMENSIONS.map((dim, i) => {
         const value = dimensions[dim]
         const color = DIMENSION_COLORS[dim]
         return (
@@ -65,7 +66,7 @@ export default function CompatibilityBreakdown({ dimensions, conflicts = [], wit
               </div>
             )}
             <div className="rounded-full overflow-hidden" style={{ height: 4, background: 'rgba(255,255,255,0.1)' }}>
-              <div style={{ height: '100%', width: `${value}%`, background: color, transition: 'width 0.6s ease' }} />
+              <SpringBar value={value} background={color} delay={i * 0.08} />
             </div>
           </div>
         )

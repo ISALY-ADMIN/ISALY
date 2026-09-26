@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Emoji from '@/components/ui/Emoji'
+import RiseText from '@/components/motion/RiseText'
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', subject: 'Avis général', message: '' })
@@ -31,7 +32,7 @@ export default function ContactPage() {
     <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Outfit', sans-serif" }}>
       <div style={{ textAlign: 'center', maxWidth: '420px', padding: '24px' }}>
         <div style={{ fontSize: '56px', marginBottom: '24px' }}><Emoji native="✅" /></div>
-        <h1 style={{ fontSize: '32px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>Message envoyé !</h1>
+        <h1 style={{ fontSize: '32px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}><RiseText mode="load" text="Message envoyé !" /></h1>
         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, marginBottom: '32px' }}>
           Merci pour ton retour. On lira ton message avec attention.
         </p>
@@ -55,7 +56,7 @@ export default function ContactPage() {
 
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '80px 24px' }}>
         <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>CONTACT</div>
-        <h1 style={{ fontSize: '48px', fontWeight: 700, marginBottom: '12px', letterSpacing: '-1px' }}>Écris-nous</h1>
+        <h1 style={{ fontSize: '48px', fontWeight: 700, marginBottom: '12px', letterSpacing: '-1px' }}><RiseText mode="load" text="Écris-nous" /></h1>
         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.45)', marginBottom: '48px', lineHeight: 1.7 }}>
           Un avis, une question, un bug ? On lit tous les messages.
         </p>

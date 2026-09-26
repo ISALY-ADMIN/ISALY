@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Bookmark, ChevronLeft, ChevronRight, Images } from 'lucide-react'
 import { ReliabilityBadge } from '@/components/ui/ReliabilityScore'
+import ScoreRing from '@/components/motion/ScoreRing'
+import { SPRING, useMotionReduced } from '@/lib/motion'
 import Emoji from '@/components/ui/Emoji'
 import { getAvatarColor, getInitials, formatAvailability } from '@/lib/utils'
 import { colocCardState } from '@/lib/colocMatching'
@@ -240,6 +242,12 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
   const likeOpacity = useTransform(x, [30, SWIPE_THRESHOLD], [0, 1])
   const nopeOpacity = useTransform(x, [-SWIPE_THRESHOLD, -30], [1, 0])
   const superOpacity = useTransform(y, [-SWIPE_THRESHOLD - 20, -40], [1, 0])
+  // Les tampons grossissent avec l'amplitude en même temps qu'ils
+  // apparaissent : ils « se posent » à mesure qu'on s'approche du seuil.
+  const likeScale = useTransform(x, [30, SWIPE_THRESHOLD], [0.82, 1])
+  const nopeScale = useTransform(x, [-SWIPE_THRESHOLD, -30], [1, 0.82])
+  const superScale = useTransform(y, [-SWIPE_THRESHOLD - 20, -40], [1, 0.82])
+  const reduced = useMotionReduced()
 
   const [exiting, setExiting] = useState<SwipeDirection | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
@@ -336,9 +344,15 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
       whileDrag={{ cursor: 'grabbing' }}
       onDragStart={() => { isDragging.current = true }}
       onDragEnd={handleDragEnd}
-      initial={{ scale: 0.95, y: 12, opacity: 0.6 }}
+      // Entrée / remontée en place : part de la position de la carte fantôme
+      // de rang 1 (scale 0,95, y 12) et s'y pose avec un léger dépassement
+      // (SPRING.settle) — le follow-through de la vidéo. Mouvement réduit :
+      // la carte est simplement là.
+      initial={reduced ? false : { scale: 0.95, y: 12, opacity: 0.6 }}
       animate={{ scale: 1, y: 0, opacity: exiting ? 0 : 1 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 24, opacity: { duration: 0.32, delay: exiting ? 0.08 : 0 } }}
+      transition={reduced
+        ? { duration: 0, opacity: { duration: 0.2, delay: exiting ? 0.08 : 0 } }
+        : { ...SPRING.settle, opacity: { duration: 0.32, delay: exiting ? 0.08 : 0 } }}
     >
       <div
         className="relative w-full h-full flex flex-col overflow-hidden"
@@ -574,14 +588,18 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
                   className="flex items-center justify-center rounded-full border-none cursor-pointer flex-shrink-0 transition-transform active:scale-95"
                   style={{
                     width: 52, height: 52,
-                    background: coloc?.averageScore != null ? SCORE_GREEN : 'rgba(255,255,255,0.22)',
+                    // Avec un score, le disque vert est dessiné par ScoreRing (anneau
+                    // autour) : le bouton lui-même reste transparent.
+                    background: coloc?.averageScore != null ? 'transparent' : 'rgba(255,255,255,0.22)',
                     fontFamily: OUTFIT, fontSize: coloc?.averageScore != null ? 15 : 18,
                     fontWeight: 800, color: '#fff',
                   }}
                   aria-label="Voir le détail de la compatibilité"
                   title="Voir le détail de la compatibilité"
                 >
-                  {coloc?.averageScore != null ? `${coloc.averageScore}%` : '?'}
+                  {coloc?.averageScore != null
+                    ? <ScoreRing value={coloc.averageScore} size={52} fill={SCORE_GREEN} fontSize={13.5} />
+                    : '?'}
                 </button>
               </div>
             ) : (
@@ -623,13 +641,13 @@ const ListingSwipeCard = forwardRef<ListingSwipeCardHandle, Props>(function List
             Sous la photo, qui doit rester vierge : retour visuel du geste
             uniquement, jamais affiché au repos. */}
         <div className="absolute inset-x-0 z-30 pointer-events-none flex items-center justify-center" style={{ top: '47%', bottom: 0 }}>
-          <motion.div className="absolute" style={{ opacity: likeOpacity }}>
+          <motion.div className="absolute" style={{ opacity: likeOpacity, scale: likeScale }}>
             <Stamp label="J'ADORE" color="#10B981" rotate={-12} />
           </motion.div>
-          <motion.div className="absolute" style={{ opacity: nopeOpacity }}>
+          <motion.div className="absolute" style={{ opacity: nopeOpacity, scale: nopeScale }}>
             <Stamp label="PASSE" color="#EF4444" rotate={12} />
           </motion.div>
-          <motion.div className="absolute" style={{ opacity: superOpacity }}>
+          <motion.div className="absolute" style={{ opacity: superOpacity, scale: superScale }}>
             <Stamp label="★ SUPER" color="#F59E0B" rotate={-6} />
           </motion.div>
         </div>
