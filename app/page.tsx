@@ -1,3 +1,4 @@
+// [HIDDEN] Page d'accueil servie par public/landing.html via la réécriture beforeFiles "/" de next.config
 import { createClient } from '@/lib/supabase/server'
 import { getCoordsForCity, jitterCoords } from '@/lib/geo'
 import { listingOccupancy } from '@/lib/utils'
