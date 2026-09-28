@@ -1,0 +1,1788 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>ISALY, pages du site v2</title>
+<script>
+  /* Thème appliqué avant le premier rendu (auto, clair ou sombre) */
+  (function () {
+    var t = 'auto';
+    try { t = localStorage.getItem('isaly-theme') || 'auto'; } catch (e) {}
+    var dark = t === 'dark' || (t === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   ISALY, espace connecté (dashboard v2)
+   Jetons de la charte graphique 1.0 : à reporter dans tailwind.config
+   et globals.css (voir la spécification JSON en bas de page).
+   ===================================================================== */
+:root{
+  --bg:#F6F4FF; --bg-2:#ECE7FF; --surface:rgba(255,255,255,.66); --surface-2:rgba(255,255,255,.92); --solid:#FFFFFF;
+  --ink:#12102E; --ink-2:#48437A; --ink-3:#686394;
+  --line:rgba(18,16,46,.09); --line-2:rgba(18,16,46,.17);
+  --brand:#6C4DFF; --brand-2:#5A38F0; --brand-text:#5A38F0; --brand-soft:rgba(108,77,255,.1);
+  --azure:#2F6BFF; --mint:#16C79A; --sun:#FFB524; --coral:#FF5C8A;
+  --ok-bg:rgba(22,199,154,.15); --ok-ink:#0B7A5E;
+  --warn-bg:rgba(255,181,36,.22); --warn-ink:#865500;
+  --bad-bg:rgba(255,92,138,.15); --bad-ink:#BE2556;
+  --info-bg:rgba(47,107,255,.12); --info-ink:#2450C8;
+  --grad:linear-gradient(100deg,#6C4DFF 0%,#2F6BFF 52%,#16C79A 100%);
+  --shadow:0 24px 60px -32px rgba(72,39,204,.3);
+  --shadow-2:0 10px 28px -16px rgba(55,28,158,.32);
+  --map-land:#F1EEFF; --map-street:rgba(18,16,46,.06); --map-water:#C3D5FF; --map-park:#CFF1E4;
+  --r-xl:28px; --r-lg:20px; --r-md:14px;
+  --side-w:264px;
+  --font:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1); --ease-out:cubic-bezier(.16,1,.3,1);
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#08071A; --bg-2:#131030; --surface:rgba(27,22,66,.5); --surface-2:rgba(33,28,78,.86); --solid:#15112F;
+  --ink:#F6F4FF; --ink-2:#BAB5E2; --ink-3:#807BAA;
+  --line:rgba(246,244,255,.09); --line-2:rgba(246,244,255,.17);
+  --brand-text:#AE97FF; --brand-soft:rgba(140,111,255,.17);
+  --ok-ink:#5FE3BE; --warn-ink:#FFCB6B; --bad-ink:#FF8DB0; --info-ink:#8FB0FF;
+  --shadow:0 24px 60px -30px rgba(0,0,0,.65); --shadow-2:0 10px 28px -16px rgba(0,0,0,.6);
+  --map-land:#110E2A; --map-street:rgba(246,244,255,.05); --map-water:#1C2F68; --map-park:#0F3A2F;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:90px}
+body{margin:0;min-height:100vh;font-family:var(--font);font-size:15.5px;line-height:1.5;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(50vw 42vh at 0% 0%,rgba(108,77,255,.11),transparent 70%),radial-gradient(44vw 46vh at 100% 18%,rgba(47,107,255,.07),transparent 70%),radial-gradient(40vw 40vh at 45% 100%,rgba(22,199,154,.06),transparent 70%)}
+h1,h2,h3,h4,p,ul,ol,figure{margin:0}
+ul,ol{padding:0;list-style:none}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+img,svg{display:block}
+:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px}
+.ic{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-3)}
+.soft{color:var(--ink-2)}
+[hidden]{display:none!important}
+
+/* ---------- coque : barre latérale, barre du haut, contenu ---------- */
+.app{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px;padding:20px 14px 16px;border-right:1px solid var(--line);background:var(--surface);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);z-index:20}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 14px;font-weight:800;font-size:26px;letter-spacing:-.055em;line-height:1;color:var(--ink);text-decoration:none}
+.brand svg{width:30px;height:30px}
+.modeswitch{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:4px;margin:0 2px 10px;border-radius:999px;background:var(--bg-2)}
+.modeswitch button{position:relative;z-index:1;border:0;background:none;padding:10px 0;border-radius:999px;font:600 14px/1 var(--font);color:var(--ink-2);cursor:pointer;transition:color .3s}
+.modeswitch button[aria-pressed="true"]{color:#FFFFFF}
+.modeswitch .knob{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--brand);box-shadow:0 8px 20px -10px rgba(108,77,255,.95);transition:transform .45s var(--ease-out)}
+.modeswitch[data-mode="bailleur"] .knob{transform:translateX(100%)}
+.nav{display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px}
+.nav h2{margin:16px 12px 6px;font-size:13px;font-weight:600;color:var(--ink-3);letter-spacing:0}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;color:var(--ink-2);text-decoration:none;font-weight:500;font-size:15px;transition:background-color .2s,color .2s}
+.nav a:hover{background:var(--brand-soft);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--solid);color:var(--ink);font-weight:600;box-shadow:var(--shadow-2)}
+.nav a[aria-current="page"] .ic{color:var(--brand-text)}
+.count{margin-left:auto;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:var(--brand);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center;line-height:1}
+.side-card{margin:8px 2px 4px;padding:14px;border-radius:20px;background:var(--solid);border:1px solid var(--line)}
+.side-card b{display:block;font-size:14.5px;letter-spacing:-.01em}
+.side-card p{font-size:13px;color:var(--ink-3);margin:2px 0 10px}
+.meter{height:6px;border-radius:999px;background:var(--bg-2);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:inherit;background:var(--grad)}
+.side-me{display:flex;align-items:center;gap:10px;padding:10px 8px 0;border-top:1px solid var(--line);margin-top:6px}
+.side-me .grow{min-width:0;flex:1}
+.side-me b{display:block;font-size:14.5px;line-height:1.2}
+.side-me span{display:block;font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main{min-width:0;display:flex;flex-direction:column}
+.bar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;min-height:74px;padding:14px clamp(16px,3vw,36px);background:color-mix(in srgb,var(--bg) 80%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.bar h1{font-size:clamp(1.3rem,2vw,1.6rem);font-weight:800;letter-spacing:-.04em;line-height:1.1}
+.bar .logo-m{display:none;width:30px;height:30px}
+.bar .sp{flex:1}
+.iconbtn{position:relative;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;cursor:pointer;color:var(--ink);transition:border-color .2s}
+.iconbtn:hover{border-color:var(--brand)}
+.iconbtn .dot{position:absolute;top:10px;right:11px;width:9px;height:9px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 2px var(--surface-2)}
+.avatar-btn{border:0;background:none;padding:0;cursor:pointer;border-radius:50%}
+.anchor{position:relative}
+.view{width:100%;max-width:1260px;margin:0 auto;padding:22px clamp(16px,3vw,36px) 60px}
+.screen.enter>*{animation:rise .55s var(--ease-out) both}
+.screen.enter>*:nth-child(2){animation-delay:.05s}
+.screen.enter>*:nth-child(3){animation-delay:.1s}
+.screen.enter>*:nth-child(4){animation-delay:.15s}
+.screen.enter>*:nth-child(n+5){animation-delay:.2s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+@keyframes fade{from{opacity:0}}
+.tabbar{display:none}
+
+/* ---------- briques ---------- */
+.panel{position:relative;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:22px;-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2)}
+.panel.solid{background:var(--solid)}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;min-height:28px}
+.phead h2,.phead h3{font-size:18px;font-weight:700;letter-spacing:-.025em;line-height:1.2}
+.link{border:0;background:none;padding:0;font:600 14px/1.2 var(--font);color:var(--brand-text);cursor:pointer;text-decoration:none;white-space:nowrap}
+.link:hover{text-decoration:underline}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wide-l{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+.wide-r{grid-template-columns:minmax(0,1fr) minmax(0,1.55fr)}
+.stackv{display:grid;gap:18px;align-content:start}
+.mt{margin-top:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:1px solid transparent;font:600 15px/1 var(--font);letter-spacing:-.01em;cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .2s var(--ease),background-color .2s,border-color .2s,color .2s}
+.btn:active{transform:scale(.97)}
+.btn-main{background:var(--brand);color:#FFFFFF;box-shadow:0 12px 26px -14px rgba(108,77,255,.95)}
+.btn-main:hover{background:var(--brand-2)}
+.btn-glass{background:var(--surface-2);border-color:var(--line-2);color:var(--ink)}
+.btn-glass:hover{border-color:var(--brand)}
+.btn-ghost{background:transparent;color:var(--ink-2)}
+.btn-ghost:hover{background:var(--brand-soft);color:var(--ink)}
+.btn-danger{background:var(--bad-bg);color:var(--bad-ink)}
+.btn-sm{height:36px;padding:0 14px;font-size:14px}
+.btn-block{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12.5px;font-weight:700;white-space:nowrap;background:var(--bg-2);color:var(--ink-2)}
+.pill .ic{width:14px;height:14px;stroke-width:2.2}
+.pill.ok{background:var(--ok-bg);color:var(--ok-ink)}
+.pill.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.pill.bad{background:var(--bad-bg);color:var(--bad-ink)}
+.pill.info{background:var(--info-bg);color:var(--info-ink)}
+.pill.brand{background:var(--brand-soft);color:var(--brand-text)}
+.chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px 0 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-size:13.5px;font-weight:600;white-space:nowrap}
+.chip i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.chip b{font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.bub{--s:36px;--c:#6C4DFF;width:var(--s);height:var(--s);border-radius:50%;display:inline-grid;place-items:center;flex:none;color:#FFFFFF;font-weight:700;font-size:calc(var(--s) * .4);line-height:1;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.9) 0%,color-mix(in srgb,var(--c) 55%,#fff) 20%,var(--c) 58%,color-mix(in srgb,var(--c) 62%,#000) 100%);box-shadow:inset 0 -3px 8px rgba(0,0,0,.16),0 8px 18px -10px var(--c);text-shadow:0 1px 2px rgba(0,0,0,.28)}
+.stack{display:inline-flex}
+.stack .bub+.bub{margin-left:-9px;box-shadow:0 0 0 2.5px var(--solid),inset 0 -3px 8px rgba(0,0,0,.16)}
+.seg{display:inline-flex;gap:3px;padding:4px;border-radius:999px;background:var(--bg-2);max-width:100%;overflow-x:auto;scrollbar-width:none;flex:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{border:0;background:none;padding:9px 15px;border-radius:999px;font:600 14px/1 var(--font);color:var(--ink-2);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:background-color .2s,color .2s}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--brand);color:#FFFFFF}
+.seg button .ic{width:17px;height:17px}
+.seg .n{font-weight:500;opacity:.75}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0;padding-top:0}
+.row:last-child{padding-bottom:0}
+.grow{flex:1;min-width:0}
+.t{display:block;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.s{display:block;font-size:13.5px;color:var(--ink-3);line-height:1.4}
+.ico{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--bg-2);color:var(--ink-2)}
+.ico.ok{background:var(--ok-bg);color:var(--ok-ink)}
+.ico.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.ico.bad{background:var(--bad-bg);color:var(--bad-ink)}
+.ico.info{background:var(--info-bg);color:var(--info-ink)}
+.ico.brand{background:var(--brand-soft);color:var(--brand-text)}
+.field{display:grid;gap:6px}
+.field>label,.flabel{font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.input,.select,.textarea{width:100%;height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);font:500 15px/1.2 var(--font);transition:border-color .2s,box-shadow .2s}
+.textarea{height:auto;min-height:112px;padding:12px 14px;line-height:1.5;resize:vertical}
+.select{appearance:none;-webkit-appearance:none;padding-right:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23686394' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:18px}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+.form{display:grid;gap:14px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tog{position:relative;width:48px;height:28px;border-radius:999px;background:var(--line-2);border:0;cursor:pointer;flex:none;transition:background-color .25s}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,.22);transition:transform .3s var(--ease-out)}
+.tog[aria-checked="true"]{background:var(--brand)}
+.tog[aria-checked="true"]::after{transform:translateX(20px)}
+.empty{display:grid;justify-items:center;text-align:center;gap:10px;padding:34px 18px}
+.empty .ico{width:56px;height:56px;border-radius:20px}
+.empty h3{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.empty p{color:var(--ink-2);max-width:46ch}
+.ring{position:relative;display:grid;place-items:center;flex:none}
+.ring svg{position:absolute;inset:0}
+.ring-in{position:relative;text-align:center;line-height:1.1}
+.ring-in b{display:block;font-size:26px;font-weight:800;letter-spacing:-.04em}
+.ring-in small{font-size:12px;color:var(--ink-3)}
+.bars{display:grid;gap:10px}
+.barrow{display:grid;grid-template-columns:96px minmax(0,1fr) 42px;align-items:center;gap:10px;font-size:13.5px}
+.barrow span{color:var(--ink-2)}
+.barrow b{text-align:right;font-weight:700}
+.track{height:8px;border-radius:999px;background:var(--bg-2);overflow:hidden}
+.track i{display:block;height:100%;border-radius:inherit;background:var(--grad);transform-origin:left;animation:grow .9s var(--ease-out) both}
+@keyframes grow{from{transform:scaleX(0)}}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+.kv div span{display:block;font-size:13px;color:var(--ink-3)}
+.kv div b{display:block;font-weight:700;letter-spacing:-.01em}
+.note{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:18px;background:var(--brand-soft);color:var(--ink-2);font-size:14.5px}
+.note .ic{color:var(--brand-text);margin-top:1px}
+.note b{color:var(--ink)}
+.hr{height:1px;background:var(--line);margin:18px 0}
+.big{font-size:clamp(1.7rem,2.6vw,2.3rem);font-weight:800;letter-spacing:-.045em;line-height:1.05}
+.gradtext{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---------- visuels d'annonces ---------- */
+.art{position:relative;overflow:hidden;background:var(--bg-2)}
+.art::before{content:"";position:absolute;inset:0;background:var(--art)}
+.art::after{content:"";position:absolute;right:13%;top:12%;width:30%;height:46%;border-radius:10px;background:linear-gradient(90deg,transparent 47%,rgba(255,255,255,.6) 47% 53%,transparent 53%),linear-gradient(180deg,transparent 47%,rgba(255,255,255,.6) 47% 53%,transparent 53%),rgba(255,255,255,.2);box-shadow:inset 0 0 0 3px rgba(255,255,255,.6)}
+.a1{--art:linear-gradient(180deg,transparent 58%,rgba(18,16,46,.28)),radial-gradient(55% 45% at 72% 30%,#FFE0B8,transparent 70%),linear-gradient(160deg,#F7C9A4 0%,#D39CD0 55%,#8B78EC 100%)}
+.a2{--art:linear-gradient(180deg,transparent 58%,rgba(18,16,46,.28)),radial-gradient(55% 45% at 72% 30%,#D8FFF1,transparent 70%),linear-gradient(160deg,#9FEAD2 0%,#6FB8F2 55%,#5B6EF0 100%)}
+.a3{--art:linear-gradient(180deg,transparent 58%,rgba(18,16,46,.28)),radial-gradient(55% 45% at 72% 30%,#FFF1C2,transparent 70%),linear-gradient(160deg,#FFD08A 0%,#FF9FB4 55%,#C07BE8 100%)}
+.a4{--art:linear-gradient(180deg,transparent 58%,rgba(18,16,46,.28)),radial-gradient(55% 45% at 72% 30%,#E9E2FF,transparent 70%),linear-gradient(160deg,#C4B4FF 0%,#8C9DFF 55%,#4F6BE8 100%)}
+.a5{--art:linear-gradient(180deg,transparent 58%,rgba(18,16,46,.28)),radial-gradient(55% 45% at 72% 30%,#FFF6D6,transparent 70%),linear-gradient(160deg,#FFE08F 0%,#9BE3C4 55%,#3FB8A0 100%)}
+.thumb{width:72px;height:72px;border-radius:18px;flex:none}
+.thumb::after{right:16%;top:16%;width:34%;height:44%;border-radius:6px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)}
+
+/* ---------- tableau de bord locataire ---------- */
+.hello{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px;margin:4px 0 22px}
+.hello h2{font-size:clamp(2.1rem,3.8vw,3.2rem);font-weight:800;letter-spacing:-.055em;line-height:.98}
+.hello p{color:var(--ink-2);margin-top:10px;max-width:58ch;font-size:16.5px}
+.constel{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;overflow:hidden}
+.constel>svg{display:block;width:100%;height:auto;max-height:360px;margin:0 auto}
+.constel .info h3{font-size:clamp(1.5rem,2.2vw,1.9rem);font-weight:800;letter-spacing:-.04em;line-height:1.05;margin:10px 0 6px}
+.constel .info p{color:var(--ink-2)}
+.float{animation:float 7s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-7px)}}
+.cl-line{stroke:url(#gradRing);stroke-width:2;stroke-dasharray:5 7;opacity:.7;animation:dash 12s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-120}}
+.cl-tag rect{fill:var(--solid);stroke:var(--line-2)}
+.cl-tag text{fill:var(--ink);font:800 13px var(--font)}
+.cl-name{fill:var(--ink-2);font:600 12.5px var(--font)}
+.cl-init{fill:#FFFFFF;font:700 17px var(--font)}
+.checks{display:grid;gap:4px}
+.check{display:flex;align-items:center;gap:12px;padding:10px 0}
+.check .box{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;border:2px solid var(--line-2);color:transparent}
+.check.done .box{background:var(--mint);border-color:var(--mint);color:#FFFFFF}
+.check.done .t{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--line-2)}
+.check .ic{width:15px;height:15px;stroke-width:2.6}
+.hlist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.lcard{display:flex;flex-direction:column;border-radius:24px;overflow:hidden;background:var(--solid);border:1px solid var(--line);cursor:pointer;text-align:left;padding:0;transition:transform .25s var(--ease),box-shadow .25s}
+.lcard:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.lcard .art{height:150px}
+.lcard .body{padding:14px 16px 16px;display:grid;gap:4px}
+.lcard h3{font-size:16.5px;font-weight:700;letter-spacing:-.02em}
+.lcard .foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.lcard .price{font-weight:800;letter-spacing:-.02em}
+.lcard .price small{font-weight:500;color:var(--ink-3);font-size:12.5px}
+.score-pill{position:absolute;left:12px;top:12px;z-index:1;height:30px;padding:0 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.88);color:#12102E;font-size:13.5px;font-weight:800;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.fav{position:absolute;right:12px;top:12px;z-index:2;width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;background:rgba(255,255,255,.88);color:#12102E;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .2s var(--ease)}
+.fav:active{transform:scale(.9)}
+.fav[aria-pressed="true"]{color:#FF5C8A}
+.fav[aria-pressed="true"] .ic{fill:#FF5C8A}
+
+/* ---------- trouver ---------- */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fchip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface-2);font:600 13.5px/1 var(--font);color:var(--ink-2);cursor:pointer;transition:border-color .2s,color .2s,background-color .2s}
+.fchip[aria-pressed="true"]{border-color:var(--brand);color:var(--brand-text);background:var(--brand-soft)}
+.swipe-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.deckzone{display:grid;justify-items:center;gap:16px;padding-top:4px}
+.deck{position:relative;width:min(420px,100%);height:560px}
+.scard{position:absolute;inset:0;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;background:var(--solid);border:1px solid var(--line);box-shadow:0 34px 70px -34px rgba(55,28,158,.45);touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab;will-change:transform}
+.scard:active{cursor:grabbing}
+.scard.behind{transform:scale(.94) translateY(18px);opacity:.7;pointer-events:none;box-shadow:none}
+.scard.out-r{transition:transform .32s var(--ease),opacity .32s;transform:translateX(130%) rotate(16deg);opacity:0}
+.scard.out-l{transition:transform .32s var(--ease),opacity .32s;transform:translateX(-130%) rotate(-16deg);opacity:0}
+.scard.back{transition:transform .35s var(--ease-out)}
+.scard .art{flex:1;min-height:0}
+.scard-body{padding:18px 20px 20px;display:grid;gap:6px}
+.scard-body h3{font-size:22px;font-weight:800;letter-spacing:-.035em;line-height:1.1}
+.scard-body p{color:var(--ink-2);font-size:14.5px}
+.meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin-top:2px}
+.meta b{font-size:19px;font-weight:800;letter-spacing:-.03em}
+.meta span{font-size:13.5px;color:var(--ink-3)}
+.disc{position:absolute;left:16px;top:16px;z-index:1;width:92px;height:92px;border-radius:50%;display:grid;place-content:center;text-align:center;background:rgba(255,255,255,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 16px 30px -16px rgba(18,16,46,.45)}
+.disc b{font-size:26px;font-weight:800;letter-spacing:-.05em;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.disc small{font-size:10.5px;font-weight:600;color:#48437A;line-height:1.2}
+.stamp{position:absolute;top:34px;z-index:3;padding:8px 14px;border-radius:14px;border:3px solid;font-size:20px;font-weight:800;letter-spacing:-.02em;opacity:0;background:rgba(255,255,255,.85);pointer-events:none}
+.stamp.yes{right:22px;color:#0B7A5E;border-color:#16C79A;transform:rotate(10deg)}
+.stamp.no{left:120px;color:#BE2556;border-color:#FF5C8A;transform:rotate(-10deg)}
+.deck-acts{display:flex;align-items:center;gap:18px}
+.round{width:62px;height:62px;border-radius:50%;border:1px solid var(--line-2);background:var(--solid);display:grid;place-items:center;cursor:pointer;color:var(--ink);box-shadow:var(--shadow-2);transition:transform .2s var(--ease)}
+.round:hover{transform:translateY(-2px)}
+.round:active{transform:scale(.92)}
+.round.no{color:#BE2556}
+.round.info{width:48px;height:48px}
+.round.yes{width:72px;height:72px;border:0;background:var(--brand);color:#FFFFFF;box-shadow:0 18px 34px -14px rgba(108,77,255,.95)}
+.left-count{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-2)}
+.left-dots{display:flex;gap:4px}
+.left-dots i{width:8px;height:8px;border-radius:50%;background:var(--bg-2)}
+.left-dots i.on{background:var(--brand)}
+.why .dims{margin:14px 0 18px}
+.gridcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.mapwrap{position:relative;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--line);background:var(--map-land)}
+.map{width:100%;height:auto;display:block;min-height:320px}
+.map text{font-family:var(--font)}
+.map .area{fill:var(--ink-3);font-size:12px;font-weight:600;opacity:.8}
+.map .water-l{fill:var(--info-ink);font-size:11px;font-weight:600;font-style:italic;opacity:.8}
+.pin{cursor:pointer}
+.pin rect{fill:var(--solid);stroke:var(--line-2);transition:fill .2s}
+.pin text{fill:var(--ink);font-size:13px;font-weight:800}
+.pin .pt{fill:var(--c)}
+.pin.on rect{fill:#6C4DFF;stroke:#6C4DFF}
+.pin.on text{fill:#FFFFFF}
+.mapcard{position:absolute;left:16px;bottom:16px;width:min(360px,calc(100% - 32px));display:flex;gap:12px;align-items:center;padding:12px;border-radius:22px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow);animation:rise .35s var(--ease-out)}
+
+/* ---------- demandes ---------- */
+.req{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+.steps{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:2px 0 0}
+.steps li{display:grid;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink-3);line-height:1.2}
+.steps li i{display:block;height:6px;border-radius:999px;background:var(--bg-2)}
+.steps li.done{color:var(--ink-2)}
+.steps li.done i{background:var(--brand)}
+.steps li.now{color:var(--brand-text)}
+.steps li.now i{background:linear-gradient(90deg,var(--brand),#2F6BFF 70%,#16C79A)}
+.steps li.no{color:var(--bad-ink)}
+.steps li.no i{background:var(--coral)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;font-size:13px}
+.cal span{color:var(--ink-3);font-weight:600;font-size:12px}
+.cal b{height:34px;display:grid;place-items:center;border-radius:12px;font-weight:600;color:var(--ink-2)}
+.cal b.today{box-shadow:inset 0 0 0 1.5px var(--line-2);color:var(--ink)}
+.cal b.ev{background:var(--brand);color:#FFFFFF}
+.cal b.muted{color:var(--ink-3);opacity:.5}
+
+/* ---------- messages ---------- */
+.mwrap{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;height:calc(100vh - 74px - 82px);min-height:520px}
+.mlist{display:flex;flex-direction:column;padding:16px;overflow:hidden}
+.mlist .input{margin-bottom:10px;height:42px}
+.mscroll{overflow-y:auto;margin:0 -8px;padding:0 8px}
+.mgroup{font-size:13px;font-weight:600;color:var(--ink-3);margin:14px 6px 6px}
+.conv{width:100%;display:flex;align-items:center;gap:12px;padding:10px;border:0;border-radius:18px;background:none;cursor:pointer;text-align:left;transition:background-color .2s}
+.conv:hover{background:var(--brand-soft)}
+.conv[aria-current="true"]{background:var(--solid);box-shadow:var(--shadow-2)}
+.conv .t{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv .when{font-size:12px;color:var(--ink-3);align-self:flex-start;margin-top:3px}
+.chat{display:flex;flex-direction:column;padding:0;overflow:hidden}
+.chat-h{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.chat-h .t{font-size:16px}
+.online{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ok-ink)}
+.online::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint)}
+.msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+.day{align-self:center;font-size:12.5px;font-weight:600;color:var(--ink-3);padding:4px 12px;border-radius:999px;background:var(--bg-2);margin:4px 0}
+.msg{display:flex;gap:10px;align-items:flex-end;max-width:78%}
+.msg .who{font-size:12px;font-weight:600;color:var(--ink-3);margin:0 0 3px 4px}
+.msg .b{padding:10px 14px;border-radius:20px 20px 20px 6px;background:var(--solid);border:1px solid var(--line);font-size:15px;line-height:1.45}
+.msg time{display:block;font-size:11.5px;color:var(--ink-3);margin:3px 0 0 4px}
+.msg.me{align-self:flex-end;flex-direction:row-reverse}
+.msg.me .b{background:var(--brand);color:#FFFFFF;border-color:transparent;border-radius:20px 20px 6px 20px}
+.msg.me time{text-align:right;margin:3px 4px 0 0}
+.react{display:inline-flex;align-items:center;gap:4px;margin:4px 0 0 6px;height:24px;padding:0 8px;border-radius:999px;background:var(--solid);border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--coral)}
+.react .ic{width:13px;height:13px;fill:var(--coral);stroke:var(--coral)}
+.rich{padding:14px;border-radius:20px;background:var(--solid);border:1px solid var(--line);min-width:250px}
+.rich .t{font-size:15px}
+.typing{display:inline-flex;gap:4px;padding:12px 14px;border-radius:20px 20px 20px 6px;background:var(--solid);border:1px solid var(--line)}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.2s}
+.typing i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+.composer{display:flex;gap:10px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.composer .input{flex:1;border-radius:999px}
+.back-m{display:none}
+
+/* ---------- ma maison ---------- */
+.pathband{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;padding:20px 22px;border-radius:var(--r-xl);border:1px solid var(--line);background:linear-gradient(120deg,rgba(108,77,255,.1),rgba(47,107,255,.06) 55%,rgba(22,199,154,.08))}
+.pathband.agency{background:linear-gradient(120deg,rgba(255,181,36,.14),rgba(255,92,138,.06))}
+.pathband .ico{width:52px;height:52px;border-radius:18px;background:var(--solid);color:var(--brand-text)}
+.pathband.agency .ico{color:var(--warn-ink)}
+.pathband h2{font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.pathband p{color:var(--ink-2);font-size:14.5px;margin-top:3px;max-width:70ch}
+.doc{display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:var(--solid);border:1px solid var(--line)}
+.doc .ico{background:var(--brand-soft);color:var(--brand-text)}
+.pinpad{display:grid;justify-items:center;gap:18px;padding:18px 0 8px}
+.pdots{display:flex;gap:14px}
+.pdots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--line-2)}
+.pdots i.on{background:var(--brand);border-color:var(--brand)}
+.pdots.err{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.keys{display:grid;grid-template-columns:repeat(3,72px);gap:12px}
+.keys button{height:62px;border-radius:20px;border:1px solid var(--line);background:var(--solid);font:700 22px/1 var(--font);cursor:pointer;transition:transform .15s,background-color .2s}
+.keys button:active{transform:scale(.93);background:var(--brand-soft)}
+.vault{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.tbl{width:100%;border-collapse:collapse;font-size:14.5px}
+.tbl th{text-align:left;font-size:13px;font-weight:600;color:var(--ink-3);padding:0 12px 10px 0}
+.tbl td{padding:13px 12px 13px 0;border-top:1px solid var(--line);vertical-align:middle}
+.tbl td:last-child,.tbl th:last-child{text-align:right;padding-right:0}
+.tscroll{overflow-x:auto}
+
+/* ---------- profil ---------- */
+.prof{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:center}
+.prof h2{font-size:clamp(1.8rem,3vw,2.4rem);font-weight:800;letter-spacing:-.05em;line-height:1}
+.radar{width:100%;max-width:320px;height:auto;margin:0 auto}
+.radar .rl{fill:var(--ink-2);font:600 12.5px var(--font)}
+
+/* ---------- offres ---------- */
+.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.plan{display:flex;flex-direction:column;gap:14px;padding:26px;border-radius:var(--r-xl);background:var(--surface);border:1px solid var(--line)}
+.plan.hl{position:relative;background:var(--solid);border-color:transparent}
+.plan.hl::before{content:"";position:absolute;inset:-1.5px;border-radius:inherit;padding:1.5px;background:var(--grad);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.plan h2{font-size:22px;font-weight:800;letter-spacing:-.035em}
+.plan .price{font-size:40px;font-weight:800;letter-spacing:-.05em;line-height:1}
+.plan .price small{font-size:15px;font-weight:500;color:var(--ink-3);letter-spacing:0}
+.plan ul{display:grid;gap:10px}
+.plan li{display:flex;gap:10px;align-items:flex-start;color:var(--ink-2)}
+.plan li .ic{color:var(--mint);stroke-width:2.4;margin-top:2px}
+.plan li b{color:var(--ink)}
+.plan .btn{margin-top:auto}
+.code{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-radius:20px;border:1.5px dashed var(--brand);background:var(--brand-soft)}
+.code b{font-size:24px;font-weight:800;letter-spacing:.02em}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{padding:14px 16px;border-radius:20px;background:var(--solid);border:1px solid var(--line)}
+.stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1.1}
+.stat span{font-size:13px;color:var(--ink-3)}
+.seq{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:q}
+.seq li{counter-increment:q;padding:16px;border-radius:20px;background:var(--solid);border:1px solid var(--line);font-size:14.5px;color:var(--ink-2)}
+.seq li::before{content:counter(q);display:grid;place-items:center;width:30px;height:30px;margin-bottom:10px;border-radius:50%;background:var(--grad);color:#FFFFFF;font-weight:800;font-size:14px}
+.seq li b{display:block;color:var(--ink);font-size:15.5px;margin-bottom:2px}
+.setrow{display:flex;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+.setrow:first-of-type{border-top:0}
+.settings h2{font-size:18px;font-weight:700;letter-spacing:-.025em;margin-bottom:6px}
+
+/* ---------- bailleur ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:20px 4px}
+.kpi{padding:2px 20px}
+.kpi+.kpi{border-left:1px solid var(--line)}
+.kpi .l{font-size:13.5px;color:var(--ink-3);font-weight:500}
+.kpi .v{font-size:clamp(1.7rem,2.4vw,2.2rem);font-weight:800;letter-spacing:-.045em;line-height:1.1;margin-top:6px}
+.kpi .d{font-size:13px;color:var(--ink-2);margin-top:4px}
+.kpi .d.bad{color:var(--bad-ink);font-weight:600}
+.homes{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.home{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 20px;padding:18px 20px;border-radius:24px;background:var(--solid);border:1px solid var(--line);text-align:left;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s;font:inherit;color:inherit}
+.home:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.home.ro{background:var(--surface);cursor:default}
+.home.ro:hover{transform:none;box-shadow:none}
+.home h3{font-size:17px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.rooms{display:flex;flex-wrap:wrap;gap:10px}
+.room{display:grid;justify-items:center;gap:5px;width:58px;font-size:12px;color:var(--ink-2);font-weight:600;text-align:center;line-height:1.15}
+.room .free{width:44px;height:44px;border-radius:50%;border:2px dashed var(--line-2);display:grid;place-items:center;color:var(--ink-3)}
+.room .rb{position:relative}
+.room .flag{position:absolute;right:-4px;bottom:-2px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--sun);color:#12102E;box-shadow:0 0 0 2px var(--solid)}
+.room .flag.bad{background:var(--coral);color:#FFFFFF}
+.room .flag .ic{width:12px;height:12px;stroke-width:2.6}
+.chart{width:100%;height:auto}
+.chart text{font:600 11.5px var(--font);fill:var(--ink-3)}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.lrow{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:18px;align-items:center;padding:16px;border-radius:24px;background:var(--solid);border:1px solid var(--line)}
+.lrow .art{height:96px;border-radius:18px}
+.lrow h3{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.lstats{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-size:13.5px;color:var(--ink-2)}
+.lstats b{color:var(--ink);font-weight:800}
+.cands{display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px;align-items:start}
+.cand{width:100%;display:flex;gap:12px;align-items:center;padding:12px;border-radius:20px;border:0;background:none;cursor:pointer;text-align:left;transition:background-color .2s}
+.cand:hover{background:var(--brand-soft)}
+.cand[aria-current="true"]{background:var(--solid);box-shadow:var(--shadow-2)}
+.cscore{font-size:20px;font-weight:800;letter-spacing:-.04em}
+.pathpick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pick{display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:22px;background:var(--solid);border:1.5px solid var(--line)}
+.pick h4{font-size:16.5px;font-weight:700;letter-spacing:-.02em}
+.pick p{font-size:14px;color:var(--ink-2)}
+.pick .btn{margin-top:auto}
+.pick.off{opacity:.55}
+.wsteps{display:flex;gap:6px;margin:6px 0 20px}
+.wsteps i{flex:1;height:6px;border-radius:999px;background:var(--bg-2)}
+.wsteps i.on{background:var(--brand)}
+.dropzone{display:grid;place-items:center;gap:8px;padding:30px;border-radius:20px;border:1.5px dashed var(--line-2);color:var(--ink-3);text-align:center}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.opt{display:grid;gap:4px;padding:16px;border-radius:20px;border:1.5px solid var(--line-2);background:var(--surface-2);cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .2s,background-color .2s}
+.opt b{font-size:20px;font-weight:800;letter-spacing:-.03em}
+.opt span{font-size:13px;color:var(--ink-3)}
+.opt[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
+
+/* ---------- menus, fenêtres, messages flash ---------- */
+.pop{position:absolute;right:0;top:calc(100% + 10px);width:min(380px,calc(100vw - 24px));padding:10px;border-radius:24px;background:var(--solid);border:1px solid var(--line);box-shadow:0 30px 70px -24px rgba(18,16,46,.4);z-index:60;transform-origin:top right;animation:pop .22s var(--ease-out)}
+.pop.sm{width:240px}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(-6px)}}
+.pop h3{font-size:15px;font-weight:700;padding:8px 10px}
+.pop .item{width:100%;display:flex;gap:12px;align-items:flex-start;padding:10px;border-radius:16px;border:0;background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.pop .item:hover{background:var(--brand-soft)}
+.pop .item .ico{width:34px;height:34px;border-radius:12px}
+.scrim{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(18,16,46,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fade .2s ease}
+.modal{position:relative;width:min(560px,100%);max-height:min(90vh,880px);overflow:auto;border-radius:30px;background:var(--solid);border:1px solid var(--line);box-shadow:0 40px 100px -30px rgba(18,16,46,.55);padding:26px;animation:mrise .35s var(--ease-out)}
+.modal.wide{width:min(780px,100%)}
+@keyframes mrise{from{opacity:0;transform:translateY(18px) scale(.98)}}
+.modal h2{font-size:24px;font-weight:800;letter-spacing:-.035em;line-height:1.12;padding-right:40px}
+.modal .lead{color:var(--ink-2);margin-top:8px}
+.mclose{position:absolute;right:16px;top:16px;width:40px;height:40px;border-radius:50%;border:0;background:var(--bg-2);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.mfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:28px;z-index:100;translate:-50% 16px;opacity:0;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);padding:12px 18px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:600;font-size:14.5px;box-shadow:0 20px 40px -16px rgba(18,16,46,.5);transition:opacity .3s,translate .35s var(--ease-out);pointer-events:none}
+.toast.show{opacity:1;translate:-50% 0}
+.toast .ic{color:var(--mint);stroke-width:2.4}
+.proto{position:fixed;right:16px;bottom:16px;z-index:70;font-size:13.5px}
+.proto>button{height:36px;padding:0 14px;border-radius:999px;border:1px dashed var(--line-2);background:var(--surface-2);font:600 13px/1 var(--font);color:var(--ink-3);cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.proto .box{position:absolute;right:0;bottom:46px;width:300px;padding:16px;border-radius:22px;background:var(--solid);border:1px solid var(--line);box-shadow:0 30px 60px -24px rgba(18,16,46,.4);display:grid;gap:12px}
+.proto .box p{font-size:12.5px;color:var(--ink-3)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1180px){
+  .swipe-grid{grid-template-columns:minmax(0,1fr)}
+  .why{max-width:520px;width:100%;justify-self:center}
+  .cands{grid-template-columns:300px minmax(0,1fr)}
+  .hlist{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:1023px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  .bar{min-height:64px;padding:10px 16px}
+  .bar .logo-m{display:block}
+  .view{padding:16px 16px 120px}
+  .tabbar{display:flex;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:50;gap:4px;padding:7px;border-radius:26px;background:color-mix(in srgb,var(--solid) 88%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid var(--line);box-shadow:0 20px 50px -20px rgba(18,16,46,.4)}
+  .tabbar a,.tabbar button{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px;border:0;background:none;border-radius:18px;color:var(--ink-3);font:600 11.5px/1.1 var(--font);text-decoration:none;cursor:pointer}
+  .tabbar [aria-current="page"]{color:var(--brand-text);background:var(--brand-soft)}
+  .tabbar .count{position:absolute;top:2px;left:calc(50% + 6px);margin:0;min-width:18px;height:18px;font-size:11px;padding:0 5px}
+  .mwrap{height:calc(100vh - 64px - 150px)}
+  .toast{bottom:100px}
+  .proto{bottom:96px}
+}
+@media (max-width:900px){
+  .wide-l,.wide-r,.g2,.g3,.homes,.plans,.cands,.pathpick{grid-template-columns:minmax(0,1fr)}
+  .constel{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 0}
+  .kpi:nth-child(3){border-left:0}
+  .mwrap{grid-template-columns:minmax(0,1fr)}
+  .mwrap[data-open="1"] .mlist{display:none}
+  .mwrap:not([data-open="1"]) .chat{display:none}
+  .back-m{display:grid}
+  .lrow{grid-template-columns:88px minmax(0,1fr)}
+  .lrow .art{height:88px}
+  .lrow .acts{grid-column:1 / -1}
+}
+@media (max-width:640px){
+  .hlist{grid-template-columns:minmax(0,1fr)}
+  .f2,.kv,.stats,.seq,.opts{grid-template-columns:minmax(0,1fr)}
+  .deck{height:520px}
+  .prof{grid-template-columns:auto minmax(0,1fr)}
+  .prof>.acts{grid-column:1 / -1}
+  .pathband{grid-template-columns:auto minmax(0,1fr)}
+  .pathband>.acts{grid-column:1 / -1}
+  .req{grid-template-columns:auto minmax(0,1fr)}
+  .req>.acts{grid-column:1 / -1}
+  .scrim{place-items:end center;padding:0}
+  .modal{width:100%;max-height:92vh;border-radius:30px 30px 0 0}
+  .hello h2{font-size:2.1rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+<style>
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;width:100%}
+.home .ht{font-size:17px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.cl-dash{animation:dash 14s linear infinite}
+.m-land{fill:var(--map-land)}
+.m-street{stroke:var(--map-street)}
+.m-water{stroke:var(--map-water)}
+.m-park{fill:var(--map-park)}
+.keys button{display:grid;place-items:center;color:var(--ink)}
+.proto .box{width:340px}
+.tabbar span{text-align:center}
+.skip{position:absolute;left:12px;top:-80px;z-index:200;padding:10px 16px;border-radius:999px;background:var(--brand);color:#FFFFFF;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+.back-m .ic{transform:rotate(180deg)}
+.menu-nav a{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;text-decoration:none;color:var(--ink-2);font-weight:500}
+.menu-nav a[aria-current="page"]{background:var(--brand-soft);color:var(--ink);font-weight:600}
+.menu-nav h3{font-size:13px;font-weight:600;color:var(--ink-3);margin:14px 12px 6px}
+@media (min-width:1181px){.why{position:sticky;top:96px}}
+.home .hl{display:grid;gap:6px;min-width:0}
+.pill,.chip{word-spacing:.1em}
+.mclose{z-index:3}
+.proto .seg{flex-wrap:wrap;border-radius:18px}
+.tscroll .tbl{min-width:560px}
+.phead{flex-wrap:wrap}
+.cands>*{scroll-margin-top:84px}
+@media (max-width:640px){
+  .deck{height:min(470px,56vh)}
+  .filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;width:100%;padding-bottom:2px}
+  .filters>*{flex:none}
+  .toolbar .seg .ic{display:none}
+  .prof{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hlist{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:82%;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+  .hlist>*{scroll-snap-align:start}
+}
+.constel .info{padding:2px 2px 0}
+.grid>.stackv{display:flex;flex-direction:column}
+.grid>.stackv>.panel:last-child{flex:1}
+@media (max-width:760px){.home{grid-template-columns:minmax(0,1fr)}}
+</style>
+<style>
+/* =====================================================================
+   ISALY, pages du site (hors landing et espace connecté) : version 2
+   Mêmes jetons et composants que la maquette du tableau de bord.
+   ===================================================================== */
+.wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 clamp(16px,3vw,32px)}
+.pub{min-height:100vh;display:flex;flex-direction:column}
+.pub>main{flex:1}
+/* En-tête public (identique à la landing) */
+.phdr{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 78%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--line)}
+.phdr .wrap{display:flex;align-items:center;gap:22px;min-height:72px}
+.plogo{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:22px;letter-spacing:-.05em;color:var(--ink);text-decoration:none}
+.plogo svg{width:32px;height:32px}
+.pnav{display:flex;gap:4px;margin-left:10px}
+.pnav a{padding:9px 12px;border-radius:999px;color:var(--ink-2);text-decoration:none;font-weight:500}
+.pnav a:hover,.pnav a[aria-current="page"]{background:var(--brand-soft);color:var(--ink)}
+.phdr .sp{flex:1}
+.phdr-cta{display:flex;align-items:center;gap:8px}
+.phdr-cta .login{color:var(--ink);font-weight:600;text-decoration:none;padding:9px 12px;border-radius:999px}
+.burger{display:none}
+.mnav{display:none}
+/* Pied de page public */
+.pftr{margin-top:72px;border-top:1px solid var(--line);background:var(--surface);padding:48px 0 28px}
+.pftr-grid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:28px}
+.pftr p{color:var(--ink-2);max-width:34ch;margin-top:10px}
+.pftr h4{font-size:14px;font-weight:700;margin-bottom:12px}
+.pftr ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.pftr a{color:var(--ink-2);text-decoration:none}
+.pftr a:hover{color:var(--ink)}
+.pftr .legal{margin-top:32px;color:var(--ink-3);font-size:13.5px}
+/* Communs des pages publiques */
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13.5px;color:var(--ink-3);margin:22px 0 14px}
+.crumbs a{color:var(--ink-2);text-decoration:none}
+.crumbs .ic{width:14px;height:14px}
+.sec{margin-top:44px}
+.sec>h2,.h2{font-size:clamp(1.4rem,2.4vw,1.9rem);font-weight:800;letter-spacing:-.045em;line-height:1.1;margin-bottom:16px}
+.h1{font-size:clamp(2.2rem,5vw,3.9rem);font-weight:800;letter-spacing:-.06em;line-height:.98}
+.lede{font-size:clamp(1.02rem,1.5vw,1.2rem);color:var(--ink-2);max-width:62ch;margin-top:14px}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* Annonce publique */
+.gal{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:200px 200px;gap:10px;border-radius:28px;overflow:hidden}
+.gal .art:first-child{grid-row:1/3}
+.gal .art{border-radius:0}
+.gal .more{position:absolute;right:14px;bottom:14px}
+.lay{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:36px;align-items:start;margin-top:28px}
+.lay h1{font-size:clamp(1.7rem,3vw,2.5rem);font-weight:800;letter-spacing:-.05em;line-height:1.05}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.buy{position:sticky;top:92px;display:grid;gap:14px;padding:24px;border-radius:28px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow)}
+.buy .p{font-size:34px;font-weight:800;letter-spacing:-.05em}
+.buy .p small{font-size:15px;font-weight:500;color:var(--ink-3);letter-spacing:0}
+.buy .kv{grid-template-columns:1fr 1fr}
+.share{display:flex;gap:8px;flex-wrap:wrap}
+.amen{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.amen div{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);font-weight:500}
+.amen .ic{color:var(--brand-text)}
+.locked{display:flex;flex-wrap:wrap;gap:12px}
+.lockp{display:flex;align-items:center;gap:10px;padding:10px 14px 10px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.lockp b{filter:blur(5px);user-select:none}
+.lockp .ic{color:var(--ink-3)}
+.host{display:flex;align-items:center;gap:16px}
+.buybar{display:none}
+.minimap{height:240px;border-radius:24px;overflow:hidden;border:1px solid var(--line)}
+.minimap svg{width:100%;height:100%;display:block}
+/* Page ville */
+.hero-c{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px;align-items:end;padding:36px 0 8px}
+.hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.hstats div{padding:16px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.hstats b{display:block;font-size:26px;font-weight:800;letter-spacing:-.04em}
+.hstats span{color:var(--ink-3);font-size:13.5px}
+.qchips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0 6px}
+.qchips>*{flex:none}
+.cta-band{position:relative;overflow:hidden;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px;padding:32px;border-radius:30px;background:var(--grad);color:#FFFFFF}
+.cta-band h2{font-size:clamp(1.4rem,2.6vw,2rem);font-weight:800;letter-spacing:-.045em;line-height:1.05;max-width:22ch}
+.cta-band p{opacity:.9;margin-top:8px;max-width:48ch}
+.cta-band .btn-main{background:#FFFFFF;color:#371C9E;box-shadow:none}
+.qtext{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.qtext article{padding:20px;border-radius:22px;background:var(--surface);border:1px solid var(--line)}
+.qtext h3{font-size:17px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+.qtext p{color:var(--ink-2)}
+.faq{display:grid;gap:10px}
+.faq details{border-radius:20px;background:var(--surface);border:1px solid var(--line);padding:0 20px}
+.faq summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0;font-weight:600;font-size:16.5px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .ic{transition:transform .25s var(--ease);flex:none}
+.faq details[open] summary .ic{transform:rotate(90deg)}
+.faq details p{padding:0 0 18px;color:var(--ink-2);max-width:72ch}
+.cities{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cities a{padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.cities a .ic{color:var(--ink-3)}
+.lockscore{position:absolute;left:12px;top:12px;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.92);color:#12102E;font-weight:700;font-size:13px}
+.lockscore .ic{width:14px;height:14px}
+/* Blog */
+.bcats{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}
+.feat{display:grid;grid-template-columns:1.2fr 1fr;gap:0;border-radius:30px;overflow:hidden;background:var(--solid);border:1px solid var(--line);text-decoration:none;color:inherit;cursor:pointer}
+.feat .art{min-height:320px}
+.feat .in{padding:32px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.feat h2{font-size:clamp(1.5rem,2.6vw,2.2rem);font-weight:800;letter-spacing:-.045em;line-height:1.05}
+.feat p{color:var(--ink-2)}
+.feat .link{display:inline-flex;align-items:center;gap:6px}
+.meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--ink-3);font-size:13.5px}
+.posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.post{display:flex;flex-direction:column;border-radius:24px;overflow:hidden;background:var(--solid);border:1px solid var(--line);cursor:pointer;text-align:left;padding:0;font:inherit;color:inherit;transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
+.post:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.post .art{height:170px}
+.post .in{padding:16px 18px 18px;display:grid;gap:8px}
+.post h3{font-size:18px;font-weight:700;letter-spacing:-.025em;line-height:1.2}
+/* Article et pages de texte */
+.art-head{max-width:820px;margin:0 auto;text-align:center;padding:28px 0 22px}
+.art-head .h1{font-size:clamp(2rem,4.4vw,3.3rem)}
+.art-head .meta{justify-content:center;margin-top:16px}
+.cover{height:clamp(220px,34vw,420px);border-radius:30px}
+.art-lay{display:grid;grid-template-columns:230px minmax(0,1fr);gap:48px;align-items:start;margin-top:40px}
+.toc{position:sticky;top:96px;display:grid;gap:4px;font-size:14px}
+.toc b{font-size:13px;color:var(--ink-3);font-weight:600;margin-bottom:6px}
+.toc a{color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:10px;border-left:2px solid var(--line)}
+.toc a[aria-current="true"]{color:var(--ink);border-left-color:var(--brand);background:var(--brand-soft)}
+.prose{max-width:72ch;font-size:17px;line-height:1.72;color:var(--ink)}
+.prose>*+*{margin-top:1.05em}
+.prose h2{font-size:1.65rem;font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-top:1.9em}
+.prose h3{font-size:1.2rem;font-weight:700;letter-spacing:-.02em;margin-top:1.5em}
+.prose p,.prose li{color:var(--ink-2)}
+.prose strong{color:var(--ink)}
+.prose a{color:var(--brand-text);font-weight:600}
+.prose ul,.prose ol{padding-left:1.3em}
+.prose li+li{margin-top:.4em}
+.prose blockquote{margin-left:0;padding:18px 22px;border-left:3px solid var(--brand);border-radius:0 18px 18px 0;background:var(--brand-soft);color:var(--ink);font-size:1.08em;font-weight:500}
+.prose table{width:100%;border-collapse:collapse;font-size:15px}
+.prose th,.prose td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+.prose th{color:var(--ink-3);font-weight:600;font-size:13px}
+.prose figure .art{height:260px;border-radius:22px}
+.prose figcaption{font-size:13.5px;color:var(--ink-3);margin-top:8px;text-align:center}
+.callout{display:flex;gap:14px;padding:18px 20px;border-radius:20px;background:var(--info-bg)}
+.callout .ic{color:var(--info-ink);flex:none;margin-top:3px}
+.callout p{color:var(--ink)}
+.cta-card{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:22px;border-radius:24px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow-2)}
+.cta-card .grow{min-width:220px}
+.cta-card b{display:block;font-size:18px;letter-spacing:-.02em}
+.cta-card span{color:var(--ink-2)}
+.upd{display:inline-flex;align-items:center;gap:8px;color:var(--ink-3);font-size:14px;margin-top:12px}
+/* Pages d'erreur */
+.err{min-height:calc(100vh - 72px);display:grid;place-items:center;text-align:center;padding:40px 16px}
+.err .in{display:grid;justify-items:center;gap:14px;max-width:560px}
+.err svg.ill{width:min(260px,70vw);height:auto}
+.err .ecode{font-size:clamp(4rem,12vw,7.5rem);font-weight:800;letter-spacing:-.07em;line-height:.9}
+.err h1{font-size:clamp(1.6rem,3.4vw,2.3rem);font-weight:800;letter-spacing:-.045em;line-height:1.08}
+.err p{color:var(--ink-2)}
+/* Authentification */
+.auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.auth-art{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:36px;background:var(--grad);color:#FFFFFF}
+.auth-art .plogo{color:#FFFFFF}
+.auth-art .plogo path{fill:#FFFFFF;stroke:#FFFFFF}
+.auth-art blockquote{margin:0;font-size:clamp(1.8rem,3.2vw,2.8rem);font-weight:800;letter-spacing:-.05em;line-height:1.02;max-width:14ch}
+.auth-art p{opacity:.88;margin-top:14px;max-width:40ch}
+.auth-art svg.orb{position:absolute;right:-60px;top:18%;width:min(520px,56vw);opacity:.95}
+.auth-form{display:grid;place-items:center;padding:40px 20px}
+.auth-card{width:100%;max-width:420px;display:grid;gap:18px}
+.auth-card h1{font-size:clamp(1.9rem,3.2vw,2.5rem);font-weight:800;letter-spacing:-.05em;line-height:1.02}
+.auth-card .sub{color:var(--ink-2);margin-top:-6px}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:12px;height:50px;border-radius:999px;border:1px solid var(--line-2);background:var(--solid);color:var(--ink);font:600 15.5px/1 var(--font);cursor:pointer}
+.gslot{width:20px;height:20px;border-radius:50%;border:1.5px dashed var(--ink-3)}
+.or{display:flex;align-items:center;gap:12px;color:var(--ink-3);font-size:13.5px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line-2)}
+.pw{position:relative}
+.pw .input{padding-right:52px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:var(--ink-3);display:grid;place-items:center;cursor:pointer}
+.strength{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.strength i{height:5px;border-radius:999px;background:var(--bg-2)}
+.strength i.on{background:var(--grad)}
+.hint{font-size:13px;color:var(--ink-3)}
+.checkl{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-2);cursor:pointer}
+.checkl input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--brand);flex:none}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:var(--bad-bg);color:var(--bad-ink);font-weight:500}
+.alert.ok{background:var(--ok-bg);color:var(--ok-ink)}
+.input[aria-invalid="true"]{border-color:var(--bad-ink);box-shadow:0 0 0 3px var(--bad-bg)}
+.ferr{font-size:13px;color:var(--bad-ink);font-weight:500}
+.switch-l{text-align:center;color:var(--ink-2)}
+.mailbig{width:84px;height:84px;border-radius:28px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-text)}
+/* Onboarding */
+.ob{min-height:100vh;display:flex;flex-direction:column}
+.ob-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;padding:16px clamp(16px,3vw,32px);background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.ob-steps{flex:1;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;max-width:560px;margin:0 auto}
+.ob-steps i{height:6px;border-radius:999px;background:var(--bg-2)}
+.ob-steps i.on{background:var(--brand)}
+.ob-steps i.now{background:var(--grad)}
+.saved{display:inline-flex;align-items:center;gap:6px;color:var(--ok-ink);font-size:13px;font-weight:600;white-space:nowrap}
+.ob-main{flex:1;display:grid;place-items:start center;padding:28px 16px 40px}
+.ob-card{width:100%;max-width:680px;display:grid;gap:22px}
+.ob-card .eyebrow{color:var(--brand-text);font-weight:700;font-size:14px}
+.ob-card h1{font-size:clamp(1.9rem,4vw,2.9rem);font-weight:800;letter-spacing:-.055em;line-height:1}
+.ob-card .lead{color:var(--ink-2);font-size:17px;margin-top:-8px}
+.ob-foot{position:sticky;bottom:0;display:flex;justify-content:space-between;gap:12px;padding:16px clamp(16px,3vw,32px);background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line)}
+.ob-foot .in{width:100%;max-width:680px;margin:0 auto;display:flex;justify-content:space-between;gap:12px}
+.choices{display:grid;gap:12px}
+.choice{display:flex;align-items:center;gap:16px;padding:20px;border-radius:24px;border:1.5px solid var(--line-2);background:var(--solid);text-align:left;font:inherit;color:inherit;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.choice[aria-pressed="true"]{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+.choice .ico{width:52px;height:52px;border-radius:18px}
+.choice b{display:block;font-size:18px;letter-spacing:-.02em}
+.choice span.s{color:var(--ink-2)}
+.chipsel{display:flex;flex-wrap:wrap;gap:8px}
+.range{width:100%;accent-color:var(--brand);height:28px}
+.rangev{display:flex;justify-content:space-between;align-items:baseline}
+.rangev b{font-size:28px;font-weight:800;letter-spacing:-.04em}
+.qcard{padding:28px;border-radius:30px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow);display:grid;gap:22px}
+.qcard .q{font-size:clamp(1.4rem,2.8vw,2rem);font-weight:800;letter-spacing:-.045em;line-height:1.1}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.scale button{display:grid;justify-items:center;gap:10px;padding:14px 4px;border-radius:18px;border:1.5px solid var(--line-2);background:transparent;color:var(--ink-2);font:600 13px/1.2 var(--font);cursor:pointer}
+.scale button i{width:var(--d);height:var(--d);border-radius:50%;border:2px solid var(--line-2);display:block;transition:all .2s}
+.scale button[aria-pressed="true"]{border-color:var(--brand);color:var(--ink);background:var(--brand-soft)}
+.scale button[aria-pressed="true"] i{background:var(--brand);border-color:var(--brand)}
+.qprog{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dimtag{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--ink-2)}
+.dimtag i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.upl{display:grid;gap:10px}
+.upl .row{padding:14px 16px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+/* Signature du bail */
+.sgn{min-height:100vh;display:flex;flex-direction:column}
+.sgn-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:14px clamp(16px,3vw,32px);background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.sgn-top .t{font-weight:700}
+.sgn-lay{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:28px;padding:28px clamp(16px,3vw,32px) 60px;max-width:1260px;width:100%;margin:0 auto;align-items:start}
+.paper{background:#FFFFFF;color:#12102E;border-radius:10px;box-shadow:0 30px 70px -40px rgba(18,16,46,.55),0 0 0 1px rgba(18,16,46,.06);padding:clamp(24px,5vw,56px);font-size:14.5px;line-height:1.65;max-height:78vh;overflow:auto}
+.paper h2{font-size:22px;font-weight:800;letter-spacing:-.03em;text-align:center}
+.paper h3{font-size:15px;font-weight:700;margin:22px 0 6px}
+.paper p{color:#48437A}
+.paper .parties{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.paper .parties div{padding:12px;border-radius:10px;background:#F6F4FF}
+.paper .sigs{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:22px}
+.paper .sigs div{border:1px dashed rgba(18,16,46,.25);border-radius:10px;padding:10px 12px;min-height:74px;font-size:13px}
+.sgn-side{position:sticky;top:90px;display:grid;gap:16px}
+.pad{position:relative;border-radius:20px;border:1.5px dashed var(--line-2);background:var(--solid);height:180px;touch-action:none;overflow:hidden}
+.pad canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.pad .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-3);pointer-events:none;font-weight:500}
+.pad .ph[hidden]{display:none}
+.pad .line{position:absolute;left:24px;right:24px;bottom:42px;border-bottom:1.5px solid var(--line-2);pointer-events:none}
+/* Retour de paiement */
+.pay{min-height:100vh;display:grid;place-items:center;padding:40px 16px}
+.pay-card{width:100%;max-width:520px;display:grid;justify-items:center;text-align:center;gap:14px;padding:40px 28px;border-radius:32px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow)}
+.pay-card h1{font-size:clamp(1.8rem,3.4vw,2.4rem);font-weight:800;letter-spacing:-.05em;line-height:1.04}
+.pay-card p{color:var(--ink-2)}
+.okring{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:var(--grad);color:#FFFFFF;box-shadow:0 20px 40px -18px rgba(108,77,255,.8)}
+.okring .ic{width:44px;height:44px;stroke-width:2.4}
+.okring.off{background:var(--bg-2);color:var(--ink-2);box-shadow:none}
+.recap{width:100%;text-align:left}
+/* Administration */
+.adm-badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--grad);color:#FFFFFF;font-size:12px;font-weight:700}
+.adm-mnav{display:none}
+.tbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.tbar .input{max-width:320px;height:42px}
+.tscroll{overflow-x:auto;max-width:100%;position:relative}
+.tbar .seg{max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+.srch{position:relative;flex:1;max-width:340px}
+.srch .ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+.srch .input{padding-left:40px;max-width:none}
+.tbl td .acts{flex-wrap:nowrap}
+.tbl tr:hover td{background:color-mix(in srgb,var(--brand-soft) 50%,transparent)}
+.who{display:flex;align-items:center;gap:10px;min-width:180px}
+.who b{display:block;font-size:14.5px}
+.who>span:last-child>span{display:block;font-size:12.5px;color:var(--ink-3)}
+.docprev{height:170px;border-radius:18px;background:repeating-linear-gradient(135deg,var(--bg-2) 0 12px,transparent 12px 24px);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);font-weight:600}
+.spark{width:100%;height:170px;display:block}
+/* E-mails */
+.mail-lay{display:grid;grid-template-columns:300px minmax(0,1fr);gap:22px;align-items:start}
+.mail-list{display:grid;gap:6px}
+.mail-stage{border-radius:28px;background:repeating-linear-gradient(45deg,var(--bg-2) 0 10px,transparent 10px 20px);border:1px solid var(--line);padding:clamp(12px,3vw,32px);overflow-x:auto}
+.mail-meta{max-width:600px;margin:0 auto 12px;display:grid;gap:4px;font-size:13.5px;color:var(--ink-2)}
+.mail-frame{max-width:600px;margin:0 auto;background:#F6F4FF;border-radius:14px;overflow:hidden;color:#12102E}
+/* Éléments globaux */
+.demo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.stage{position:relative;min-height:260px;border-radius:24px;background:var(--bg-2);overflow:hidden;padding:18px}
+.fab{position:absolute;right:18px;bottom:18px;display:inline-flex;align-items:center;gap:8px;height:46px;padding:0 18px;border-radius:999px;border:0;background:var(--ink);color:var(--bg);font:600 14.5px/1 var(--font);box-shadow:var(--shadow);cursor:pointer}
+.wpanel{position:absolute;right:18px;bottom:76px;width:min(340px,calc(100% - 36px));border-radius:24px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow);padding:16px;display:grid;gap:12px}
+.wpanel .hrow b{font-size:16px}
+.bmsg{max-width:85%;padding:10px 14px;border-radius:18px;background:var(--bg-2);font-size:14.5px}
+.bmsg.me{justify-self:end;background:var(--brand);color:#FFFFFF}
+.install{display:flex;gap:14px;align-items:center;padding:16px;border-radius:22px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow)}
+.install .appi{width:52px;height:52px;border-radius:15px;background:var(--grad);display:grid;place-items:center;flex:none}
+.install .appi svg{width:34px;height:34px}
+.install .appi path{fill:#FFFFFF;stroke:#FFFFFF}
+.cookie{position:absolute;left:18px;right:18px;bottom:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:22px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow)}
+.cookie p{flex:1;min-width:220px;color:var(--ink-2);font-size:14px}
+.skel{border-radius:12px;background:linear-gradient(90deg,var(--bg-2) 0%,color-mix(in srgb,var(--bg-2) 40%,var(--solid)) 50%,var(--bg-2) 100%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+/* Sommaire de la maquette */
+.idx{max-width:1180px;margin:0 auto;padding:40px clamp(16px,3vw,32px) 80px}
+.idx-g{margin-top:34px}
+.idx-g h2{font-size:14px;font-weight:700;color:var(--ink-3);margin-bottom:12px}
+.idx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.idx-card{display:grid;gap:6px;padding:18px;border-radius:22px;background:var(--surface);border:1px solid var(--line);text-align:left;font:inherit;color:inherit;cursor:pointer;text-decoration:none;transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+.idx-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}
+.idx-card b{font-size:16.5px;letter-spacing:-.02em}
+.idx-card code{font-size:12.5px;color:var(--ink-3);font-family:ui-monospace,Menlo,Consolas,monospace}
+.idx-done{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.proto .pages{max-height:min(60vh,520px);overflow:auto;display:grid;gap:2px;margin:6px -6px 0;padding:0 6px}
+.proto .pages h4{font-size:12px;color:var(--ink-3);font-weight:600;margin:10px 4px 4px}
+.proto .pages a{display:block;padding:8px 10px;border-radius:10px;color:var(--ink-2);text-decoration:none;font-size:14px}
+.proto .pages a[aria-current="page"]{background:var(--brand-soft);color:var(--ink);font-weight:600}
+.proto .box{width:320px}
+.proto .seg{flex-wrap:wrap;border-radius:18px}
+/* Responsive */
+@media (max-width:1023px){
+  .pnav{display:none}
+  .burger{display:grid}
+  .phdr-cta .login{display:none}
+  .mnav{display:grid;gap:4px;padding:8px 0 16px}
+  .mnav[hidden]{display:none}
+  .mnav a{padding:12px 14px;border-radius:14px;color:var(--ink);text-decoration:none;font-weight:600}
+  .lay{grid-template-columns:minmax(0,1fr)}
+  .buy{display:none}
+  .buybar{display:flex;position:fixed;left:12px;right:12px;bottom:12px;z-index:45;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px 12px 18px;border-radius:24px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow)}
+  .buybar b{font-size:20px;letter-spacing:-.03em}
+  .hero-c{grid-template-columns:minmax(0,1fr)}
+  .art-lay{grid-template-columns:minmax(0,1fr)}
+  .toc{display:none}
+  .auth{grid-template-columns:minmax(0,1fr)}
+  .auth-art{min-height:220px;padding:24px}
+  .auth-art svg.orb{width:210px;right:-46px;top:-14px}
+  .auth-art blockquote,.auth-art p{max-width:64%}
+  .auth-art blockquote{font-size:1.7rem}
+  .sgn-lay{grid-template-columns:minmax(0,1fr)}
+  .sgn-side{position:static}
+  .paper{max-height:none}
+  .mail-lay{grid-template-columns:minmax(0,1fr)}
+  .mail-list{grid-auto-flow:column;grid-auto-columns:max-content;overflow-x:auto}
+  .adm-mnav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:0 clamp(16px,3vw,36px) 12px;position:sticky;top:74px;z-index:39;background:color-mix(in srgb,var(--bg) 88%,transparent)}
+  .adm-mnav a{flex:none;padding:8px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);text-decoration:none;font-weight:600;font-size:14px}
+  .adm-mnav a[aria-current="page"]{background:var(--brand);color:#FFFFFF;border-color:transparent}
+}
+@media (max-width:760px){
+  .gal{grid-template-columns:repeat(5,86%);grid-template-rows:260px;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:24px;scrollbar-width:none}
+  .gal .art:first-child{grid-row:auto}
+  .gal .art{scroll-snap-align:start;border-radius:22px}
+  .pftr-grid{grid-template-columns:1fr 1fr}
+  .pftr-grid>:first-child{grid-column:1/-1}
+  .hstats b{font-size:21px}
+  .qtext{grid-template-columns:minmax(0,1fr)}
+  .feat{grid-template-columns:minmax(0,1fr)}
+  .feat .art{min-height:200px}
+  .feat .in{padding:22px}
+  .demo{grid-template-columns:minmax(0,1fr)}
+  .scale{gap:6px}
+  .scale button{font-size:11.5px;padding:12px 2px}
+  .paper .parties,.paper .sigs{grid-template-columns:minmax(0,1fr)}
+  .cta-band{padding:24px}
+  .ob-top .saved span{display:none}
+  .sgn-top .pill{display:none}
+}
+</style>
+
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" role="status" aria-live="polite" data-toast></div>
+<div class="proto" data-proto></div>
+<script>
+'use strict';
+/* =====================================================================
+   Aides
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const byId = (arr, id) => arr.find(x => x.id === id);
+const avg = a => Math.round(a.reduce((s, x) => s + x, 0) / a.length);
+const eur = n => Number(n).toLocaleString('fr-FR') + '&nbsp;€';
+const pc = n => n + '&#8239;%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+
+/* Icônes au trait (1,8 px, bouts arrondis) : mêmes tracés à reprendre dans l'app */
+const ICONS = {
+  home: '<path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+  send: '<path d="M20.5 3.5 3.8 10.2l6.6 2.9 2.9 6.6z"/><path d="m10.4 13.1 4.5-4.5"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  house: '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>',
+  user: '<circle cx="12" cy="8.5" r="4"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/>',
+  spark: '<path d="M12 3.5 13.8 10.2 20.5 12l-6.7 1.8L12 20.5l-1.8-6.7L3.5 12l6.7-1.8z"/>',
+  gift: '<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.5-3.5-5-4-5.5-2S9 9 12 9Zm0 0c1.5-3.5 5-4 5.5-2S15 9 12 9Z"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.5-2-3.4-2.3.9a7.5 7.5 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.5 7.5 0 0 0-2.6 1.5l-2.3-.9-2 3.4 2 1.5a7.6 7.6 0 0 0 0 3l-2 1.5 2 3.4 2.3-.9a7.5 7.5 0 0 0 2.6 1.5l.5 2.5h4l.5-2.5a7.5 7.5 0 0 0 2.6-1.5l2.3.9 2-3.4z"/>',
+  building: '<path d="M4 20V6l8-3v17M12 8l8 3v9M3 20h18M7.5 9h1M7.5 13h1M7.5 17h1M15.5 14h1M15.5 17h1"/>',
+  inbox: '<path d="M4 13.5 6.5 5h11l2.5 8.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20"/>',
+  contract: '<path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9.5 13h6M9.5 16.5h4"/>',
+  wrench: '<path d="M15 4a5 5 0 0 0-4.6 6.9L4 17.3V20h2.7l6.4-6.4A5 5 0 0 0 20 9l-3 1-2-2 1-3z"/>',
+  card: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>',
+  bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/>',
+  logout: '<path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h9"/>',
+  heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.2"/>',
+  map: '<path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6z"/><path d="M9 4v14M15 6v14"/>',
+  list: '<path d="M8.5 6.5H20M8.5 12H20M8.5 17.5H20M4 6.5h.5M4 12h.5M4 17.5h.5"/>',
+  cards: '<rect x="4" y="5" width="12" height="15" rx="2.5"/><path d="M19.5 7.5v10a3 3 0 0 1-3 3h-6"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+  download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
+  alert: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.2v.2"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  bolt: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+  shield: '<path d="M12 3 5 6v5.5c0 4.5 3 8 7 9.5 4-1.5 7-5 7-9.5V6z"/><path d="m9 12 2 2 4-4"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
+  phone: '<path d="M6.5 3.5h3l1.5 4.5-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4.5 1.5v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z"/>',
+  image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5.5-5 4 3.5 2.5-2 4 3.5"/>',
+  clip: '<path d="m20 11.5-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.3 8.3a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4"/>',
+  euro: '<path d="M17.5 6.5a6.5 6.5 0 1 0 0 11M4 10.5h9M4 13.5h9"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  more: '<circle cx="5.5" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18.5" cy="12" r="1.1"/>',
+  door: '<path d="M5 20.5V4a1 1 0 0 1 1-1h9v17.5M15 5h3.5v15.5M3 20.5h18M11.5 12v.5"/>',
+  doc: '<path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/>',
+  pin: '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+};
+const I = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[n] || ''}</svg>`;
+const LOGO = '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M50 12L64 24.5V16H72V31.7L88 46H76V58A8 8 0 1 1 76 70V86H57A8 8 0 1 0 43 86H24V70A8 8 0 1 1 24 58V46H12Z" fill="url(#lg)" stroke="url(#lg)" stroke-width="7" stroke-linejoin="round" transform="translate(0 2)"/></svg>';
+
+/* Composants de base (équivalents React : Bubble, Stack, Chip, Pill, Segmented, Ring) */
+const bub = (n, c, s = 36) => `<span class="bub" style="--c:${c};--s:${s}px" aria-hidden="true">${n.charAt(0)}</span>`;
+const stack = (people, s = 30) => `<span class="stack">${people.map(p => bub(p.n, p.c, s)).join('')}</span>`;
+const chip = p => `<span class="chip"><i style="--c:${p.c}"></i>${p.n} <b>${pc(p.s)}</b></span>`;
+const pill = (t, k = '', ic = '') => `<span class="pill ${k}">${ic ? I(ic, 14) : ''}${t}</span>`;
+const seg = (key, opts, cur, label = 'Choisir une vue') => `<div class="seg" role="group" aria-label="${label}">${opts.map(([v, t, ic]) => `<button type="button" data-a="set" data-v="${key}:${v}" aria-pressed="${String(cur) === String(v)}">${ic ? I(ic, 17) : ''}${t}</button>`).join('')}</div>`;
+const barRow = (label, v) => `<div class="barrow"><span>${label}</span><span class="track"><i style="width:${v}%"></i></span><b>${pc(v)}</b></div>`;
+const tog = (key, on, label) => `<button class="tog" type="button" role="switch" aria-checked="${on}" aria-label="${label}" data-a="tog" data-v="${key}"></button>`;
+function ring(v, max, size, inner) {
+  const r = size / 2 - 9, c = 2 * Math.PI * r, off = c * (1 - Math.min(v / max, 1)), h = size / 2;
+  return `<div class="ring" style="width:${size}px;height:${size}px"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true"><circle cx="${h}" cy="${h}" r="${r}" fill="none" stroke="var(--bg-2)" stroke-width="9"/><circle cx="${h}" cy="${h}" r="${r}" fill="none" stroke="url(#gradRing)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${h} ${h})"/></svg><div class="ring-in">${inner}</div></div>`;
+}
+
+/* =====================================================================
+   Icônes supplémentaires (même style : trait 1,8 px, bouts arrondis)
+   ===================================================================== */
+Object.assign(ICONS, {
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  wifi: '<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M9 16a4.5 4.5 0 0 1 6 0"/><path d="M12 19.2v.1"/>',
+  wifioff: '<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M9 16a4.5 4.5 0 0 1 6 0"/><path d="M12 19.2v.1M3 3l18 18"/>',
+  washer: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="13" r="4.5"/><path d="M7.5 6.5h1M11 6.5h1"/>',
+  dish: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M4 8h16M8 5.5h1M8 12v5M12 12v5M16 12v5"/>',
+  balcony: '<path d="M4 11h16M6 11v9M10 11v9M14 11v9M18 11v9M3 20h18M7 11V6a5 5 0 0 1 10 0v5"/>',
+  kitchen: '<path d="M4 10h16v10H4zM4 14h16M9 3.5c-.8 1-.8 2 0 3M13 3.5c-.8 1-.8 2 0 3"/>',
+  desk: '<path d="M3 9h18M5 9v11M19 9v11M14 9v6h5M8 9V5h4v4"/>',
+  heat: '<path d="M6 5v14M10 5v14M14 5v14M18 5v14M4 19h16M4 5h16"/>',
+  metro: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 17l-2 4M15 17l2 4M9 14v.1M15 14v.1"/>',
+  share: '<circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  eyeoff: '<path d="M3 3l18 18M10.6 5.6A9.7 9.7 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3 3.8M6.5 7.4C4 9.2 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  upload: '<path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 19.5h14"/>',
+  users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M3 19.5c.8-3 3-4.5 6-4.5s5.2 1.5 6 4.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16.5 14.8c2.3.2 3.8 1.6 4.5 4"/>',
+  flag: '<path d="M5 21V4h11l-2 4 2 4H5"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-7M3 20h18"/>',
+  book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h7"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>',
+  bot: '<rect x="4" y="7" width="16" height="12" rx="4"/><path d="M12 3v4M9 12.5v1M15 12.5v1M9.5 16h5"/>',
+  bug: '<rect x="7" y="7" width="10" height="13" rx="5"/><path d="M12 7V4M3 12h4M17 12h4M4 18l3-2M20 18l-3-2M4 7l3 2M20 7l-3 2"/>',
+  cookie: '<path d="M20.5 12.5A8.5 8.5 0 1 1 11.5 3.5a3 3 0 0 0 4 3.5 3 3 0 0 0 5 5.5z"/><path d="M8.5 10v.1M14 14.5v.1M9 15.5v.1"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/>',
+  eraser: '<path d="M8 20h12M5.5 14.5 14 6l4 4-8.5 8.5H7z"/>',
+  sign: '<path d="M3 17c3-4 5-9 7-9s-2 9 1 9 3-4 5-4 1 4 4 4"/>',
+});
+
+/* =====================================================================
+   Données de démonstration (dans l'app : Supabase, contenus MDX, Stripe)
+   ===================================================================== */
+const COL = { coral: '#FF5C8A', azure: '#2F6BFF', mint: '#16C79A', sun: '#FFB524', violet: '#6C4DFF', ink: '#48437A' };
+const DIMS = ['Rythme', 'Rangement', 'Vie sociale', 'Calme', 'Partage'];
+const DIMC = [COL.azure, COL.mint, COL.coral, COL.violet, COL.sun];
+const who = (n, c) => ({ n, c });
+const AD = {
+  id: 'croix-rousse-13m2', q: 'Croix-Rousse', ar: 'Lyon 4e', room: 13, pieces: 5, surface: 96, rent: 560, rentHC: 490, charges: 70, deposit: 490, avail: '1er novembre 2026', furn: true,
+  arts: ['a1', 'a4', 'a5', 'a3', 'a2'], colocs: [who('Hugo', COL.azure), who('Jade', COL.sun), who('Malik', COL.mint)],
+  amen: [['wifi', 'Fibre et wifi'], ['washer', 'Lave-linge'], ['dish', 'Lave-vaisselle'], ['balcony', 'Balcon'], ['kitchen', 'Cuisine équipée'], ['desk', 'Bureau dans la chambre'], ['heat', 'Chauffage collectif'], ['metro', 'Métro C à 4 minutes']],
+  desc: 'Grande chambre lumineuse sur cour, dans un 5 pièces des pentes de la Croix-Rousse. La coloc compte trois personnes : un étudiant en master, une infirmière et un développeur. Cuisine partagée, grand salon, balcon plein sud.',
+};
+const ADS = [
+  { q: 'Brotteaux', ar: 'Lyon 6e', room: 14, rent: 620, art: 'a3', colocs: [who('Inès', COL.coral), who('Arthur', COL.azure), who('Zoé', COL.mint)] },
+  { q: 'Guillotière', ar: 'Lyon 7e', room: 12, rent: 510, art: 'a2', colocs: [who('Nina', COL.coral), who('Léo', COL.mint), who('Yanis', COL.sun)] },
+  { q: 'Vieux Lyon', ar: 'Lyon 5e', room: 14, rent: 590, art: 'a4', colocs: [who('Chloé', COL.coral), who('Adam', COL.azure)] },
+  { q: 'Part-Dieu', ar: 'Lyon 3e', room: 11, rent: 530, art: 'a5', colocs: [who('Emma', COL.coral), who('Rayan', COL.sun)] },
+  { q: 'Monplaisir', ar: 'Lyon 8e', room: 15, rent: 495, art: 'a3', colocs: [who('Sarah', COL.sun), who('Tom', COL.azure), who('Ali', COL.mint)] },
+  { q: 'Presqu’île', ar: 'Lyon 2e', room: 10, rent: 600, art: 'a1', colocs: [who('Noé', COL.mint), who('Alice', COL.coral)] },
+];
+const QUARTIERS = [
+  ['Croix-Rousse', 'Les pentes et le plateau : un quartier de village en pleine ville, avec ses marchés et ses traboules.'],
+  ['Guillotière', 'Cosmopolite et vivant, à deux pas des quais du Rhône et des campus des Berges.'],
+  ['Presqu’île', 'Le centre de Lyon, entre Rhône et Saône : tout se fait à pied, mais les loyers sont plus élevés.'],
+  ['Part-Dieu', 'Autour de la gare et du quartier d’affaires : pratique pour les trajets, très bien desservi.'],
+];
+const CITIES = ['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Lille', 'Toulouse', 'Nantes', 'Montpellier', 'Strasbourg', 'Rennes', 'Grenoble', 'Nice'];
+const POSTS = [
+  { slug: 'repartir-les-charges', t: 'Colocation : comment répartir les charges sans se fâcher', cat: 'Budget', min: 6, date: '22 septembre 2026', art: 'a2', ex: 'Loyer, énergie, internet, courses communes : les méthodes qui marchent, avec un exemple chiffré.' },
+  { slug: 'bail-de-colocation', t: 'Le bail de colocation expliqué simplement', cat: 'Droit', min: 8, date: '15 septembre 2026', art: 'a5', ex: 'Bail unique ou baux individuels, clause de solidarité, préavis : ce qu’il faut savoir avant de signer.' },
+  { slug: 'questions-visite', t: 'Visite de coloc : les questions à poser', cat: 'Recherche', min: 5, date: '8 septembre 2026', art: 'a1', ex: 'Rythmes de vie, ménage, invités : les sujets à aborder pour éviter les mauvaises surprises.' },
+  { slug: 'louer-en-colocation', t: 'Bailleurs : louer en colocation, ce qui change', cat: 'Bailleurs', min: 7, date: '1er septembre 2026', art: 'a3', ex: 'Rentabilité, rotation des locataires, gestion au quotidien : le point sur la location en colocation.' },
+  { slug: 'quartiers-lyon', t: 'Vivre en coloc à Lyon : le guide des quartiers', cat: 'Villes', min: 9, date: '25 août 2026', art: 'a4', ex: 'De la Croix-Rousse à Gerland, où chercher selon ton budget et ton rythme de vie.' },
+];
+const QUESTIONS = [
+  [0, 'En semaine, je suis plutôt du matin.'], [0, 'Mes horaires sont réguliers d’une semaine à l’autre.'], [0, 'Je rentre rarement après minuit en semaine.'],
+  [1, 'La vaisselle ne doit pas attendre le lendemain.'], [1, 'Un planning de ménage, c’est indispensable.'], [1, 'Je remarque vite quand les espaces communs sont en désordre.'],
+  [2, 'J’aime que la coloc passe du temps ensemble.'], [2, 'Inviter des amis à la maison, c’est fréquent pour moi.'], [2, 'Un repas partagé par semaine, j’adore l’idée.'],
+  [3, 'J’ai besoin de silence pour travailler à la maison.'], [3, 'Le bruit le soir me dérange vite.'], [3, 'Je préfère être prévenu avant qu’on invite du monde.'],
+  [4, 'Partager les courses de base me convient.'], [4, 'Prêter mes affaires ne me pose pas de problème.'], [4, 'Je préfère une cagnotte commune pour les dépenses.'],
+];
+const SCALE = ['Pas du tout', 'Plutôt pas', 'Neutre', 'Plutôt oui', 'Tout à fait'];
+
+/* =====================================================================
+   État
+   ===================================================================== */
+const S = {
+  page: 'index', v: {}, burger: false, proto: false, pwShow: false, pw: '', agree: false,
+  ob: 0, obRole: 'loc', obAns: {}, obQ: 0, obSit: 'Étudiant', obBudget: 600, obFurn: true,
+  sgStep: 1, sgAgree: false, sgDrawn: false, sgDone: false,
+  mail: 'confirm', chat: false, fb: false, cookie: true, install: true,
+  admUser: '', verif: 'v1', theme: 'auto',
+};
+const V = id => S.v[id] || (byId(PAGES, id).vars ? byId(PAGES, id).vars[0][0] : '');
+
+/* =====================================================================
+   Registre des pages : id, groupe, titre, route probable, variantes
+   ===================================================================== */
+const PAGES = [
+  { id: 'index', g: '', t: 'Sommaire', r: '' },
+  { id: 'annonce', g: 'Pages publiques', t: 'Annonce publique', r: '/annonce/[id]' },
+  { id: 'ville', g: 'Pages publiques', t: 'Page ville', r: '/colocation/[ville]', vars: [['full', 'Avec annonces'], ['empty', 'Sans annonce']] },
+  { id: 'blog', g: 'Pages publiques', t: 'Blog ISALY Immo', r: '/blog' },
+  { id: 'article', g: 'Pages publiques', t: 'Article', r: '/blog/[slug]' },
+  { id: 'legal', g: 'Pages publiques', t: 'Pages légales', r: '/mentions-legales, /cgu, /confidentialite', vars: [['ml', 'Mentions légales'], ['cgu', 'CGU'], ['conf', 'Confidentialité']] },
+  { id: 'contact', g: 'Pages publiques', t: 'Contact', r: '/contact', vars: [['form', 'Formulaire'], ['sent', 'Message envoyé']] },
+  { id: 'e404', g: 'Pages publiques', t: 'Page introuvable', r: 'app/not-found.tsx' },
+  { id: 'e500', g: 'Pages publiques', t: 'Erreur', r: 'app/error.tsx et global-error.tsx' },
+  { id: 'offline', g: 'Pages publiques', t: 'Hors ligne', r: 'page hors ligne de la PWA' },
+  { id: 'login', g: 'Compte', t: 'Connexion', r: '/auth/login', vars: [['ok', 'Normal'], ['err', 'Erreur']] },
+  { id: 'register', g: 'Compte', t: 'Inscription', r: '/auth/register', vars: [['std', 'Directe'], ['ref', 'Parrainage'], ['ville', 'Depuis une ville']] },
+  { id: 'forgot', g: 'Compte', t: 'Mot de passe oublié', r: 'route existante', vars: [['ask', 'Demande'], ['sent', 'E-mail envoyé']] },
+  { id: 'reset', g: 'Compte', t: 'Nouveau mot de passe', r: 'route existante' },
+  { id: 'verify', g: 'Compte', t: 'Vérifie ta boîte mail', r: 'après /auth/register' },
+  { id: 'onboarding', g: 'Parcours plein écran', t: 'Onboarding et test', r: '/onboarding' },
+  { id: 'signature', g: 'Parcours plein écran', t: 'Signature du bail', r: 'route de signature existante' },
+  { id: 'paiement', g: 'Parcours plein écran', t: 'Retour de paiement', r: 'pages de retour Stripe', vars: [['plus', 'Swiper Plus'], ['boost', 'Mise en avant'], ['auto', 'Autogestion'], ['cancel', 'Paiement annulé']] },
+  { id: 'adm-dash', g: 'Administration', t: 'Tableau de bord', r: '/admin' },
+  { id: 'adm-users', g: 'Administration', t: 'Utilisateurs', r: '/admin/utilisateurs' },
+  { id: 'adm-verif', g: 'Administration', t: 'Vérifications', r: '/admin/verifications' },
+  { id: 'adm-ads', g: 'Administration', t: 'Annonces', r: '/admin/annonces' },
+  { id: 'adm-reports', g: 'Administration', t: 'Signalements', r: '/admin/signalements' },
+  { id: 'adm-pay', g: 'Administration', t: 'Paiements', r: '/admin/paiements' },
+  { id: 'adm-agencies', g: 'Administration', t: 'Agences partenaires', r: '/admin/agences (nouveau)' },
+  { id: 'adm-bugs', g: 'Administration', t: 'Retours bêta', r: '/admin/bug-reports' },
+  { id: 'emails', g: 'Transverse', t: 'E-mails', r: 'modèles Resend' },
+  { id: 'elements', g: 'Transverse', t: 'Éléments globaux', r: 'widgets et états' },
+];
+
+/* =====================================================================
+   En-tête et pied de page publics (repris de la landing)
+   ===================================================================== */
+function pubHeader(cur = '') {
+  const links = [['Le matching', '#/index'], ['Annonces', '#/ville'], ['Bailleurs', '#/index'], ['Tarifs', '#/index'], ['Blog', '#/blog']];
+  return `<header class="phdr"><div class="wrap"><a class="plogo" href="#/index" aria-label="ISALY, accueil">${LOGO}isaly</a><nav class="pnav" aria-label="Navigation principale">${links.map(([t, h]) => `<a href="${h}"${cur === t ? ' aria-current="page"' : ''}>${t}</a>`).join('')}</nav><span class="sp"></span><div class="phdr-cta"><a class="login" href="#/login">Connexion</a><a class="btn btn-main btn-sm" href="#/register">Trouver ma coloc</a><button class="iconbtn burger" type="button" data-a="burger" aria-expanded="${S.burger}" aria-label="${S.burger ? 'Fermer le menu' : 'Ouvrir le menu'}">${I(S.burger ? 'x' : 'menu')}</button></div></div><div class="wrap"><nav class="mnav" aria-label="Menu"${S.burger ? '' : ' hidden'}>${links.map(([t, h]) => `<a href="${h}">${t}</a>`).join('')}<a href="#/login">Connexion</a></nav></div></header>`;
+}
+function pubFooter() {
+  return `<footer class="pftr"><div class="wrap"><div class="pftr-grid"><div><a class="plogo" href="#/index" aria-label="ISALY, accueil">${LOGO}isaly</a><p>La plateforme dédiée à la colocation, avec un matching de compatibilité entre colocataires.</p></div><div><h4>Colocations</h4><ul>${CITIES.slice(0, 6).map(c => `<li><a href="#/ville">${c}</a></li>`).join('')}</ul></div><div><h4>ISALY</h4><ul><li><a href="#/index">Le matching</a></li><li><a href="#/index">Bailleurs</a></li><li><a href="#/index">Tarifs</a></li><li><a href="#/blog">Blog ISALY Immo</a></li></ul></div><div><h4>Informations</h4><ul><li><a href="#/legal" data-a="legalv" data-v="ml">Mentions légales</a></li><li><a href="#/legal" data-a="legalv" data-v="cgu">CGU</a></li><li><a href="#/legal" data-a="legalv" data-v="conf">Confidentialité</a></li><li><a href="#/contact">Contact</a></li></ul></div></div><p class="legal">© 2026 ISALY</p></div></footer>`;
+}
+const pub = (cur, body) => `<div class="pub">${pubHeader(cur)}<main id="contenu" tabindex="-1">${body}</main>${pubFooter()}</div>`;
+
+/* =====================================================================
+   Coque de l'administration (mêmes classes que l'espace connecté)
+   ===================================================================== */
+const ADM_NAV = [['adm-dash', 'Tableau de bord', 'home'], ['adm-users', 'Utilisateurs', 'users'], ['adm-verif', 'Vérifications', 'shield', 3], ['adm-ads', 'Annonces', 'building'], ['adm-reports', 'Signalements', 'flag', 2], ['adm-pay', 'Paiements', 'card'], ['adm-agencies', 'Agences partenaires', 'globe'], ['adm-bugs', 'Retours bêta', 'bug', 4]];
+function admin(title, body, actions = '') {
+  const nav = ADM_NAV.map(([id, t, ic, n]) => `<a href="#/${id}"${S.page === id ? ' aria-current="page"' : ''}>${I(ic)}<span>${t}</span>${n ? `<span class="count">${n}</span>` : ''}</a>`).join('');
+  return `<div class="app"><aside class="side"><a class="brand" href="#/adm-dash" aria-label="ISALY Administration">${LOGO}isaly</a><div style="padding:0 10px 8px"><span class="adm-badge">Administration</span></div><nav class="nav" aria-label="Administration">${nav}</nav><div class="side-card"><b>Retour à l’app</b><p>Tu restes connecté avec ton compte.</p><a class="link" href="#/index">Ouvrir l’espace connecté</a></div><div class="side-me">${bub('Isaly', COL.violet, 38)}<div class="grow"><b>Équipe ISALY</b><span>isaly.register@gmail.com</span></div></div></aside><div class="main"><header class="bar"><span class="logo-m">${LOGO}</span><h1>${title}</h1><span class="sp"></span>${actions}</header><nav class="adm-mnav" aria-label="Administration">${ADM_NAV.map(([id, t]) => `<a href="#/${id}"${S.page === id ? ' aria-current="page"' : ''}>${t}</a>`).join('')}</nav><main class="view" id="contenu" tabindex="-1"><div class="screen enter">${body}</div></main></div></div>`;
+}
+/* =====================================================================
+   Sommaire de la maquette
+   ===================================================================== */
+function vIndex() {
+  const groups = [...new Set(PAGES.filter(p => p.g).map(p => p.g))];
+  return `<div class="idx"><a class="plogo" href="#/index">${LOGO}isaly</a><h1 class="h1" style="margin-top:28px">Pages du site, <span class="grad-text">version 2</span></h1><p class="lede">Toutes les pages hors landing et espace connecté, au niveau de design de la charte. Chaque carte ouvre la page ; le bouton « Pages » en bas à droite permet de naviguer et d’afficher les variantes.</p><div class="idx-done">${pill('Landing : déjà faite', 'ok', 'check')}${pill('Espace connecté : déjà fait', 'ok', 'check')}${pill(`${PAGES.length - 1} pages dans cette maquette`, 'brand')}</div>${groups.map(g => `<section class="idx-g"><h2>${g}</h2><div class="idx-cards">${PAGES.filter(p => p.g === g).map(p => `<a class="idx-card" href="#/${p.id}"><b>${p.t}</b><code>${p.r}</code>${p.vars ? `<span class="s">${p.vars.length} variantes</span>` : ''}</a>`).join('')}</div></section>`).join('')}</div>`;
+}
+
+/* =====================================================================
+   Visuels partagés
+   ===================================================================== */
+function miniMap() {
+  return `<svg viewBox="0 0 600 240" role="img" aria-label="Quartier de la Croix-Rousse, zone approximative"><rect class="m-land" width="600" height="240"/><path class="m-water" d="M60 0C120 60 150 120 170 240" fill="none" stroke-width="16"/><path class="m-water" d="M520 0C470 70 440 150 450 240" fill="none" stroke-width="20"/><circle cx="310" cy="112" r="62" fill="#6C4DFF" opacity=".14"/><circle cx="310" cy="112" r="62" fill="none" stroke="#6C4DFF" stroke-width="2" stroke-dasharray="5 7"/><circle cx="310" cy="112" r="7" fill="#6C4DFF" stroke="#FFFFFF" stroke-width="3"/><text class="area" x="310" y="200" text-anchor="middle">Croix-Rousse, Lyon 4e</text></svg>`;
+}
+function orb() {
+  const n = [[190, 110, 46, COL.violet, 'Toi'], [360, 70, 34, COL.azure, 'H'], [380, 250, 38, COL.mint, 'M'], [150, 290, 30, COL.sun, 'J']];
+  const lines = n.slice(1).map(([x, y]) => `<line x1="190" y1="110" x2="${x}" y2="${y}" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="2" stroke-dasharray="4 7"/>`).join('');
+  return `<svg class="orb" viewBox="0 0 480 380" aria-hidden="true">${lines}${n.map(([x, y, r, c, t]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#rb${c.slice(1)})"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" fill="#FFFFFF" font-weight="800" font-size="${r > 40 ? 20 : 17}" font-family="var(--font)">${t}</text>`).join('')}<g transform="translate(275 90)"><rect x="-30" y="-15" width="60" height="30" rx="15" fill="#FFFFFF"/><text text-anchor="middle" dominant-baseline="central" fill="#371C9E" font-weight="800" font-size="14" font-family="var(--font)">92&#8239;%</text></g></svg>`;
+}
+const houseOutline = (missing) => `<svg class="ill" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 12L64 24.5V16H72V31.7L88 46H76V58A8 8 0 1 1 76 70V86H57A8 8 0 1 0 43 86H24V70A8 8 0 1 1 24 58V46H12Z" fill="url(#lgSoft)" stroke="url(#lg)" stroke-width="3" stroke-linejoin="round" transform="translate(0 2)"/>${missing ? '<circle cx="84" cy="22" r="8" fill="url(#lg)"><animate attributeName="cy" values="22;16;22" dur="3s" repeatCount="indefinite"/></circle>' : ''}</svg>`;
+function adCard(a, i) {
+  return `<a class="lcard" href="#/annonce" style="text-decoration:none;color:inherit"><div class="art ${a.art}"><span class="lockscore">${I('lock')}Ta compatibilité</span></div><div class="body"><h3>${a.q}, ${a.ar}</h3><span class="s">Chambre de ${a.room}&nbsp;m²</span><div class="foot"><span class="price">${eur(a.rent)} <small>par mois</small></span>${stack(a.colocs, 28)}</div></div></a>`;
+}
+
+/* =====================================================================
+   Annonce publique : /annonce/[id]
+   ===================================================================== */
+function vAnnonce() {
+  const a = AD;
+  const gal = `<div class="gal">${a.arts.map((c, i) => `<div class="art ${c}">${i === 4 ? `<button class="btn btn-glass btn-sm more" type="button" data-a="toast" data-v="Galerie en plein écran">${I('image', 16)}Voir les 12 photos</button>` : ''}</div>`).join('')}</div>`;
+  const main = `<div><h1>Chambre de ${a.room}&nbsp;m² dans un ${a.pieces} pièces, ${a.q}</h1><div class="facts">${pill(`${a.ar}`, '', 'pin')}${pill(a.furn ? 'Meublé' : 'Non meublé')}${pill(`Libre le ${a.avail}`, 'info', 'calendar')}${pill(`${a.surface}&nbsp;m² au total`)}</div>
+  <section class="sec"><h2>Les colocataires</h2><p class="soft" style="margin-bottom:14px">Fais le test de compatibilité pour découvrir ton score avec chacun d’eux.</p><div class="locked">${a.colocs.map(p => `<span class="lockp">${bub(p.n, p.c, 38)}<span><span class="t">${p.n}</span><span class="s">Compatibilité <b>88&#8239;%</b></span></span>${I('lock', 16)}</span>`).join('')}</div><a class="btn btn-main mt" href="#/register">${I('spark', 18)}Voir ma compatibilité</a></section>
+  <section class="sec"><h2>Le logement</h2><p class="prose" style="font-size:16px">${a.desc}</p><div class="amen mt">${a.amen.map(([ic, t]) => `<div>${I(ic)}${t}</div>`).join('')}</div></section>
+  <section class="sec"><h2>Le quartier</h2><div class="minimap">${miniMap()}</div><p class="s mt">L’adresse exacte est communiquée quand la coloc accepte ta demande.</p></section>
+  <section class="sec"><h2>Le bailleur</h2><div class="panel host">${bub('Marc', COL.violet, 56)}<div class="grow"><span class="t" style="font-size:18px">Marc</span><span class="s">Bailleur particulier sur ISALY</span></div><div class="chips">${pill('Identité vérifiée', 'ok', 'shield')}${pill('Répond en moins de 24 h', 'brand', 'clock')}</div></div></section></div>`;
+  const buy = `<aside class="buy" aria-label="Loyer et candidature"><div class="p num">${eur(a.rent)} <small>par mois</small></div><div class="kv"><div><span>Loyer</span><b>${eur(a.rentHC)}</b></div><div><span>Charges</span><b>${eur(a.charges)}</b></div><div><span>Dépôt de garantie</span><b>${eur(a.deposit)}</b></div><div><span>Disponible</span><b>${a.avail}</b></div></div><a class="btn btn-main btn-block" href="#/register">Postuler à cette annonce</a><p class="hint" style="text-align:center">Gratuit pour les locataires.</p><div class="hr" style="margin:2px 0"></div><span class="flabel">Partager</span><div class="share"><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Lien copié">${I('link', 16)}Copier le lien</button><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Ouverture de WhatsApp">${I('chat', 16)}WhatsApp</button><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Partage de l’annonce">${I('share', 16)}Partager</button></div></aside>`;
+  const near = `<section class="sec"><div class="hrow" style="margin-bottom:16px"><h2 class="h2" style="margin:0">Autres colocations à Lyon</h2><a class="link" href="#/ville">Tout voir</a></div><div class="gridcards">${ADS.slice(0, 3).map(adCard).join('')}</div></section>`;
+  const bar = `<div class="buybar"><span><b class="num">${eur(a.rent)}</b><span class="s">par mois, charges comprises</span></span><a class="btn btn-main" href="#/register">Postuler</a></div>`;
+  return pub('Annonces', `<div class="wrap"><nav class="crumbs" aria-label="Fil d’Ariane"><a href="#/ville">Colocation</a>${I('chevron')}<a href="#/ville">Lyon</a>${I('chevron')}<span>${a.q}</span></nav>${gal}<div class="lay">${main}${buy}</div>${near}</div>${bar}`);
+}
+
+/* =====================================================================
+   Page ville : /colocation/[ville]
+   ===================================================================== */
+function vVille() {
+  const empty = V('ville') === 'empty';
+  const city = empty ? 'Rennes' : 'Lyon';
+  const hero = `<div class="hero-c"><div><nav class="crumbs" aria-label="Fil d’Ariane" style="margin-top:0"><a href="#/index">Accueil</a>${I('chevron')}<span>Colocation à ${city}</span></nav><h1 class="h1">Colocation à ${city}</h1><p class="lede">${empty ? `Les premières colocations à ${city} arrivent bientôt sur ISALY. Crée ton profil maintenant : tu seras prévenu dès qu’une coloc compatible est publiée.` : `Des chambres en colocation à ${city}, avec ta compatibilité calculée pour chaque colocataire déjà en place.`}</p></div>${empty ? '' : `<div class="hstats"><div><b class="num">128</b><span>annonces actives</span></div><div><b class="num">${eur(545)}</b><span>loyer moyen, charges comprises</span></div><div><b class="num">9</b><span>arrondissements</span></div></div>`}</div>`;
+  const list = empty
+    ? `<section class="panel empty" style="margin-top:28px"><span class="ico brand">${I('bell', 26)}</span><h3>Pas encore d’annonce à ${city}</h3><p>Crée ton profil et fais le test : on te prévient dès qu’une colocation compatible est publiée.</p><a class="btn btn-main" href="#/register">Être prévenu</a></section>`
+    : `<div class="qchips" style="margin-top:26px">${['Tous les quartiers', 'Croix-Rousse', 'Guillotière', 'Presqu’île', 'Part-Dieu', 'Vieux Lyon', 'Monplaisir', 'Gerland', 'Brotteaux'].map((q, i) => `<button type="button" class="fchip" aria-pressed="${i === 0}" data-a="toast" data-v="Filtre : ${q}">${q}</button>`).join('')}</div><div class="gridcards mt">${ADS.map(adCard).join('')}</div><div style="text-align:center;margin-top:22px"><button class="btn btn-glass" type="button" data-a="toast" data-v="Chargement des annonces suivantes">Voir plus d’annonces</button></div>`;
+  const band = `<section class="cta-band sec"><div><h2>Trouve les colocs faites pour toi à ${city}</h2><p>15 questions, environ 3 minutes : on calcule ta compatibilité avec chaque colocataire.</p></div><a class="btn btn-main" href="#/register">Faire le test</a></section>`;
+  const qs = empty ? '' : `<section class="sec"><h2>Les quartiers de ${city} en colocation</h2><div class="qtext">${QUARTIERS.map(([q, t]) => `<article><h3>${q}</h3><p>${t}</p></article>`).join('')}</div></section>`;
+  const faq = [[`Combien coûte une colocation à ${city} ?`, `Sur ISALY, une chambre en colocation à ${city} coûte en moyenne ${empty ? 'le prix affiché sur chaque annonce' : '545&nbsp;€ par mois, charges comprises'}. Le montant exact dépend du quartier, de la surface et des équipements.`], ['Comment fonctionne le matching ?', 'Tu réponds à 15 questions sur 5 dimensions de la vie en colocation. ISALY compare tes réponses à celles de chaque colocataire déjà en place et affiche un score pour chacun.'], ['Est-ce gratuit pour les locataires ?', 'Oui. L’inscription, le test et les demandes sont gratuits. Swiper Plus, en option, supprime la limite quotidienne de swipes et met tes demandes en priorité.'], ['Je suis bailleur, comment publier ?', 'Crée ton compte, passe en mode bailleur et publie ton annonce en 5 étapes. Tu choisis ensuite de gérer le logement avec ISALY ou de le confier à une agence partenaire.']];
+  const faqS = `<section class="sec"><h2>Questions fréquentes</h2><div class="faq">${faq.map(([q, r], i) => `<details${i === 0 ? ' open' : ''}><summary>${q}${I('chevron')}</summary><p>${r}</p></details>`).join('')}</div></section>`;
+  const cities = `<section class="sec"><h2>Colocation dans d’autres villes</h2><div class="cities">${CITIES.filter(c => c !== city).map(c => `<a href="#/ville">${c}${I('arrow', 16)}</a>`).join('')}</div></section>`;
+  return pub('Annonces', `<div class="wrap">${hero}${list}${band}${qs}${faqS}${cities}</div>`);
+}
+
+/* =====================================================================
+   Blog et article
+   ===================================================================== */
+function vBlog() {
+  const [f, ...rest] = POSTS;
+  const cats = ['Tous', 'Recherche', 'Vie en coloc', 'Budget', 'Droit', 'Bailleurs', 'Villes'];
+  return pub('Blog', `<div class="wrap"><div style="padding:36px 0 0"><span class="pill brand">ISALY Immo</span><h1 class="h1" style="margin-top:14px">Tout pour réussir ta coloc</h1><p class="lede">Conseils, droit, budget et guides des villes : le média d’ISALY sur la colocation.</p></div><div class="bcats">${cats.map((c, i) => `<button type="button" class="fchip" aria-pressed="${i === 0}" data-a="toast" data-v="Catégorie : ${c}">${c}</button>`).join('')}</div><a class="feat" href="#/article"><div class="art ${f.art}"></div><div class="in"><div class="meta">${pill(f.cat, 'brand')}<span>${f.min} min de lecture</span></div><h2>${f.t}</h2><p>${f.ex}</p><span class="link">Lire l’article ${I('arrow', 16)}</span></div></a><div class="posts mt">${rest.map(p => `<a class="post" href="#/article" style="text-decoration:none"><div class="art ${p.art}"></div><div class="in"><div class="meta">${pill(p.cat)}<span>${p.min} min</span></div><h3>${p.t}</h3><span class="s">${p.date}</span></div></a>`).join('')}</div><section class="cta-band sec"><div><h2>Prêt à trouver ta coloc ?</h2><p>Fais le test de compatibilité et découvre les colocations faites pour toi.</p></div><a class="btn btn-main" href="#/register">Commencer</a></section></div>`);
+}
+function vArticle() {
+  const p = POSTS[0];
+  const toc = [['methodes', 'Les trois méthodes'], ['exemple', 'Un exemple chiffré'], ['outils', 'Les bons outils'], ['conflits', 'Éviter les tensions']];
+  const body = `<div class="prose"><p><strong>Le loyer, c’est simple : il est fixé par le bail. Les charges, c’est une autre histoire.</strong> Énergie, internet, courses communes, produits ménagers : sans règle claire, ce sont elles qui créent les tensions en colocation.</p>
+  <h2 id="methodes">Les trois méthodes</h2><p>La plupart des colocations choisissent l’une de ces trois façons de partager :</p><ul><li><strong>À parts égales :</strong> la plus simple, idéale quand les chambres sont comparables.</li><li><strong>Au prorata de la surface :</strong> plus juste quand une chambre est nettement plus grande.</li><li><strong>À l’usage :</strong> pour les dépenses très variables, comme les courses communes.</li></ul>
+  <div class="callout">${I('info')}<p>Mettez-vous d’accord dès l’arrivée et notez la règle quelque part. Une règle écrite évite la plupart des discussions.</p></div>
+  <h2 id="exemple">Un exemple chiffré</h2><p>Dans une coloc de quatre personnes, les charges communes s’élèvent à 280&nbsp;€ par mois :</p><div class="tscroll"><table><thead><tr><th>Poste</th><th>Montant</th><th>Par personne</th></tr></thead><tbody><tr><td>Électricité et gaz</td><td>140&nbsp;€</td><td>35&nbsp;€</td></tr><tr><td>Internet</td><td>40&nbsp;€</td><td>10&nbsp;€</td></tr><tr><td>Courses communes</td><td>100&nbsp;€</td><td>25&nbsp;€</td></tr><tr><td><strong>Total</strong></td><td><strong>280&nbsp;€</strong></td><td><strong>70&nbsp;€</strong></td></tr></tbody></table></div>
+  <h2 id="outils">Les bons outils</h2><p>Une application de dépenses partagées ou un simple tableur suffisent. L’essentiel : que tout le monde voie les mêmes chiffres.</p><figure><div class="art a4"></div><figcaption>Un point mensuel de dix minutes suffit souvent à garder des comptes clairs.</figcaption></figure>
+  <div class="cta-card"><span class="ico brand" style="width:52px;height:52px;border-radius:18px">${I('spark', 24)}</span><div class="grow"><b>Des colocs sur la même longueur d’onde</b><span>Le test ISALY compare vos habitudes, y compris sur le partage.</span></div><a class="btn btn-main" href="#/register">Faire le test</a></div>
+  <h2 id="conflits">Éviter les tensions</h2><blockquote>La meilleure règle est celle que tout le monde a acceptée au départ.</blockquote><p>Si un désaccord apparaît, reparlez-en à froid, chiffres à l’appui, plutôt que par messages au fil de l’eau.</p></div>`;
+  const rel = `<section class="sec"><h2>À lire aussi</h2><div class="posts">${POSTS.slice(1, 4).map(q => `<a class="post" href="#/article" style="text-decoration:none"><div class="art ${q.art}"></div><div class="in"><div class="meta">${pill(q.cat)}<span>${q.min} min</span></div><h3>${q.t}</h3></div></a>`).join('')}</div></section>`;
+  return pub('Blog', `<div class="wrap"><header class="art-head"><nav class="crumbs" aria-label="Fil d’Ariane" style="justify-content:center"><a href="#/blog">Blog</a>${I('chevron')}<span>${p.cat}</span></nav><h1 class="h1">${p.t}</h1><div class="meta">${bub('I', COL.violet, 28)}<span>ISALY Immo</span><span>${p.date}</span><span>${p.min} min de lecture</span></div></header><div class="art ${p.art} cover"></div><div class="art-lay"><nav class="toc" aria-label="Sommaire"><b>Sommaire</b>${toc.map(([id, t], i) => `<a href="#${id}"${i === 0 ? ' aria-current="true"' : ''} data-a="scrollto" data-v="${id}">${t}</a>`).join('')}<div class="share" style="margin-top:14px"><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Lien copié">${I('link', 16)}Copier le lien</button></div></nav>${body}</div>${rel}</div>`);
+}
+
+/* =====================================================================
+   Pages légales et contact
+   ===================================================================== */
+function vLegal() {
+  const v = V('legal');
+  const T = { ml: 'Mentions légales', cgu: 'Conditions générales d’utilisation', conf: 'Politique de confidentialité' };
+  const secs = {
+    ml: [['editeur', 'Éditeur du site', 'Identité de l’éditeur, statut, adresse de contact : texte existant conservé.'], ['hebergement', 'Hébergement', 'Le site est hébergé par Vercel. Coordonnées complètes : texte existant conservé.'], ['propriete', 'Propriété intellectuelle', 'Texte existant conservé.'], ['contact', 'Contact', 'Pour toute question, écris-nous depuis la page Contact.']],
+    cgu: [['objet', 'Objet', 'Texte existant conservé.'], ['compte', 'Création de compte', 'Texte existant conservé.'], ['services', 'Services gratuits et payants', 'Swiper Plus, abonnement autogestion des bailleurs, mises en avant : texte à mettre à jour selon le nouveau modèle.'], ['responsabilite', 'Responsabilités', 'Texte existant conservé.']],
+    conf: [['donnees', 'Données collectées', 'Texte existant conservé.'], ['finalites', 'Finalités', 'Texte existant conservé.'], ['duree', 'Durée de conservation', 'Texte existant conservé.'], ['droits', 'Tes droits', 'Accès, rectification, suppression : texte existant conservé.']],
+  }[v];
+  return pub('', `<div class="wrap"><div style="padding:36px 0 8px"><h1 class="h1" style="font-size:clamp(2rem,4.4vw,3.2rem)">${T[v]}</h1><span class="upd">${I('clock', 16)}Dernière mise à jour : date du texte existant</span></div><div class="mt">${seg('v.legal', [['ml', 'Mentions légales'], ['cgu', 'CGU'], ['conf', 'Confidentialité']], v, 'Pages légales')}</div><div class="art-lay"><nav class="toc" aria-label="Sommaire"><b>Sommaire</b>${secs.map(([id, t], i) => `<a href="#${id}"${i === 0 ? ' aria-current="true"' : ''} data-a="scrollto" data-v="${id}">${t}</a>`).join('')}</nav><div class="prose"><div class="callout">${I('info')}<p>Seule la mise en page change : le texte juridique actuel est repris tel quel.</p></div>${secs.map(([id, t, x], i) => `<h2 id="${id}">${i + 1}. ${t}</h2><p>${x}</p>`).join('')}</div></div></div>`);
+}
+function vContact() {
+  if (V('contact') === 'sent') return pub('', `<div class="err" style="min-height:60vh"><div class="in"><span class="okring">${I('check')}</span><h1>Message envoyé</h1><p>Merci&#8239;! On te répond par e-mail dès que possible.</p><a class="btn btn-glass" href="#/index">Retour à l’accueil</a></div></div>`);
+  return pub('', `<div class="wrap"><div style="padding:36px 0 0"><h1 class="h1">Contacte-nous</h1><p class="lede">Une question sur ISALY, un logement à proposer, un partenariat ? Écris-nous.</p></div><div class="grid wide-l mt"><form class="panel form" data-form="contact"><div class="f2"><div class="field"><label for="cn">Prénom</label><input id="cn" class="input" autocomplete="given-name" required></div><div class="field"><label for="ce">E-mail</label><input id="ce" class="input" type="email" autocomplete="email" required></div></div><div class="field"><label for="cs">Sujet</label><select id="cs" class="select"><option>Question sur ISALY</option><option>Je suis bailleur</option><option>Agence partenaire</option><option>Presse</option><option>Autre</option></select></div><div class="field"><label for="cm">Message</label><textarea id="cm" class="textarea" required style="min-height:160px"></textarea></div><button class="btn btn-main" type="submit">${I('send', 18)}Envoyer</button></form><div class="stackv"><section class="panel"><div class="phead"><h2>Avant d’écrire</h2></div><div class="rows"><div class="row"><span class="ico brand">${I('book', 18)}</span><span class="grow"><span class="t">Questions fréquentes</span><span class="s">Les réponses aux questions les plus courantes</span></span></div><div class="row"><span class="ico">${I('clock', 18)}</span><span class="grow"><span class="t">Réponse par e-mail</span><span class="s">À l’adresse que tu indiques</span></span></div></div></section><section class="panel"><div class="phead"><h2>Agences immobilières</h2></div><p class="soft">Tu veux devenir agence partenaire d’ISALY dans ta ville ? Choisis le sujet « Agence partenaire ».</p></section></div></div></div>`);
+}
+
+/* =====================================================================
+   Pages d'erreur
+   ===================================================================== */
+function vE404() {
+  return pub('', `<div class="err"><div class="in">${houseOutline(true)}<div class="ecode grad-text">404</div><h1>Cette page a déménagé</h1><p>Elle n’existe pas ou plus. Pas de panique, ta future coloc est toujours là.</p><div class="acts" style="justify-content:center"><a class="btn btn-main" href="#/index">Retour à l’accueil</a><a class="btn btn-glass" href="#/ville">Voir les annonces</a></div></div></div>`);
+}
+function vE500() {
+  return pub('', `<div class="err"><div class="in">${houseOutline(false)}<h1>Petit souci de notre côté</h1><p>Quelque chose n’a pas fonctionné. Réessaie dans un instant ; si ça continue, écris-nous.</p><div class="acts" style="justify-content:center"><button class="btn btn-main" type="button" data-a="toast" data-v="Nouvelle tentative">${I('refresh', 18)}Réessayer</button><a class="btn btn-glass" href="#/contact">Nous écrire</a></div><span class="hint">Code d’erreur : à afficher depuis error.digest</span></div></div>`);
+}
+function vOffline() {
+  return `<div class="err" style="min-height:100vh"><div class="in"><span class="mailbig" style="width:96px;height:96px;border-radius:32px">${I('wifioff', 40)}</span><h1>Tu es hors ligne</h1><p>Vérifie ta connexion. La page se recharge dès que le réseau revient.</p><button class="btn btn-main" type="button" data-a="toast" data-v="Nouvelle tentative">${I('refresh', 18)}Réessayer</button></div></div>`;
+}
+
+/* =====================================================================
+   Compte : connexion, inscription, mot de passe, vérification
+   ===================================================================== */
+const authArt = (quote, sub) => `<aside class="auth-art"><a class="plogo" href="#/index" aria-label="ISALY, accueil">${LOGO}isaly</a>${orb()}<div><blockquote>${quote}</blockquote><p>${sub}</p></div></aside>`;
+const auth = (card, quote = 'Ta coloc idéale existe déjà.', sub = 'Le test de compatibilité compare tes habitudes à celles de chaque colocataire.') => `<div class="auth">${authArt(quote, sub)}<main class="auth-form" id="contenu" tabindex="-1"><div class="auth-card">${card}</div></main></div>`;
+const gBtn = t => `<button class="gbtn" type="button" data-a="toast" data-v="Connexion avec Google"><span class="gslot" aria-hidden="true"></span>${t}</button>`;
+function pwField(id, label, auto, meter) {
+  const sc = Math.min(4, Math.floor(S.pw.length / 3));
+  return `<div class="field"><label for="${id}">${label}</label><div class="pw"><input id="${id}" class="input" type="${S.pwShow ? 'text' : 'password'}" autocomplete="${auto}" data-pw${meter ? ' aria-describedby="pwh"' : ''} value="${esc(S.pw)}"><button type="button" data-a="pwshow" aria-label="${S.pwShow ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}">${I(S.pwShow ? 'eyeoff' : 'eye', 18)}</button></div>${meter ? `<div class="strength" aria-hidden="true">${[0, 1, 2, 3].map(i => `<i class="${i < sc ? 'on' : ''}"></i>`).join('')}</div><span class="hint" id="pwh">8 caractères minimum, avec au moins un chiffre.</span>` : ''}</div>`;
+}
+function vLogin() {
+  const err = V('login') === 'err';
+  return auth(`<div><h1>Bon retour</h1><p class="sub" style="margin-top:8px">Connecte-toi pour retrouver tes colocs.</p></div>${err ? `<div class="alert" role="alert">${I('alert', 18)}<span>E-mail ou mot de passe incorrect. Vérifie tes informations ou réinitialise ton mot de passe.</span></div>` : ''}${gBtn('Continuer avec Google')}<div class="or">ou</div><form class="form" data-form="login"><div class="field"><label for="le">E-mail</label><input id="le" class="input" type="email" autocomplete="email" value="camille.laurent@exemple.fr"${err ? ' aria-invalid="true"' : ''}></div>${pwField('lp', 'Mot de passe', 'current-password', false)}<a class="link" href="#/forgot" style="justify-self:end;font-size:14px">Mot de passe oublié&#8239;?</a><button class="btn btn-main btn-block" type="submit">Se connecter</button></form><p class="switch-l">Pas encore de compte&#8239;? <a class="link" href="#/register">Crée-le</a></p>`);
+}
+function vRegister() {
+  const v = V('register');
+  const top = v === 'ref' ? `<div class="alert ok">${I('gift', 18)}<span><b>Camille t’invite sur ISALY.</b> Inscris-toi avec son lien : votre parrainage sera pris en compte.</span></div>` : v === 'ville' ? `<div class="chips">${pill('Colocation à Lyon', 'brand', 'pin')}</div>` : '';
+  return auth(`<div><h1>Crée ton compte</h1><p class="sub" style="margin-top:8px">Et découvre avec qui tu t’entendrais vraiment.</p></div>${top}${gBtn('S’inscrire avec Google')}<div class="or">ou avec ton e-mail</div><form class="form" data-form="register"><div class="field"><label for="rn">Prénom</label><input id="rn" class="input" autocomplete="given-name"></div><div class="field"><label for="re">E-mail</label><input id="re" class="input" type="email" autocomplete="email"></div>${pwField('rp', 'Mot de passe', 'new-password', true)}<label class="checkl"><input type="checkbox" data-a="agree"${S.agree ? ' checked' : ''}><span>J’accepte les <a class="link" href="#/legal">CGU</a> et la <a class="link" href="#/legal">politique de confidentialité</a>.</span></label><button class="btn btn-main btn-block" type="submit">Créer mon compte</button></form><p class="switch-l">Déjà inscrit&#8239;? <a class="link" href="#/login">Connecte-toi</a></p>`);
+}
+function vForgot() {
+  if (V('forgot') === 'sent') return auth(`<span class="mailbig">${I('mail', 36)}</span><div><h1>Regarde tes e-mails</h1><p class="sub" style="margin-top:8px">Si un compte existe pour <b>camille.laurent@exemple.fr</b>, tu vas recevoir un lien pour choisir un nouveau mot de passe.</p></div><button class="btn btn-glass btn-block" type="button" data-a="toast" data-v="E-mail renvoyé">Renvoyer l’e-mail</button><p class="switch-l"><a class="link" href="#/login">Retour à la connexion</a></p>`);
+  return auth(`<a class="link" href="#/login" style="display:inline-flex;gap:6px;align-items:center">${I('back', 16)}Retour</a><div><h1>Mot de passe oublié</h1><p class="sub" style="margin-top:8px">Indique ton e-mail : on t’envoie un lien pour en choisir un nouveau.</p></div><form class="form" data-form="forgot"><div class="field"><label for="fe">E-mail</label><input id="fe" class="input" type="email" autocomplete="email"></div><button class="btn btn-main btn-block" type="submit">Envoyer le lien</button></form>`);
+}
+function vReset() {
+  return auth(`<div><h1>Nouveau mot de passe</h1><p class="sub" style="margin-top:8px">Choisis un mot de passe que tu n’utilises pas ailleurs.</p></div><form class="form" data-form="reset">${pwField('np', 'Nouveau mot de passe', 'new-password', true)}<div class="field"><label for="np2">Confirme-le</label><input id="np2" class="input" type="password" autocomplete="new-password"></div><button class="btn btn-main btn-block" type="submit">Enregistrer</button></form>`);
+}
+function vVerify() {
+  return auth(`<span class="mailbig">${I('mail', 36)}</span><div><h1>Vérifie ta boîte mail</h1><p class="sub" style="margin-top:8px">On a envoyé un lien de confirmation à <b>camille.laurent@exemple.fr</b>. Clique dessus pour activer ton compte.</p></div><div class="note">${I('info', 18)}<span>Rien reçu&#8239;? Regarde dans les courriers indésirables, ou renvoie l’e-mail.</span></div><button class="btn btn-glass btn-block" type="button" data-a="toast" data-v="E-mail de confirmation renvoyé">Renvoyer l’e-mail</button><p class="switch-l">Pas la bonne adresse&#8239;? <a class="link" href="#/register">Modifier</a></p>`, 'Plus qu’une étape.', 'Après la confirmation, tu fais le test de compatibilité et tu découvres tes colocs.');
+}
+/* =====================================================================
+   Onboarding : 7 étapes pour un locataire, 5 pour un bailleur
+   ===================================================================== */
+const OB_STEPS = { loc: ['role', 'toi', 'recherche', 'test', 'resultat', 'dossier', 'pret'], bail: ['role', 'toi', 'logement', 'dossierb', 'pret'] };
+function radar(vals) {
+  const cx = 140, cy = 150, R = 96;
+  const pt = (i, f) => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; return [cx + Math.cos(a) * R * f, cy + Math.sin(a) * R * f]; };
+  const poly = f => DIMS.map((_, i) => pt(i, f).map(n => n.toFixed(1)).join(',')).join(' ');
+  return `<svg class="radar" viewBox="-40 -6 360 306" role="img" aria-label="Ton profil sur les 5 dimensions">${[.25, .5, .75, 1].map(f => `<polygon points="${poly(f)}" fill="none" stroke="var(--line-2)"/>`).join('')}${DIMS.map((_, i) => { const [x, y] = pt(i, 1); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/>`; }).join('')}<polygon points="${vals.map((n, i) => pt(i, n / 100).map(k => k.toFixed(1)).join(',')).join(' ')}" fill="url(#gradFill)" stroke="url(#gradRing)" stroke-width="2.5" stroke-linejoin="round"/>${DIMS.map((d, i) => { const [x, y] = pt(i, 1.24); return `<text class="rl" x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle">${d}</text>`; }).join('')}</svg>`;
+}
+const dimScores = () => DIMS.map((_, d) => { const qs = QUESTIONS.map((q, i) => [q[0], i]).filter(q => q[0] === d).map(q => S.obAns[q[1]]); const got = qs.filter(x => x !== undefined); return got.length ? Math.round(got.reduce((s, x) => s + (x + 1) * 20, 0) / got.length) : [84, 72, 90, 68, 80][d]; });
+function vOnboarding() {
+  const steps = OB_STEPS[S.obRole], step = steps[Math.min(S.ob, steps.length - 1)], i = steps.indexOf(step);
+  const top = `<div class="ob-top"><a class="plogo" href="#/index" aria-label="ISALY">${LOGO}<span class="sr">isaly</span></a><div class="ob-steps" role="progressbar" aria-valuemin="1" aria-valuemax="${steps.length}" aria-valuenow="${i + 1}" aria-label="Étape ${i + 1} sur ${steps.length}">${steps.map((_, k) => `<i class="${k < i ? 'on' : k === i ? 'now' : ''}"></i>`).join('')}</div><span class="saved">${I('check', 16)}<span>Enregistré</span></span></div>`;
+  let body = '', next = 'Continuer', canBack = i > 0, nextAct = 'obnext';
+  if (step === 'role') body = `<span class="eyebrow">Bienvenue sur ISALY</span><h1>Qu’est-ce qui t’amène&#8239;?</h1><p class="lead">Tu pourras changer de mode à tout moment depuis ton espace.</p><div class="choices">${[['loc', 'Je cherche une colocation', 'Trouve des colocs compatibles avec toi.', 'compass'], ['bail', 'Je loue un logement en colocation', 'Publie ton annonce et choisis tes locataires.', 'building']].map(([k, t, s, ic]) => `<button class="choice" type="button" data-a="obrole" data-v="${k}" aria-pressed="${S.obRole === k}"><span class="ico brand">${I(ic, 24)}</span><span class="grow"><b>${t}</b><span class="s">${s}</span></span></button>`).join('')}</div>`;
+  else if (step === 'toi') body = `<span class="eyebrow">Étape ${i + 1} sur ${steps.length}</span><h1>Parle-nous de toi</h1><p class="lead">${S.obRole === 'loc' ? 'Les colocs verront ton prénom, ton âge et ta photo.' : 'Les candidats verront ton prénom et ta photo.'}</p><div class="form"><div class="acts" style="gap:16px;flex-wrap:nowrap">${bub('C', COL.violet, 72)}<button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Choix de la photo">${I('camera', 16)}Ajouter une photo</button></div><div class="f2"><div class="field"><label for="op">Prénom</label><input id="op" class="input" value="Camille" autocomplete="given-name"></div><div class="field"><label for="od">Date de naissance</label><input id="od" class="input" value="14/03/2003" inputmode="numeric"></div></div>${S.obRole === 'loc' ? `<div class="field"><span class="flabel">Ta situation</span><div class="chipsel">${['Étudiant', 'Salarié', 'Indépendant', 'En recherche d’emploi', 'Autre'].map(s => `<button type="button" class="fchip" data-a="obsit" data-v="${s}" aria-pressed="${S.obSit === s}">${s}</button>`).join('')}</div></div><div class="field"><label for="ob">En quelques mots</label><textarea id="ob" class="textarea" placeholder="Ce que tu fais, ce que tu aimes, comment tu vis au quotidien"></textarea></div>` : ''}</div>`;
+  else if (step === 'recherche') body = `<span class="eyebrow">Étape ${i + 1} sur ${steps.length}</span><h1>Ta recherche</h1><p class="lead">On ne te montre que les colocations qui correspondent.</p><div class="form"><div class="field"><label for="ov">Ville</label><input id="ov" class="input" value="Lyon" autocomplete="address-level2"></div><div class="field"><div class="rangev"><label for="obud">Budget maximum, charges comprises</label><b class="num" data-budget>${eur(S.obBudget)}</b></div><input id="obud" class="range" type="range" min="300" max="1200" step="10" value="${S.obBudget}" data-range></div><div class="f2"><div class="field"><label for="oa">Arrivée souhaitée</label><input id="oa" class="input" value="1er novembre 2026"></div><div class="field"><span class="flabel">Logement</span>${seg('obFurn', [['1', 'Meublé'], ['0', 'Peu importe']], S.obFurn ? '1' : '0', 'Type de logement')}</div></div></div>`;
+  else if (step === 'test') {
+    const q = QUESTIONS[S.obQ], a = S.obAns[S.obQ];
+    body = `<span class="eyebrow">Test de compatibilité</span><h1>Comment tu vis au quotidien&#8239;?</h1><p class="lead">15 questions, environ 3 minutes. Il n’y a pas de bonne réponse.</p><div class="qcard"><div class="qprog"><span class="dimtag" style="--c:${DIMC[q[0]]}"><i></i>${DIMS[q[0]]}</span><span class="s num">Question ${S.obQ + 1} sur 15</span></div><div class="meter"><i style="width:${(S.obQ + (a !== undefined ? 1 : 0)) / 15 * 100}%"></i></div><p class="q" id="qtext">${q[1]}</p><div class="scale" role="group" aria-labelledby="qtext">${SCALE.map((s, k) => `<button type="button" data-a="ans" data-v="${k}" aria-pressed="${a === k}" style="--d:${[34, 26, 20, 26, 34][k]}px"><i></i>${s}</button>`).join('')}</div><div class="hrow"><button class="btn btn-ghost btn-sm" type="button" data-a="qmove" data-v="-1"${S.obQ ? '' : ' disabled'}>${I('back', 16)}Question précédente</button><span class="hint">Astuce : touches 1 à 5 du clavier</span></div></div>`;
+    next = S.obQ < 14 ? 'Question suivante' : 'Voir mon profil'; nextAct = S.obQ < 14 ? 'qmove' : 'obnext';
+  } else if (step === 'resultat') {
+    const sc = dimScores();
+    body = `<span class="eyebrow">Ton profil est prêt</span><h1>Voilà comment tu vis en coloc</h1><p class="lead">On compare maintenant tes réponses à celles de chaque colocataire, pour chaque annonce.</p><div class="grid g2" style="align-items:center"><div class="panel">${radar(sc)}</div><div class="bars">${DIMS.map((d, k) => barRow(d, sc[k])).join('')}<p class="hint mt">Tu peux refaire le test à tout moment depuis Mon profil.</p></div></div>`;
+  } else if (step === 'dossier' || step === 'dossierb') {
+    const docs = step === 'dossier' ? [['shield', 'Pièce d’identité', 'Pour obtenir le badge Identité vérifiée'], ['euro', 'Justificatif de revenus ou de bourse', 'Bulletins de salaire, attestation de bourse'], ['users', 'Garant', 'Personne physique ou garantie Visale']] : [['shield', 'Pièce d’identité', 'Pour obtenir le badge Identité vérifiée'], ['contract', 'Justificatif de propriété', 'Taxe foncière ou acte de propriété']];
+    body = `<span class="eyebrow">Étape ${i + 1} sur ${steps.length}, facultative</span><h1>${step === 'dossier' ? 'Prépare ton dossier' : 'Rassure tes futurs locataires'}</h1><p class="lead">${step === 'dossier' ? 'Un dossier complet rassure les colocs et les bailleurs. Tu peux aussi le faire plus tard.' : 'Un profil vérifié reçoit plus de candidatures. Tu peux aussi le faire plus tard.'}</p><div class="upl">${docs.map(([ic, t, s]) => `<div class="row"><span class="ico brand">${I(ic, 18)}</span><span class="grow"><span class="t">${t}</span><span class="s">${s}</span></span><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Ajout : ${t}">${I('upload', 16)}Ajouter</button></div>`).join('')}</div><div class="note">${I('lock', 18)}<span>Tes documents sont stockés de façon sécurisée et ne sont montrés qu’aux personnes à qui tu envoies une demande.</span></div>`;
+    next = 'Continuer'; 
+  } else if (step === 'logement') body = `<span class="eyebrow">Étape ${i + 1} sur ${steps.length}</span><h1>Ton logement</h1><p class="lead">Juste l’essentiel : tu compléteras l’annonce ensuite.</p><div class="form"><div class="field"><label for="la">Adresse</label><input id="la" class="input" placeholder="Numéro, rue, ville" autocomplete="street-address"></div><div class="f2"><div class="field"><label for="lc">Nombre de chambres</label><select id="lc" class="select"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6 ou plus</option></select></div><div class="field"><span class="flabel">Type de location</span>${seg('obFurn', [['1', 'Meublé'], ['0', 'Non meublé']], S.obFurn ? '1' : '0', 'Type de location')}</div></div><div class="note">${I('info', 18)}<span>Des colocataires y vivent déjà&#8239;? Tu pourras les inviter à faire le test : leur compatibilité avec chaque candidat s’affichera sur l’annonce.</span></div></div>`;
+  else if (step === 'pret') { body = `<div style="display:grid;justify-items:center;text-align:center;gap:16px;padding-top:20px"><span class="okring">${I('check')}</span><h1>C’est prêt, Camille</h1><p class="lead" style="margin:0;max-width:44ch">${S.obRole === 'loc' ? 'Découvre les colocations où tu t’entendrais le mieux, avec ton score pour chaque colocataire.' : 'Publie ta première annonce : les candidats verront leur compatibilité avec tes colocataires.'}</p></div>`; next = S.obRole === 'loc' ? 'Découvrir mes colocs' : 'Publier mon annonce'; nextAct = 'obdone'; }
+  const skip = step === 'dossier' || step === 'dossierb' ? `<button class="btn btn-ghost" type="button" data-a="obnext">Plus tard</button>` : '';
+  const foot = `<div class="ob-foot"><div class="in">${canBack ? `<button class="btn btn-ghost" type="button" data-a="obprev">${I('back', 18)}Retour</button>` : '<span></span>'}<span class="acts">${skip}<button class="btn btn-main" type="button" data-a="${nextAct}" data-v="1"${step === 'test' && S.obAns[S.obQ] === undefined ? ' disabled' : ''}>${next}${I('arrow', 18)}</button></span></div></div>`;
+  return `<div class="ob">${top}<main class="ob-main" id="contenu" tabindex="-1"><div class="ob-card screen enter">${body}</div></main>${foot}</div>`;
+}
+
+/* =====================================================================
+   Signature du bail
+   ===================================================================== */
+function vSignature() {
+  const signers = [['Marc', COL.violet, 'Bailleur', 'Signé le 27 septembre'], ['Hugo', COL.azure, 'Colocataire', 'Signé le 27 septembre'], ['Camille', COL.coral, 'Colocataire, toi', S.sgDone ? 'Signé à l’instant' : 'À signer']];
+  const top = `<div class="sgn-top"><a class="iconbtn" href="#/index" aria-label="Quitter la signature" style="width:42px;height:42px">${I('back', 18)}</a><span class="grow"><span class="t">Bail de colocation, 12 rue Dumenge</span><span class="s">Étape ${S.sgDone ? 3 : S.sgStep} sur 3 : ${S.sgDone ? 'terminé' : S.sgStep === 1 ? 'relire' : 'signer'}</span></span>${pill('Signature électronique', 'ok', 'shield')}</div>`;
+  if (S.sgDone) return `<div class="sgn">${top}<div class="pay" style="min-height:auto;padding-top:48px"><div class="pay-card"><span class="okring">${I('check')}</span><h1>Bail signé</h1><p>Marc et tes colocataires sont prévenus. Le bail signé est rangé dans ton coffre-fort.</p><div class="acts" style="justify-content:center"><button class="btn btn-main" type="button" data-a="toast" data-v="Téléchargement du bail signé">${I('download', 18)}Télécharger le PDF</button><a class="btn btn-glass" href="#/index">Ouvrir Ma maison</a></div></div></div></div>`;
+  const doc = `<article class="paper" aria-label="Bail de colocation"><h2>Bail de colocation meublée</h2><p style="text-align:center;margin-top:6px">Contenu produit par le générateur de bail existant</p><div class="parties"><div><b>Le bailleur</b><br>Marc Dubois</div><div><b>Les colocataires</b><br>Hugo, Jade, Malik, Camille</div></div><h3>1. Objet du contrat</h3><p>Location d’une chambre meublée et des parties communes du logement situé 12 rue Dumenge, Lyon 4e.</p><h3>2. Durée</h3><p>Un an à compter du 1er novembre 2026, renouvelable.</p><h3>3. Loyer et charges</h3><p>Loyer de 490&nbsp;€ par mois et provision sur charges de 70&nbsp;€ par mois.</p><h3>4. Dépôt de garantie</h3><p>490&nbsp;€, restitué selon les règles prévues par la loi.</p><h3>5. Préavis</h3><p>Un mois pour le locataire, logement meublé.</p><div class="sigs">${signers.map(s => `<div><b>${s[0]}</b><br><span style="color:${s[3].startsWith('Signé') ? '#0B7A5E' : '#686394'}">${s[3]}</span></div>`).join('')}</div></article>`;
+  const side = S.sgStep === 1
+    ? `<section class="panel"><div class="phead"><h2>Signataires</h2></div><div class="rows">${signers.map(s => `<div class="row">${bub(s[0], s[1], 36)}<span class="grow"><span class="t">${s[0]}</span><span class="s">${s[2]}</span></span>${s[3].startsWith('Signé') ? pill('Signé', 'ok', 'check') : pill('À signer', 'warn')}</div>`).join('')}</div></section><section class="panel"><p class="soft">Relis le bail jusqu’au bout, puis passe à la signature. Tu peux le télécharger avant de signer.</p><div class="acts mt"><button class="btn btn-main" type="button" data-a="sgnext">Passer à la signature${I('arrow', 18)}</button><button class="btn btn-ghost" type="button" data-a="toast" data-v="Téléchargement du bail">${I('download', 18)}PDF</button></div></section>`
+    : `<section class="panel form"><div class="phead" style="margin:0"><h2>Ta signature</h2><button class="btn btn-ghost btn-sm" type="button" data-a="sgclear">${I('eraser', 16)}Effacer</button></div><div class="pad" data-pad><canvas aria-label="Zone de signature : dessine ta signature avec la souris ou le doigt"></canvas><span class="ph"${S.sgDrawn ? ' hidden' : ''}>Signe ici avec ta souris ou ton doigt</span><span class="line"></span></div><label class="checkl"><input type="checkbox" data-a="sgagree"${S.sgAgree ? ' checked' : ''}><span>J’ai lu le bail et je le signe électroniquement. Ma signature a la même valeur qu’une signature manuscrite.</span></label><button class="btn btn-main btn-block" type="button" data-a="sgsign" data-sign${S.sgAgree && S.sgDrawn ? '' : ' disabled'}>${I('sign', 18)}Signer le bail</button><button class="btn btn-ghost btn-sm" type="button" data-a="sgback">${I('back', 16)}Revenir au bail</button></section>`;
+  return `<div class="sgn">${top}<main class="sgn-lay" id="contenu" tabindex="-1">${doc}<div class="sgn-side">${side}</div></main></div>`;
+}
+function bindPad() {
+  const pad = $('[data-pad]'); if (!pad) return;
+  const cv = pad.querySelector('canvas'), r = pad.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = r.width * dpr; cv.height = r.height * dpr;
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr); ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#12102E';
+  let draw = false;
+  const p = e => { const b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+  cv.addEventListener('pointerdown', e => { draw = true; cv.setPointerCapture(e.pointerId); const [x, y] = p(e); ctx.beginPath(); ctx.moveTo(x, y); });
+  cv.addEventListener('pointermove', e => { if (!draw) return; const [x, y] = p(e); ctx.lineTo(x, y); ctx.stroke(); if (!S.sgDrawn) { S.sgDrawn = true; const ph = pad.querySelector('.ph'); if (ph) ph.hidden = true; syncSign(); } });
+  const up = () => { draw = false; };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+}
+function syncSign() { const b = $('[data-sign]'); if (b) b.disabled = !(S.sgAgree && S.sgDrawn); }
+
+/* =====================================================================
+   Retour de paiement Stripe
+   ===================================================================== */
+function vPaiement() {
+  const v = V('paiement');
+  if (v === 'cancel') return `<div class="pay"><div class="pay-card"><span class="okring off">${I('x')}</span><h1>Paiement annulé</h1><p>Aucun montant n’a été débité. Tu peux réessayer quand tu veux.</p><div class="acts" style="justify-content:center"><button class="btn btn-main" type="button" data-a="toast" data-v="Retour au paiement">Réessayer</button><a class="btn btn-glass" href="#/index">Retour à mon espace</a></div></div></div>`;
+  const D = {
+    plus: ['Swiper Plus est activé', 'Plus de limite quotidienne, et tes demandes passent en priorité chez les colocs.', [['Offre', 'Swiper Plus'], ['Montant', '5,99&nbsp;€ par mois'], ['Prochain prélèvement', '28 octobre 2026']], 'Continuer à swiper'],
+    boost: ['Ton annonce est mise en avant', 'Elle apparaît en priorité dans les swipes et la liste pendant 3 jours.', [['Annonce', 'Chambre de 12 m², 8 rue de Marseille'], ['Durée', '3 jours, jusqu’au 1er octobre'], ['Montant', 'montant lu dans Stripe']], 'Voir mes annonces'],
+    auto: ['Autogestion activée', 'Tu gères tes logements avec ISALY : bail en ligne, loyers, quittances, maintenance et préavis.', [['Offre', 'Abonnement autogestion'], ['Montant', 'montant lu dans Stripe'], ['Prochain prélèvement', '28 octobre 2026']], 'Ouvrir mon tableau de bord'],
+  }[v];
+  return `<div class="pay"><div class="pay-card"><span class="okring">${I('check')}</span><h1>${D[0]}</h1><p>${D[1]}</p><div class="kv recap panel" style="padding:16px 18px">${D[2].map(([k, x]) => `<div><span>${k}</span><b>${x}</b></div>`).join('')}</div><p class="hint">Le reçu t’a été envoyé par e-mail.</p><a class="btn btn-main" href="#/index">${D[3]}${I('arrow', 18)}</a></div></div>`;
+}
+
+/* =====================================================================
+   Administration
+   ===================================================================== */
+const U = [['Camille Laurent', COL.coral, 'camille.laurent@exemple.fr', 'Locataire', true, '27 sept.'], ['Marc Dubois', COL.violet, 'marc.dubois@exemple.fr', 'Bailleur', true, '26 sept.'], ['Sofia Martin', COL.azure, 'sofia.m@exemple.fr', 'Locataire', true, '25 sept.'], ['Thomas Petit', COL.sun, 'thomas.p@exemple.fr', 'Locataire', false, '25 sept.'], ['Élise Bernard', COL.mint, 'elise.b@exemple.fr', 'Locataire', true, '24 sept.'], ['Yann Roux', COL.sun, 'yann.r@exemple.fr', 'Locataire', false, '24 sept.'], ['Nadia Kacem', COL.coral, 'nadia.k@exemple.fr', 'Bailleur', false, '22 sept.']];
+const whoCell = (n, c, s) => `<div class="who">${bub(n, c, 34)}<span><b>${n}</b><span>${s}</span></span></div>`;
+const tbl = (head, rows) => `<div class="panel" style="padding:8px 8px 4px"><div class="tscroll"><table class="tbl"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
+const search = ph => `<label class="srch"><span class="sr">${ph}</span>${I('search', 18)}<input class="input" type="search" placeholder="${ph}"></label>`;
+function vAdmDash() {
+  const days = Array.from({ length: 30 }, (_, i) => 6 + Math.round(8 * Math.abs(Math.sin(i * .7)) + i * .35));
+  const max = Math.max(...days), W = 600, H = 170;
+  const pts = days.map((v, i) => [10 + i * (W - 20) / 29, H - 14 - v / max * (H - 34)]);
+  const area = `M${pts[0][0]} ${H - 14} ` + pts.map(p => `L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ') + ` L${pts[29][0]} ${H - 14}Z`;
+  const chart = `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Inscriptions sur 30 jours"><defs><linearGradient id="spk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6C4DFF" stop-opacity=".3"/><stop offset="1" stop-color="#6C4DFF" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#spk)"/><polyline points="${pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="#6C4DFF" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+  const todo = [['shield', 'ok', '3 vérifications d’identité en attente', 'Dossiers complets à plus de 80&#8239;%', 'adm-verif'], ['flag', 'bad', '2 signalements ouverts', 'Dont un volet bloqué depuis ce matin', 'adm-reports'], ['bug', 'warn', '4 retours bêta non traités', 'Le plus ancien date de 3 jours', 'adm-bugs'], ['globe', 'info', '1 commission agence à facturer', 'Agence Exemple Lyon, 27 septembre', 'adm-agencies']];
+  return admin('Tableau de bord', `<section class="panel kpis"><div class="kpi"><div class="l">Utilisateurs</div><div class="v num">1&nbsp;284</div><div class="d">+86 cette semaine</div></div><div class="kpi"><div class="l">Annonces actives</div><div class="v num">142</div><div class="d">dont 18 importées</div></div><div class="kpi"><div class="l">Matchs cette semaine</div><div class="v num">317</div><div class="d">+12&#8239;% sur 7 jours</div></div><div class="kpi"><div class="l">Abonnés payants</div><div class="v num">64</div><div class="d">Swiper Plus et autogestion</div></div></section><div class="grid wide-l mt"><section class="panel"><div class="phead"><h2>Inscriptions</h2><span class="s">30 derniers jours</span></div>${chart}</section><section class="panel"><div class="phead"><h2>À traiter</h2></div><div class="rows">${todo.map(t => `<div class="row"><span class="ico ${t[1]}">${I(t[0], 18)}</span><span class="grow"><span class="t">${t[2]}</span><span class="s">${t[3]}</span></span><a class="btn btn-glass btn-sm" href="#/${t[4]}">Voir</a></div>`).join('')}</div></section></div>`);
+}
+function vAdmUsers() {
+  const rows = U.map(u => `<tr><td>${whoCell(u[0], u[1], u[2])}</td><td>${pill(u[3], u[3] === 'Bailleur' ? 'brand' : '')}</td><td>${u[4] ? pill('Vérifiée', 'ok', 'check') : pill('En attente', 'warn')}</td><td>${u[5]}</td><td><span class="acts"><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Fiche de ${u[0]}">Voir</button><button class="btn btn-ghost btn-sm" type="button" data-a="toast" data-v="${u[0]} suspendu (démo)">Suspendre</button></span></td></tr>`);
+  return admin('Utilisateurs', `<div class="tbar">${search('Rechercher un nom ou un e-mail')}${seg('v.adm-users', [['all', 'Tous'], ['loc', 'Locataires'], ['bail', 'Bailleurs'], ['susp', 'Suspendus']], V('adm-users') || 'all', 'Filtrer')}</div>${tbl(['Utilisateur', 'Mode', 'Identité', 'Inscrit le', '<span class="sr">Actions</span>'], rows)}<div class="hrow mt"><span class="s">7 sur 1&nbsp;284 utilisateurs</span><span class="acts"><button class="btn btn-glass btn-sm" type="button" disabled>Précédent</button><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Page suivante">Suivant</button></span></div>`);
+}
+function vAdmVerif() {
+  const L = [['v1', 'Thomas Petit', COL.sun, 'Dossier à 92 %', 'Il y a 2 h'], ['v2', 'Yann Roux', COL.sun, 'Dossier à 85 %', 'Hier'], ['v3', 'Nadia Kacem', COL.coral, 'Bailleur, dossier à 100 %', 'Il y a 2 jours']];
+  const cur = L.find(x => x[0] === S.verif) || L[0];
+  const list = L.map(x => `<button class="cand" type="button" data-a="verif" data-v="${x[0]}" aria-current="${x === cur}">${bub(x[1], x[2], 40)}<span class="grow"><span class="t">${x[1]}</span><span class="s">${x[3]}, ${x[4].toLowerCase()}</span></span></button>`).join('');
+  return admin('Vérifications', `<div class="cands"><section class="panel" style="padding:10px" aria-label="File d’attente">${list}</section><section class="panel"><div class="hrow">${whoCell(cur[1], cur[2], cur[3])}${pill('En attente', 'warn')}</div><div class="grid g2 mt"><div><span class="flabel">Pièce d’identité</span><div class="docprev mt">Aperçu du document</div></div><div><span class="flabel">Selfie ou justificatif</span><div class="docprev mt">Aperçu du document</div></div></div><div class="kv mt"><div><span>Nom sur le document</span><b>${cur[1]}</b></div><div><span>Revenus déclarés</span><b>1&nbsp;850&nbsp;€ par mois</b></div><div><span>Contrat</span><b>CDI</b></div><div><span>Garant</span><b>Renseigné</b></div></div><div class="field mt"><label for="vr">Motif en cas de refus</label><input id="vr" class="input" placeholder="Par exemple : document illisible"></div><div class="mfoot" style="justify-content:flex-start"><button class="btn btn-main" type="button" data-a="toast" data-v="Identité validée, ${cur[1]} est prévenu">${I('check', 18)}Valider l’identité</button><button class="btn btn-danger" type="button" data-a="toast" data-v="Vérification refusée">Refuser</button></div></section></div>`);
+}
+function vAdmAds() {
+  const A = [['Chambre de 13 m², Croix-Rousse', 'Marc Dubois', 'ISALY', 'Publiée', 'ok'], ['Chambre de 12 m², Guillotière', 'Marc Dubois', 'ISALY', 'Mise en avant', 'brand'], ['T4 en colocation, Lyon 3e', 'Import', 'Leboncoin', 'À vérifier', 'warn'], ['Chambre de 11 m², Part-Dieu', 'Nadia Kacem', 'ISALY', 'Signalée', 'bad'], ['Colocation 5 chambres, Lyon 7e', 'Import', 'PAP', 'Publiée', 'ok'], ['Studio', 'Import', 'Leboncoin', 'Masquée : hors colocation', '']];
+  const rows = A.map(a => `<tr><td><div class="who"><span class="art a${1 + A.indexOf(a) % 5} thumb" style="width:52px;height:40px;border-radius:10px"></span><span><b>${a[0]}</b><span>${a[1]}</span></span></div></td><td>${pill(a[2], a[2] === 'ISALY' ? '' : 'info')}</td><td>${pill(a[3], a[4])}</td><td><span class="acts"><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Ouverture de l’annonce">Voir</button><button class="btn btn-ghost btn-sm" type="button" data-a="toast" data-v="Annonce masquée (démo)">Masquer</button></span></td></tr>`);
+  return admin('Annonces', `<div class="tbar">${search('Rechercher une annonce')}${seg('v.adm-ads', [['all', 'Toutes'], ['rep', 'Signalées'], ['imp', 'Importées'], ['hid', 'Masquées']], V('adm-ads') || 'all', 'Filtrer')}</div>${tbl(['Annonce', 'Source', 'Statut', '<span class="sr">Actions</span>'], rows)}`);
+}
+function vAdmReports() {
+  const R = [['Volet bloqué dans la chambre 2', '8 rue de Marseille', 'Nina', 'Ouvert', 'bad', 'Aujourd’hui'], ['Annonce trompeuse', 'Chambre de 11 m², Part-Dieu', 'Thomas', 'Ouvert', 'bad', 'Hier'], ['Chauffe-eau qui coupe', '12 rue Dumenge', 'Camille', 'En cours', 'warn', '24 sept.'], ['Comportement dans la messagerie', 'Conversation signalée', 'Sofia', 'Résolu', 'ok', '20 sept.']];
+  const rows = R.map(r => `<tr><td><b>${r[0]}</b><br><span class="s">${r[1]}</span></td><td>${r[2]}</td><td>${pill(r[3], r[4])}</td><td>${r[5]}</td><td><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Ouverture du signalement">Traiter</button></td></tr>`);
+  return admin('Signalements', `<div class="tbar">${seg('v.adm-reports', [['open', 'Ouverts'], ['prog', 'En cours'], ['done', 'Résolus'], ['all', 'Tous']], V('adm-reports') || 'open', 'Filtrer')}</div>${tbl(['Signalement', 'Par', 'Statut', 'Date', '<span class="sr">Actions</span>'], rows)}`);
+}
+function vAdmPay() {
+  const T = [['Camille Laurent', 'Swiper Plus', '5,99&nbsp;€', 'Payé', 'ok', '27 sept.'], ['Marc Dubois', 'Mise en avant 3 jours', 'selon Stripe', 'Payé', 'ok', '26 sept.'], ['Marc Dubois', 'Autogestion', 'selon Stripe', 'Payé', 'ok', '12 sept.'], ['Yann Roux', 'Swiper Plus', '5,99&nbsp;€', 'Échec', 'bad', '11 sept.']];
+  return admin('Paiements', `<section class="panel kpis"><div class="kpi"><div class="l">Swiper Plus actifs</div><div class="v num">41</div><div class="d">abonnements en cours</div></div><div class="kpi"><div class="l">Autogestion</div><div class="v num">23</div><div class="d">bailleurs abonnés</div></div><div class="kpi"><div class="l">Mises en avant</div><div class="v num">17</div><div class="d">sur 30 jours</div></div><div class="kpi"><div class="l">Commissions agences</div><div class="v num">1</div><div class="d">à facturer</div></div></section><div class="hrow" style="margin:22px 0 12px"><h2 class="h2" style="margin:0;font-size:1.3rem">Transactions</h2><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Ouverture du tableau de bord Stripe">Ouvrir Stripe</button></div>${tbl(['Client', 'Produit', 'Montant', 'Statut', 'Date'], T.map(t => `<tr><td><b>${t[0]}</b></td><td>${t[1]}</td><td class="num">${t[2]}</td><td>${pill(t[3], t[4])}</td><td>${t[5]}</td></tr>`))}<p class="hint mt">Les montants viennent de Stripe. Aucune commission par locataire n’est plus facturée.</p>`);
+}
+function vAdmAgencies() {
+  return admin('Agences partenaires', `<div class="grid wide-l"><div class="stackv">${tbl(['Agence', 'Ville', 'Statut', 'Logements confiés'], [`<tr><td>${whoCell('Agence Exemple Lyon', COL.sun, 'contact@agence-exemple.fr')}</td><td>Lyon</td><td>${pill('Active', 'ok')}</td><td class="num">2</td></tr>`])}<section class="panel"><div class="phead"><h2>Délégations et commissions</h2></div><div class="rows"><div class="row"><span class="ico warn">${I('building', 18)}</span><span class="grow"><span class="t">15 rue Paul Bert, Lyon 3e</span><span class="s">Dossier d’Élise transmis le 27 septembre</span></span>${pill('À facturer', 'warn')}<button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Commission marquée comme facturée">Marquer facturée</button></div><div class="row"><span class="ico">${I('building', 18)}</span><span class="grow"><span class="t">27 rue Antoine Lumière, Lyon 8e</span><span class="s">Dossier de Paul transmis le 3 septembre</span></span>${pill('Payée', 'ok')}</div></div></section></div><form class="panel form" data-form="agency"><div class="phead" style="margin:0"><h2>Ajouter une agence</h2></div><div class="field"><label for="an">Nom</label><input id="an" class="input"></div><div class="f2"><div class="field"><label for="ac">Ville</label><input id="ac" class="input"></div><div class="field"><label for="at">Téléphone</label><input id="at" class="input" inputmode="tel"></div></div><div class="field"><label for="am">E-mail</label><input id="am" class="input" type="email"></div><div class="field"><label for="aa">Adresse</label><input id="aa" class="input"></div><div class="field"><label for="ah">Horaires</label><input id="ah" class="input" placeholder="Du lundi au vendredi, de 9 h à 18 h"></div><label class="checkl"><input type="checkbox" checked><span>Active : proposée aux bailleurs de cette ville</span></label><button class="btn btn-main" type="submit">Ajouter l’agence</button></form></div>`);
+}
+function vAdmBugs() {
+  const B = [['Le bouton Envoyer ne répond pas sur Safari', 'Messages', 'Nouveau', 'info', 'Il y a 3 jours'], ['Photo d’annonce coupée sur mobile', 'Annonces', 'Nouveau', 'info', 'Hier'], ['Le score ne s’affiche pas après le test', 'Onboarding', 'En cours', 'warn', 'Hier'], ['Notification en double', 'Cloche', 'Nouveau', 'info', 'Aujourd’hui'], ['Faute de frappe dans Ma maison', 'Ma maison', 'Corrigé', 'ok', '20 sept.']];
+  return admin('Retours bêta', `<div class="tbar">${seg('v.adm-bugs', [['new', 'Nouveaux'], ['prog', 'En cours'], ['done', 'Corrigés'], ['all', 'Tous']], V('adm-bugs') || 'new', 'Filtrer')}</div>${tbl(['Retour', 'Page', 'Statut', 'Reçu', '<span class="sr">Actions</span>'], B.map(b => `<tr><td><b>${b[0]}</b></td><td>${b[1]}</td><td>${pill(b[2], b[3])}</td><td>${b[4]}</td><td><button class="btn btn-glass btn-sm" type="button" data-a="toast" data-v="Ouverture du retour">Ouvrir</button></td></tr>`))}`);
+}
+
+/* =====================================================================
+   E-mails : tableaux et styles en ligne, compatibles avec les clients mail
+   ===================================================================== */
+const MF = 'font-family:Arial,Helvetica,sans-serif';
+const mBtn = (t) => `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px"><tr><td style="background:#6C4DFF;border-radius:999px"><a href="#" style="display:inline-block;padding:14px 26px;${MF};font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none">${t}</a></td></tr></table>`;
+const mP = t => `<p style="margin:0 0 14px;${MF};font-size:15px;line-height:1.6;color:#48437A">${t}</p>`;
+const mH = t => `<h1 style="margin:0 0 14px;${MF};font-size:24px;line-height:1.2;color:#12102E">${t}</h1>`;
+function mailWrap(pre, body) {
+  return `<div style="display:none;max-height:0;overflow:hidden">${pre}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F4FF"><tr><td align="center" style="padding:28px 14px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px"><tr><td style="padding:0 6px 18px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:34px;height:34px;border-radius:10px;background:#6C4DFF;text-align:center;${MF};font-weight:bold;color:#FFFFFF;font-size:16px">i</td><td style="padding-left:10px;${MF};font-size:20px;font-weight:bold;color:#12102E">isaly</td></tr></table></td></tr><tr><td style="background:#FFFFFF;border-radius:20px;padding:32px 28px;border:1px solid #ECE7FF">${body}</td></tr><tr><td style="padding:20px 6px;${MF};font-size:12px;line-height:1.6;color:#686394">Tu reçois cet e-mail car tu as un compte ISALY. <a href="#" style="color:#5A38F0">Gérer mes notifications</a><br>ISALY, la plateforme dédiée à la colocation.</td></tr></table></td></tr></table>`;
+}
+const MAILS = {
+  confirm: ['Confirme ton adresse e-mail', 'Plus qu’une étape pour activer ton compte', () => mH('Bienvenue sur ISALY, Camille') + mP('Confirme ton adresse e-mail pour activer ton compte. Tu pourras ensuite faire le test de compatibilité et découvrir tes colocs.') + mBtn('Confirmer mon adresse') + mP('<span style="font-size:13px;color:#686394">Ce lien expire dans 24 heures. Si tu n’as pas créé de compte, ignore cet e-mail.</span>')],
+  digest: ['3 nouvelles colocs compatibles à Lyon', 'Jusqu’à 93 % de compatibilité cette semaine', () => mH('3 nouvelles colocs faites pour toi') + mP('Cette semaine, ces colocations correspondent à ton profil :') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${[['Brotteaux, Lyon 6e', '620 € par mois', '93 %'], ['Jean Macé, Lyon 7e', '500 € par mois', '88 %'], ['Saxe-Gambetta, Lyon 3e', '540 € par mois', '85 %']].map(r => `<tr><td style="padding:12px 0;border-bottom:1px solid #ECE7FF;${MF}"><b style="font-size:15px;color:#12102E">${r[0]}</b><br><span style="font-size:13px;color:#686394">${r[1]}</span></td><td align="right" style="padding:12px 0;border-bottom:1px solid #ECE7FF;${MF};font-size:18px;font-weight:bold;color:#5A38F0">${r[2]}</td></tr>`).join('')}</table>` + mBtn('Voir mes colocs')],
+  visit: ['Hugo te propose une visite', 'Jeudi 1er octobre à 18 h 30', () => mH('Une visite t’est proposée') + mP('La coloc Croix-Rousse (Hugo, Jade et Malik) te propose de passer visiter :') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F4FF;border-radius:14px"><tr><td style="padding:16px 18px;${MF}"><b style="font-size:16px;color:#12102E">Jeudi 1er octobre à 18 h 30</b><br><span style="font-size:13px;color:#686394">Adresse communiquée dans la conversation</span></td></tr></table>` + mBtn('Confirmer la visite')],
+  receipt: ['Ta quittance de septembre est disponible', 'Quittance de loyer, septembre 2026', () => mH('Ta quittance de septembre') + mP('Marc a confirmé la réception de ton loyer de septembre. Ta quittance est rangée dans ton coffre-fort ISALY.') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${[['Loyer', '490 €'], ['Charges', '70 €'], ['Total', '560 €']].map(r => `<tr><td style="padding:8px 0;${MF};font-size:14px;color:#48437A">${r[0]}</td><td align="right" style="padding:8px 0;${MF};font-size:14px;color:#12102E;font-weight:bold">${r[1]}</td></tr>`).join('')}</table>` + mBtn('Télécharger la quittance')],
+  cand: ['Nouvelle candidature pour ta chambre', 'Yann, 79 % de compatibilité', () => mH('Nouvelle candidature') + mP('Yann, 30 ans, chef de projet, a candidaté pour la chambre de 12 m² au 8 rue de Marseille.') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F4FF;border-radius:14px"><tr><td style="padding:16px 18px;${MF};font-size:14px;color:#48437A">Compatibilité avec la coloc<br><b style="font-size:26px;color:#5A38F0">79 %</b></td><td style="padding:16px 18px;${MF};font-size:13px;color:#0B7A5E;font-weight:bold" align="right">Dossier complet</td></tr></table>` + mBtn('Voir la candidature')],
+  reset: ['Réinitialise ton mot de passe', 'Lien valable 1 heure', () => mH('Nouveau mot de passe') + mP('Tu as demandé à réinitialiser ton mot de passe. Clique sur le bouton pour en choisir un nouveau.') + mBtn('Choisir un nouveau mot de passe') + mP('<span style="font-size:13px;color:#686394">Ce n’est pas toi&#8239;? Ignore cet e-mail : ton mot de passe reste inchangé.</span>')],
+};
+const docShell = (title, lead, body) => `<div class="idx"><a class="link" href="#/index" style="display:inline-flex;gap:6px;align-items:center">${I('back', 16)}Sommaire</a><h1 class="h1" style="margin-top:18px;font-size:clamp(2rem,4vw,3rem)">${title}</h1><p class="lede">${lead}</p><main id="contenu" tabindex="-1" style="margin-top:28px">${body}</main></div>`;
+function vEmails() {
+  const cur = MAILS[S.mail];
+  return docShell('Modèles d’e-mails', 'Les e-mails envoyés par Resend, au même niveau de design que le site.', `<div class="mail-lay"><div class="mail-list" role="group" aria-label="Modèles">${Object.entries(MAILS).map(([k, m]) => `<button class="cand" type="button" data-a="mail" data-v="${k}" aria-current="${S.mail === k}"><span class="ico brand">${I('mail', 18)}</span><span class="grow"><span class="t">${m[0]}</span></span></button>`).join('')}</div><div><div class="mail-meta"><span><b>Objet :</b> ${cur[0]}</span><span><b>Aperçu :</b> ${cur[1]}</span></div><div class="mail-stage"><div class="mail-frame">${mailWrap(cur[1], cur[2]())}</div></div><p class="hint mt">Mise en page en tableaux et styles en ligne pour Gmail, Outlook et Apple Mail. Le logo est une image PNG hébergée dans le vrai modèle.</p></div></div>`);
+}
+
+/* =====================================================================
+   Éléments globaux
+   ===================================================================== */
+function vElements() {
+  return docShell('Éléments globaux', 'Widgets présents sur plusieurs pages, et états communs : chargement, succès, erreur.', `<div class="demo">
+  <section class="panel"><div class="phead"><h2>Retour bêta</h2></div><div class="stage">${S.fb ? `<div class="wpanel"><div class="hrow"><b>Un souci, une idée&#8239;?</b><button class="iconbtn" type="button" data-a="fb" aria-label="Fermer" style="width:34px;height:34px">${I('x', 16)}</button></div><div class="chipsel">${['Bug', 'Idée', 'Autre'].map((t, i) => `<button type="button" class="fchip" aria-pressed="${i === 0}">${t}</button>`).join('')}</div><textarea class="textarea" aria-label="Ton message" placeholder="Décris ce qui s’est passé" style="min-height:90px"></textarea><button class="btn btn-main btn-sm" type="button" data-a="toast" data-v="Merci, ton retour est envoyé">Envoyer</button></div>` : ''}<button class="fab" type="button" data-a="fb" aria-expanded="${S.fb}">${I('bug', 18)}Un souci&#8239;?</button></div></section>
+  <section class="panel"><div class="phead"><h2>Assistant</h2></div><div class="stage">${S.chat ? `<div class="wpanel"><div class="hrow"><b>Assistant ISALY</b><button class="iconbtn" type="button" data-a="chat" aria-label="Fermer" style="width:34px;height:34px">${I('x', 16)}</button></div><div class="bmsg">Bonjour&#8239;! Une question sur ISALY&#8239;?</div><div class="bmsg me">Comment marche le score&#8239;?</div><div class="acts" style="flex-wrap:nowrap"><input class="input" aria-label="Ton message" placeholder="Écris ta question"><button class="btn btn-main" type="button" aria-label="Envoyer" style="width:46px;padding:0">${I('send', 18)}</button></div></div>` : ''}<button class="fab" type="button" data-a="chat" aria-expanded="${S.chat}" style="background:var(--brand);color:#FFFFFF">${I('bot', 18)}Assistant</button></div></section>
+  <section class="panel"><div class="phead"><h2>Installer l’app</h2></div><div class="stage" style="display:grid;align-items:end">${S.install ? `<div class="install"><span class="appi">${LOGO}</span><span class="grow"><span class="t">Installe ISALY</span><span class="s">Sur ton écran d’accueil, comme une app.</span></span><span class="acts" style="flex-wrap:nowrap"><button class="btn btn-ghost btn-sm" type="button" data-a="install">Plus tard</button><button class="btn btn-main btn-sm" type="button" data-a="toast" data-v="Installation">Installer</button></span></div>` : `<button class="btn btn-glass" type="button" data-a="install">Réafficher</button>`}</div></section>
+  <section class="panel"><div class="phead"><h2>Bandeau cookies, si le site en a un</h2></div><div class="stage">${S.cookie ? `<div class="cookie">${I('cookie', 22)}<p>On utilise des cookies pour mesurer l’audience et améliorer ISALY. <a class="link" href="#/legal">En savoir plus</a></p><span class="acts" style="flex-wrap:nowrap"><button class="btn btn-glass btn-sm" type="button" data-a="cookie">Refuser</button><button class="btn btn-main btn-sm" type="button" data-a="cookie">Accepter</button></span></div>` : `<button class="btn btn-glass" type="button" data-a="cookie">Réafficher</button>`}</div></section>
+  <section class="panel"><div class="phead"><h2>Chargement</h2></div><div class="stackv" style="gap:12px"><div class="acts" style="flex-wrap:nowrap;gap:12px"><span class="skel" style="width:44px;height:44px;border-radius:50%"></span><span class="grow" style="display:grid;gap:8px"><span class="skel" style="height:14px;width:60%"></span><span class="skel" style="height:12px;width:40%"></span></span></div><span class="skel" style="height:140px;border-radius:20px"></span><span class="skel" style="height:14px;width:80%"></span></div></section>
+  <section class="panel"><div class="phead"><h2>Notifications et états</h2></div><div class="stackv" style="gap:12px"><div class="alert ok">${I('check', 18)}<span>Modifications enregistrées.</span></div><div class="alert">${I('alert', 18)}<span>Impossible d’enregistrer. Réessaie dans un instant.</span></div><div class="note">${I('info', 18)}<span>Information neutre, sans urgence.</span></div><button class="btn btn-glass" type="button" data-a="toast" data-v="Exemple de notification">Afficher une notification</button></div></section></div>`);
+}
+
+/* =====================================================================
+   Rendu, actions, routeur
+   ===================================================================== */
+const VIEWS = { index: vIndex, annonce: vAnnonce, ville: vVille, blog: vBlog, article: vArticle, legal: vLegal, contact: vContact, e404: vE404, e500: vE500, offline: vOffline, login: vLogin, register: vRegister, forgot: vForgot, reset: vReset, verify: vVerify, onboarding: vOnboarding, signature: vSignature, paiement: vPaiement, 'adm-dash': vAdmDash, 'adm-users': vAdmUsers, 'adm-verif': vAdmVerif, 'adm-ads': vAdmAds, 'adm-reports': vAdmReports, 'adm-pay': vAdmPay, 'adm-agencies': vAdmAgencies, 'adm-bugs': vAdmBugs, emails: vEmails, elements: vElements };
+function renderProto() {
+  const p = byId(PAGES, S.page), groups = [...new Set(PAGES.map(x => x.g))];
+  $('[data-proto]').innerHTML = `<button type="button" data-a="proto" aria-expanded="${S.proto}">Pages</button>${S.proto ? `<div class="box" role="dialog" aria-label="Pages de la maquette"><p>Navigation de la maquette : ne fait pas partie du site.</p>${p.vars ? `<div class="field"><span class="flabel">Variante : ${p.t}</span>${seg('v.' + p.id, p.vars, V(p.id), 'Variante')}</div>` : ''}<div class="field"><span class="flabel">Thème</span>${seg('theme', [['auto', 'Auto'], ['light', 'Clair'], ['dark', 'Sombre']], S.theme, 'Thème')}</div><nav class="pages" aria-label="Toutes les pages">${groups.map(g => `${g ? `<h4>${g}</h4>` : ''}${PAGES.filter(x => x.g === g).map(x => `<a href="#/${x.id}"${x.id === S.page ? ' aria-current="page"' : ''}>${x.t}</a>`).join('')}`).join('')}</nav></div>` : ''}`;
+}
+function render(scrollTop) {
+  $('#app').innerHTML = VIEWS[S.page]();
+  const t = byId(PAGES, S.page).t;
+  document.title = S.page === 'index' ? 'ISALY, pages du site v2' : `${t}, ISALY`;
+  renderProto();
+  if (S.page === 'signature') bindPad();
+  if (scrollTop) try { window.scrollTo(0, 0); } catch (e) { /* rien */ }
+}
+function rerender() {
+  const a = document.activeElement; const key = a && a.dataset && a.dataset.a ? (a.dataset.v !== undefined ? `[data-a="${a.dataset.a}"][data-v="${a.dataset.v}"]` : `[data-a="${a.dataset.a}"]`) : null;
+  render(false);
+  if (key) { try { const el = document.querySelector(key); if (el) el.focus({ preventScroll: true }); } catch (e) { /* rien */ } }
+}
+let toastT = 0;
+function toast(msg) { const t = $('[data-toast]'); t.innerHTML = `${I('check', 18)}<span>${msg}</span>`; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function applyTheme() { const dark = S.theme === 'dark' || (S.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); try { localStorage.setItem('isaly-theme', S.theme); } catch (e) { /* rien */ } }
+const obSteps = () => OB_STEPS[S.obRole];
+const A = {
+  set: v => { const i = v.indexOf(':'), k = v.slice(0, i), val = v.slice(i + 1); if (k.startsWith('v.')) S.v[k.slice(2)] = val; else if (k === 'obFurn') S.obFurn = val === '1'; else S[k] = val; if (k === 'theme') applyTheme(); rerender(); },
+  toast: v => toast(v),
+  proto: () => { S.proto = !S.proto; renderProto(); },
+  burger: () => { S.burger = !S.burger; rerender(); },
+  pwshow: () => { S.pwShow = !S.pwShow; rerender(); },
+  agree: (v, el) => { S.agree = el.checked; },
+  legalv: v => { S.v.legal = v; },
+  scrollto: v => { const t = document.getElementById(v); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); document.querySelectorAll('.toc a').forEach(a => a.setAttribute('aria-current', String(a.dataset.v === v))); },
+  obrole: v => { S.obRole = v; rerender(); },
+  obsit: v => { S.obSit = v; rerender(); },
+  obnext: () => { S.ob = Math.min(obSteps().length - 1, S.ob + 1); render(true); },
+  obprev: () => { const st = obSteps()[S.ob]; if (st === 'test' && S.obQ > 0) { S.obQ--; rerender(); return; } S.ob = Math.max(0, S.ob - 1); render(true); },
+  obdone: () => toast(S.obRole === 'loc' ? 'Direction le swipe' : 'Direction l’assistant de publication'),
+  ans: v => { S.obAns[S.obQ] = Number(v); rerender(); if (S.obQ < 14) setTimeout(() => { if (S.page === 'onboarding' && obSteps()[S.ob] === 'test' && S.obAns[S.obQ] !== undefined && S.obQ < 14) { S.obQ++; rerender(); } }, 280); },
+  qmove: v => { S.obQ = Math.max(0, Math.min(14, S.obQ + Number(v))); rerender(); },
+  sgnext: () => { S.sgStep = 2; render(true); },
+  sgback: () => { S.sgStep = 1; S.sgDrawn = false; render(true); },
+  sgagree: (v, el) => { S.sgAgree = el.checked; syncSign(); },
+  sgclear: () => { S.sgDrawn = false; rerender(); },
+  sgsign: () => { S.sgDone = true; toast('Bail signé'); render(true); },
+  mail: v => { S.mail = v; rerender(); },
+  verif: v => { S.verif = v; rerender(); },
+  fb: () => { S.fb = !S.fb; rerender(); },
+  chat: () => { S.chat = !S.chat; rerender(); },
+  cookie: () => { S.cookie = !S.cookie; rerender(); },
+  install: () => { S.install = !S.install; rerender(); },
+};
+let CUR = '';
+const CAN_HASH = (() => { try { return location.protocol !== 'about:' && window.self === window.top; } catch (e) { return false; } })();
+const readHash = () => { try { return CAN_HASH ? location.hash : ''; } catch (e) { return ''; } };
+function parse(h) { const m = String(h || '').match(/^#\/([a-z0-9-]+)/); return m && VIEWS[m[1]] ? m[1] : null; }
+function nav(h) { if (!parse(h)) return; if (h === CUR) { onRoute(h); return; } if (CAN_HASH) { try { location.hash = h; return; } catch (e) { /* repli */ } } onRoute(h); }
+function onRoute(h) { CUR = h; S.page = parse(h) || 'index'; S.burger = false; if (S.page === 'signature' && S.sgDone) { S.sgDone = false; S.sgStep = 1; S.sgDrawn = false; S.sgAgree = false; } render(true); }
+window.addEventListener('hashchange', () => { const h = readHash(); if (h && h !== CUR) onRoute(h); });
+document.addEventListener('click', e => {
+  const link = e.target.closest('a[href^="#"]');
+  if (link) {
+    e.preventDefault();
+    if (link.dataset.a && A[link.dataset.a]) A[link.dataset.a](link.dataset.v, link, e);
+    const h = link.getAttribute('href');
+    if (h.startsWith('#/')) { S.proto = false; nav(h); }
+    return;
+  }
+  const t = e.target.closest('[data-a]');
+  if (!t) { if (S.proto && !e.target.closest('[data-proto]')) { S.proto = false; renderProto(); } return; }
+  if (t.disabled) return;
+  const fn = A[t.dataset.a]; if (!fn) return;
+  if (t.tagName === 'BUTTON') e.preventDefault();
+  fn(t.dataset.v, t, e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.proto) { S.proto = false; renderProto(); return; }
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (S.page === 'onboarding' && obSteps()[S.ob] === 'test' && /^[1-5]$/.test(e.key)) { e.preventDefault(); A.ans(String(Number(e.key) - 1)); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.matches('[data-pw]')) { S.pw = t.value; const sc = Math.min(4, Math.floor(S.pw.length / 3)); document.querySelectorAll('.strength i').forEach((i, k) => i.classList.toggle('on', k < sc)); }
+  if (t.matches('[data-range]')) { S.obBudget = Number(t.value); const b = $('[data-budget]'); if (b) b.innerHTML = eur(S.obBudget); }
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target.dataset.form;
+  if (f === 'login') { if (V('login') === 'err') toast('Vérifie tes identifiants'); else toast('Connexion réussie'); }
+  else if (f === 'register') nav('#/verify');
+  else if (f === 'forgot') { S.v.forgot = 'sent'; rerender(); }
+  else if (f === 'reset') { toast('Mot de passe enregistré'); nav('#/login'); }
+  else if (f === 'contact') { S.v.contact = 'sent'; render(true); }
+  else if (f === 'agency') toast('Agence ajoutée (démo)');
+});
+(function init() {
+  const radial = c => `<radialGradient id="rb${c.slice(1)}" cx=".34" cy=".28" r=".78"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset=".22" stop-color="${mix(c, '#FFFFFF', .45)}"/><stop offset=".62" stop-color="${c}"/><stop offset="1" stop-color="${mix(c, '#000000', .38)}"/></radialGradient>`;
+  const grad = (id, o = 1) => `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6C4DFF" stop-opacity="${o}"/><stop offset=".55" stop-color="#2F6BFF" stop-opacity="${o}"/><stop offset="1" stop-color="#16C79A" stop-opacity="${o}"/></linearGradient>`;
+  document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>${grad('lg')}${grad('gradRing')}${grad('lgSoft', .14)}<linearGradient id="gradFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6C4DFF" stop-opacity=".34"/><stop offset="1" stop-color="#16C79A" stop-opacity=".22"/></linearGradient>${Object.values(COL).map(radial).join('')}</defs></svg>`);
+  try { S.theme = localStorage.getItem('isaly-theme') || 'auto'; } catch (e) { S.theme = 'auto'; }
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', () => { if (S.theme === 'auto') applyTheme(); });
+  const p = parse(readHash()) || 'index';
+  S.page = p; CUR = `#/${p}`;
+  render(true);
+})();
+</script>
+<script type="application/json" id="isaly-site-spec">
+{
+ "nom": "ISALY, pages du site version 2 (hors landing et espace connecté)",
+ "date": "2026-09-28",
+ "role_du_fichier": "Maquette de référence haute fidélité de toutes les pages qui ne sont ni la landing (public/landing.html) ni l'espace connecté (maquette dashboard v2). Reproduire le design dans les pages Next.js existantes en gardant toute la logique (Supabase, Stripe, Resend, SEO, ISR, RLS).",
+ "prerequis": "Les jetons, la police et les composants de components/ui-v2 créés par la mission dashboard v2. Mêmes variables CSS que la maquette du tableau de bord (premier <style>).",
+ "navigation_maquette": "Page Sommaire, puis le bouton « Pages » en bas à droite : liste de toutes les pages, variantes et thème. Adresses #/<id> dans un navigateur.",
+ "pages": [
+  {
+   "id": "annonce",
+   "groupe": "Pages publiques",
+   "titre": "Annonce publique",
+   "route_probable": "/annonce/[id]"
+  },
+  {
+   "id": "ville",
+   "groupe": "Pages publiques",
+   "titre": "Page ville",
+   "route_probable": "/colocation/[ville]"
+  },
+  {
+   "id": "blog",
+   "groupe": "Pages publiques",
+   "titre": "Blog ISALY Immo",
+   "route_probable": "/blog"
+  },
+  {
+   "id": "article",
+   "groupe": "Pages publiques",
+   "titre": "Article",
+   "route_probable": "/blog/[slug]"
+  },
+  {
+   "id": "legal",
+   "groupe": "Pages publiques",
+   "titre": "Pages légales",
+   "route_probable": "/mentions-legales, /cgu, /confidentialite"
+  },
+  {
+   "id": "contact",
+   "groupe": "Pages publiques",
+   "titre": "Contact",
+   "route_probable": "/contact"
+  },
+  {
+   "id": "e404",
+   "groupe": "Pages publiques",
+   "titre": "Page introuvable",
+   "route_probable": "app/not-found.tsx"
+  },
+  {
+   "id": "e500",
+   "groupe": "Pages publiques",
+   "titre": "Erreur",
+   "route_probable": "app/error.tsx et global-error.tsx"
+  },
+  {
+   "id": "offline",
+   "groupe": "Pages publiques",
+   "titre": "Hors ligne",
+   "route_probable": "page hors ligne de la PWA"
+  },
+  {
+   "id": "login",
+   "groupe": "Compte",
+   "titre": "Connexion",
+   "route_probable": "/auth/login"
+  },
+  {
+   "id": "register",
+   "groupe": "Compte",
+   "titre": "Inscription",
+   "route_probable": "/auth/register"
+  },
+  {
+   "id": "forgot",
+   "groupe": "Compte",
+   "titre": "Mot de passe oublié",
+   "route_probable": "route existante"
+  },
+  {
+   "id": "reset",
+   "groupe": "Compte",
+   "titre": "Nouveau mot de passe",
+   "route_probable": "route existante"
+  },
+  {
+   "id": "verify",
+   "groupe": "Compte",
+   "titre": "Vérifie ta boîte mail",
+   "route_probable": "après /auth/register"
+  },
+  {
+   "id": "onboarding",
+   "groupe": "Parcours plein écran",
+   "titre": "Onboarding et test",
+   "route_probable": "/onboarding"
+  },
+  {
+   "id": "signature",
+   "groupe": "Parcours plein écran",
+   "titre": "Signature du bail",
+   "route_probable": "route de signature existante"
+  },
+  {
+   "id": "paiement",
+   "groupe": "Parcours plein écran",
+   "titre": "Retour de paiement",
+   "route_probable": "pages de retour Stripe"
+  },
+  {
+   "id": "adm-dash",
+   "groupe": "Administration",
+   "titre": "Tableau de bord",
+   "route_probable": "/admin"
+  },
+  {
+   "id": "adm-users",
+   "groupe": "Administration",
+   "titre": "Utilisateurs",
+   "route_probable": "/admin/utilisateurs"
+  },
+  {
+   "id": "adm-verif",
+   "groupe": "Administration",
+   "titre": "Vérifications",
+   "route_probable": "/admin/verifications"
+  },
+  {
+   "id": "adm-ads",
+   "groupe": "Administration",
+   "titre": "Annonces",
+   "route_probable": "/admin/annonces"
+  },
+  {
+   "id": "adm-reports",
+   "groupe": "Administration",
+   "titre": "Signalements",
+   "route_probable": "/admin/signalements"
+  },
+  {
+   "id": "adm-pay",
+   "groupe": "Administration",
+   "titre": "Paiements",
+   "route_probable": "/admin/paiements"
+  },
+  {
+   "id": "adm-agencies",
+   "groupe": "Administration",
+   "titre": "Agences partenaires",
+   "route_probable": "/admin/agences (nouveau)"
+  },
+  {
+   "id": "adm-bugs",
+   "groupe": "Administration",
+   "titre": "Retours bêta",
+   "route_probable": "/admin/bug-reports"
+  },
+  {
+   "id": "emails",
+   "groupe": "Transverse",
+   "titre": "E-mails",
+   "route_probable": "modèles Resend"
+  },
+  {
+   "id": "elements",
+   "groupe": "Transverse",
+   "titre": "Éléments globaux",
+   "route_probable": "widgets et états"
+  }
+ ],
+ "regles_de_design": [
+  "Pages publiques : en-tête et pied de page identiques à la landing (mêmes liens, même logo, bouton « Trouver ma coloc »). Sur mobile, menu repliable.",
+  "Pages de compte : écran partagé, panneau en dégradé Match avec la constellation à gauche, formulaire à droite ; une seule colonne sur mobile.",
+  "Parcours plein écran (onboarding, signature, retour de paiement) : sans en-tête public ni barre latérale, barre de progression en haut, actions collées en bas.",
+  "Administration : même coque que l'espace connecté (barre latérale, barre du haut), badge Administration, navigation horizontale sur mobile.",
+  "Un seul bouton violet par zone d'action. Corail, azur, menthe et soleil réservés aux personnes et aux scores.",
+  "Libellés repris mot pour mot, tutoiement, espace fine avant % ? ! :, espace insécable avant €. Aucun emoji, aucune abréviation."
+ ],
+ "a_conserver": [
+  "SEO : generateMetadata, données structurées, sitemap, ISR des pages villes et annonces, contenus SEO existants des villes.",
+  "Contenus : les 5 articles MDX existants, les textes juridiques existants (seule la mise en page change).",
+  "Onboarding : la logique existante (étapes, questions réelles de lib/matching, sauvegarde du brouillon côté serveur, owner_intent). Les 15 questions de la maquette sont provisoires.",
+  "Signature : le canvas, le consentement eIDAS, jsPDF et le générateur de bail existants. Le texte du bail de la maquette est fictif.",
+  "Admin : les gardes existantes (getAdminUser, profiles.is_admin côté serveur, table admin_actions).",
+  "E-mails : l'envoi Resend existant ; seule la mise en page des modèles change (tableaux et styles en ligne, logo en PNG hébergé).",
+  "Widgets : retour bêta, assistant, invite d'installation PWA, bandeau cookies : restyler seulement ceux qui existent déjà."
+ ],
+ "a_ne_pas_porter": [
+  "le bouton Pages et la page Sommaire de la maquette",
+  "le routeur de la maquette",
+  "les données fictives",
+  "le rond pointillé à la place du logo Google : utiliser le logo officiel fourni par Google selon ses règles d'usage"
+ ],
+ "nouveau": "Écran Agences partenaires dans l'admin (liste, ajout, délégations et commissions à facturer) : seulement si la table partner_agencies existe ; sinon, état vide expliquant que la migration dashboard v2 doit être exécutée.",
+ "couverture": "Toute route du site absente de cette liste doit quand même passer au nouveau design avec les composants ui-v2, en s'inspirant de la page la plus proche de la maquette. Elle est listée dans le rapport."
+}
+</script>
+</body>
+</html>
