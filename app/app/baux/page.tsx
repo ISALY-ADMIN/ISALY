@@ -7,6 +7,7 @@ import Image from 'next/image'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
+import BauxV2 from '@/components/ui-v2/screens/Baux'
 
 interface LeaseRow {
   id: string
@@ -73,7 +74,17 @@ function daysUntil(iso: string) {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 }
 
+/** Dashboard v2 : Baux (components/ui-v2/screens/Baux.tsx). */
 export default function BauxPage() {
+  return (
+    <Suspense fallback={null}>
+      <BauxV2 />
+    </Suspense>
+  )
+}
+
+/** [HIDDEN] Ancienne page Mes baux (dashboard v1), conservée, plus rendue. */
+function BauxPageLegacy() {
   return (
     <Suspense fallback={null}>
       <BauxPageInner />

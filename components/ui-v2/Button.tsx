@@ -28,6 +28,8 @@ type AsButton = Common & {
 type AsLink = Common & {
   href: string
   external?: boolean
+  /** Lien inactif : rendu comme un bouton désactivé. */
+  disabled?: boolean
   onClick?: MouseEventHandler<HTMLAnchorElement>
 }
 
@@ -48,6 +50,9 @@ export function Button(props: AsButton | AsLink) {
     </>
   )
   if (props.href !== undefined) {
+    if (props.disabled) {
+      return <button className={cls} style={style} type="button" disabled aria-label={props['aria-label']}>{inner}</button>
+    }
     if (props.external) {
       return (
         <a className={cls} style={style} href={props.href} onClick={props.onClick} aria-label={props['aria-label']}>
