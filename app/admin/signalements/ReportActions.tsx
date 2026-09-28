@@ -8,6 +8,66 @@ interface Props {
   currentStatus: string
 }
 
+const TRANSITIONS: Record<string, { label: string; next: string; main?: boolean }[]> = {
+  open: [
+    { label: 'Traiter', next: 'reviewing', main: true },
+    { label: 'Ignorer', next: 'dismissed' },
+  ],
+  reviewing: [
+    { label: 'Résoudre', next: 'resolved', main: true },
+    { label: 'Ignorer', next: 'dismissed' },
+  ],
+}
+
+export default function ReportActions({ reportId, currentStatus }: Props) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState(currentStatus)
+
+  const actions = TRANSITIONS[status] ?? []
+
+  if (actions.length === 0) return <span className="muted">-</span>
+
+  async function update(next: string) {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/update-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId, status: next }),
+      })
+      if (!res.ok) throw new Error()
+      setStatus(next)
+      router.refresh()
+    } catch {
+      alert('Erreur lors de la mise à jour.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <span className="acts">
+      {actions.map(a => (
+        <button key={a.next} className={a.main ? 'btn btn-glass btn-sm' : 'btn btn-ghost btn-sm'} type="button" onClick={() => update(a.next)} disabled={loading}>
+          {a.label}
+        </button>
+      ))}
+    </span>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+interface Props {
+  reportId: string
+  currentStatus: string
+}
+
 const TRANSITIONS: Record<string, { label: string; next: string; color: string }[]> = {
   open: [
     { label: 'En cours', next: 'reviewing', color: '#F59E0B' },
@@ -65,3 +125,4 @@ export default function ReportActions({ reportId, currentStatus }: Props) {
     </div>
   )
 }
+*/
