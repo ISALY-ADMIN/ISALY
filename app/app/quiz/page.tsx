@@ -2,6 +2,95 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { hasCompletedTest, QUIZ_TOTAL_STEPS, type MatchingData } from '@/lib/matching'
+import { Button, Icon } from '@/components/ui-v2'
+import { useShellTitle } from '@/components/ui-v2/shell/AppShell'
+import { CompatTest, CompatResult } from '@/components/ui-v2/test/CompatTest'
+
+/**
+ * « Refaire le test » de Mon profil : même composant de test que l'onboarding
+ * (components/ui-v2/test/CompatTest). Enregistrement inchangé : seul
+ * profiles.matching_data est mis à jour, budget_min conservé.
+ */
+export default function QuizPage() {
+  const router = useRouter()
+  const [budgetMin, setBudgetMin] = useState<number | undefined>(undefined)
+  const [result, setResult] = useState<MatchingData | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(false)
+  useShellTitle('Test de compatibilité')
+
+  // Récupère le budget_min existant pour le conserver dans le nouveau matching_data
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/auth/login'); return }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('matching_data')
+        .eq('id', user.id)
+        .single()
+      const md = profile?.matching_data as { budget_min?: number } | null
+      if (md?.budget_min != null) setBudgetMin(md.budget_min)
+    }
+    load()
+  }, [router])
+
+  async function save(data: MatchingData) {
+    setSaving(true)
+    setError(false)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/auth/login'); return }
+    const { error: err } = await supabase
+      .from('profiles')
+      .update({ matching_data: data })
+      .eq('id', user.id)
+    setSaving(false)
+    if (err) { setError(true); return }
+    setResult(data)
+  }
+
+  return (
+    // .ui-site : styles du test (styles/ui-v2-site.css), limités à ce bloc.
+    <div className="screen ui-site">
+      <div className="ob-card" style={{ margin: '0 auto' }}>
+        <Button variant="ghost" size="sm" href="/app/profil" icon="back" style={{ justifySelf: 'start' }}>Retour au profil</Button>
+        {result && hasCompletedTest(result) ? (
+          <>
+            <span className="eyebrow">Test enregistré</span>
+            <h1>Voilà comment tu vis en coloc</h1>
+            <p className="lead">Tes nouvelles réponses alimentent tous tes scores de compatibilité.</p>
+            <CompatResult data={result} />
+            <div className="acts">
+              <Button variant="main" href="/app/swipe">Voir mes nouveaux matchs<Icon name="arrow" size={18} /></Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <span className="eyebrow">Test de compatibilité</span>
+            <h1>Comment tu vis au quotidien&#8239;?</h1>
+            <p className="lead">{`${QUIZ_TOTAL_STEPS} questions, environ 3 minutes. Il n’y a pas de bonne réponse.`}</p>
+            {error && (
+              <div className="alert" role="alert"><Icon name="alert" size={18} /><span>Impossible d’enregistrer, réessaie.</span></div>
+            )}
+            {saving
+              ? <div className="note" role="status"><Icon name="clock" size={18} /><span>Enregistrement…</span></div>
+              : <CompatTest onComplete={save} budgetMin={budgetMin} />}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Check } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
@@ -97,7 +186,7 @@ export default function QuizPage() {
                       <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.55)' }}>{DIMENSION_LABELS[dim]}</span>
                       <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981' }}>{result.scores[dim]}</span>
                     </div>
-                    {/* Les dimensions se déploient depuis zéro, l'une après l'autre. */}
+                    {/* Les dimensions se déploient depuis zéro, l'une après l'autre. * /}
                     <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
                       <SpringBar value={result.scores[dim]} background="linear-gradient(90deg, #10B981, #059669)" delay={0.25 + i * 0.09} />
                     </div>
@@ -137,3 +226,4 @@ export default function QuizPage() {
     </div>
   )
 }
+*/

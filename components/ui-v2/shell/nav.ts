@@ -90,6 +90,8 @@ export const V2_SCREENS: Record<string, Mode[]> = {
   '/app/candidatures': ['locataire', 'loueur'],
   '/app/baux': ['locataire', 'loueur'],
   '/app/maintenance': ['locataire', 'loueur'],
+  // Site v2 : test de compatibilité (même composant que l'onboarding).
+  '/app/quiz': ['locataire', 'loueur'],
 }
 
 export function isV2Screen(pathname: string, mode: Mode): boolean {
