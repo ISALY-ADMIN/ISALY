@@ -62,6 +62,14 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&display=swap" rel="stylesheet" />
         {/* Sans JavaScript, RiseText ne recevrait jamais sa classe d'entrée :
             on neutralise l'état caché plutôt que de laisser des titres vides. */}
+        {/* Thème de l'espace connecté (dashboard v2), appliqué avant le premier
+            rendu : repris du <head> de design/isaly-dashboard-v2.html. Seules les
+            pages sous .ui-v2 lisent data-theme ; les pages publiques l'ignorent. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "(function(){var t='auto';try{t=localStorage.getItem('isaly-theme')||'auto'}catch(e){}var d=t==='dark'||(t==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')})();",
+          }}
+        />
         <noscript dangerouslySetInnerHTML={{ __html: '<style>.m-rise .m-rise-word{transform:none!important;opacity:1!important}</style>' }} />
       </head>
       <Script id="register-sw" strategy="afterInteractive">

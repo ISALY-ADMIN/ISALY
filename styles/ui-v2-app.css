@@ -1,0 +1,63 @@
+/* =====================================================================
+   Dashboard v2 : raccords avec l'application existante.
+   Complète styles/ui-v2.css (porté de la maquette) sans le modifier.
+   ===================================================================== */
+
+/* Le fond violet clair de la maquette est un ::before en z-index -1 : il
+   faut un contexte d'empilement pour qu'il passe au-dessus du fond de .ui-v2. */
+.ui-v2{isolation:isolate}
+
+/* globals.css impose `* { font-family: Outfit !important }` : la police de la
+   charte v2 doit repasser devant, sur toute la coque. */
+.ui-v2,.ui-v2 *{font-family:var(--font)!important}
+
+/* Débordement du défilement (iOS, pavé tactile) : même fond que la coque. */
+body:has(.ui-v2){background:#F6F4FF;color:#12102E}
+html[data-theme="dark"] body:has(.ui-v2){background:#08071A;color:#F6F4FF}
+
+/* Écrans pas encore migrés : ils gardent leur apparence sombre d'origine,
+   dans un cadre, le temps de leur refonte. */
+.ui-v2 .ui-legacy{position:relative;background:#0A0A0A;color:#FFFFFF;border-radius:var(--r-xl);overflow:hidden;min-height:60vh;isolation:isolate}
+.ui-v2 .ui-legacy,.ui-v2 .ui-legacy *:not(.isaly-serif){font-family:'Outfit',sans-serif!important}
+.ui-v2 .ui-legacy .isaly-serif{font-family:'Fraunces',serif!important}
+.ui-v2 .view.is-legacy{padding-top:16px}
+
+/* Squelettes de chargement, dans le style des panneaux. */
+.ui-v2 .v-skel{display:block;border-radius:12px;background:linear-gradient(90deg,var(--bg-2) 0%,var(--surface-2) 50%,var(--bg-2) 100%);background-size:200% 100%;animation:v2-shimmer 1.4s ease-in-out infinite}
+@keyframes v2-shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+
+/* Photos réelles des annonces à la place de l'illustration. */
+.ui-v2 .art.has-photo::before{z-index:1;background:linear-gradient(180deg,transparent 58%,rgba(18,16,46,.28))}
+.ui-v2 .art.has-photo::after{display:none}
+.ui-v2 .art .art-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ui-v2 .art>.score-pill,.ui-v2 .art>.disc{z-index:2}
+.ui-v2 .art>.fav{z-index:3}
+
+/* Cibles tactiles : 44 px minimum sur les contrôles compacts. */
+@media (pointer:coarse){
+  .ui-v2 .btn-sm{min-height:44px}
+  .ui-v2 .seg button{min-height:44px}
+  .ui-v2 .fchip{min-height:44px}
+  .ui-v2 .link{min-height:44px;display:inline-flex;align-items:center}
+  .ui-v2 .fav{width:44px;height:44px}
+}
+
+/* Hôte des fenêtres (portail) : hérite des jetons de .ui-v2. */
+.ui-v2 #ui-v2-portal{position:relative;z-index:80}
+
+/* Carte Leaflet existante, habillée aux couleurs de la charte. */
+.ui-v2 .mapwrap .leaflet-container{width:100%;height:min(62vh,560px);min-height:360px;background:var(--map-land);font-family:var(--font)!important}
+.ui-v2 .mapwrap .leaflet-control-zoom a{background:var(--solid);color:var(--ink);border-color:var(--line)}
+.ui-v2 .mapwrap .leaflet-control-attribution{background:color-mix(in srgb,var(--solid) 80%,transparent);color:var(--ink-3)}
+html[data-theme="dark"] .ui-v2 .mapwrap .leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) brightness(.82) contrast(.9) saturate(.6)}
+.ui-v2 .v-pin{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 11px;border-radius:14px;background:var(--solid);border:1px solid var(--line-2);color:var(--ink);font:800 13px/1 var(--font);white-space:nowrap;box-shadow:var(--shadow-2);transform:translate(-50%,-100%)}
+.ui-v2 .v-pin.on{background:#6C4DFF;border-color:#6C4DFF;color:#FFFFFF}
+
+/* Sélecteur de mode : un bouton désactivé pendant l'enregistrement. */
+.ui-v2 .modeswitch button[disabled]{cursor:progress}
+
+/* Liens d'avatar dans la barre du haut et le bloc utilisateur. */
+.ui-v2 .avatar-btn .bub{--s:44px}
+
+/* Libellé caché visuellement (équivalent .sr de la maquette). */
+.ui-v2 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

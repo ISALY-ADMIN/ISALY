@@ -3,6 +3,9 @@ import { LeaseProvider } from '@/contexts/LeaseContext'
 import { Toaster } from '@/components/ui/toaster'
 import BugReportWidget from '@/components/bug-report/BugReportWidget'
 import RoleGate from '@/components/onboarding/RoleGate'
+// Dashboard v2 : composants portés de la maquette, limités à .ui-v2.
+import '@/styles/ui-v2.css'
+import '@/styles/ui-v2-app.css'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

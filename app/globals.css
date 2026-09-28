@@ -615,3 +615,46 @@ button, a[role="button"] {
 }
 /* Logo déjà dessiné dans cette session (script en ligne de BrandLogoDraw). */
 .m-logo-seen .m-logo-cover { display: none; }
+
+/* =====================================================================
+   Dashboard v2 : jetons de la charte (design/isaly-dashboard-v2.html).
+   Recopiés à l'identique depuis le premier <style> de la maquette, mais
+   portés par .ui-v2 (et html[data-theme="dark"] .ui-v2 pour le sombre) au
+   lieu de :root, pour ne pas toucher aux pages publiques. Les anciens jetons
+   ci-dessus restent en place.
+   ===================================================================== */
+.ui-v2{
+  --bg:#F6F4FF; --bg-2:#ECE7FF; --surface:rgba(255,255,255,.66); --surface-2:rgba(255,255,255,.92); --solid:#FFFFFF;
+  --ink:#12102E; --ink-2:#48437A; --ink-3:#686394;
+  --line:rgba(18,16,46,.09); --line-2:rgba(18,16,46,.17);
+  --brand:#6C4DFF; --brand-2:#5A38F0; --brand-text:#5A38F0; --brand-soft:rgba(108,77,255,.1);
+  --azure:#2F6BFF; --mint:#16C79A; --sun:#FFB524; --coral:#FF5C8A;
+  --ok-bg:rgba(22,199,154,.15); --ok-ink:#0B7A5E;
+  --warn-bg:rgba(255,181,36,.22); --warn-ink:#865500;
+  --bad-bg:rgba(255,92,138,.15); --bad-ink:#BE2556;
+  --info-bg:rgba(47,107,255,.12); --info-ink:#2450C8;
+  --grad:linear-gradient(100deg,#6C4DFF 0%,#2F6BFF 52%,#16C79A 100%);
+  --shadow:0 24px 60px -32px rgba(72,39,204,.3);
+  --shadow-2:0 10px 28px -16px rgba(55,28,158,.32);
+  --map-land:#F1EEFF; --map-street:rgba(18,16,46,.06); --map-water:#C3D5FF; --map-park:#CFF1E4;
+  --r-xl:28px; --r-lg:20px; --r-md:14px;
+  --side-w:264px;
+  --font:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1); --ease-out:cubic-bezier(.16,1,.3,1);
+  color-scheme:light;
+}
+html[data-theme="dark"] .ui-v2{
+  --bg:#08071A; --bg-2:#131030; --surface:rgba(27,22,66,.5); --surface-2:rgba(33,28,78,.86); --solid:#15112F;
+  --ink:#F6F4FF; --ink-2:#BAB5E2; --ink-3:#807BAA;
+  --line:rgba(246,244,255,.09); --line-2:rgba(246,244,255,.17);
+  --brand-text:#AE97FF; --brand-soft:rgba(140,111,255,.17);
+  --ok-ink:#5FE3BE; --warn-ink:#FFCB6B; --bad-ink:#FF8DB0; --info-ink:#8FB0FF;
+  --shadow:0 24px 60px -30px rgba(0,0,0,.65); --shadow-2:0 10px 28px -16px rgba(0,0,0,.6);
+  --map-land:#110E2A; --map-street:rgba(246,244,255,.05); --map-water:#1C2F68; --map-park:#0F3A2F;
+  color-scheme:dark;
+}
+/* Police chargée par next/font (app/app/layout.tsx, variable --font-bricolage) :
+   elle passe devant le nom de famille de la maquette, qui reste en repli. */
+.ui-v2{
+  --font:var(--font-bricolage, "Bricolage Grotesque"), "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
