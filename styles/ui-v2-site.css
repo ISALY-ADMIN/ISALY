@@ -346,3 +346,11 @@
 /* Filtres en liens (catégories du blog) : même état actif que .fchip pressé. */
 .ui-site a.fchip{text-decoration:none;display:inline-flex;align-items:center}
 .ui-site a.fchip[aria-current="page"]{border-color:var(--brand);color:var(--brand-text);background:var(--brand-soft)}
+/* .prose a colore tous les liens : les boutons et cartes gardent leurs couleurs. */
+.ui-site .prose a.btn,.ui-site .prose a.panel{font-weight:600;text-decoration:none}
+.ui-site .prose a.btn-main{color:#FFFFFF}
+.ui-site .prose a.btn-glass,.ui-site .prose a.panel{color:var(--ink)}
+/* La remise à zéro de .ui-v2 retire les puces : le texte long les retrouve. */
+.ui-site .prose ul{list-style:disc}
+.ui-site .prose ol{list-style:decimal}
+.ui-site .prose li::marker{color:var(--brand)}
