@@ -17,6 +17,7 @@ import { listingOccupancy } from '@/lib/utils'
 import { BentoStyles, CountUp, cardBase } from '@/components/ui/Bento'
 import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 import AnnonceWizard from '@/components/listings/AnnonceWizard'
+import AnnoncesV2 from '@/components/ui-v2/screens/Annonces'
 
 // ─── Types ───────────────────────────────────────────────────
 interface Listing {
@@ -862,7 +863,17 @@ function MesAnnoncesContent() {
   )
 }
 
+/** Dashboard v2 : Annonces (components/ui-v2/screens/Annonces.tsx). */
 export default function MesAnnoncesPage() {
+  return (
+    <Suspense fallback={null}>
+      <AnnoncesV2 />
+    </Suspense>
+  )
+}
+
+/** [HIDDEN] Ancienne page Mes annonces (dashboard v1), conservée, plus rendue. */
+function MesAnnoncesPageLegacy() {
   return (
     <Suspense fallback={null}>
       <MesAnnoncesContent />
