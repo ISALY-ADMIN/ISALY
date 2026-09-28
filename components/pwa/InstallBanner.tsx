@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+import { Icon, Logo } from '@/components/ui-v2/primitives'
+import { WidgetRoot } from '@/components/ui-v2/public/WidgetRoot'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -15,6 +16,93 @@ const DISMISS_KEY = 'isaly_pwa_banner_dismissed'
  * Android/Chrome : bouton natif via beforeinstallprompt.
  * iOS Safari : instructions manuelles (pas d'API d'installation).
  */
+export default function InstallBanner() {
+  const [visible, setVisible] = useState(false)
+  const [isIos, setIsIos] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(DISMISS_KEY)) return
+    } catch { return }
+
+    // Déjà installée (standalone) → rien à afficher
+    if (window.matchMedia('(display-mode: standalone)').matches) return
+    if ((navigator as unknown as { standalone?: boolean }).standalone) return
+    // Mobile uniquement
+    if (window.innerWidth >= 768) return
+
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    setIsIos(ios)
+
+    if (ios) {
+      setVisible(true)
+      return
+    }
+
+    function onPrompt(e: Event) {
+      e.preventDefault()
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
+      setVisible(true)
+    }
+    window.addEventListener('beforeinstallprompt', onPrompt)
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
+  }, [])
+
+  function dismiss() {
+    setVisible(false)
+    try { localStorage.setItem(DISMISS_KEY, '1') } catch {}
+  }
+
+  async function install() {
+    if (!deferredPrompt) return
+    await deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') setVisible(false)
+    else dismiss()
+    setDeferredPrompt(null)
+  }
+
+  if (!visible) return null
+
+  // Site v2 : invite dans le style de la charte (.install de la maquette).
+  return (
+    <WidgetRoot>
+      <div className="install fixed" role="dialog" aria-label="Installer l’application ISALY" style={{ bottom: 'calc(16px + env(safe-area-inset-bottom))' }}>
+        <span className="appi"><Logo /></span>
+        <span className="grow">
+          <span className="t">Installe ISALY</span>
+          {isIos
+            ? <span className="s">Appuie sur <Icon name="share" size={14} style={{ display: 'inline', verticalAlign: '-2px' }} /> Partager puis « Sur l’écran d’accueil ».</span>
+            : <span className="s">Sur ton écran d’accueil, comme une app.</span>}
+        </span>
+        <span className="acts" style={{ flexWrap: 'nowrap' }}>
+          <button className="btn btn-ghost btn-sm" type="button" onClick={dismiss}>Plus tard</button>
+          {!isIos && <button className="btn btn-main btn-sm" type="button" onClick={install}>Installer</button>}
+        </span>
+      </div>
+    </WidgetRoot>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useEffect, useState } from 'react'
+import { X } from 'lucide-react'
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+const DISMISS_KEY = 'isaly_pwa_banner_dismissed'
+
+/**
+ * Bannière "Installer l'app" — mobile uniquement.
+ * Android/Chrome : bouton natif via beforeinstallprompt.
+ * iOS Safari : instructions manuelles (pas d'API d'installation).
+ * /
 export default function InstallBanner() {
   const [visible, setVisible] = useState(false)
   const [isIos, setIsIos] = useState(false)
@@ -117,3 +205,4 @@ export default function InstallBanner() {
     </div>
   )
 }
+*/

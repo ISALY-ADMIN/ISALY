@@ -10,6 +10,8 @@ import {
   writeConsent,
   type ConsentChoice,
 } from '@/lib/consent'
+import { Icon } from '@/components/ui-v2/primitives'
+import { WidgetRoot } from '@/components/ui-v2/public/WidgetRoot'
 
 const GA_MEASUREMENT_ID = 'G-JXZRTY71Y4'
 
@@ -22,7 +24,167 @@ type Panel = 'hidden' | 'banner' | 'preferences'
  * que l'utilisateur n'a pas accepté, aucune requête ne part vers Google.
  * Le refus est stocké au même titre que l'acceptation, pour ne pas redemander
  * à chaque visite.
+ *
+ * Site v2 : bandeau dans le style de la charte (.cookie de la maquette) ;
+ * logique et textes de consentement inchangés.
  */
+export default function CookieConsent() {
+  const [consent, setConsent] = useState<ConsentChoice | null>(null)
+  const [panel, setPanel] = useState<Panel>('hidden')
+  const [analyticsOn, setAnalyticsOn] = useState(false)
+
+  // Le rendu initial doit être identique côté serveur et client (pas d'accès
+  // à localStorage pendant l'hydratation) : on lit le choix après le montage.
+  useEffect(() => {
+    const stored = readConsent()
+    setConsent(stored)
+    setAnalyticsOn(stored?.analytics ?? false)
+    setPanel(stored ? 'hidden' : 'banner')
+  }, [])
+
+  useEffect(() => {
+    const reopen = () => {
+      setAnalyticsOn(readConsent()?.analytics ?? false)
+      setPanel('preferences')
+    }
+    window.addEventListener(CONSENT_OPEN_EVENT, reopen)
+    return () => window.removeEventListener(CONSENT_OPEN_EVENT, reopen)
+  }, [])
+
+  const decide = useCallback((analytics: boolean) => {
+    setConsent(writeConsent(analytics))
+    setPanel('hidden')
+  }, [])
+
+  const analyticsGranted = consent?.analytics === true
+
+  return (
+    <>
+      {analyticsGranted && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}', { anonymize_ip: true });
+            `}
+          </Script>
+        </>
+      )}
+
+      {panel !== 'hidden' && (
+        <WidgetRoot>
+          <div className="cookie fixed" role="dialog" aria-modal="false" aria-labelledby="cookie-consent-title">
+            <h2 id="cookie-consent-title" className="ctitle">
+              <Icon name="cookie" size={22} />
+              {panel === 'banner' ? 'Cookies et mesure d’audience' : 'Gérer mes cookies'}
+            </h2>
+
+            <p style={{ minWidth: 0 }}>
+              ISALY dépose des cookies strictement nécessaires au fonctionnement du service
+              (connexion, préférences) : ils ne demandent pas de consentement. Nous souhaitons
+              aussi mesurer l’audience du site avec Google Analytics — ce dépôt-là est facultatif
+              et n’a lieu que si vous l’acceptez.{' '}
+              <Link className="link" href="/confidentialite">En savoir plus</Link>
+            </p>
+
+            {panel === 'preferences' && (
+              <div style={{ display: 'grid', gap: 10 }}>
+                <div className="opt">
+                  <div className="hrow"><b>Cookies nécessaires</b><span className="s">Toujours actifs</span></div>
+                  <p>Session de connexion, sécurité, préférences d’affichage. Sans eux le site ne fonctionne pas.</p>
+                </div>
+                <label className="opt" style={{ cursor: 'pointer', display: 'block' }}>
+                  <span className="hrow">
+                    <b>Mesure d’audience</b>
+                    <input
+                      type="checkbox"
+                      checked={analyticsOn}
+                      onChange={e => setAnalyticsOn(e.target.checked)}
+                      style={{ width: 20, height: 20, accentColor: 'var(--brand)', cursor: 'pointer', flex: 'none' }}
+                    />
+                  </span>
+                  <p>
+                    Google Analytics — pages consultées et parcours, pour comprendre ce qui est utile
+                    et corriger ce qui bloque. Données transmises à Google.
+                  </p>
+                </label>
+              </div>
+            )}
+
+            <span className="acts">
+              {panel === 'banner' ? (
+                <>
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => setPanel('preferences')}>Gérer mes choix</button>
+                  <button className="btn btn-glass btn-sm" type="button" onClick={() => decide(false)}>Refuser</button>
+                  <button className="btn btn-main btn-sm" type="button" onClick={() => decide(true)}>Accepter</button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-glass btn-sm" type="button" onClick={() => decide(false)}>Tout refuser</button>
+                  <button className="btn btn-glass btn-sm" type="button" onClick={() => decide(true)}>Tout accepter</button>
+                  <button className="btn btn-main btn-sm" type="button" onClick={() => decide(analyticsOn)}>Enregistrer mes choix</button>
+                </>
+              )}
+            </span>
+          </div>
+        </WidgetRoot>
+      )}
+    </>
+  )
+}
+
+/** Lien « Gérer mes cookies » à placer dans les pieds de page. */
+export function CookieSettingsLink({ style }: { style?: React.CSSProperties }) {
+  return (
+    <button
+      type="button"
+      onClick={openCookieSettings}
+      style={{
+        background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+        fontFamily: 'inherit', fontSize: '13px', color: 'rgba(255,255,255,0.3)',
+        transition: 'color 0.2s',
+        ...style,
+      }}
+      onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
+    >
+      Gérer mes cookies
+    </button>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import Script from 'next/script'
+import Link from 'next/link'
+import {
+  CONSENT_OPEN_EVENT,
+  openCookieSettings,
+  readConsent,
+  writeConsent,
+  type ConsentChoice,
+} from '@/lib/consent'
+
+const GA_MEASUREMENT_ID = 'G-JXZRTY71Y4'
+
+type Panel = 'hidden' | 'banner' | 'preferences'
+
+/**
+ * Bandeau de consentement + chargement conditionnel des scripts non essentiels.
+ *
+ * Google Analytics n'est monté que lorsque `consent.analytics === true` : tant
+ * que l'utilisateur n'a pas accepté, aucune requête ne part vers Google.
+ * Le refus est stocké au même titre que l'acceptation, pour ne pas redemander
+ * à chaque visite.
+ * /
 export default function CookieConsent() {
   const [consent, setConsent] = useState<ConsentChoice | null>(null)
   const [panel, setPanel] = useState<Panel>('hidden')
@@ -184,7 +346,7 @@ const btnLink: React.CSSProperties = {
   padding: '11px 8px',
 }
 
-/** Lien « Gérer mes cookies » à placer dans les pieds de page. */
+/** Lien « Gérer mes cookies » à placer dans les pieds de page. * /
 export function CookieSettingsLink({ style }: { style?: React.CSSProperties }) {
   return (
     <button
@@ -203,3 +365,4 @@ export function CookieSettingsLink({ style }: { style?: React.CSSProperties }) {
     </button>
   )
 }
+*/

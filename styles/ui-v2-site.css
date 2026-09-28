@@ -367,3 +367,13 @@
   .ui-site .scale button{font-size:13px;padding:14px 8px}
 }
 .ui-site .scale button{text-align:center;line-height:1.25}
+/* Widgets globaux (bandeau cookies, invite d'installation) montés hors des
+   pages : jetons de .ui-v2 sans le fond, la hauteur ni le halo de page. */
+.ui-v2.v2-widget{min-height:0;background:none;isolation:auto;display:contents}
+.ui-v2.v2-widget::before{display:none}
+/* Bandeau cookies et invite d'installation : fixés en bas de l'écran. */
+.ui-site .cookie.fixed,.ui-site .install.fixed{position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;max-width:620px;margin:0 auto}
+.ui-site .cookie.fixed{display:grid;gap:12px;align-items:stretch}
+.ui-site .cookie .ctitle{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--ink)}
+.ui-site .cookie .opt{padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.ui-site .cookie .opt p{min-width:0;margin-top:4px;font-size:13px}
