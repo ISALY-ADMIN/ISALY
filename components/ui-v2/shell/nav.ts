@@ -84,6 +84,7 @@ export const V2_SCREENS: Record<string, Mode[]> = {
   '/app/maison': ['locataire', 'loueur'],
   '/app/profil': ['locataire'],
   '/app/paiement': ['locataire'],
+  '/app/parrainage': ['locataire', 'loueur'],
 }
 
 export function isV2Screen(pathname: string, mode: Mode): boolean {
