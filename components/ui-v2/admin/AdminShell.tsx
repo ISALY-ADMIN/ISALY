@@ -33,7 +33,7 @@ export const ADM_NAV: AdmItem[] = [
  * autres gardent leur apparence d'origine dans un cadre sombre (.ui-legacy),
  * le temps de leur migration.
  */
-const V2_ADMIN: string[] = ['/admin', '/admin/utilisateurs/*', '/admin/verifications', '/admin/annonces', '/admin/signalements', '/admin/paiements', '/admin/agences']
+const V2_ADMIN: string[] = ['/admin', '/admin/utilisateurs/*', '/admin/verifications', '/admin/annonces', '/admin/signalements', '/admin/paiements', '/admin/agences', '/admin/bug-reports/*']
 
 function isV2Admin(pathname: string): boolean {
   return V2_ADMIN.some(p => (p.endsWith('/*') ? pathname.startsWith(p.slice(0, -1)) || pathname === p.slice(0, -2) : pathname === p))
