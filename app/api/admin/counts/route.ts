@@ -19,15 +19,20 @@ export async function GET() {
   }
 
   const admin = createAdminClient()
-  const [docsRes, reviewsRes, reportsRes] = await Promise.all([
+  const [docsRes, reviewsRes, reportsRes, verifRes, bugsRes] = await Promise.all([
     admin.from('user_documents').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     admin.from('user_reviews').select('id', { count: 'exact', head: true }).eq('reported', true),
     admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    // Site v2 : pastilles « Vérifications » et « Retours bêta » de la coque admin.
+    admin.from('dossiers').select('*', { count: 'exact', head: true }).not('identity_doc_url', 'is', null).eq('identity_verified', false),
+    admin.from('bug_reports').select('id', { count: 'exact', head: true }).eq('status', 'nouveau'),
   ])
 
   return NextResponse.json({
     pendingDocuments: docsRes.count ?? 0,
     reportedReviews: reviewsRes.count ?? 0,
     openReports: reportsRes.count ?? 0,
+    pendingVerifications: verifRes.count ?? 0,
+    newBugs: bugsRes.count ?? 0,
   })
 }
