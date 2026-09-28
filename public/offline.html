@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Hors ligne — ISALY</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<!-- Page hors ligne de la PWA (vOffline de design/isaly-site-v2.html).
+     Autonome : styles en ligne, aucune ressource réseau, servie par public/sw.js
+     quand une navigation échoue sans connexion. -->
+<style>
+:root{--bg:#F6F4FF;--bg-2:#ECE7FF;--ink:#12102E;--ink-2:#48437A;--brand:#6C4DFF;--brand-text:#5A38F0;--brand-soft:rgba(108,77,255,.1);--font:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#08071A;--bg-2:#131030;--ink:#F6F4FF;--ink-2:#BAB5E2;--brand-text:#AE97FF;--brand-soft:rgba(140,111,255,.17);color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;font-family:var(--font);font-size:15.5px;line-height:1.5;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(50vw 42vh at 0% 0%,rgba(108,77,255,.11),transparent 70%),radial-gradient(44vw 46vh at 100% 18%,rgba(47,107,255,.09),transparent 70%)}
+.err{min-height:100vh;display:grid;place-items:center;text-align:center;padding:40px 16px}
+.in{display:grid;justify-items:center;gap:14px;max-width:560px}
+.mailbig{width:96px;height:96px;border-radius:32px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-text)}
+.ic{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+h1{margin:0;font-size:clamp(1.6rem,3.4vw,2.3rem);font-weight:800;letter-spacing:-.045em;line-height:1.08}
+p{margin:0;color:var(--ink-2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border:0;border-radius:999px;background:var(--brand);color:#FFFFFF;font:600 15.5px/1 var(--font);cursor:pointer;box-shadow:0 12px 26px -14px rgba(108,77,255,.95)}
+.btn:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="err" data-ui="v2">
+  <main class="in" id="contenu">
+    <span class="mailbig"><svg class="ic" width="40" height="40" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M9 16a4.5 4.5 0 0 1 6 0"/><path d="M12 19.2v.1M3 3l18 18"/></svg></span>
+    <h1>Tu es hors ligne</h1>
+    <p>Vérifie ta connexion. La page se recharge dès que le réseau revient.</p>
+    <button class="btn" type="button" onclick="location.reload()"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>Réessayer</button>
+  </main>
+</div>
+<script>window.addEventListener('online', function () { location.reload() })</script>
+</body>
+</html>
