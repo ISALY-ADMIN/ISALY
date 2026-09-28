@@ -4,6 +4,157 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Icon } from '@/components/ui-v2'
+import { AuthLayout, GoogleButton, PwField } from '@/components/ui-v2/public/AuthLayout'
+
+function translateError(msg: string): string {
+  if (msg.includes('Invalid login credentials')) return 'Email ou mot de passe incorrect.'
+  if (msg.includes('Too many requests')) return 'Trop de tentatives. Réessaie dans quelques minutes.'
+  if (msg.includes('User not found')) return 'Aucun compte trouvé avec cet email.'
+  return 'Une erreur est survenue. Réessaie.'
+}
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [emailUnconfirmed, setEmailUnconfirmed] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendDone, setResendDone] = useState(false)
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setEmailUnconfirmed(false)
+    setResendDone(false)
+    const supabase = createClient()
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        setEmailUnconfirmed(true)
+      } else {
+        setError(translateError(error.message))
+      }
+      setLoading(false)
+      return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/auth/login'); return }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.onboarding_completed === true) {
+      router.push('/app/swipe')
+    } else {
+      router.push('/auth/finalize')
+    }
+  }
+
+  async function handleResend() {
+    if (!email) { setError('Entre ton email ci-dessus pour renvoyer la confirmation.'); return }
+    setResending(true)
+    await fetch('/api/email/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).catch(() => {})
+    setResending(false)
+    setResendDone(true)
+  }
+
+  async function handleGoogle() {
+    setGoogleLoading(true)
+    const supabase = createClient()
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { prompt: 'select_account' },
+      },
+    })
+  }
+
+  return (
+    <AuthLayout>
+      <div>
+        <h1>Bon retour</h1>
+        <p className="sub" style={{ marginTop: 8 }}>Connecte-toi pour retrouver tes colocs.</p>
+      </div>
+
+      {error && (
+        <div className="alert" role="alert"><Icon name="alert" size={18} /><span>{error}</span></div>
+      )}
+
+      {/* E-mail non confirmé : textes et renvoi existants */}
+      {emailUnconfirmed && (
+        <div className="note" role="status">
+          <Icon name="mail" size={18} />
+          <span style={{ display: 'grid', gap: 6 }}>
+            <b>Email non confirmé</b>
+            <span>Vérifie ta boîte mail et clique sur le lien de confirmation avant de te connecter.</span>
+            {resendDone ? (
+              <b>Email renvoyé&#8239;! Vérifie ta boîte mail.</b>
+            ) : (
+              <button className="link" type="button" onClick={handleResend} disabled={resending} style={{ justifySelf: 'start', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}>
+                {resending ? 'Envoi…' : 'Renvoyer l’email de confirmation'}
+              </button>
+            )}
+          </span>
+        </div>
+      )}
+
+      <GoogleButton onClick={handleGoogle} disabled={googleLoading}>
+        {googleLoading ? 'Redirection…' : 'Continuer avec Google'}
+      </GoogleButton>
+      <div className="or">ou</div>
+
+      <form className="form" onSubmit={handleLogin}>
+        <div className="field">
+          <label htmlFor="le">E-mail</label>
+          <input
+            id="le"
+            className="input"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            aria-invalid={error ? true : undefined}
+            onChange={e => { setEmail(e.target.value); setEmailUnconfirmed(false); setResendDone(false) }}
+          />
+        </div>
+        <PwField id="lp" label="Mot de passe" autoComplete="current-password" value={password} onChange={setPassword} invalid={!!error} />
+        <Link className="link" href="/auth/forgot-password" style={{ justifySelf: 'end', fontSize: 14 }}>Mot de passe oublié&#8239;?</Link>
+        <button className="btn btn-main btn-block" type="submit" disabled={loading}>
+          {loading ? 'Connexion…' : 'Se connecter'}
+        </button>
+      </form>
+
+      <p className="switch-l">Pas encore de compte&#8239;? <Link className="link" href="/auth/register">Crée-le</Link></p>
+      <p className="hint" style={{ textAlign: 'center' }}>
+        Protégé par <Link className="link" href="/confidentialite">la politique de confidentialité</Link> d’ISALY.
+      </p>
+    </AuthLayout>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import Emoji from '@/components/ui/Emoji'
 
 function translateError(msg: string): string {
@@ -87,14 +238,14 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Outfit', sans-serif", position: 'relative', overflow: 'hidden' }}>
 
-      {/* Glow background */}
+      {/* Glow background * /}
       <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-      {/* Form */}
+      {/* Form * /}
       <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', position: 'relative', zIndex: 1 }}>
         <div style={{ width: '100%' }}>
 
-          {/* Header */}
+          {/* Header * /}
           <div style={{ marginBottom: '32px' }}>
             <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Bon retour <Emoji native="👋" /></h1>
             <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
@@ -103,7 +254,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Google OAuth */}
+          {/* Google OAuth * /}
           <button
             onClick={handleGoogle}
             disabled={googleLoading}
@@ -123,14 +274,14 @@ export default function LoginPage() {
             {googleLoading ? 'Redirection...' : 'Continuer avec Google'}
           </button>
 
-          {/* Divider */}
+          {/* Divider * /}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
             <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>ou par email</span>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
           </div>
 
-          {/* Form */}
+          {/* Form * /}
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <input
               type="email"
@@ -167,7 +318,7 @@ export default function LoginPage() {
               onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
             />
 
-            {/* Email non confirmé */}
+            {/* Email non confirmé * /}
             {emailUnconfirmed && (
               <div style={{ padding: '14px 16px', borderRadius: '10px', background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.25)' }}>
                 <p style={{ fontSize: '13px', fontWeight: 600, color: '#FB923C', margin: '0 0 6px' }}><Emoji native="📬" /> Email non confirmé</p>
@@ -237,3 +388,4 @@ export default function LoginPage() {
     </div>
   )
 }
+*/
