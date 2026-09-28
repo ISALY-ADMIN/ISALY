@@ -324,14 +324,14 @@ function HomeState({ d, onDepose }: { d: Overview; onDepose: () => void }) {
   const lease = d.lease!
   const agency = lease.management.mode === 'delegue'
   const people = useMemo(() => lease.mates.map(m => ({ n: m.firstName, c: personColor(m.id), s: m.score, avatar: m.avatarUrl })), [lease.mates])
-  const due = d.nextRent ? new Date(d.nextRent.month) : null
+  const due = d.nextRent ? new Date(d.nextRent.due_date ?? d.nextRent.month) : null
   const rentTotal = d.nextRent?.amount ?? lease.monthlyRent + lease.charges
   let sentence: string
   if (agency) {
     sentence = `Ton logement est géré par ${lease.management.agency?.name ?? 'une agence partenaire'}. Pour le loyer et les réparations, c’est elle que tu contactes.`
   } else {
     const parts: string[] = []
-    if (due) parts.push(`Ton loyer ${MONTHS_DE[due.getMonth()]} est attendu le ${dayMonth(due)}`)
+    if (due && d.nextRent) parts.push(`Ton loyer ${MONTHS_DE[new Date(d.nextRent.month).getMonth()]} est attendu le ${dayMonth(due)}`)
     if (d.openIssue) parts.push(`ton signalement « ${d.openIssue.title} » est en cours`)
     sentence = parts.length ? `${parts.join(', et ')}.` : 'Tout est à jour dans ta coloc.'
   }

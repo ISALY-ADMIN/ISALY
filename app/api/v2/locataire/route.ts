@@ -73,13 +73,17 @@ export async function GET() {
   }
 
   // Installé : prochain loyer, signalement en cours, derniers messages de la coloc.
-  let nextRent: { month: string; amount: number; status: string } | null = null
+  let nextRent: { month: string; amount: number; status: string; due_date: string | null } | null = null
   let openIssue: { id: string; title: string; status: string; comment: string | null } | null = null
   let lastMessages: { id: string; senderId: string; content: string; createdAt: string }[] = []
   if (lease && installed) {
     const [{ data: pay }, { data: issues }, msgs] = await Promise.all([
-      supabase.from('rent_payments').select('month, amount, status').eq('lease_id', lease.id)
-        .in('status', ['pending', 'late']).order('month', { ascending: true }).limit(1),
+      supabase.from('rent_payments').select('month, amount, status, due_date').eq('lease_id', lease.id)
+        .in('status', ['pending', 'late']).order('month', { ascending: true }).limit(1)
+        .then(r => (r.error
+          ? supabase.from('rent_payments').select('month, amount, status').eq('lease_id', lease.id)
+              .in('status', ['pending', 'late']).order('month', { ascending: true }).limit(1)
+          : r)),
       supabase.from('maintenance_requests').select('id, title, status, bailleur_comment')
         .eq('lease_id', lease.id).neq('status', 'resolved').order('created_at', { ascending: false }).limit(1),
       lease.conversationId
@@ -88,7 +92,7 @@ export async function GET() {
         : Promise.resolve({ data: [] as { id: string; sender_id: string; content: string | null; created_at: string }[] }),
     ])
     const p = (pay ?? [])[0]
-    nextRent = p ? { month: p.month as string, amount: Number(p.amount ?? 0), status: p.status as string } : null
+    nextRent = p ? { month: p.month as string, amount: Number(p.amount ?? 0), status: p.status as string, due_date: ((p as { due_date?: string | null }).due_date) ?? null } : null
     const i = (issues ?? [])[0]
     openIssue = i ? { id: i.id as string, title: i.title as string, status: i.status as string, comment: (i.bailleur_comment as string | null) ?? null } : null
     lastMessages = ((msgs.data ?? []) as { id: string; sender_id: string; content: string | null; created_at: string }[])
