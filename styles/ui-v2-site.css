@@ -358,3 +358,5 @@
 .ui-site .seg a{padding:9px 15px;border-radius:999px;font:600 14px/1 var(--font);color:var(--ink-2);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:background-color .2s,color .2s}
 .ui-site .seg a:hover{color:var(--ink)}
 .ui-site .seg a[aria-current="page"]{background:var(--brand);color:#FFFFFF}
+/* Panneau des pages de compte : écart entre le logo et la citation sur mobile. */
+.ui-site .auth-art{gap:18px}
