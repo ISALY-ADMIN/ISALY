@@ -360,3 +360,10 @@
 .ui-site .seg a[aria-current="page"]{background:var(--brand);color:#FFFFFF}
 /* Panneau des pages de compte : écart entre le logo et la citation sur mobile. */
 .ui-site .auth-art{gap:18px}
+/* Échelle du test à 4 réponses (questions réelles) : 2 colonnes sur mobile,
+   les libellés sont plus longs que ceux de la maquette. */
+@media (max-width:760px){
+  .ui-site .scale.s4{grid-template-columns:1fr 1fr!important}
+  .ui-site .scale button{font-size:13px;padding:14px 8px}
+}
+.ui-site .scale button{text-align:center;line-height:1.25}
