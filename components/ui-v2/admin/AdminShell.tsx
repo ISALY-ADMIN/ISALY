@@ -12,35 +12,35 @@ type CountKey = 'pendingVerifications' | 'pendingDocuments' | 'reportedReviews' 
 
 interface AdmItem { href: string; t: string; ic: IconName; count?: CountKey }
 
-/** Navigation de l'administration : écrans de la maquette et écrans existants. */
+/** Navigation de l'administration : Ã©crans de la maquette et Ã©crans existants. */
 export const ADM_NAV: AdmItem[] = [
   { href: '/admin', t: 'Tableau de bord', ic: 'home' },
   { href: '/admin/analytics', t: 'Analytics', ic: 'chart' },
   { href: '/admin/utilisateurs', t: 'Utilisateurs', ic: 'users' },
-  { href: '/admin/verifications', t: 'Vérifications', ic: 'shield', count: 'pendingVerifications' },
+  { href: '/admin/verifications', t: 'VÃ©rifications', ic: 'shield', count: 'pendingVerifications' },
   { href: '/admin/documents', t: 'Documents', ic: 'doc', count: 'pendingDocuments' },
   { href: '/admin/reviews', t: 'Avis', ic: 'chat', count: 'reportedReviews' },
   { href: '/admin/annonces', t: 'Annonces', ic: 'building' },
   { href: '/admin/signalements', t: 'Signalements', ic: 'flag', count: 'openReports' },
   { href: '/admin/paiements', t: 'Paiements', ic: 'card' },
   { href: '/admin/agences', t: 'Agences partenaires', ic: 'globe' },
-  { href: '/admin/bug-reports', t: 'Retours bêta', ic: 'bug', count: 'newBugs' },
-  { href: '/admin/bug-reports/archives', t: 'Tickets archivés', ic: 'inbox' },
+  { href: '/admin/bug-reports', t: 'Retours bÃªta', ic: 'bug', count: 'newBugs' },
+  { href: '/admin/bug-reports/archives', t: 'Tickets archivÃ©s', ic: 'inbox' },
 ]
 
 /**
- * Écrans déjà passés au site v2 (« /* » : la route et ses sous-routes). Les
+ * Ã‰crans dÃ©jÃ  passÃ©s au site v2 (Â« /* Â» : la route et ses sous-routes). Les
  * autres gardent leur apparence d'origine dans un cadre sombre (.ui-legacy),
  * le temps de leur migration.
  */
-const V2_ADMIN: string[] = []
+const V2_ADMIN: string[] = ['/admin']
 
 function isV2Admin(pathname: string): boolean {
   return V2_ADMIN.some(p => (p.endsWith('/*') ? pathname.startsWith(p.slice(0, -1)) || pathname === p.slice(0, -2) : pathname === p))
 }
 
 function activeItem(pathname: string): AdmItem | undefined {
-  // L'entrée la plus précise gagne (/admin/bug-reports/archives avant /admin/bug-reports).
+  // L'entrÃ©e la plus prÃ©cise gagne (/admin/bug-reports/archives avant /admin/bug-reports).
   return [...ADM_NAV]
     .sort((a, b) => b.href.length - a.href.length)
     .find(i => (i.href === '/admin' ? pathname === '/admin' : pathname === i.href || pathname.startsWith(`${i.href}/`)))
@@ -52,7 +52,7 @@ function titleFor(pathname: string): string {
   return activeItem(pathname)?.t ?? 'Administration'
 }
 
-/** Coque de l'administration (admin() de la maquette) : mêmes classes que l'espace connecté. */
+/** Coque de l'administration (admin() de la maquette) : mÃªmes classes que l'espace connectÃ©. */
 export function AdminShell({ children, email, name }: { children: ReactNode; email: string; name: string }) {
   const pathname = usePathname() ?? '/admin'
   const [counts, setCounts] = useState<Partial<Record<CountKey, number>>>({})
@@ -87,13 +87,13 @@ export function AdminShell({ children, email, name }: { children: ReactNode; ema
             })}
           </nav>
           <div className="side-card">
-            <b>Retour à l’app</b>
-            <p>Tu restes connecté avec ton compte.</p>
-            <Link className="link" href="/app/dashboard-home">Ouvrir l’espace connecté</Link>
+            <b>Retour Ã  lâ€™app</b>
+            <p>Tu restes connectÃ© avec ton compte.</p>
+            <Link className="link" href="/app/dashboard-home">Ouvrir lâ€™espace connectÃ©</Link>
           </div>
           <div className="side-me">
             <Bubble name={name || 'ISALY'} color={COL.violet} size={38} />
-            <div className="grow"><b>{name || 'Équipe ISALY'}</b><span>{email}</span></div>
+            <div className="grow"><b>{name || 'Ã‰quipe ISALY'}</b><span>{email}</span></div>
           </div>
         </aside>
         <div className="main">
