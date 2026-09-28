@@ -15,8 +15,10 @@ const FOCUSABLE =
  * qui casserait position: fixed.
  */
 export function Modal({
-  open, onClose, title, lead, children, footer, wide, labelledBy,
+  open, onClose, title, lead, children, footer, wide, labelledBy, head,
 }: {
+  /** Élément affiché au-dessus du titre (pastille d'icône). */
+  head?: ReactNode
   open: boolean
   onClose: () => void
   title?: ReactNode
@@ -86,6 +88,7 @@ export function Modal({
         <button className="mclose" type="button" aria-label="Fermer" onClick={onClose}>
           <Icon name="x" size={18} />
         </button>
+        {head}
         {title && <h2 id={titleId}>{title}</h2>}
         {lead && <p className="lead">{lead}</p>}
         {children}

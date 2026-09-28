@@ -76,10 +76,12 @@ export function activeItem(mode: Mode, pathname: string): NavItem | null {
  * Écrans déjà passés au design v2. Les autres gardent leur apparence d'origine
  * dans un cadre sombre (.ui-legacy) le temps de leur migration, écran par écran.
  */
-export const V2_SCREENS: string[] = []
+export const V2_SCREENS: Record<string, Mode[]> = {
+  '/app/dashboard-home': ['locataire'],
+}
 
-export function isV2Screen(pathname: string): boolean {
-  return V2_SCREENS.includes(pathname)
+export function isV2Screen(pathname: string, mode: Mode): boolean {
+  return (V2_SCREENS[pathname] ?? []).includes(mode)
 }
 
 /** Équivalent d'un écran dans l'autre mode, sinon le tableau de bord. */

@@ -216,7 +216,7 @@ function ShellInner({ children }: { children: ReactNode }) {
 
   const current = activeItem(mode, pathname)
   const barTitle = title ?? current?.title ?? 'ISALY'
-  const legacy = !isV2Screen(pathname)
+  const legacy = !isV2Screen(pathname, mode)
 
   const ctx = useMemo<ShellCtx>(() => ({ data, mode, refresh: load, switchMode, setTitle }), [data, mode, load, switchMode, setTitle])
 
