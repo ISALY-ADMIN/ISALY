@@ -6,6 +6,7 @@ import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { BILLING_ENABLED, BILLING_DISABLED_MESSAGE } from '@/lib/billing'
 import { useLease } from '@/contexts/LeaseContext'
+import SwiperPlusV2 from '@/components/ui-v2/screens/SwiperPlus'
 import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 import Emoji from '@/components/ui/Emoji'
 
@@ -235,10 +236,12 @@ function PaiementContent() {
 function PaiementSwitch() {
   const { mode } = useLease()
   useModeChangeRefresh()
-  if (mode === 'locataire') return <SwiperPlusContent />
+  // Dashboard v2 : Swiper Plus côté locataire (components/ui-v2/screens/SwiperPlus.tsx).
+  // [HIDDEN] ancienne version : if (mode === 'locataire') return <SwiperPlusContent />
+  if (mode === 'locataire') return <SwiperPlusV2 />
   return <PaiementContent />
 }
 
 export default function PaiementPage() {
-  return <Suspense fallback={<div>Chargement...</div>}><PaiementSwitch /></Suspense>
+  return <Suspense fallback={null}><PaiementSwitch /></Suspense>
 }
