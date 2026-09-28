@@ -18,7 +18,11 @@ export function SiteRoot({ children, className }: { children: ReactNode; classNa
     <div className={`ui-v2 ui-site ${bricolage.variable}${className ? ` ${className}` : ''}`} data-ui="v2">
       <SvgDefs />
       <SiteSvgDefs />
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        {children}
+        {/* Hôte des fenêtres (Modal), à l'intérieur de .ui-v2 pour les jetons. */}
+        <div id="ui-v2-portal" />
+      </ToastProvider>
     </div>
   )
 }

@@ -1,4 +1,37 @@
 'use client'
+import { Icon, useToast } from '@/components/ui-v2'
+
+/** Boutons de partage de l'annonce (carte de prix), dans le style de la charte v2. */
+export default function ShareButtons({ url, title }: { url: string; title: string }) {
+  const toast = useToast()
+
+  function copyLink() {
+    navigator.clipboard.writeText(url).then(() => toast('Lien copié')).catch(() => {})
+  }
+
+  function shareNative() {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      navigator.share({ title, url }).catch(() => {})
+    } else {
+      copyLink()
+    }
+  }
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${title} — ${url}`)}`
+
+  return (
+    <>
+      <span className="flabel">Partager</span>
+      <div className="share">
+        <button className="btn btn-glass btn-sm" type="button" onClick={copyLink}><Icon name="link" size={16} />Copier le lien</button>
+        <a className="btn btn-glass btn-sm" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><Icon name="chat" size={16} />WhatsApp</a>
+        <button className="btn btn-glass btn-sm" type="button" onClick={shareNative}><Icon name="share" size={16} />Partager</button>
+      </div>
+    </>
+  )
+}
+
+/* [HIDDEN] Ancienne version (thème sombre), remplacée par le site v2 :
 import { useState } from 'react'
 import Emoji from '@/components/ui/Emoji'
 
@@ -52,3 +85,4 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
     </div>
   )
 }
+*/

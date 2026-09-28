@@ -336,3 +336,10 @@
   .ui-site .ob-top .saved span{display:none}
   .ui-site .sgn-top .pill{display:none}
 }
+
+/* =====================================================================
+   Raccords avec l'application (hors maquette)
+   ===================================================================== */
+/* La seconde .wrap de l'en-tête ne porte que le menu mobile : sans elle, la
+   hauteur minimale de 72 px de .phdr .wrap ajouterait une bande vide. */
+.ui-site .phdr .wrap+.wrap{min-height:0}
