@@ -14,6 +14,7 @@ import { computeProfileCompletion } from '@/lib/profileCompletion'
 import { useLease } from '@/contexts/LeaseContext'
 import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 import TenantDashboard from '@/components/ui-v2/screens/TenantDashboard'
+import OwnerDashboard from '@/components/ui-v2/screens/OwnerDashboard'
 
 // ═══════════════ Helpers ═══════════════
 
@@ -177,13 +178,10 @@ function FirstWeekGuide({ profileCompletion }: { profileCompletion: number }) {
 export default function DashboardHomePage() {
   const { mode } = useLease()
   if (mode === 'locataire') return <TenantDashboard />
-  return <DashboardHomeLegacy />
+  return <OwnerDashboard />
 }
 
-/**
- * [HIDDEN] Ancien tableau de bord (dashboard v1), conservé et encore rendu
- * côté bailleur jusqu'à la migration de son écran.
- */
+/** [HIDDEN] Ancien tableau de bord (dashboard v1), conservé, plus rendu. */
 function DashboardHomeLegacy() {
   const router = useRouter()
   const { mode } = useLease()

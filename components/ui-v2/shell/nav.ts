@@ -77,7 +77,7 @@ export function activeItem(mode: Mode, pathname: string): NavItem | null {
  * dans un cadre sombre (.ui-legacy) le temps de leur migration, écran par écran.
  */
 export const V2_SCREENS: Record<string, Mode[]> = {
-  '/app/dashboard-home': ['locataire'],
+  '/app/dashboard-home': ['locataire', 'loueur'],
   '/app/swipe': ['locataire'],
   '/app/demandes': ['locataire', 'loueur'],
   '/app/messages': ['locataire', 'loueur'],
