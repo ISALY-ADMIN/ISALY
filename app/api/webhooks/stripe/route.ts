@@ -318,7 +318,7 @@ export async function POST(request: Request) {
           await resend.emails.send({
             from: FROM_EMAIL,
             to: profile.email,
-            subject: 'Votre identité est vérifiée ✓ — ISALY',
+            subject: 'Votre identité est vérifiée — ISALY',
             html: identityVerifiedTemplate(profile.first_name ?? ''),
           })
         } catch (err) {

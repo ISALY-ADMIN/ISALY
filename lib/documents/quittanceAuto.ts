@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { generateQuittancePdf } from './quittancePdf'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
+import { esc, mBtn, mH, mP, mSmall, mailWrap } from '@/lib/email/layout'
 
 /**
  * Mission 17 — génération + distribution serveur d'une quittance de loyer.
@@ -107,6 +108,15 @@ export async function generateAndDeliverQuittance(
         from: FROM_EMAIL,
         to: tenant.email,
         subject: `Votre quittance de ${moisLabel} est disponible — ISALY`,
+        // Site v2 : mise en page commune des e-mails (lib/email/layout.ts).
+        html: mailWrap(
+          `Quittance de loyer, ${esc(moisLabel)}`,
+          mH(`Quittance de loyer, ${esc(moisLabel)}`)
+            + mP(`Bonjour ${esc(tenant.first_name ?? '')},<br><br>Votre quittance de loyer pour <strong>${esc(moisLabel)}</strong> est disponible. Vous la trouverez en pièce jointe et dans votre coffre-fort de documents ISALY.`)
+            + mBtn('Voir mes documents', `${APP_URL}/app/documents`)
+            + mSmall('Cette quittance est à conserver 3 ans (article 7-1 de la loi n° 89-462).'),
+        ),
+        /* [HIDDEN] ancien gabarit :
         html: `
           <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
             <h2 style="color: #10B981; margin-bottom: 8px;">Quittance de loyer — ${moisLabel}</h2>
@@ -122,6 +132,7 @@ export async function generateAndDeliverQuittance(
               Cette quittance est à conserver 3 ans (article 7-1 de la loi n°89-462).
             </p>
           </div>`,
+        */
         attachments: [{ filename: `quittance-${monthSlug}.pdf`, content: pdf }],
       })
     } catch (err) {
