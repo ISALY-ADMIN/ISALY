@@ -7,8 +7,8 @@ import { Button, Icon, Panel, Pill, SkelPanel, dayMonth, eurCents, useToast } fr
 interface Price { amount: number | null; interval: string | null; available: boolean }
 
 /** Prix lu dans Stripe (price.unit_amount), jamais codé en dur. */
-export function StripePrice({ price, per = 'par mois' }: { price: Price | null | undefined; per?: string }) {
-  if (!price || price.amount == null) return <span className="soft" style={{ fontSize: 16, fontWeight: 600, letterSpacing: 0 }}>Tarif bientôt disponible</span>
+export function StripePrice({ price, per = 'par mois', inline }: { price: Price | null | undefined; per?: string; inline?: boolean }) {
+  if (!price || price.amount == null) return <span className={inline ? undefined : 'soft'} style={{ fontSize: inline ? 'inherit' : 16, fontWeight: inline ? 'inherit' : 600, letterSpacing: 0 }}>Tarif bientôt disponible</span>
   return <>{eurCents(price.amount)} <small>{per}</small></>
 }
 

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { BILLING_ENABLED, BILLING_DISABLED_MESSAGE } from '@/lib/billing'
 import { useLease } from '@/contexts/LeaseContext'
 import SwiperPlusV2 from '@/components/ui-v2/screens/SwiperPlus'
+import AbonnementV2 from '@/components/ui-v2/screens/Abonnement'
 import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
 import Emoji from '@/components/ui/Emoji'
 
@@ -239,7 +240,8 @@ function PaiementSwitch() {
   // Dashboard v2 : Swiper Plus côté locataire (components/ui-v2/screens/SwiperPlus.tsx).
   // [HIDDEN] ancienne version : if (mode === 'locataire') return <SwiperPlusContent />
   if (mode === 'locataire') return <SwiperPlusV2 />
-  return <PaiementContent />
+  // [HIDDEN] ancienne version côté bailleur : return <PaiementContent />
+  return <AbonnementV2 />
 }
 
 export default function PaiementPage() {

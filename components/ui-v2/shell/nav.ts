@@ -83,7 +83,7 @@ export const V2_SCREENS: Record<string, Mode[]> = {
   '/app/messages': ['locataire', 'loueur'],
   '/app/maison': ['locataire', 'loueur'],
   '/app/profil': ['locataire'],
-  '/app/paiement': ['locataire'],
+  '/app/paiement': ['locataire', 'loueur'],
   '/app/parrainage': ['locataire', 'loueur'],
   '/app/parametres': ['locataire', 'loueur'],
   '/app/mes-annonces': ['locataire', 'loueur'],
