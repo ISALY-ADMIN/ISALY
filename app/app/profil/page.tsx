@@ -314,7 +314,7 @@ export default function ProfilPage() {
 }
 
 /** Mon profil côté bailleur : activé avec son écran (dashboard v2). */
-const PROFIL_V2_OWNER = false
+const PROFIL_V2_OWNER = true
 
 /** [HIDDEN] Ancienne page Mon profil (dashboard v1), conservée, plus rendue côté locataire. */
 function ProfilPageLegacy() {

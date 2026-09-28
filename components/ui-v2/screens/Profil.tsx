@@ -186,7 +186,7 @@ export default function Profil() {
           <Panel title="Ce que voient les candidats">
             <div className="acts" style={{ gap: 12, flexWrap: 'nowrap' }}>
               <Bubble name={d.firstName || '?'} color={COL.violet} size={52} avatar={d.avatarUrl} />
-              <span><span className="t">{d.firstName || 'Toi'}, bailleur</span><span className="s">{[verified ? 'Identité vérifiée' : null, quickReply ? 'répond en moins de 24 h' : null].filter(Boolean).join(', ') || 'Profil en cours de vérification'}</span></span>
+              <span><span className="t">{d.firstName || 'Toi'}, bailleur</span><span className="s">{(() => { const t = [verified ? 'Identité vérifiée' : null, quickReply ? 'répond en moins de 24 h' : null].filter(Boolean).join(', '); return t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Profil en cours de vérification' })()}</span></span>
             </div>
             <p className="soft mt">Ton nom complet et ton téléphone restent privés jusqu’à la signature du bail.</p>
             {!verified && <Button variant="glass" size="sm" className="mt" icon="shield" onClick={() => setIdModal(true)}>Vérifier mon identité</Button>}
