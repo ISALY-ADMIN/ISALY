@@ -1,3 +1,21 @@
+import { LegalPage } from '@/components/ui-v2/public/LegalPage'
+
+// Texte juridique existant, repris tel quel (seule la mise en page change).
+const SECTIONS = [
+  { title: '1. Objet', content: "Les présentes CGU définissent les conditions d'utilisation de la plateforme ISALY, service de mise en relation pour la colocation. En créant un compte, vous acceptez ces conditions." },
+  { title: '2. Inscription', content: "L'accès au service nécessite la création d'un compte. Vous vous engagez à fournir des informations exactes et à les maintenir à jour. Tout compte créé avec de fausses informations peut être supprimé." },
+  { title: '3. Utilisation du service', content: "ISALY est une plateforme de mise en relation. Nous ne sommes pas responsables des accords conclus entre utilisateurs. Vous vous engagez à ne pas utiliser le service à des fins illicites ou contraires aux bonnes mœurs." },
+  { title: '4. Contenu utilisateur', content: "Vous êtes responsable des informations publiées sur votre profil et vos annonces. Tout contenu inapproprié, offensant ou trompeur entraînera la suppression du compte." },
+  { title: '5. Tarification', content: "Le service de base est gratuit. Les options payantes (mise en avant d'annonces, assurance dossier) font l'objet d'une facturation clairement indiquée avant tout achat." },
+  { title: '6. Résiliation', content: "Vous pouvez supprimer votre compte à tout moment depuis les paramètres. ISALY se réserve le droit de suspendre tout compte en cas de violation des présentes CGU." },
+  { title: '7. Droit applicable', content: "Les présentes CGU sont soumises au droit français. Tout litige relève de la compétence des tribunaux français." },
+]
+
+export default function CguPage() {
+  return <LegalPage title="Conditions générales d’utilisation" current="/cgu" updated="juin 2025" sections={SECTIONS} />
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
 'use client'
 import Link from 'next/link'
 import RiseText from '@/components/motion/RiseText'
@@ -35,3 +53,4 @@ export default function CguPage() {
     </div>
   )
 }
+*/

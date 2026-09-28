@@ -1,3 +1,20 @@
+import { LegalPage } from '@/components/ui-v2/public/LegalPage'
+
+// Texte juridique existant, repris tel quel (seule la mise en page change).
+const SECTIONS = [
+  { title: '1. Collecte des données', content: "ISALY collecte les informations que vous nous fournissez lors de votre inscription : nom, prénom, adresse email, et les données de votre questionnaire de compatibilité. Ces informations sont nécessaires au fonctionnement du service de matching." },
+  { title: '2. Utilisation des données', content: "Vos données sont utilisées exclusivement pour vous proposer des profils compatibles, gérer votre compte, et améliorer notre algorithme de matching. Nous ne vendons jamais vos données à des tiers." },
+  { title: '3. Stockage et sécurité', content: "Vos données sont hébergées sur des serveurs sécurisés (Supabase) situés en Europe. Nous utilisons des protocoles de chiffrement SSL/TLS pour protéger vos données en transit." },
+  { title: '4. Vos droits', content: "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données. Vous pouvez exercer ces droits depuis les paramètres de votre compte ou en nous contactant." },
+  { title: '5. Cookies', content: "ISALY utilise des cookies fonctionnels nécessaires au bon fonctionnement du service (authentification, préférences). Aucun cookie publicitaire n'est utilisé." },
+  { title: '6. Contact', content: "Pour toute question relative à vos données personnelles, vous pouvez nous contacter via le formulaire de contact disponible sur le site." },
+]
+
+export default function ConfidentialitePage() {
+  return <LegalPage title="Politique de confidentialité" current="/confidentialite" updated="juin 2025" sections={SECTIONS} />
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
 'use client'
 import Link from 'next/link'
 import RiseText from '@/components/motion/RiseText'
@@ -34,3 +51,4 @@ export default function ConfidentialitePage() {
     </div>
   )
 }
+*/

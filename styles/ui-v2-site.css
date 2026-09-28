@@ -354,3 +354,7 @@
 .ui-site .prose ul{list-style:disc}
 .ui-site .prose ol{list-style:decimal}
 .ui-site .prose li::marker{color:var(--brand)}
+/* Segments en liens (pages légales, filtres de l'admin) : mêmes états que .seg button. */
+.ui-site .seg a{padding:9px 15px;border-radius:999px;font:600 14px/1 var(--font);color:var(--ink-2);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:background-color .2s,color .2s}
+.ui-site .seg a:hover{color:var(--ink)}
+.ui-site .seg a[aria-current="page"]{background:var(--brand);color:#FFFFFF}
