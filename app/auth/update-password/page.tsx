@@ -1,6 +1,77 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { Icon } from '@/components/ui-v2'
+import { AuthLayout, PwField } from '@/components/ui-v2/public/AuthLayout'
+
+export default function UpdatePasswordPage() {
+  const router = useRouter()
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return }
+    if (password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères.'); return }
+
+    setLoading(true)
+    setError('')
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password })
+
+    if (error) {
+      setError('Erreur lors de la mise à jour. Le lien a peut-être expiré.')
+      setLoading(false)
+      return
+    }
+
+    setDone(true)
+    setTimeout(() => router.push('/app/swipe'), 2500)
+  }
+
+  return (
+    <AuthLayout>
+      {done ? (
+        <>
+          <span className="okring"><Icon name="check" /></span>
+          <div>
+            <h1>Mot de passe mis à jour</h1>
+            <p className="sub" style={{ marginTop: 8 }}>Redirection en cours…</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <div>
+            <h1>Nouveau mot de passe</h1>
+            <p className="sub" style={{ marginTop: 8 }}>Choisis un mot de passe que tu n’utilises pas ailleurs.</p>
+          </div>
+          <form className="form" onSubmit={handleSubmit}>
+            <PwField id="np" label="Nouveau mot de passe" autoComplete="new-password" meter minLength={8} hint="8 caractères minimum." value={password} onChange={setPassword} />
+            <div className="field">
+              <label htmlFor="np2">Confirme-le</label>
+              <input id="np2" className="input" type="password" autoComplete="new-password" required value={confirm} onChange={e => setConfirm(e.target.value)} aria-invalid={error && password !== confirm ? true : undefined} />
+            </div>
+            {error && <div className="alert" role="alert"><Icon name="alert" size={18} /><span>{error}</span></div>}
+            <button className="btn btn-main btn-block" type="submit" disabled={loading}>
+              {loading ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </form>
+        </>
+      )}
+    </AuthLayout>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -110,3 +181,4 @@ export default function UpdatePasswordPage() {
     </div>
   )
 }
+*/
