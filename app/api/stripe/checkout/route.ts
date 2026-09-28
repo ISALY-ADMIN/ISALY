@@ -42,8 +42,11 @@ export async function POST(req: Request) {
       metadata: { user_id: user.id, plan },
       subscription_data: { metadata: { user_id: user.id, plan } },
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/app/paiement?success=true`,
-      cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/app/paiement?cancelled=true`,
+      // Site v2 : pages de retour pilotées par le session_id. [HIDDEN] anciennes URL :
+      // success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/app/paiement?success=true`,
+      // cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/app/paiement?cancelled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/paiement/retour?type=plus&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://isaly.fr'}/paiement/annule?type=plus`,
     })
 
     return NextResponse.json({ url: session.url })
