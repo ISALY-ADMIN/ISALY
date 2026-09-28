@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
+import Trouver from '@/components/ui-v2/screens/Trouver'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -428,7 +429,24 @@ function EmptyState({ onExpandFilters, onRestart }: { onExpandFilters: () => voi
 
 /* ═══════════════ Page ═══════════════ */
 
+/**
+ * Dashboard v2 : l'écran Trouver (swipe, liste, carte et favoris via ?vue=)
+ * remplace cette page côté locataire (components/ui-v2/screens/Trouver.tsx).
+ */
 export default function SwipePage() {
+  const { mode } = useLease()
+  if (mode === 'locataire') {
+    return (
+      <Suspense fallback={null}>
+        <Trouver />
+      </Suspense>
+    )
+  }
+  return <SwipePageLegacy />
+}
+
+/** [HIDDEN] Ancienne page Trouver (dashboard v1), conservée, rendue seulement hors mode locataire. */
+function SwipePageLegacy() {
   const router = useRouter()
   const { toast } = useToast()
   const { mode, setMode } = useLease()

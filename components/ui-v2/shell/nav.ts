@@ -78,6 +78,7 @@ export function activeItem(mode: Mode, pathname: string): NavItem | null {
  */
 export const V2_SCREENS: Record<string, Mode[]> = {
   '/app/dashboard-home': ['locataire'],
+  '/app/swipe': ['locataire'],
 }
 
 export function isV2Screen(pathname: string, mode: Mode): boolean {

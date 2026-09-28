@@ -16,12 +16,11 @@ export async function POST(request: Request) {
 
   // Dashboard v2 : offre gratuite limitée à 10 swipes par jour, sans limite
   // avec Swiper Plus. Revenir sur une carte déjà swipée ne consomme rien.
-  const { data: already } = await supabase
-    .from('swipes')
-    .select('id')
-    .eq('swiper_id', user.id)
-    .eq('swiped_id', swipedId)
-    .maybeSingle()
+  const alreadyQ = supabase.from('swipes').select('id').eq('swiper_id', user.id)
+  const { data: alreadyRows } = typeof listing_id === 'string' && listing_id
+    ? await alreadyQ.eq('listing_id', listing_id).limit(1)
+    : await alreadyQ.eq('swiped_id', swipedId).limit(1)
+  const already = (alreadyRows ?? [])[0] ?? null
   if (!already) {
     const quota = await getSwipeQuota(supabase, user.id)
     if (!quota.plus && quota.used >= quota.limit) {
@@ -43,7 +42,11 @@ export async function POST(request: Request) {
     swipePayload.listing_id = listing_id
   }
 
-  const { error: swipeError } = await supabase
+  // Dashboard v2 : une carte déjà swipée pour cette annonce est mise à jour
+  // (index unique swiper_id + listing_id, migration 35) au lieu d'échouer.
+  const { error: swipeError } = already && swipePayload.listing_id
+    ? await supabase.from('swipes').update({ direction }).eq('id', already.id)
+    : await supabase
     .from('swipes')
     .upsert(swipePayload)
 
