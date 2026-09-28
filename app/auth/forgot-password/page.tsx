@@ -2,6 +2,94 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Icon, useToast } from '@/components/ui-v2'
+import { AuthLayout } from '@/components/ui-v2/public/AuthLayout'
+
+export default function ForgotPasswordPage() {
+  return (
+    <AuthLayout>
+      <ForgotPasswordCard />
+    </AuthLayout>
+  )
+}
+
+function ForgotPasswordCard() {
+  const toast = useToast()
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
+
+  /** Envoi existant (Resend) ; resend = renvoi depuis l'écran « e-mail envoyé ». */
+  async function send(resend = false) {
+    setLoading(true)
+    setError('')
+
+    const res = await fetch('/api/email/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).catch(() => null)
+
+    if (!res || !res.ok) {
+      if (resend) toast('Une erreur est survenue. Réessaie.')
+      else setError('Une erreur est survenue. Réessaie.')
+      setLoading(false)
+      return
+    }
+
+    if (resend) toast('E-mail renvoyé')
+    setSent(true)
+    setLoading(false)
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await send()
+  }
+
+  if (sent) return (
+    <>
+      <span className="mailbig"><Icon name="mail" size={36} /></span>
+      <div>
+        <h1>Regarde tes e-mails</h1>
+        <p className="sub" style={{ marginTop: 8 }}>
+          Si un compte existe pour <b>{email}</b>, tu vas recevoir un lien pour choisir un nouveau mot de passe.
+        </p>
+      </div>
+      <button className="btn btn-glass btn-block" type="button" onClick={() => send(true)} disabled={loading}>
+        {loading ? 'Envoi…' : 'Renvoyer l’e-mail'}
+      </button>
+      <p className="switch-l"><Link className="link" href="/auth/login">Retour à la connexion</Link></p>
+    </>
+  )
+
+  return (
+    <>
+      <Link className="link" href="/auth/login" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><Icon name="back" size={16} />Retour</Link>
+      <div>
+        <h1>Mot de passe oublié</h1>
+        <p className="sub" style={{ marginTop: 8 }}>Indique ton e-mail : on t’envoie un lien pour en choisir un nouveau.</p>
+      </div>
+      <form className="form" onSubmit={handleSubmit}>
+        <div className="field">
+          <label htmlFor="fe">E-mail</label>
+          <input id="fe" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} aria-invalid={error ? true : undefined} />
+        </div>
+        {error && <div className="alert" role="alert"><Icon name="alert" size={18} /><span>{error}</span></div>}
+        <button className="btn btn-main btn-block" type="submit" disabled={loading}>
+          {loading ? 'Envoi…' : 'Envoyer le lien'}
+        </button>
+      </form>
+    </>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import Emoji from '@/components/ui/Emoji'
 
@@ -108,3 +196,4 @@ export default function ForgotPasswordPage() {
     </div>
   )
 }
+*/
