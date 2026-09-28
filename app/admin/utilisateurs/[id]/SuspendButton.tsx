@@ -6,6 +6,51 @@ import { useRouter } from 'next/navigation'
 interface Props {
   userId: string
   suspended: boolean
+  /** Bouton discret des lignes du tableau des utilisateurs. */
+  compact?: boolean
+}
+
+export default function SuspendButton({ userId, suspended, compact }: Props) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [current, setCurrent] = useState(suspended)
+
+  async function toggle() {
+    if (!confirm(current ? 'Réactiver ce compte ?' : 'Suspendre ce compte ? L\'utilisateur ne pourra plus accéder à l\'app.')) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/suspend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, suspend: !current }),
+      })
+      if (!res.ok) throw new Error()
+      setCurrent(!current)
+      router.refresh()
+    } catch {
+      alert('Erreur lors de la mise à jour du statut.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cls = compact ? 'btn btn-ghost btn-sm' : current ? 'btn btn-glass' : 'btn btn-danger'
+  return (
+    <button className={cls} type="button" onClick={toggle} disabled={loading}>
+      {loading ? 'Enregistrement…' : current ? 'Réactiver' : 'Suspendre'}
+    </button>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+interface Props {
+  userId: string
+  suspended: boolean
 }
 
 export default function SuspendButton({ userId, suspended }: Props) {
@@ -56,3 +101,4 @@ export default function SuspendButton({ userId, suspended }: Props) {
     </button>
   )
 }
+*/
