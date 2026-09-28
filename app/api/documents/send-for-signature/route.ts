@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { bailSignatureRequestTemplate } from '@/lib/email-templates'
 import type { BailFormData } from '@/lib/bailPdf'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 export async function POST(req: Request) {
   const supabase = createClient()
@@ -19,6 +20,9 @@ export async function POST(req: Request) {
 
   const { data: lease } = await supabase.from('leases').select('owner_id').eq('id', lease_id).maybeSingle()
   if (!lease || lease.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  // Dashboard v2 : logement délégué ou abonnement inactif, lecture seule.
+  const blocked = await guardLeaseWrite(supabase, user.id, lease_id)
+  if (blocked) return blocked
 
   const { data: tenant } = await supabase.from('profiles').select('email, first_name').eq('id', tenant_id).maybeSingle()
   if (!tenant?.email) return NextResponse.json({ error: 'Tenant email not found' }, { status: 404 })

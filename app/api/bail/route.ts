@@ -3,6 +3,8 @@ import { createApiClient } from '@/lib/supabase/api-auth'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { bailSignatureRequestTemplate } from '@/lib/email-templates'
 import type { LeaseSignature } from '@/types/database'
+import { guardListingWrite, READ_ONLY_SUBSCRIPTION } from '@/lib/managementMode'
+import { getAutogestionState } from '@/lib/autogestion'
 
 function clientIp(req: Request): string | null {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? null
@@ -33,6 +35,16 @@ export async function POST(req: Request) {
   }
   if (body.tenant_id === user.id) {
     return NextResponse.json({ error: 'Le locataire doit être différent du loueur' }, { status: 400 })
+  }
+
+  // Dashboard v2 : pas de bail sur ISALY pour un logement délégué, ni sans
+  // abonnement autogestion actif (une fois l'abonnement exigé).
+  if (body.listing_id) {
+    const blocked = await guardListingWrite(supabase, user.id, body.listing_id)
+    if (blocked) return blocked
+  } else {
+    const sub = await getAutogestionState(supabase, user.id)
+    if (!sub.active) return NextResponse.json({ error: READ_ONLY_SUBSCRIPTION, code: 'subscription_read_only' }, { status: 403 })
   }
 
   const ownerSignature: LeaseSignature | null = body.signature && body.consent

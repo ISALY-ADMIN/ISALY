@@ -3,6 +3,7 @@ import { createApiClient } from '@/lib/supabase/api-auth'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { bailSignatureRequestTemplate, bailActiveTemplate } from '@/lib/email-templates'
 import type { Lease, LeaseSignature } from '@/types/database'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 /**
  * Signature électronique simple (eIDAS) d'un bail par la partie connectée.
@@ -28,6 +29,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const isOwner = lease.owner_id === user.id
   const isTenant = lease.tenant_id === user.id
   if (!isOwner && !isTenant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  // Dashboard v2 : côté bailleur, logement délégué ou abonnement inactif, lecture seule.
+  if (isOwner) {
+    const blocked = await guardLeaseWrite(supabase, user.id, lease.id)
+    if (blocked) return blocked
+  }
   if (lease.status !== 'pending_signature' && lease.status !== 'draft') {
     return NextResponse.json({ error: 'Ce bail n’est plus en attente de signature' }, { status: 400 })
   }

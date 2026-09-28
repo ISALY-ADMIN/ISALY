@@ -5,6 +5,12 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   typescript: true,
 })
 
+/**
+ * [HIDDEN] Anciennes offres (dashboard v1) : commission de gestion de 2,5 %,
+ * offres mensuelles « Mis en avant » et « Prioritaire ». Remplacées par
+ * l'abonnement autogestion et les mises en avant de 1, 3 ou 7 jours
+ * (lib/stripePrices.ts). Plus lues nulle part, conservées pour mémoire.
+ */
 export const PLANS = {
   assurance: {
     name: 'Commission de gestion du bail',

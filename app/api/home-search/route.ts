@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { getCoordsForCity, jitterCoords } from '@/lib/geo'
 import { listingOccupancy, isAvailableNow } from '@/lib/utils'
+import { activeBoostTier } from '@/lib/boost'
 
 export const dynamic = 'force-dynamic'
 
@@ -109,7 +110,7 @@ export async function GET(req: Request) {
   // Boost puis fraîcheur : pas de score de compatibilité sans profil.
   const rank = (t: unknown) => (t === 'priority' ? 2 : t === 'featured' ? 1 : 0)
   results.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  const boostOf = new Map(listings.map(l => [l.id as string, rank(l.boost_tier ?? l.boost_type)]))
+  const boostOf = new Map(listings.map(l => [l.id as string, rank(activeBoostTier(l))]))
   results.sort((a, b) => (boostOf.get(b.id) ?? 0) - (boostOf.get(a.id) ?? 0))
 
   return NextResponse.json<HomeSearchResponse>({

@@ -148,7 +148,8 @@ export default async function AdminDashboard() {
       title: 'Revenus',
       cards: [
         { label: 'Baux actifs',                 value: stats.activeLeases,     href: '/admin/paiements', color: '#60A5FA', bg: 'rgba(96,165,250,0.1)', icon: '📄' },
-        { label: 'CA estimé / mois (2,5 %)',    value: stats.estimatedRevenue, href: '/admin/paiements', color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)', icon: '💶', suffix: '€' },
+        // [HIDDEN] commission de 2,5 % supprimée (dashboard v2) :
+        // { label: 'CA estimé / mois (2,5 %)',    value: stats.estimatedRevenue, href: '/admin/paiements', color: '#4ECBA0', bg: 'rgba(78,203,160,0.1)', icon: '💶', suffix: '€' },
         ...(stats.stripeRevenue !== null
           ? [{ label: 'Revenus Stripe ce mois', value: stats.stripeRevenue,    href: '/admin/paiements', color: '#818CF8', bg: 'rgba(129,140,248,0.1)', icon: '💳', suffix: '€' as const }]
           : []),

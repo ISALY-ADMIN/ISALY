@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createApiClient } from '@/lib/supabase/api-auth'
 import type { Lease } from '@/types/database'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 export interface BailDetail {
   lease: Lease
@@ -68,6 +69,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const res = await loadLease(req, params.id)
   if ('error' in res) return res.error
   const { supabase, lease } = res
+
+  // Dashboard v2 : côté bailleur, logement délégué ou abonnement inactif, lecture seule.
+  if (lease.owner_id === res.user.id) {
+    const blocked = await guardLeaseWrite(supabase, res.user.id, lease.id)
+    if (blocked) return blocked
+  }
 
   const { document_url } = await req.json().catch(() => ({})) as { document_url?: string }
   if (!document_url || !document_url.startsWith(`${lease.id}/`)) {

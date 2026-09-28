@@ -8,6 +8,9 @@ import BoostSelector, { type BoostOption } from '@/components/listings/BoostSele
 import { BILLING_ENABLED } from '@/lib/billing'
 import Emoji from '@/components/ui/Emoji'
 
+/** [HIDDEN] Offres mensuelles de mise en avant, remplacées par 1, 3 ou 7 jours (dashboard v2). */
+const LEGACY_MONTHLY_BOOST = false
+
 interface FormData {
   title: string
   rent: string
@@ -57,7 +60,10 @@ function AnnonceForm() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [boost, setBoost]                   = useState<BoostOption>(BILLING_ENABLED ? 'featured' : 'standard')
+  // [HIDDEN] Anciennes offres mensuelles (dashboard v2) : la mise en avant se
+  // fait désormais pour 1, 3 ou 7 jours depuis Annonces. Initialement :
+  // useState<BoostOption>(BILLING_ENABLED ? 'featured' : 'standard')
+  const [boost, setBoost]                   = useState<BoostOption>('standard')
   const [photos, setPhotos]                 = useState<(File | string)[]>([])
   const [photoPreviews, setPhotoPreviews]   = useState<string[]>([])
   const [publishing, setPublishing]         = useState(false)
@@ -115,7 +121,7 @@ function AnnonceForm() {
         non_fumeur:      data.non_fumeur == null ? '' : data.non_fumeur ? 'oui' : 'non',
         description:     data.description     ?? '',
       })
-      if (data.boost_type && BILLING_ENABLED) setBoost(data.boost_type as BoostOption)
+      if (data.boost_type && BILLING_ENABLED && LEGACY_MONTHLY_BOOST) setBoost(data.boost_type as BoostOption)
       if (Array.isArray(data.photos) && data.photos.length > 0) {
         setPhotos(data.photos as string[])
         setPhotoPreviews(data.photos as string[])
@@ -238,7 +244,7 @@ function AnnonceForm() {
         router.push('/app/mes-annonces?updated=1')
       } else {
         // INSERT — actif directement si Standard, en attente de paiement sinon
-        const needsPayment = BILLING_ENABLED && boost !== 'standard'
+        const needsPayment = BILLING_ENABLED && LEGACY_MONTHLY_BOOST && boost !== 'standard'
         const { data: inserted, error } = await supabase.from('listings').insert({
           owner_id:        user.id,
           title:           form.title || `Colocation à ${form.city}`,
@@ -357,7 +363,7 @@ function AnnonceForm() {
 
   const pageTitle = isEditing ? "Modifier l'annonce" : 'Mon annonce'
   const formTitle = isEditing ? 'Modifier mon annonce' : 'Déposer une annonce'
-  const needsPayment = BILLING_ENABLED && !isEditing && boost !== 'standard'
+  const needsPayment = BILLING_ENABLED && LEGACY_MONTHLY_BOOST && !isEditing && boost !== 'standard'
   const submitLabel = publishing
     ? (needsPayment ? 'Redirection vers le paiement…' : isEditing ? 'Enregistrement…' : 'Publication en cours…')
     : boost === 'featured' && !isEditing ? 'Booster pour 9,99€/mois →'
@@ -616,7 +622,9 @@ function AnnonceForm() {
               </div>
             </div>
 
-            {/* Boost */}
+            {/* Boost : [HIDDEN] anciennes offres mensuelles « Mis en avant » et
+                « Prioritaire », masquées (dashboard v2). */}
+            {LEGACY_MONTHLY_BOOST && (
             <div className="mb-4">
               <div className="font-extrabold text-[13.5px] mb-3" style={{ color: '#E5E7EB' }}>
                 <Emoji native="🚀" /> Booster l'annonce
@@ -633,6 +641,7 @@ function AnnonceForm() {
                 </p>
               )}
             </div>
+            )}
 
             {/* Bouton annuler en mode édition */}
             {isEditing && (

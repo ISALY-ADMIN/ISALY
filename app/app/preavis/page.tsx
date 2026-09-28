@@ -168,8 +168,9 @@ export default function PreavisPage() {
             préavis légal de {p.delai_mois} mois.
           </p>
           <p style={{ fontSize: '12.5px', color: TXT_FAINT, margin: 0, lineHeight: 1.6 }}>
-            Votre loueur en a été informé. À cette date, votre part de commission ISALY s’arrête automatiquement.
-            {' '}Si vous vivez en colocation, celle de vos colocataires n’est pas affectée.
+            {/* [HIDDEN] commission de 2,5 % supprimée (dashboard v2) : « À cette date, votre part de commission ISALY s’arrête automatiquement. » */}
+            Votre loueur en a été informé.
+            {' '}Si vous vivez en colocation, le bail de vos colocataires n’est pas affecté.
           </p>
         </div>
 
@@ -210,7 +211,7 @@ export default function PreavisPage() {
           </p>
           <p style={{ fontSize: '12.5px', color: TXT_FAINT, margin: 0, lineHeight: 1.6 }}>
             En confirmant, votre loueur reçoit immédiatement une notification et un email indiquant cette date.
-            Votre part de commission ISALY s’arrête automatiquement à cette date — pas avant.
+            {/* [HIDDEN] commission de 2,5 % supprimée (dashboard v2) : « Votre part de commission ISALY s’arrête automatiquement à cette date, pas avant. » */}
             Vous pourrez retirer ce préavis tant que la date n’est pas atteinte.
           </p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -239,8 +240,8 @@ export default function PreavisPage() {
         </p>
         {state.lease.end_date && (
           <p style={{ fontSize: '12.5px', color: TXT_FAINT, margin: 0 }}>
-            Fin de bail prévue au contrat : {formatDateFr(state.lease.end_date)}. Sans préavis, la commission
-            s’arrête d’elle-même à cette date.
+            {/* [HIDDEN] commission de 2,5 % supprimée (dashboard v2) : « Sans préavis, la commission s’arrête d’elle-même à cette date. » */}
+            Fin de bail prévue au contrat : {formatDateFr(state.lease.end_date)}.
           </p>
         )}
       </div>
