@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/maison?onglet=bail (dashboard v2)
 'use client'
 
 import { useEffect, useState } from 'react'

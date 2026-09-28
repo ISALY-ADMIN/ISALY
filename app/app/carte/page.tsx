@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/swipe?vue=carte (dashboard v2)
 'use client'
 
 import dynamic from 'next/dynamic'

@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/swipe?vue=liste (dashboard v2)
 'use client'
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'

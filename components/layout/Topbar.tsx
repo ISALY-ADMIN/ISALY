@@ -7,12 +7,28 @@ import NotifPanel from '@/components/notifications/NotifPanel'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Emoji from '@/components/ui/Emoji'
+import { useShellTitle } from '@/components/ui-v2/shell/AppShell'
 
 interface TopbarProps {
   title: string
 }
 
+/**
+ * Dashboard v2 : la barre du haut appartient désormais à la coque
+ * (components/ui-v2/shell/AppShell.tsx), avec la cloche et le menu de
+ * l'avatar. Les écrans qui rendent encore <Topbar title=… /> ne font plus
+ * que transmettre leur titre à la coque.
+ */
 export default function Topbar({ title }: TopbarProps) {
+  useShellTitle(title)
+  return null
+}
+
+/**
+ * [HIDDEN] Ancienne barre du haut (dashboard v1), conservée telle quelle et
+ * plus rendue : remplacée par la barre de la coque v2.
+ */
+export function TopbarLegacy({ title }: TopbarProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showNotifs, setShowNotifs]     = useState(false)
   const [notifCount, setNotifCount]     = useState(0)

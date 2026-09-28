@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/maison?onglet=signalements (dashboard v2)
 'use client'
 
 import { useEffect, useRef, useState } from 'react'

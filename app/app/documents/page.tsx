@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/maison?onglet=coffre (dashboard v2)
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'

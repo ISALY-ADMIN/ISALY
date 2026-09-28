@@ -61,3 +61,18 @@ html[data-theme="dark"] .ui-v2 .mapwrap .leaflet-tile-pane{filter:invert(1) hue-
 
 /* Libellé caché visuellement (équivalent .sr de la maquette). */
 .ui-v2 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Menus : les liens (Link) prennent l'apparence des boutons de la maquette. */
+.ui-v2 .pop a.item{text-decoration:none}
+/* La règle .side-me span de la maquette attrape aussi la bulle : on lui rend
+   sa forme (initiale centrée, taille proportionnelle). */
+.ui-v2 .side-me .bub{display:inline-grid;font-size:calc(var(--s) * .4);color:#FFFFFF;white-space:normal}
+
+/* Mobile : le bouton « Signaler un bug » (monté hors de la coque) passe
+   au-dessus de la barre du bas au lieu de couvrir l'onglet Menu. */
+@media (max-width:1023px){
+  body:has(.ui-v2) button[aria-label="Signaler un bug"]{bottom:calc(100px + env(safe-area-inset-bottom))!important}
+}
+
+/* Fenêtre ouverte : le bouton flottant « Signaler un bug » s'efface. */
+body:has(.ui-v2 .scrim) button[aria-label="Signaler un bug"]{display:none!important}
