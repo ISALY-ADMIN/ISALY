@@ -343,3 +343,6 @@
 /* La seconde .wrap de l'en-tête ne porte que le menu mobile : sans elle, la
    hauteur minimale de 72 px de .phdr .wrap ajouterait une bande vide. */
 .ui-site .phdr .wrap+.wrap{min-height:0}
+/* Filtres en liens (catégories du blog) : même état actif que .fchip pressé. */
+.ui-site a.fchip{text-decoration:none;display:inline-flex;align-items:center}
+.ui-site a.fchip[aria-current="page"]{border-color:var(--brand);color:var(--brand-text);background:var(--brand-soft)}

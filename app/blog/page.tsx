@@ -1,5 +1,100 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ARTICLES, CATEGORIES, readingTime } from '@/content/blog/articles'
+import type { BlogCategory } from '@/content/blog/types'
+import { Art, Icon, Pill } from '@/components/ui-v2'
+import { PublicLayout } from '@/components/ui-v2/public'
+
+export const metadata: Metadata = {
+  title: { absolute: 'ISALY Immo — Conseils, droits et guides colocation' },
+  description: 'Conseils, droits et guides pour bien coloquer : prix, bail, colocataires, quartiers. Le blog colocation d’ISALY.',
+  alternates: { canonical: 'https://isaly.fr/blog' },
+  openGraph: {
+    title: 'ISALY Immo — Le blog de la colocation',
+    description: 'Conseils, droits et guides pour bien coloquer.',
+    url: 'https://isaly.fr/blog',
+    siteName: 'ISALY',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    locale: 'fr_FR',
+    type: 'website',
+  },
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+export default function BlogPage({ searchParams }: { searchParams: { cat?: string } }) {
+  const activeCat = CATEGORIES.includes(searchParams.cat as BlogCategory) ? (searchParams.cat as BlogCategory) : null
+  const articles = activeCat ? ARTICLES.filter(a => a.category === activeCat) : ARTICLES
+  const [featured, ...rest] = articles
+
+  return (
+    <PublicLayout>
+      <div className="wrap">
+        <div style={{ padding: '36px 0 0' }}>
+          <span className="pill brand">ISALY Immo</span>
+          <h1 className="h1" style={{ marginTop: 14 }}>Tout pour réussir ta coloc</h1>
+          <p className="lede">Conseils, droits, budget et guides des villes : le média d’ISALY sur la colocation.</p>
+        </div>
+
+        <nav className="bcats" aria-label="Catégories">
+          <Link className="fchip" href="/blog" aria-current={!activeCat ? 'page' : undefined}>Tous</Link>
+          {CATEGORIES.map(cat => (
+            <Link key={cat} className="fchip" href={`/blog?cat=${encodeURIComponent(cat)}`} aria-current={activeCat === cat ? 'page' : undefined}>
+              {cat}
+            </Link>
+          ))}
+        </nav>
+
+        {featured && (
+          <Link className="feat" href={`/blog/${featured.slug}`}>
+            <Art id={featured.slug} />
+            <div className="in">
+              <div className="meta">
+                <Pill tone="brand">{featured.category}</Pill>
+                <span>{readingTime(featured)} min de lecture</span>
+              </div>
+              <h2>{featured.title}</h2>
+              <p>{featured.excerpt}</p>
+              <span className="link">Lire l’article <Icon name="arrow" size={16} /></span>
+            </div>
+          </Link>
+        )}
+
+        {rest.length > 0 && (
+          <div className="posts mt">
+            {rest.map(a => (
+              <Link key={a.slug} className="post" href={`/blog/${a.slug}`} style={{ textDecoration: 'none' }}>
+                <Art id={a.slug} />
+                <div className="in">
+                  <div className="meta">
+                    <Pill>{a.category}</Pill>
+                    <span>{readingTime(a)} min</span>
+                  </div>
+                  <h3>{a.title}</h3>
+                  <span className="s">{formatDate(a.date)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <section className="cta-band sec">
+          <div>
+            <h2>Prêt à trouver ta coloc&#8239;?</h2>
+            <p>Fais le test de compatibilité et découvre les colocations faites pour toi.</p>
+          </div>
+          <Link className="btn btn-main" href="/auth/register">Commencer</Link>
+        </section>
+      </div>
+    </PublicLayout>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+import type { Metadata } from 'next'
+import Link from 'next/link'
 import Image from 'next/image'
 import { ARTICLES, CATEGORIES, readingTime } from '@/content/blog/articles'
 import type { BlogCategory } from '@/content/blog/types'
@@ -39,7 +134,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', fontFamily: "'Outfit', sans-serif", color: '#fff' }}>
 
-      {/* Navbar */}
+      {/* Navbar * /}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" aria-label="ISALY — accueil">
           <Image src="/LOGO_ISALY.png" alt="ISALY" height={24} width={76} style={{ width: 'auto', height: '24px', objectFit: 'contain' }} />
@@ -56,7 +151,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '56px 24px 80px' }}>
 
-        {/* Header */}
+        {/* Header * /}
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>LE BLOG</div>
           <h1 style={{ fontSize: 'clamp(34px, 5vw, 52px)', fontWeight: 700, margin: '0 0 14px', letterSpacing: '-1px' }}><RiseText mode="load" text="ISALY Immo" /></h1>
@@ -65,7 +160,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
           </p>
         </div>
 
-        {/* Filtres catégorie */}
+        {/* Filtres catégorie * /}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '40px' }}>
           <Link href="/blog" style={{
             padding: '8px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, textDecoration: 'none',
@@ -87,7 +182,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
           ))}
         </div>
 
-        {/* Grille articles */}
+        {/* Grille articles * /}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '20px' }}>
           {articles.map(a => (
             <Link key={a.slug} href={`/blog/${a.slug}`} style={{ textDecoration: 'none' }}>
@@ -95,7 +190,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '20px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column',
               }}>
-                {/* Visuel placeholder mint */}
+                {/* Visuel placeholder mint * /}
                 <div style={{
                   height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(5,150,105,0.06))',
@@ -130,7 +225,7 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
           ))}
         </div>
 
-        {/* CTA */}
+        {/* CTA * /}
         <div style={{ textAlign: 'center', marginTop: '64px', padding: '48px 24px', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '20px' }}>
           <h2 style={{ fontSize: '24px', margin: '0 0 12px' }}><RiseText text="Prêt à passer de la théorie à la pratique ?" /></h2>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px' }}>
@@ -149,3 +244,4 @@ export default function BlogPage({ searchParams }: { searchParams: { cat?: strin
     </div>
   )
 }
+*/
