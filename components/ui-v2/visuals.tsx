@@ -78,6 +78,17 @@ export function Radar({ values, labels, label = 'Ton profil sur les 5 dimensions
       <polygon points={vals} fill="url(#gradFill)" stroke="url(#gradRing)" strokeWidth="2.5" strokeLinejoin="round" />
       {labels.map((d, i) => {
         const [x, y] = pt(i, 1.24)
+        // Libellés longs (noms des dimensions du matching) : sur deux lignes.
+        const words = d.split(' ')
+        if (d.length > 14 && words.length > 1) {
+          const cut = Math.ceil(words.length / 2)
+          const lines = [words.slice(0, cut).join(' '), words.slice(cut).join(' ')]
+          return (
+            <text key={d} className="rl" x={x.toFixed(1)} y={(y - 7).toFixed(1)} textAnchor="middle" dominantBaseline="middle">
+              {lines.map((t, k) => <tspan key={k} x={x.toFixed(1)} dy={k ? 15 : 0}>{t}</tspan>)}
+            </text>
+          )
+        }
         return (
           <text key={d} className="rl" x={x.toFixed(1)} y={y.toFixed(1)} textAnchor="middle" dominantBaseline="middle">{d}</text>
         )

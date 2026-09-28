@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast'
 import Emoji, { EmojiText } from '@/components/ui/Emoji'
 import { computeProfileCompletion, computeProfileCompletionSteps } from '@/lib/profileCompletion'
 import { track } from '@/lib/analytics'
+import ProfilV2 from '@/components/ui-v2/screens/Profil'
 
 // ── Design tokens (signature dashboard-home) ──────────────────
 const MINT = '#10B981'
@@ -301,7 +302,22 @@ function DocRow({ label, required, doc, uploading, onUpload, onDelete }: {
 // ════════════════════════════════════════════════════════════
 // Main page
 // ════════════════════════════════════════════════════════════
+/** Dashboard v2 : Mon profil (components/ui-v2/screens/Profil.tsx). */
 export default function ProfilPage() {
+  const { mode } = useLease()
+  if (mode === 'loueur' && !PROFIL_V2_OWNER) return <ProfilPageLegacy />
+  return (
+    <Suspense fallback={null}>
+      <ProfilV2 />
+    </Suspense>
+  )
+}
+
+/** Mon profil côté bailleur : activé avec son écran (dashboard v2). */
+const PROFIL_V2_OWNER = false
+
+/** [HIDDEN] Ancienne page Mon profil (dashboard v1), conservée, plus rendue côté locataire. */
+function ProfilPageLegacy() {
   const router = useRouter()
   const { lease, mode, refresh: refreshLease } = useLease()
   const { toast } = useToast()
