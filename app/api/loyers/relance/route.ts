@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { resend, FROM_EMAIL } from '@/lib/resend'
 import { rentReminderTemplate } from '@/lib/email-templates'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 export async function POST(req: Request) {
   const supabase = createClient()
@@ -19,6 +20,9 @@ export async function POST(req: Request) {
   if (!lease || lease.owner_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+  // Dashboard v2 : logement délégué ou abonnement inactif, lecture seule.
+  const blocked = await guardLeaseWrite(supabase, user.id, lease_id)
+  if (blocked) return blocked
 
   const { data: tenant } = await supabase.from('profiles').select('email, first_name').eq('id', tenant_id).maybeSingle()
   if (!tenant?.email) return NextResponse.json({ error: 'Tenant email not found' }, { status: 404 })

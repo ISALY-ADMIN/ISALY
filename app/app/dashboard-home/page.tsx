@@ -13,6 +13,8 @@ import type { DashboardData } from '@/app/api/dashboard/route'
 import { computeProfileCompletion } from '@/lib/profileCompletion'
 import { useLease } from '@/contexts/LeaseContext'
 import { useModeChangeRefresh } from '@/hooks/useModeChangeRefresh'
+import TenantDashboard from '@/components/ui-v2/screens/TenantDashboard'
+import OwnerDashboard from '@/components/ui-v2/screens/OwnerDashboard'
 
 // ═══════════════ Helpers ═══════════════
 
@@ -169,7 +171,18 @@ function FirstWeekGuide({ profileCompletion }: { profileCompletion: number }) {
 
 // ═══════════════ Page ═══════════════
 
+/**
+ * Dashboard v2 : le tableau de bord locataire est la nouvelle version
+ * (components/ui-v2/screens/TenantDashboard.tsx). Le mode suit profiles.role.
+ */
 export default function DashboardHomePage() {
+  const { mode } = useLease()
+  if (mode === 'locataire') return <TenantDashboard />
+  return <OwnerDashboard />
+}
+
+/** [HIDDEN] Ancien tableau de bord (dashboard v1), conservé, plus rendu. */
+function DashboardHomeLegacy() {
   const router = useRouter()
   const { mode } = useLease()
   useModeChangeRefresh()

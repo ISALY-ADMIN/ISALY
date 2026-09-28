@@ -1,6 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, Suspense } from 'react'
+import { useRouter as useRouterV2, useSearchParams as useSearchParamsV2 } from 'next/navigation'
+import MaisonV2 from '@/components/ui-v2/screens/Maison'
+import { useShell } from '@/components/ui-v2/shell/AppShell'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
@@ -112,7 +115,35 @@ const DEMO_DATA: MaisonData = {
 
 // ═══════════════ Page ═══════════════
 
+/** Côté bailleur, les anciennes routes renvoyées ici ouvrent l'onglet équivalent de Baux. */
+const OWNER_TARGET: Record<string, string> = {
+  loyers: '/app/baux?onglet=loyers',
+  coffre: '/app/baux?onglet=documents',
+  bail: '/app/baux',
+  signalements: '/app/maintenance',
+}
+
+function OwnerForward() {
+  const router = useRouterV2()
+  const params = useSearchParamsV2()
+  useEffect(() => {
+    router.replace(OWNER_TARGET[params.get('onglet') ?? ''] ?? '/app/baux')
+  }, [router, params])
+  return null
+}
+
+/** Dashboard v2 : Ma maison (components/ui-v2/screens/Maison.tsx). */
 export default function MaisonPage() {
+  const { mode } = useShell()
+  return (
+    <Suspense fallback={null}>
+      {mode === 'loueur' ? <OwnerForward /> : <MaisonV2 />}
+    </Suspense>
+  )
+}
+
+/** [HIDDEN] Ancienne page Ma maison (dashboard v1), conservée, plus rendue. */
+function MaisonPageLegacy() {
   useModeChangeRefresh()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<MaisonData | null>(null)

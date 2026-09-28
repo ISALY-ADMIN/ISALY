@@ -220,7 +220,8 @@ export function preavisDeposeTemplate(
         </p>
       </div>
       <p style="margin:0 0 20px;font-size:12.5px;color:#9ca3af;line-height:1.55">
-        À cette date, la part de commission ISALY de ce locataire s'arrête automatiquement.
+        <!-- [HIDDEN] commission de 2,5 % supprimée (dashboard v2) :
+        À cette date, la part de commission ISALY de ce locataire s'arrête automatiquement. -->
         S'il s'agit d'une colocation, les autres colocataires ne sont pas concernés.
         Le locataire peut se rétracter tant que cette date n'est pas atteinte — vous en seriez informé.
       </p>
@@ -259,6 +260,40 @@ export function preavisAnnuleTemplate(
           📄 Voir le bail concerné
         </a>
       </div>
+    </div>
+  `
+  return BASE.replace('{{BODY}}', body)
+}
+
+/**
+ * Dashboard v2 : notification à l'agence partenaire quand un bailleur lui
+ * confie un logement. Aucune pièce jointe : le dossier lui-même n'est pas
+ * envoyé par ce message (voir le rapport de mise en production).
+ */
+export function agencyDelegationTemplate(input: {
+  agencyName: string
+  address: string
+  city: string
+  ownerName: string
+  ownerEmail: string
+  ownerPhone: string | null
+  tenantName: string | null
+}): string {
+  const esc = (v: string) => v.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string))
+  const body = `
+    <div style="padding:36px 40px">
+      <h2 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700">Un logement vous est confié</h2>
+      <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.6">
+        Bonjour ${esc(input.agencyName)}, un bailleur ISALY vous confie la gestion de son logement en colocation.
+      </p>
+      <div style="background:#f5f3ff;border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid #ddd6fe">
+        <p style="margin:0 0 6px;font-size:14px;color:#111827;font-weight:700">${esc(input.address)}, ${esc(input.city)}</p>
+        <p style="margin:0 0 4px;font-size:13px;color:#6b7280">Bailleur : ${esc(input.ownerName)}, ${esc(input.ownerEmail)}${input.ownerPhone ? `, ${esc(input.ownerPhone)}` : ''}</p>
+        ${input.tenantName ? `<p style="margin:0;font-size:13px;color:#6b7280">Dossier validé : ${esc(input.tenantName)}</p>` : ''}
+      </div>
+      <p style="margin:0;font-size:12.5px;color:#9ca3af;line-height:1.55">
+        L'équipe ISALY vous contacte pour la transmission du dossier. La commission de mise en relation vous est facturée par ISALY, jamais au bailleur ni au locataire.
+      </p>
     </div>
   `
   return BASE.replace('{{BODY}}', body)

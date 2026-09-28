@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import ConversationList from '@/components/messages/ConversationList'
 import ChatArea from '@/components/messages/ChatArea'
+import MessagesV2 from '@/components/ui-v2/screens/Messages'
 import { createClient } from '@/lib/supabase/client'
 import { CertLevel } from '@/components/ui/CertificationBadge'
 import { usePresence, useOnlineUsers } from '@/hooks/usePresence'
@@ -397,7 +398,21 @@ function MessagesContent() {
   )
 }
 
+/**
+ * Dashboard v2 : messagerie commune aux deux modes
+ * (components/ui-v2/screens/Messages.tsx), mêmes requêtes, Realtime,
+ * présence et réactions que l'ancienne version ci-dessous.
+ */
 export default function MessagesPage() {
+  return (
+    <Suspense fallback={null}>
+      <MessagesV2 />
+    </Suspense>
+  )
+}
+
+/** [HIDDEN] Ancienne page Messages (dashboard v1), conservée, plus rendue. */
+function MessagesPageLegacy() {
   return (
     <Suspense fallback={<div className="flex-1 flex items-center justify-center">Chargement…</div>}>
       <MessagesContent />

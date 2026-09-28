@@ -21,7 +21,8 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
 }
 
 const PLAN_LABELS: Record<string, string> = {
-  assurance: 'Commission bail (2,5 %/mois)',
+  // [HIDDEN] commission de 2,5 % supprimée (dashboard v2), libellé des paiements historiques :
+  assurance: 'Commission bail (ancienne offre)',
   featured:  'Boost Featured',
   priority:  'Boost Priority',
 }

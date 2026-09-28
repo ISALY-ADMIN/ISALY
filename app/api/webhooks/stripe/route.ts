@@ -1,10 +1,41 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resend, FROM_EMAIL } from '@/lib/resend'
 import { identityVerifiedTemplate } from '@/lib/email-templates'
+
+/** Client de service : le webhook n'a pas de session utilisateur (RLS). */
+function serviceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+}
+
+/**
+ * Dashboard v2 : statut de l'abonnement autogestion sur le profil du bailleur.
+ * Colonnes absentes (migration 42 non exécutée) : on journalise sans échouer.
+ */
+async function writeAutogestion(
+  sub: { id: string; status: string; current_period_end: number; metadata?: Record<string, string> | null },
+  fallbackUserId?: string | null,
+) {
+  const admin = serviceClient()
+  const patch = {
+    autogestion_status: sub.status,
+    autogestion_subscription_id: sub.id,
+    autogestion_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+  }
+  const userId = sub.metadata?.user_id || fallbackUserId
+  const q = userId
+    ? admin.from('profiles').update(patch).eq('id', userId)
+    : admin.from('profiles').update(patch).eq('autogestion_subscription_id', sub.id)
+  const { error } = await q
+  if (error) console.error('[webhook] abonnement autogestion non enregistré', error.code, error.message)
+}
 
 /** Normalise un nom pour comparaison (accents, casse, espaces). */
 function normName(s: string | null | undefined): string {
@@ -47,6 +78,37 @@ export async function POST(request: Request) {
           swiper_plus_active: true,
           swiper_plus_expires_at: expiresAt.toISOString(),
         }).eq('id', session.metadata.user_id)
+      }
+
+      // ── Dashboard v2 : mise en avant de 1, 3 ou 7 jours (paiement unique) ──
+      if (session.metadata?.plan === 'listing_boost_days' && session.metadata.listing_id) {
+        const days = Math.max(1, Math.min(7, Number(session.metadata.days) || 1))
+        const admin = serviceClient()
+        const { data: current } = await admin
+          .from('listings')
+          .select('boost_expires_at, boost_tier')
+          .eq('id', session.metadata.listing_id)
+          .maybeSingle()
+        // Une mise en avant encore en cours est prolongée, pas écrasée.
+        const base = current?.boost_expires_at && new Date(current.boost_expires_at as string).getTime() > Date.now()
+          ? new Date(current.boost_expires_at as string)
+          : new Date()
+        const expires = new Date(base.getTime() + days * 24 * 60 * 60 * 1000)
+        const { error } = await admin.from('listings').update({
+          boost_tier: 'featured',
+          boost_expires_at: expires.toISOString(),
+        }).eq('id', session.metadata.listing_id)
+        if (error) console.error('[webhook] mise en avant', error)
+      }
+
+      // ── Dashboard v2 : abonnement autogestion du bailleur ────────
+      if (session.metadata?.plan === 'autogestion' && session.subscription) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(session.subscription)
+          await writeAutogestion(sub as unknown as Parameters<typeof writeAutogestion>[0], session.metadata.user_id)
+        } catch (err) {
+          console.error('[webhook] lecture de l’abonnement autogestion', err)
+        }
       }
 
       // ── Listing boost ─────────────────────────────────────────
@@ -132,8 +194,20 @@ export async function POST(request: Request) {
       break
     }
 
+    // ── Dashboard v2 : suivi de l'abonnement autogestion ──────────
+    case 'customer.subscription.updated': {
+      const sub = event.data.object as unknown as Parameters<typeof writeAutogestion>[0]
+      if (sub.metadata?.plan === 'autogestion') await writeAutogestion(sub)
+      break
+    }
+
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as { metadata?: Record<string, string> }
+
+      // Fin de l'abonnement autogestion : les logements passent en lecture seule.
+      if (subscription.metadata?.plan === 'autogestion') {
+        await writeAutogestion(event.data.object as unknown as Parameters<typeof writeAutogestion>[0])
+      }
 
       // Annulation Swiper+
       if (subscription.metadata?.plan === 'swiper_plus' && subscription.metadata.user_id) {

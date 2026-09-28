@@ -19,6 +19,14 @@ import { BILLING_ENABLED } from '@/lib/billing'
 /** Taux de la commission de gestion, figé sur chaque ligne à sa création. */
 export const COMMISSION_RATE = 0.025
 
+/**
+ * Dashboard v2 : la commission de 2,5 % par locataire et par mois est
+ * supprimée (remplacée par l'abonnement autogestion du bailleur). Tant que ce
+ * drapeau vaut false, aucune part de commission n'est plus créée ni calculée.
+ * L'arrêt des parts existantes (stopCommissionForTenant) reste possible.
+ */
+export const COMMISSION_RECURRING_ENABLED = false
+
 export type StopReason = 'lease_end' | 'preavis' | 'lease_ended_status' | 'manual'
 
 export interface LeaseCommissionRow {
@@ -87,6 +95,9 @@ export async function ensureLeaseCommissions(
   supabase: SupabaseClient,
   lease: { id: string; tenant_id: string | null; monthly_rent: number | null },
 ): Promise<number> {
+  // [HIDDEN] Commission par locataire désactivée (dashboard v2) : le calcul
+  // ci-dessous est conservé mais plus exécuté.
+  if (!COMMISSION_RECURRING_ENABLED) return 0
   const tenantIds = await getLeaseTenantIds(supabase, lease.id, lease.tenant_id)
   if (tenantIds.length === 0) return 0
 

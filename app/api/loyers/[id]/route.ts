@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -19,6 +20,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!lease || lease.owner_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+    // Dashboard v2 : logement délégué ou abonnement inactif, lecture seule.
+    const blockedNew = await guardLeaseWrite(supabase, user.id, lease_id)
+    if (blockedNew) return blockedNew
 
     const { data, error } = await supabase
       .from('rent_payments')
@@ -48,6 +52,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!lease || lease.owner_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+  // Dashboard v2 : logement délégué ou abonnement inactif, lecture seule.
+  const blocked = await guardLeaseWrite(supabase, user.id, payment.lease_id as string)
+  if (blocked) return blocked
 
   const { data, error } = await supabase
     .from('rent_payments')

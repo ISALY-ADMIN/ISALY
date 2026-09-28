@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { profilesCompatibility } from '@/lib/matching'
 import { computeProfileCompletion } from '@/lib/profileCompletion'
 import type { Profile } from '@/types/database'
+import { getSwipeQuota } from '@/lib/swipeQuota'
 
 export async function POST(request: Request) {
   const { supabase, user } = await createApiClient(request)
@@ -12,6 +13,23 @@ export async function POST(request: Request) {
   }
 
   const { swipedId, direction, listing_id } = await request.json()
+
+  // Dashboard v2 : offre gratuite limitée à 10 swipes par jour, sans limite
+  // avec Swiper Plus. Revenir sur une carte déjà swipée ne consomme rien.
+  const alreadyQ = supabase.from('swipes').select('id').eq('swiper_id', user.id)
+  const { data: alreadyRows } = typeof listing_id === 'string' && listing_id
+    ? await alreadyQ.eq('listing_id', listing_id).limit(1)
+    : await alreadyQ.eq('swiped_id', swipedId).limit(1)
+  const already = (alreadyRows ?? [])[0] ?? null
+  if (!already) {
+    const quota = await getSwipeQuota(supabase, user.id)
+    if (!quota.plus && quota.used >= quota.limit) {
+      return NextResponse.json(
+        { error: 'Tu as utilisé tes 10 swipes du jour. Ils reviennent demain.', code: 'daily_limit', quota },
+        { status: 429 },
+      )
+    }
+  }
 
   // Record the swipe (listing_id optionnel : cible l'annonce qui a déclenché le swipe)
   const swipePayload: {
@@ -24,7 +42,11 @@ export async function POST(request: Request) {
     swipePayload.listing_id = listing_id
   }
 
-  const { error: swipeError } = await supabase
+  // Dashboard v2 : une carte déjà swipée pour cette annonce est mise à jour
+  // (index unique swiper_id + listing_id, migration 35) au lieu d'échouer.
+  const { error: swipeError } = already && swipePayload.listing_id
+    ? await supabase.from('swipes').update({ direction }).eq('id', already.id)
+    : await supabase
     .from('swipes')
     .upsert(swipePayload)
 

@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/candidatures?annonce=[id] (dashboard v2)
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createApiClient } from '@/lib/supabase/api-auth'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { maintenanceRequestTemplate } from '@/lib/email-templates'
+import { getLeaseManagement } from '@/lib/managementMode'
 
 /**
  * GET — signalements côté loueur.
@@ -73,6 +74,13 @@ export async function POST(req: Request) {
     .maybeSingle()
 
   if (!lease) return NextResponse.json({ error: 'Aucun bail actif' }, { status: 400 })
+
+  // Dashboard v2 : un logement confié à une agence partenaire n'est plus géré
+  // sur ISALY, les signalements passent par l'agence.
+  const management = await getLeaseManagement(supabase, lease.id)
+  if (management.mode === 'delegue') {
+    return NextResponse.json({ error: 'Ton logement est géré par une agence partenaire : contacte-la pour ce problème.' }, { status: 403 })
+  }
 
   const photos = (body.photos ?? []).slice(0, 3)
 

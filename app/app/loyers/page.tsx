@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/maison?onglet=loyers (dashboard v2)
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TenantLoyersClient from './TenantLoyersClient'

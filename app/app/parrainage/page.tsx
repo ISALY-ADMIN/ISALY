@@ -2,8 +2,15 @@
 import { useEffect, useState } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import ParrainageV2 from '@/components/ui-v2/screens/Parrainage'
 
+/** Dashboard v2 : Parrainage (components/ui-v2/screens/Parrainage.tsx). */
 export default function ParrainagePage() {
+  return <ParrainageV2 />
+}
+
+/** [HIDDEN] Ancienne page Parrainage (dashboard v1), conservée, plus rendue. */
+function ParrainagePageLegacy() {
   const [code, setCode] = useState('')
   const [count, setCount] = useState(0)
   const [copied, setCopied] = useState(false)

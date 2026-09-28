@@ -49,6 +49,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: session.url })
   }
 
+  // Dashboard v2 : la commission de gestion (plan « assurance », 2,5 % du
+  // loyer par mois) et les anciennes offres mensuelles « Mis en avant » et
+  // « Prioritaire » ne sont plus proposées. [HIDDEN] code conservé ci-dessous.
+  if (plan === 'assurance' || plan === 'featured' || plan === 'priority') {
+    return NextResponse.json({ error: 'Cette offre n’est plus proposée.' }, { status: 410 })
+  }
+
   let unitAmount = PLANS[plan]?.price ?? 999
   if (plan === 'assurance' && loyer) {
     unitAmount = Math.round(loyer * 0.025 * 100)

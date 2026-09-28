@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -37,6 +38,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
   const { data: lease } = await supabase.from('leases').select('owner_id').eq('id', doc.lease_id).maybeSingle()
   if (!lease || lease.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  // Dashboard v2 : logement délégué ou abonnement inactif, lecture seule.
+  const blocked = await guardLeaseWrite(supabase, user.id, doc.lease_id as string)
+  if (blocked) return blocked
 
   if (doc.file_url) await supabase.storage.from('documents-bailleur').remove([doc.file_url])
   const { error } = await supabase.from('lease_documents').delete().eq('id', params.id)

@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/profil?section=dossier (dashboard v2)
 'use client'
 
 import { useState, useRef, useEffect } from 'react'

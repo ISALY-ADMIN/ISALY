@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { profilesCompatibility, type UiBreakdown } from '@/lib/matching'
 import { getCoordsForCity, jitterCoords } from '@/lib/geo'
 import { listingOccupancy, isAvailableNow } from '@/lib/utils'
+import { activeBoostTier } from '@/lib/boost'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,7 +109,7 @@ export async function GET(req: Request) {
     const c = myProfile && owner ? profilesCompatibility(myProfile, owner) : null
     const occupancy = listingOccupancy(l)
     const remaining = occupancy.total - occupancy.current
-    const boostTier = ((l.boost_tier ?? l.boost_type ?? 'standard') as SearchResult['boostTier'])
+    const boostTier = activeBoostTier(l) as SearchResult['boostTier']
     const roomCount = (l.rooms_available as number) ?? 0
     const exact = l.latitude != null && l.longitude != null
       ? [Number(l.latitude), Number(l.longitude)] as [number, number]

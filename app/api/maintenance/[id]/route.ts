@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 /**
  * GET — récupère un signalement + son bail + les identités des parties.
@@ -67,6 +68,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const { data: lease } = await supabase.from('leases').select('owner_id').eq('id', request.lease_id).maybeSingle()
   if (!lease || lease.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  // Dashboard v2 : logement délégué ou abonnement inactif, lecture seule.
+  const blocked = await guardLeaseWrite(supabase, user.id, request.lease_id as string)
+  if (blocked) return blocked
 
   const update: Record<string, unknown> = {}
   if (body.status) {

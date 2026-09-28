@@ -16,6 +16,7 @@ import AlertsSettings from '@/components/alerts/AlertsSettings'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useLease } from '@/contexts/LeaseContext'
+import ParametresV2 from '@/components/ui-v2/screens/Parametres'
 
 // ═══════════════ Constantes ═══════════════
 
@@ -179,7 +180,13 @@ const pinInputStyle: React.CSSProperties = {
 
 type PinDialog = 'set' | 'change' | 'disable' | null
 
+/** Dashboard v2 : Paramètres communs aux deux modes (components/ui-v2/screens/Parametres.tsx). */
 export default function ParametresPage() {
+  return <ParametresV2 />
+}
+
+/** [HIDDEN] Ancienne page Paramètres (dashboard v1), conservée, plus rendue. */
+function ParametresPageLegacy() {
   const router = useRouter()
   const { toast } = useToast()
   const { setMode: syncContextMode } = useLease()

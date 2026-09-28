@@ -24,6 +24,11 @@ export const maxDuration = 300
  * cron peut donc repasser sur les mêmes baux sans dupliquer les journaux.
  *
  * Tant que `BILLING_ENABLED` vaut `false`, aucun appel Stripe n'est émis.
+ *
+ * Dashboard v2 : la commission de 2,5 % est supprimée
+ * (COMMISSION_RECURRING_ENABLED = false, lib/commission.ts). Ce passage reste
+ * planifié car il applique aussi les préavis arrivés à échéance ; il ne
+ * facture rien et ne crée aucune commission.
  */
 export async function GET(req: Request) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -103,7 +108,9 @@ export async function GET(req: Request) {
         user_id: p.tenant_id,
         type:    'bail',
         title:   'Votre préavis a pris effet',
-        body:    'Votre départ est effectif : la commission ISALY liée à ce bail ne vous est plus prélevée.',
+        // [HIDDEN] mention de la commission retirée (dashboard v2) :
+        // body: 'Votre départ est effectif : la commission ISALY liée à ce bail ne vous est plus prélevée.',
+        body:    'Votre départ est effectif : votre bail est terminé pour vous.',
         link:    '/app/preavis',
         read:    false,
       })

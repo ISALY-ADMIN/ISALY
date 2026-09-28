@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { generateAndDeliverQuittance, type QuittanceLease } from '@/lib/documents/quittanceAuto'
+import { guardLeaseWrite } from '@/lib/managementMode'
 
 export const runtime = 'nodejs'
 
@@ -33,6 +34,9 @@ export async function POST(request: Request) {
   if (lease.owner_id !== user.id) {
     return NextResponse.json({ error: 'Seul le bailleur peut générer la quittance' }, { status: 403 })
   }
+  // Dashboard v2 : logement délégué ou abonnement inactif, lecture seule.
+  const blocked = await guardLeaseWrite(supabase, user.id, lease.id as string)
+  if (blocked) return blocked
 
   const monthDate = body.month && /^\d{4}-\d{2}$/.test(body.month)
     ? new Date(Number(body.month.slice(0, 4)), Number(body.month.slice(5, 7)) - 1, 1)

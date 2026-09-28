@@ -1,3 +1,4 @@
+// [HIDDEN] Route redirigée vers /app/mes-annonces (dashboard v2)
 'use client'
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
