@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/client'
 import { computeCompatibility } from '@/lib/matching'
 import { statusMeta, emploiLabel } from '@/lib/candidatures'
 import type { SwipeDirection, CandidatureStatus, EmploiSituation } from '@/types/database'
+import CandidaturesV2 from '@/components/ui-v2/screens/Candidatures'
 
 // ─── Types ───────────────────────────────────────────────────
 interface CandidateProfile {
@@ -776,7 +777,17 @@ function CandidaturesContent() {
   )
 }
 
+/** Dashboard v2 : Candidatures (components/ui-v2/screens/Candidatures.tsx). */
 export default function CandidaturesPage() {
+  return (
+    <Suspense fallback={null}>
+      <CandidaturesV2 />
+    </Suspense>
+  )
+}
+
+/** [HIDDEN] Ancienne page Mes candidatures (dashboard v1), conservée, plus rendue. */
+function CandidaturesPageLegacy() {
   return (
     <Suspense fallback={null}>
       <CandidaturesContent />
