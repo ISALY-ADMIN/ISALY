@@ -377,3 +377,8 @@
 .ui-site .cookie .ctitle{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--ink)}
 .ui-site .cookie .opt{padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
 .ui-site .cookie .opt p{min-width:0;margin-top:4px;font-size:13px}
+/* Retour bêta : bouton flottant et panneau fixés (et non dans une scène de démonstration). */
+.ui-site .fab.fixed{position:fixed;right:20px;bottom:20px;z-index:60;transition:opacity .2s}
+.ui-site .wpanel.fixed{position:fixed;right:20px;bottom:20px;z-index:71;max-height:calc(100vh - 40px);overflow-y:auto}
+.ui-site .wscrim{position:fixed;inset:0;z-index:70;background:rgba(18,16,46,.35)}
+@media (max-width:640px){.ui-site .fab.fixed{width:46px;padding:0;justify-content:center}.ui-site .fab.fixed .fab-t{display:none}}

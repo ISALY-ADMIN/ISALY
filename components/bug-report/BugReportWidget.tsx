@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Bug, X, Send, CheckCircle2, ImagePlus, Trash2 } from 'lucide-react'
+import { Icon } from '@/components/ui-v2/primitives'
+import { WidgetRoot } from '@/components/ui-v2/public/WidgetRoot'
 import { createClient } from '@/lib/supabase/client'
 
 /**
@@ -212,6 +212,311 @@ export default function BugReportWidget() {
   if (!BETA_BUG_REPORT) return null
 
   return (
+    // Site v2 : bouton flottant et panneau du retour bêta (.fab et .wpanel de la maquette).
+    <WidgetRoot>
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Signaler un bug"
+        title="Signaler un bug"
+        className="fab fixed"
+        type="button"
+        style={{ opacity: open ? 0 : 1, pointerEvents: open ? 'none' : 'auto' }}
+      >
+        <Icon name="bug" size={18} />
+        <span className="fab-t">Un souci&#8239;?</span>
+      </button>
+
+      {open && (
+        <>
+          <div className="wscrim" onClick={close} aria-hidden="true" />
+          <div className="wpanel fixed" role="dialog" aria-modal="true" aria-label="Signaler un bug" onPaste={handlePaste}>
+            <div className="hrow">
+              <b>Un souci, une idée&#8239;?</b>
+              <button className="iconbtn" type="button" onClick={close} aria-label="Fermer" style={{ width: 34, height: 34 }}>
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+
+            {sent ? (
+              <div style={{ display: 'grid', justifyItems: 'center', textAlign: 'center', gap: 8, padding: '18px 6px' }}>
+                <span className="okring" style={{ width: 64, height: 64 }}><Icon name="check" size={30} /></span>
+                <b>Merci&#8239;! Ton signalement a été transmis.</b>
+                <span className="s">On regarde ça au plus vite.</span>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  className="textarea"
+                  aria-label="Ton message"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="Décris ce qui s’est passé"
+                  autoFocus
+                  maxLength={MAX_DESCRIPTION}
+                  style={{ minHeight: 110 }}
+                />
+
+                {/* ── Capture d'écran facultative ── */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={e => acceptFile(e.target.files?.[0] ?? null)}
+                />
+                {preview && file ? (
+                  <div className="row" style={{ padding: 10, borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview} alt="Aperçu de la capture" style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 10, flex: 'none' }} />
+                    <span className="grow" style={{ minWidth: 0 }}>
+                      <span className="t" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name || 'capture.png'}</span>
+                      <span className="s">{humanSize(file.size)}</span>
+                    </span>
+                    <button className="iconbtn" type="button" onClick={clearFile} aria-label="Retirer la capture" title="Retirer la capture" style={{ width: 34, height: 34 }}>
+                      <Icon name="x" size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn btn-glass btn-sm" type="button" onClick={() => fileInputRef.current?.click()}>
+                    <Icon name="image" size={16} />Joindre une capture<span className="muted">, ou Ctrl+V</span>
+                  </button>
+                )}
+
+                {/* Contexte capturé : transparence sur ce qui part avec le ticket */}
+                <p className="hint">
+                  Page, navigateur et taille d’écran sont joints automatiquement.<br />
+                  <span className="muted">{pathname}</span>
+                </p>
+
+                {error && <div className="alert" role="alert"><Icon name="alert" size={18} /><span>{error}</span></div>}
+
+                <button className="btn btn-main btn-sm" type="button" onClick={submit} disabled={!description.trim() || sending}>
+                  <Icon name="send" size={16} />{sending ? 'Envoi…' : 'Envoyer'}
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </WidgetRoot>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { usePathname } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Bug, X, Send, CheckCircle2, ImagePlus, Trash2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+
+/**
+ * Widget de signalement de bug — bêta.
+ *
+ * Bouton flottant discret (bas-droit) monté une seule fois dans le layout
+ * /app/*, donc présent sur toutes les pages sans duplication. Au clic : modal
+ * compacte avec une description libre, une capture d'écran facultative, et le
+ * reste du contexte (URL, user agent, résolution) capturé automatiquement.
+ *
+ * Passer BETA_BUG_REPORT à false retire le widget sans toucher au layout.
+ * /
+const BETA_BUG_REPORT: boolean = true
+
+const MAX_DESCRIPTION = 2000
+const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024   // 5 Mo
+const SCREENSHOT_BUCKET = 'bug-screenshots'
+
+interface BrowserContext {
+  screen: { width: number; height: number }
+  viewport: { width: number; height: number }
+  dpr: number
+  language: string
+  timezone: string
+  online: boolean
+  referrer: string | null
+  captured_at: string
+}
+
+/** Contexte technique capturé silencieusement au moment de l'envoi. * /
+function captureBrowserContext(): BrowserContext {
+  return {
+    screen: { width: window.screen?.width ?? 0, height: window.screen?.height ?? 0 },
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+    dpr: window.devicePixelRatio ?? 1,
+    language: navigator.language ?? '',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? '',
+    online: navigator.onLine,
+    referrer: document.referrer || null,
+    captured_at: new Date().toISOString(),
+  }
+}
+
+/** Extension de fichier déduite du type MIME, sans dépendance externe. * /
+function extensionFor(file: File): string {
+  const fromName = file.name.includes('.') ? file.name.split('.').pop()! .toLowerCase() : ''
+  if (fromName && /^[a-z0-9]{2,5}$/.test(fromName)) return fromName
+  const fromType = file.type.split('/')[1]?.toLowerCase() ?? 'png'
+  return fromType === 'jpeg' ? 'jpg' : fromType.replace(/[^a-z0-9]/g, '') || 'png'
+}
+
+function humanSize(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${Math.round(bytes / 1024)} Ko`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+}
+
+export default function BugReportWidget() {
+  const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+  const [description, setDescription] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Capture d'écran facultative
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  /** Valide puis retient un fichier image (input ou presse-papier). * /
+  const acceptFile = useCallback((candidate: File | null) => {
+    if (!candidate) return
+    if (!candidate.type.startsWith('image/')) {
+      setError('Seules les images sont acceptées.')
+      return
+    }
+    if (candidate.size > MAX_SCREENSHOT_BYTES) {
+      setError(`Image trop lourde (${humanSize(candidate.size)}). Maximum 5 Mo.`)
+      return
+    }
+    setError(null)
+    setFile(candidate)
+  }, [])
+
+  function clearFile() {
+    setFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  // Aperçu : object URL révoquée dès que le fichier change ou disparaît.
+  useEffect(() => {
+    if (!file) { setPreview(null); return }
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  const close = useCallback(() => {
+    setOpen(false)
+    // Laisse l'animation de sortie se jouer avant de réarmer le formulaire.
+    setTimeout(() => {
+      setDescription(''); setSent(false); setError(null)
+      setFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }, 250)
+  }, [])
+
+  // Échap pour fermer, cohérent avec les autres modals du projet.
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') close() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, close])
+
+  /**
+   * Collage d'une capture depuis le presse-papier. Écouté sur la modal entière
+   * (capture d'écran → Ctrl+V n'importe où dans le panneau), sans empêcher le
+   * collage de texte : on ne retient que le premier item de type image.
+   * /
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const pasted = item.getAsFile()
+        if (pasted) {
+          e.preventDefault()
+          acceptFile(pasted)
+        }
+        return
+      }
+    }
+  }
+
+  /**
+   * Dépose la capture dans le bucket privé bug-screenshots.
+   * Chemin `<user_id>/…` pour un connecté (la policy de lecture autorise le
+   * propriétaire de son dossier), `anonyme/…` sinon — la policy d'insertion ne
+   * filtre pas sur le dossier, et les admins lisent tout le bucket.
+   * Renvoie le chemin de l'objet, pas une URL publique : le bucket est privé,
+   * la consultation passe par une URL signée côté admin.
+   * /
+  async function uploadScreenshot(
+    supabase: ReturnType<typeof createClient>,
+    userId: string | null,
+  ): Promise<string> {
+    const folder = userId ?? 'anonyme'
+    const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extensionFor(file!)}`
+    const path = `${folder}/${name}`
+
+    const { error: uploadError } = await supabase.storage
+      .from(SCREENSHOT_BUCKET)
+      .upload(path, file!, { contentType: file!.type, upsert: false })
+
+    if (uploadError) throw uploadError
+    return path
+  }
+
+  async function submit() {
+    const text = description.trim()
+    if (!text || sending) return
+
+    setSending(true)
+    setError(null)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      let screenshotPath: string | null = null
+      if (file) {
+        try {
+          screenshotPath = await uploadScreenshot(supabase, user?.id ?? null)
+        } catch {
+          // Le ticket n'est pas envoyé : la description reste saisie, l'auteur
+          // peut retirer l'image et renvoyer sans rien reperdre.
+          setError("L'envoi de la capture a échoué. Retire-la ou réessaie.")
+          setSending(false)
+          return
+        }
+      }
+
+      const { error: insertError } = await supabase.from('bug_reports').insert({
+        // Null si non connecté : la policy RLS l'autorise explicitement.
+        user_id: user?.id ?? null,
+        description: text.slice(0, MAX_DESCRIPTION),
+        page_url: window.location.href,
+        user_agent: navigator.userAgent,
+        browser_context: captureBrowserContext(),
+        screenshot_url: screenshotPath,
+      })
+
+      if (insertError) throw insertError
+
+      setSent(true)
+      setTimeout(close, 2600)
+    } catch {
+      setError("L'envoi a échoué. Réessaie dans un instant.")
+    } finally {
+      setSending(false)
+    }
+  }
+
+  if (!BETA_BUG_REPORT) return null
+
+  return (
     <>
       {/* ── Bouton flottant ──
           Pilule icône + libellé à partir de `sm`, cercle 44px en dessous : sur
@@ -219,7 +524,7 @@ export default function BugReportWidget() {
           aria-label/title portent alors seuls l'intitulé.
           Fond translucide mint plutôt qu'aplat #10B981 : le bouton est visible
           sur toutes les pages /app/*, il doit rester lisible sans concurrencer
-          les vraies actions (swipe, candidature…). */}
+          les vraies actions (swipe, candidature…). * /}
       <button
         onClick={() => setOpen(true)}
         aria-label="Signaler un bug"
@@ -257,7 +562,7 @@ export default function BugReportWidget() {
         </span>
       </button>
 
-      {/* ── Modal ── */}
+      {/* ── Modal ── * /}
       <AnimatePresence>
         {open && (
           <>
@@ -293,7 +598,7 @@ export default function BugReportWidget() {
                 fontFamily: "'Outfit', sans-serif",
               }}
             >
-              {/* En-tête */}
+              {/* En-tête * /}
               <div
                 className="flex items-center justify-between flex-shrink-0"
                 style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
@@ -315,7 +620,7 @@ export default function BugReportWidget() {
               </div>
 
               {sent ? (
-                /* ── État de succès ── */
+                /* ── État de succès ── * /
                 <div className="flex flex-col items-center text-center" style={{ padding: '32px 24px' }}>
                   <CheckCircle2 size={38} style={{ color: '#10B981', marginBottom: '14px' }} />
                   <div style={{ fontSize: '15.5px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>
@@ -346,7 +651,7 @@ export default function BugReportWidget() {
                     onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
                   />
 
-                  {/* ── Capture d'écran facultative ── */}
+                  {/* ── Capture d'écran facultative ── * /}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -363,7 +668,7 @@ export default function BugReportWidget() {
                         background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.22)',
                       }}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {/* eslint-disable-next-line @next/next/no-img-element * /}
                       <img
                         src={preview}
                         alt="Aperçu de la capture"
@@ -420,7 +725,7 @@ export default function BugReportWidget() {
                     </button>
                   )}
 
-                  {/* Contexte capturé — transparence sur ce qui part avec le ticket */}
+                  {/* Contexte capturé — transparence sur ce qui part avec le ticket * /}
                   <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.35)', margin: '10px 2px 0', lineHeight: 1.5 }}>
                     Page, navigateur et taille d&apos;écran sont joints automatiquement.
                     <br />
@@ -455,3 +760,4 @@ export default function BugReportWidget() {
     </>
   )
 }
+*/
