@@ -1,6 +1,7 @@
 import { getAdminUser } from '@/lib/admin/getAdminUser'
 import { createAdminClient } from '@/lib/admin/serviceClient'
-import ConversionFunnel, { type FunnelStep } from '@/components/analytics/ConversionFunnel'
+// [HIDDEN] ancien entonnoir (thème sombre) : import ConversionFunnel from '@/components/analytics/ConversionFunnel'
+import { type FunnelStep } from '@/components/analytics/ConversionFunnel'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,7 +90,7 @@ async function getAnalytics() {
   }
 }
 
-/** Graphe d'inscriptions 30 jours — SVG pur, barres mint. */
+/** Graphe d'inscriptions 30 jours : barres aux couleurs de la charte. */
 function SignupsChart({ signups }: { signups: { day: string; count: number }[] }) {
   const W = 900
   const H = 180
@@ -99,7 +100,210 @@ function SignupsChart({ signups }: { signups: { day: string; count: number }[] }
 
   return (
     <svg viewBox={`0 0 ${W} ${H + 30}`} style={{ width: '100%', height: 'auto' }} role="img" aria-label="Inscriptions sur 30 jours">
-      {/* lignes de repère */}
+      {[0.5, 1].map(f => (
+        <line key={f} x1={PAD} x2={W - PAD} y1={H - H * f * 0.85} y2={H - H * f * 0.85} stroke="var(--line)" strokeWidth={1} />
+      ))}
+      <text x={PAD - 4} y={H - H * 0.85 + 4} textAnchor="end" fontSize={11} fill="var(--ink-3)">{max}</text>
+      {signups.map((s, i) => {
+        const h = Math.max(s.count > 0 ? 3 : 1, (s.count / max) * H * 0.85)
+        const isMonday = new Date(s.day).getDay() === 1
+        return (
+          <g key={s.day}>
+            <rect x={PAD + i * barW + barW * 0.15} y={H - h} width={barW * 0.7} height={h} rx={3} fill={s.count > 0 ? '#6C4DFF' : 'var(--line-2)'}>
+              <title>{`${new Date(s.day).toLocaleDateString('fr-FR')} : ${s.count} ${s.count > 1 ? 'inscriptions' : 'inscription'}`}</title>
+            </rect>
+            {isMonday && (
+              <text x={PAD + i * barW + barW / 2} y={H + 16} textAnchor="middle" fontSize={11} fill="var(--ink-3)">
+                {new Date(s.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+              </text>
+            )}
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+export default async function AdminAnalyticsPage() {
+  await getAdminUser()
+  const { funnel, signups, topCities, locataires, loueurs } = await getAnalytics()
+
+  const totalRoles = locataires + loueurs
+  const locatairesPct = totalRoles > 0 ? Math.round((locataires / totalRoles) * 100) : 0
+  const maxCity = Math.max(...topCities.map(([, n]) => n), 1)
+  const maxFunnel = Math.max(...funnel.map(s => s.count), 1)
+  const signups30d = signups.reduce((s, d) => s + d.count, 0)
+
+  // Site v2 : mêmes données, panneaux de la charte.
+  return (
+    <>
+      <p className="soft" style={{ marginBottom: 16 }}>Données réelles de la plateforme (Supabase). Le trafic de la landing reste visible dans GA4.</p>
+
+      <section className="panel">
+        <div className="phead"><h2>Entonnoir de conversion</h2></div>
+        <div className="bars">
+          {funnel.map((step, i) => {
+            const prev = i > 0 ? funnel[i - 1].count : null
+            const conv = prev && prev > 0 ? Math.round((step.count / prev) * 100) : null
+            return (
+              <div className="barrow" key={step.label}>
+                <span>{step.label}</span>
+                <span className="track"><i style={{ width: `${Math.max(2, Math.round((step.count / maxFunnel) * 100))}%` }} /></span>
+                <b>{`${step.count.toLocaleString('fr-FR')}${conv != null ? `, ${conv} %` : ''}`}</b>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="panel mt">
+        <div className="phead"><h2>Inscriptions</h2><span className="s">{`30 derniers jours, ${signups30d} au total`}</span></div>
+        <SignupsChart signups={signups} />
+      </section>
+
+      <div className="v-grid g2 mt">
+        <section className="panel">
+          <div className="phead"><h2>Villes les plus actives</h2><span className="s">annonces actives</span></div>
+          {topCities.length === 0 ? (
+            <p className="soft">Aucune annonce active</p>
+          ) : (
+            <div className="bars">
+              {topCities.map(([city, count]) => (
+                <div className="barrow" key={city}>
+                  <span>{city}</span>
+                  <span className="track"><i style={{ width: `${Math.round((count / maxCity) * 100)}%` }} /></span>
+                  <b>{count}</b>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="phead"><h2>Locataires et bailleurs</h2></div>
+          <div className="kv">
+            <div><span>Locataires</span><b>{`${locataires.toLocaleString('fr-FR')} (${locatairesPct} %)`}</b></div>
+            <div><span>Bailleurs</span><b>{`${loueurs.toLocaleString('fr-FR')} (${totalRoles > 0 ? 100 - locatairesPct : 0} %)`}</b></div>
+          </div>
+          <div className="meter mt"><i style={{ width: `${locatairesPct}%` }} /></div>
+          <p className="hint mt">
+            {totalRoles === 0
+              ? 'Aucun rôle renseigné pour le moment.'
+              : locatairesPct >= 70
+              ? 'Beaucoup plus de locataires que de bailleurs : priorité à l’acquisition d’annonces.'
+              : locatairesPct <= 30
+              ? 'Beaucoup plus de bailleurs que de locataires : priorité à l’acquisition de locataires.'
+              : 'Équilibre sain entre l’offre et la demande.'}
+          </p>
+        </section>
+      </div>
+    </>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+import { getAdminUser } from '@/lib/admin/getAdminUser'
+import { createAdminClient } from '@/lib/admin/serviceClient'
+import ConversionFunnel, { type FunnelStep } from '@/components/analytics/ConversionFunnel'
+
+export const dynamic = 'force-dynamic'
+
+/**
+ * Mission 18 — analytics plateforme (données réelles Supabase, pas GA4).
+ * Funnel de conversion, inscriptions 30 jours, top villes, ratio des rôles.
+ * /
+
+const CARD: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.03)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: '14px',
+  padding: '24px',
+}
+
+function distinctCount(rows: Array<Record<string, string | null>> | null, ...keys: string[]): number {
+  const set = new Set<string>()
+  for (const row of rows ?? []) {
+    for (const key of keys) {
+      const v = row[key]
+      if (v) set.add(v)
+    }
+  }
+  return set.size
+}
+
+async function getAnalytics() {
+  const admin = createAdminClient()
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000)
+
+  const [
+    usersRes, quizRes,
+    swipersRes, matchesRes, messagesRes, signedLeasesRes,
+    signupsRes, citiesRes, locatairesRes, loueursRes,
+  ] = await Promise.all([
+    admin.from('profiles').select('*', { count: 'exact', head: true }),
+    admin.from('profiles').select('*', { count: 'exact', head: true }).not('matching_data->completed_at', 'is', null),
+    admin.from('swipes').select('swiper_id').limit(20000),
+    admin.from('matches').select('user1_id, user2_id').limit(20000),
+    admin.from('messages').select('sender_id').limit(20000),
+    admin.from('leases').select('tenant_id').eq('status', 'active').limit(5000),
+    admin.from('profiles').select('created_at').gte('created_at', thirtyDaysAgo.toISOString()).limit(20000),
+    admin.from('listings').select('city').eq('is_active', true).not('city', 'is', null).limit(10000),
+    admin.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'locataire'),
+    admin.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'loueur'),
+  ])
+
+  // Funnel : chaque étape = nb d'utilisateurs distincts ayant franchi le cap
+  const funnel: FunnelStep[] = [
+    { label: 'Inscrits', count: usersRes.count ?? 0 },
+    { label: 'Quiz complété', count: quizRes.count ?? 0 },
+    { label: 'Premier swipe', count: distinctCount(swipersRes.data, 'swiper_id') },
+    { label: 'Premier match', count: distinctCount(matchesRes.data, 'user1_id', 'user2_id') },
+    { label: 'Premier message', count: distinctCount(messagesRes.data, 'sender_id') },
+    { label: 'Bail signé', count: distinctCount(signedLeasesRes.data, 'tenant_id') },
+  ]
+
+  // Inscriptions par jour sur 30 jours
+  const perDay = new Map<string, number>()
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400_000)
+    perDay.set(d.toISOString().slice(0, 10), 0)
+  }
+  for (const row of signupsRes.data ?? []) {
+    const day = (row.created_at as string).slice(0, 10)
+    if (perDay.has(day)) perDay.set(day, (perDay.get(day) ?? 0) + 1)
+  }
+  const signups = Array.from(perDay.entries()).map(([day, count]) => ({ day, count }))
+
+  // Top 10 villes par annonces actives
+  const cityCount = new Map<string, number>()
+  for (const row of citiesRes.data ?? []) {
+    const c = (row.city as string).trim()
+    if (c) cityCount.set(c, (cityCount.get(c) ?? 0) + 1)
+  }
+  const topCities = Array.from(cityCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+
+  return {
+    funnel,
+    signups,
+    topCities,
+    locataires: locatairesRes.count ?? 0,
+    loueurs: loueursRes.count ?? 0,
+  }
+}
+
+/** Graphe d'inscriptions 30 jours — SVG pur, barres mint. * /
+function SignupsChart({ signups }: { signups: { day: string; count: number }[] }) {
+  const W = 900
+  const H = 180
+  const PAD = 24
+  const max = Math.max(...signups.map(s => s.count), 1)
+  const barW = (W - PAD * 2) / signups.length
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 30}`} style={{ width: '100%', height: 'auto' }} role="img" aria-label="Inscriptions sur 30 jours">
+      {/* lignes de repère * /}
       {[0.5, 1].map(f => (
         <line key={f} x1={PAD} x2={W - PAD} y1={H - H * f * 0.85} y2={H - H * f * 0.85} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
       ))}
@@ -154,7 +358,7 @@ export default async function AdminAnalyticsPage() {
         </p>
       </div>
 
-      {/* Funnel de conversion */}
+      {/* Funnel de conversion * /}
       <div style={{ marginBottom: '28px' }}>
         <div style={sectionTitle}>Funnel de conversion</div>
         <div style={CARD}>
@@ -162,7 +366,7 @@ export default async function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {/* Inscriptions 30 jours */}
+      {/* Inscriptions 30 jours * /}
       <div style={{ marginBottom: '28px' }}>
         <div style={sectionTitle}>Inscriptions — 30 derniers jours ({signups30d})</div>
         <div style={CARD}>
@@ -171,7 +375,7 @@ export default async function AdminAnalyticsPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
-        {/* Top villes */}
+        {/* Top villes * /}
         <div>
           <div style={sectionTitle}>Top 10 villes (annonces actives)</div>
           <div style={CARD}>
@@ -197,7 +401,7 @@ export default async function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Ratio locataires / loueurs */}
+        {/* Ratio locataires / loueurs * /}
         <div>
           <div style={sectionTitle}>Ratio locataires / loueurs</div>
           <div style={CARD}>
@@ -230,3 +434,4 @@ export default async function AdminAnalyticsPage() {
     </div>
   )
 }
+*/
