@@ -2,6 +2,49 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Icon } from '@/components/ui-v2'
+
+export default function ReviewActions({ reviewId }: { reviewId: string }) {
+  const router = useRouter()
+  const [busy, setBusy] = useState<'keep' | 'delete' | null>(null)
+
+  async function decide(action: 'keep' | 'delete') {
+    if (action === 'delete' && !confirm('Supprimer définitivement cet avis ? Le reviewer sera notifié.')) return
+    setBusy(action)
+    try {
+      const res = await fetch('/api/admin/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId, action }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: 'Erreur' }))
+        alert(error ?? 'Erreur')
+        return
+      }
+      router.refresh()
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <span className="acts">
+      <button className="btn btn-glass btn-sm" type="button" onClick={() => decide('keep')} disabled={busy !== null}>
+        <Icon name="shield" size={16} />{busy === 'keep' ? 'Enregistrement…' : 'Garder'}
+      </button>
+      <button className="btn btn-danger btn-sm" type="button" onClick={() => decide('delete')} disabled={busy !== null}>
+        {busy === 'delete' ? 'Suppression…' : 'Supprimer'}
+      </button>
+    </span>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ShieldCheck, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
@@ -54,3 +97,4 @@ export default function ReviewActions({ reviewId }: { reviewId: string }) {
     </div>
   )
 }
+*/
