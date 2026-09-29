@@ -11,9 +11,12 @@ export interface SignatureCanvasHandle {
 interface Props {
   label: string
   onChange?: (signed: boolean) => void
+  /** Site v2 : canevas seul, qui remplit son conteneur (.pad) ; libellé, trait
+   *  et bouton Effacer sont rendus par l'appelant. Même logique de dessin. */
+  bare?: boolean
 }
 
-const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function SignatureCanvas({ label, onChange }, ref) {
+const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function SignatureCanvas({ label, onChange, bare }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing = useRef(false)
   const hasDrawn = useRef(false)
@@ -88,6 +91,23 @@ const SignatureCanvas = forwardRef<SignatureCanvasHandle, Props>(function Signat
     clear: clearCanvas,
     isEmpty: () => !hasDrawn.current,
   }))
+
+  if (bare) {
+    return (
+      <canvas
+        ref={canvasRef}
+        aria-label={label}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none' }}
+        onMouseDown={start}
+        onMouseMove={move}
+        onMouseUp={end}
+        onMouseLeave={end}
+        onTouchStart={start}
+        onTouchMove={move}
+        onTouchEnd={end}
+      />
+    )
+  }
 
   return (
     <div>

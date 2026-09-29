@@ -1,5 +1,156 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { generateBailPdf, type BailFormData } from '@/lib/bailPdf'
+import { Icon, SkelLine } from '@/components/ui-v2'
+import { SiteRoot } from '@/components/ui-v2/public'
+import { SignFlow, type Signer } from '@/components/ui-v2/sign/SignFlow'
+
+interface DocPayload {
+  id: string
+  status: string
+  bail_data: BailFormData
+  owner_signature: string | null
+  owner_signed_at: string | null
+  tenant_signed_at: string | null
+}
+
+function signedOn(iso: string | null): string | null {
+  if (!iso) return null
+  return `Signé le ${new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
+}
+
+/** Récapitulatif du bail, sur la « feuille » de la maquette (données du bail existant). */
+function LeasePaper({ data, ownerSignature }: { data: BailFormData; ownerSignature: string | null }) {
+  const rows: [string, string][] = [
+    ['Bailleur', data.bailleurNom],
+    ['Locataire(s)', data.locataireNoms],
+    ['Adresse du logement', data.adresse],
+    ['Loyer mensuel', `${data.loyerMensuel} €`],
+    ['Charges', `${data.chargesType} — ${data.chargesMontant} €`],
+    ['Dépôt de garantie', `${data.depotGarantie} €`],
+    ["Date de prise d'effet", data.dateEffet],
+    ['Durée', data.duree],
+  ]
+  return (
+    <article className="paper" aria-label="Bail de colocation">
+      <h2>Contrat de location</h2>
+      <p style={{ textAlign: 'center', marginTop: 6 }}>Merci de relire les informations ci-dessous avant de signer électroniquement.</p>
+      <div className="parties">
+        <div><b>Le bailleur</b><br />{data.bailleurNom}</div>
+        <div><b>Les colocataires</b><br />{data.locataireNoms}</div>
+      </div>
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <h3>{label}</h3>
+          <p>{value}</p>
+        </div>
+      ))}
+      {ownerSignature && (
+        <div className="sigs">
+          <div>
+            <b>Signature du bailleur</b>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ownerSignature} alt="Signature bailleur" style={{ maxWidth: 200, marginTop: 6 }} />
+          </div>
+        </div>
+      )}
+    </article>
+  )
+}
+
+export default function PublicBailSignPage() {
+  const params = useParams()
+  const router = useRouter()
+  const token = params.token as string
+
+  const [doc, setDoc] = useState<DocPayload | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/bail-signature/${token}`)
+        if (!res.ok) { setError('Lien invalide ou expiré.'); setLoading(false); return }
+        const json = await res.json()
+        setDoc(json.document)
+      } catch {
+        setError('Une erreur est survenue.')
+      }
+      setLoading(false)
+    }
+    load()
+  }, [token])
+
+  /** Envoi existant : POST /api/bail-signature/[token] avec la signature dessinée. */
+  async function handleSign(signature: string): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/bail-signature/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature }),
+      })
+      if (!res.ok) { const j = await res.json().catch(() => ({})); return j.error ?? 'Erreur lors de la signature.' }
+      return null
+    } catch {
+      return 'Une erreur est survenue.'
+    }
+  }
+
+  if (loading) {
+    return (
+      <SiteRoot>
+        <div className="pay" role="status" aria-label="Chargement">
+          <div className="pay-card"><SkelLine w="60%" h={28} /><SkelLine w="90%" /><SkelLine w="80%" /></div>
+        </div>
+      </SiteRoot>
+    )
+  }
+
+  if (error && !doc) {
+    return (
+      <SiteRoot>
+        <div className="err" style={{ minHeight: '100vh' }}>
+          <div className="in">
+            <span className="okring off"><Icon name="x" /></span>
+            <h1>Signature impossible</h1>
+            <p>{error}</p>
+            <Link className="btn btn-glass" href="/">Retour à l’accueil</Link>
+          </div>
+        </div>
+      </SiteRoot>
+    )
+  }
+
+  const alreadySigned = doc?.status === 'signed' || !!doc?.tenant_signed_at
+  const data = doc!.bail_data
+  const signers: Signer[] = [
+    { id: 'owner', name: data.bailleurNom || 'Bailleur', role: 'Bailleur', signedLabel: signedOn(doc!.owner_signed_at) },
+    { id: 'tenant', name: data.locataireNoms || 'Locataire', role: 'Locataire, toi', signedLabel: signedOn(doc!.tenant_signed_at) },
+  ]
+
+  return (
+    <SiteRoot>
+      <SignFlow
+        title={`Bail de colocation, ${data.adresse}`}
+        signers={signers}
+        alreadySigned={alreadySigned}
+        document={<LeasePaper data={data} ownerSignature={doc!.owner_signature} />}
+        onSign={handleSign}
+        onDownload={() => generateBailPdf(data, { bailleur: doc!.owner_signature, locataire: null }).save('bail-isaly.pdf')}
+        onExit={() => router.push('/')}
+        doneActions={<Link className="btn btn-glass" href="/app/maison">Ouvrir Ma maison</Link>}
+      />
+    </SiteRoot>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -149,3 +300,4 @@ export default function PublicBailSignPage() {
     </div>
   )
 }
+*/

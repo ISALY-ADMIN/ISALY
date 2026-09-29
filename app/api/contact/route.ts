@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { resend } from '@/lib/resend'
+import { esc, mBox, mH, mRows, mSmall, mailWrap } from '@/lib/email/layout'
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +13,16 @@ export async function POST(req: Request) {
       to: 'plak.reseaux@gmail.com',
       replyTo: email,
       subject: `[ISALY Contact] ${subject} — ${name}`,
+      // Site v2 : mise en page commune des e-mails ; les champs saisis sont échappés.
+      html: mailWrap(
+        `${esc(subject)}, ${esc(name)}`,
+        mH('Nouveau message ISALY')
+          + mRows([['De', esc(name)], ['E-mail', esc(email)], ['Sujet', esc(subject)]])
+          + mBox(`<span style="white-space:pre-wrap">${esc(message)}</span>`)
+          + mSmall(`Pour répondre, clique sur « Répondre » dans ta messagerie : la réponse ira directement à ${esc(name)}.`),
+        { footer: 'Message envoyé depuis le formulaire de contact d’ISALY.' },
+      ),
+      /* [HIDDEN] ancien gabarit :
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #0A0A0A; padding: 32px; border-radius: 12px;">
@@ -30,6 +41,7 @@ export async function POST(req: Request) {
           </div>
         </div>
       `,
+      */
     })
     return NextResponse.json({ ok: true })
   } catch (error) {

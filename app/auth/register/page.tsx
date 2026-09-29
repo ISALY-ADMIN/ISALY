@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import Emoji from '@/components/ui/Emoji'
 import { track } from '@/lib/analytics'
 import { cityNameFromSlug } from '@/lib/cities'
 import { registerContextMessage } from '@/lib/registerContext'
+import { Icon, Pill } from '@/components/ui-v2'
+import { AuthLayout, GoogleButton, PwField } from '@/components/ui-v2/public/AuthLayout'
+import { VerifyEmail } from '@/components/ui-v2/public/VerifyEmail'
 
 function translateError(msg: string): string {
   if (!msg) return 'Une erreur inconnue est survenue.'
@@ -133,6 +135,223 @@ export default function RegisterPage() {
     })
   }
 
+  // `?ref=` : message de parrainage (le code est ensuite suivi par /api/referral/track).
+  const [refCode, setRefCode] = useState<string | null>(null)
+  useEffect(() => {
+    setRefCode(new URLSearchParams(window.location.search).get('ref'))
+  }, [])
+
+  if (emailSent) return (
+    <VerifyEmail email={form.email} firstName={form.firstName} onEdit={() => setEmailSent(false)} />
+  )
+
+  return (
+    <AuthLayout>
+      <div>
+        <h1>Crée ton compte</h1>
+        <p className="sub" style={{ marginTop: 8 }}>Et découvre avec qui tu t’entendrais vraiment.</p>
+      </div>
+
+      {refCode && (
+        <div className="alert ok">
+          <Icon name="gift" size={18} />
+          <span><b>Tu es invité sur ISALY.</b> Inscris-toi avec ce lien : votre parrainage sera pris en compte.</span>
+        </div>
+      )}
+      {villeName && (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div className="chips"><Pill tone="brand" icon="pin">{`Colocation à ${villeName}`}</Pill></div>
+          <p className="hint">Une alerte <b>{villeName}</b> sera créée : tu recevras un email dès qu’une annonce y est publiée.</p>
+        </div>
+      )}
+      {contexteMessage && (
+        <div className="note"><Icon name="info" size={18} /><span>{contexteMessage}</span></div>
+      )}
+
+      <GoogleButton onClick={handleGoogle} disabled={googleLoading}>
+        {googleLoading ? 'Redirection…' : 'S’inscrire avec Google'}
+      </GoogleButton>
+      <div className="or">ou avec ton e-mail</div>
+
+      <form className="form" onSubmit={handleSubmit}>
+        <div className="f2">
+          <div className="field">
+            <label htmlFor="rn">Prénom</label>
+            <input id="rn" className="input" autoComplete="given-name" required value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
+          </div>
+          <div className="field">
+            <label htmlFor="rl">Nom</label>
+            <input id="rl" className="input" autoComplete="family-name" required value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
+          </div>
+        </div>
+        <div className="field">
+          <label htmlFor="re">E-mail</label>
+          <input id="re" className="input" type="email" autoComplete="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+        </div>
+        <PwField
+          id="rp"
+          label="Mot de passe"
+          autoComplete="new-password"
+          meter
+          minLength={8}
+          hint="8 caractères minimum."
+          value={form.password}
+          onChange={v => setForm(f => ({ ...f, password: v }))}
+        />
+
+        {error && (
+          <div className="alert" role="alert"><Icon name="alert" size={18} /><span>{error}</span></div>
+        )}
+
+        <button className="btn btn-main btn-block" type="submit" disabled={loading}>
+          {loading ? 'Création…' : 'Créer mon compte'}
+        </button>
+      </form>
+
+      <p className="hint" style={{ textAlign: 'center' }}>
+        En créant un compte, tu acceptes nos <Link className="link" href="/cgu">CGU</Link> et notre <Link className="link" href="/confidentialite">politique de confidentialité</Link>.
+      </p>
+      <p className="switch-l">Déjà inscrit&#8239;? <Link className="link" href="/auth/login">Connecte-toi</Link></p>
+    </AuthLayout>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import Emoji from '@/components/ui/Emoji'
+import { track } from '@/lib/analytics'
+import { cityNameFromSlug } from '@/lib/cities'
+import { registerContextMessage } from '@/lib/registerContext'
+
+function translateError(msg: string): string {
+  if (!msg) return 'Une erreur inconnue est survenue.'
+  if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('User already registered')) return 'Cet email est déjà utilisé. Connecte-toi plutôt.'
+  if (msg.includes('invalid email') || msg.includes('Invalid email')) return 'Adresse email invalide.'
+  if (msg.includes('Password should be at least') || msg.includes('password')) return 'Le mot de passe doit contenir au moins 8 caractères.'
+  if (msg.includes('signup_disabled')) return 'Les inscriptions sont temporairement désactivées.'
+  if (msg.includes('rate limit') || msg.includes('too many')) return 'Trop de tentatives. Attends quelques minutes.'
+  if (msg.includes('network') || msg.includes('fetch')) return 'Erreur réseau. Vérifie ta connexion.'
+  if (msg.includes('Email not confirmed')) return 'Email non confirmé. Vérifie ta boîte mail.'
+  return `Erreur : ${msg}`
+}
+
+export default function RegisterPage() {
+  const router = useRouter()
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' })
+  const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
+  // `?ville=` posé par les pages SEO /colocation/<ville> : sert à créer
+  // l'alerte géographique qui déclenchera l'email à la première annonce.
+  // Lu côté client (comme `ref`) pour garder la page statiquement rendable.
+  const [villeSlug, setVilleSlug] = useState<string | null>(null)
+  // `?contexte=` posé par l'aperçu de swipe de la page d'accueil : rappelle le
+  // geste qui a mené ici (j'adore / passer / postuler). Purement éditorial —
+  // aucune donnée n'en dépend, contrairement à `ville` qui crée une alerte.
+  // Lu de la même façon, pour la même raison : garder la page rendable en
+  // statique.
+  const [contexte, setContexte] = useState<string | null>(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setVilleSlug(params.get('ville'))
+    setContexte(params.get('contexte'))
+  }, [])
+  const villeName = villeSlug ? cityNameFromSlug(villeSlug) : null
+  const contexteMessage = registerContextMessage(contexte)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const supabase = createClient()
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: { first_name: form.firstName, last_name: form.lastName, ...(villeSlug ? { search_city: villeSlug } : {}) },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (signUpError) {
+      console.error('Supabase signUp error:', signUpError)
+      setError(translateError(signUpError.message))
+      setLoading(false)
+      return
+    }
+    const newUser = data.user
+    const hasSession = !!data.session
+    track.signUp('email')
+
+    if (newUser && ref) {
+      try {
+        await fetch('/api/referral/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ref }),
+        })
+      } catch {}
+    }
+
+    // Email confirmation disabled in Supabase → session is immediate, redirect directly
+    if (hasSession) {
+      if (villeSlug) {
+        try {
+          await fetch('/api/alerts/city', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ville: villeSlug }),
+          })
+        } catch { /* non bloquant : l'alerte est rejouable depuis les paramètres * / }
+      }
+      router.push('/onboarding')
+      return
+    }
+
+    // Email confirmation enabled → send custom Resend email
+    try {
+      const res = await fetch('/api/email/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, firstName: form.firstName }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        console.warn('Email confirm API error:', json)
+      }
+    } catch (emailErr) {
+      console.warn('Email confirm failed (non-blocking):', emailErr)
+    }
+    setEmailSent(true)
+    setLoading(false)
+  }
+
+  async function handleGoogle() {
+    setGoogleLoading(true)
+    const supabase = createClient()
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    const cbParams = new URLSearchParams()
+    if (ref) cbParams.set('ref', ref)
+    if (villeSlug) cbParams.set('ville', villeSlug)
+    const qs = cbParams.toString()
+    const callbackUrl = qs
+      ? `${window.location.origin}/auth/callback?${qs}`
+      : `${window.location.origin}/auth/callback`
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: callbackUrl,
+        queryParams: { prompt: 'select_account' },
+      },
+    })
+  }
+
   if (emailSent) return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'Outfit', sans-serif" }}>
       <div style={{ textAlign: 'center', maxWidth: '420px' }}>
@@ -151,14 +370,14 @@ export default function RegisterPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Outfit', sans-serif", position: 'relative', overflow: 'hidden' }}>
 
-      {/* Glow background */}
+      {/* Glow background * /}
       <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-      {/* Form */}
+      {/* Form * /}
       <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', position: 'relative', zIndex: 1 }}>
         <div style={{ width: '100%' }}>
 
-          {/* Header */}
+          {/* Header * /}
           <div style={{ marginBottom: '32px' }}>
             <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Créer un compte</h1>
             <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
@@ -177,7 +396,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Google OAuth */}
+          {/* Google OAuth * /}
           <button
             onClick={handleGoogle}
             disabled={googleLoading}
@@ -197,14 +416,14 @@ export default function RegisterPage() {
             {googleLoading ? 'Redirection...' : 'Continuer avec Google'}
           </button>
 
-          {/* Divider */}
+          {/* Divider * /}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
             <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>ou par email</span>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
           </div>
 
-          {/* Form */}
+          {/* Form * /}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {[
@@ -300,3 +519,4 @@ export default function RegisterPage() {
     </div>
   )
 }
+*/

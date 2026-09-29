@@ -1,5 +1,106 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
+import { createAdminClient } from '@/lib/admin/serviceClient'
+import { Pill, eurCents, type Tone } from '@/components/ui-v2'
+import { Tbl, shortDate } from '@/components/ui-v2/admin/parts'
+
+async function getPayments() {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('payments')
+    .select(`
+      id, amount, plan_type, status, stripe_payment_intent_id, created_at,
+      profiles:user_id (first_name, last_name, email)
+    `)
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+/** Offres en cours, lues sur les colonnes posées par le webhook Stripe existant. */
+async function getActiveOffers() {
+  const admin = createAdminClient()
+  const now = new Date().toISOString()
+  const count = async (p: PromiseLike<{ count: number | null }>) => {
+    try { return (await p).count ?? 0 } catch { return null }
+  }
+  const [plus, auto, boosts] = await Promise.all([
+    count(admin.from('profiles').select('*', { count: 'exact', head: true }).eq('swiper_plus_active', true)),
+    count(admin.from('profiles').select('*', { count: 'exact', head: true }).eq('autogestion_status', 'active')),
+    count(admin.from('listings').select('*', { count: 'exact', head: true }).gt('boost_expires_at', now)),
+  ])
+  return { plus, auto, boosts }
+}
+
+const STATUS: Record<string, [string, Tone]> = {
+  succeeded: ['Payé', 'ok'],
+  pending: ['En attente', 'warn'],
+  failed: ['Échec', 'bad'],
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  // [HIDDEN] commission de 2,5 % supprimée (dashboard v2), libellé des paiements historiques :
+  assurance: 'Commission bail (ancienne offre)',
+  featured:  'Boost Featured',
+  priority:  'Boost Priority',
+  swiper_plus: 'Swiper Plus',
+  autogestion: 'Autogestion',
+  listing_boost_days: 'Mise en avant',
+}
+
+/** Paiements (vAdmPay) : lecture seule, montants venant de Stripe (table payments). */
+export default async function AdminPaiements() {
+  await getAdminUser()
+  const [payments, offers] = await Promise.all([getPayments(), getActiveOffers()])
+
+  const totalRevenue = payments
+    .filter(p => p.status === 'succeeded')
+    .reduce((sum, p) => sum + (p.amount ?? 0), 0)
+
+  const kpis: [string, string, string][] = [
+    ['Swiper Plus actifs', offers.plus != null ? String(offers.plus) : '-', 'abonnements en cours'],
+    ['Autogestion', offers.auto != null ? String(offers.auto) : '-', 'bailleurs abonnés'],
+    ['Mises en avant', offers.boosts != null ? String(offers.boosts) : '-', 'en cours'],
+    ['Encaissé', eurCents(totalRevenue), `${payments.length} ${payments.length > 1 ? 'transactions' : 'transaction'}`],
+  ]
+
+  return (
+    <>
+      <section className="panel kpis">
+        {kpis.map(([l, v, d]) => (
+          <div className="kpi" key={l}><div className="l">{l}</div><div className="v num">{v}</div><div className="d">{d}</div></div>
+        ))}
+      </section>
+
+      <div className="hrow" style={{ margin: '22px 0 12px' }}>
+        <h2 className="h2" style={{ margin: 0, fontSize: '1.3rem' }}>Transactions</h2>
+        <a className="btn btn-glass btn-sm" href="https://dashboard.stripe.com/payments" target="_blank" rel="noopener noreferrer">Ouvrir Stripe</a>
+      </div>
+
+      <Tbl head={['Client', 'Produit', 'Montant', 'Statut', 'Date']} empty={payments.length === 0 ? 'Aucune transaction' : undefined}>
+        {payments.map(p => {
+          const raw = p.profiles
+          const u = (Array.isArray(raw) ? raw[0] : raw) as { first_name: string | null; last_name: string | null; email: string | null } | null
+          const name = `${u?.first_name ?? ''} ${u?.last_name ?? ''}`.trim() || u?.email || '-'
+          const [label, tone] = STATUS[p.status] ?? [p.status, '' as Tone]
+          return (
+            <tr key={p.id}>
+              <td><b>{name}</b></td>
+              <td>{PLAN_LABELS[p.plan_type ?? ''] ?? p.plan_type ?? '-'}</td>
+              <td className="num">{p.amount ? eurCents(p.amount) : '-'}</td>
+              <td><Pill tone={tone}>{label}</Pill></td>
+              <td className="num">{shortDate(p.created_at)}</td>
+            </tr>
+          )
+        })}
+      </Tbl>
+      <p className="hint mt">Les montants viennent de Stripe. Aucune commission par locataire n’est plus facturée.</p>
+    </>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+import { createClient } from '@/lib/supabase/server'
+import { getAdminUser } from '@/lib/admin/getAdminUser'
 import Emoji from '@/components/ui/Emoji'
 
 async function getPayments() {
@@ -47,7 +148,7 @@ export default async function AdminPaiements() {
   return (
     <div style={{ padding: '32px 40px', fontFamily: "'Outfit', sans-serif" }}>
 
-      {/* Header */}
+      {/* Header * /}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.5px' }}>
@@ -63,9 +164,9 @@ export default async function AdminPaiements() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table * /}
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', overflow: 'hidden' }}>
-        {/* Head */}
+        {/* Head * /}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1.5fr', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '12px 20px' }}>
           {['Utilisateur', 'Plan', 'Montant', 'Statut', 'Date'].map(h => (
             <div key={h} style={{ fontSize: '11px', fontWeight: 700, color: '#4B5563', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</div>
@@ -124,3 +225,4 @@ export default async function AdminPaiements() {
     </div>
   )
 }
+*/

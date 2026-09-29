@@ -1,9 +1,38 @@
 'use client'
 
+import { Icon, useToast } from '@/components/ui-v2'
+
+/** Partage d'un article (copie du lien, WhatsApp, X), dans le style du site v2. */
+export default function ShareButtons({ url, title }: { url: string; title: string }) {
+  const toast = useToast()
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      toast('Lien copié')
+    } catch {}
+  }
+
+  return (
+    <div className="share">
+      <button className="btn btn-glass btn-sm" type="button" onClick={copy}><Icon name="link" size={16} />Copier le lien</button>
+      <a className="btn btn-glass btn-sm" href={`https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`} target="_blank" rel="noopener noreferrer">
+        <Icon name="chat" size={16} />WhatsApp
+      </a>
+      <a className="btn btn-glass btn-sm" href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer">
+        <Icon name="share" size={16} />Partager sur X
+      </a>
+    </div>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
 import { useState } from 'react'
 import { Link2, Check } from 'lucide-react'
 
-/** Partage social d'un article (X/Twitter, WhatsApp, copie du lien). */
+/** Partage social d'un article (X/Twitter, WhatsApp, copie du lien). * /
 export default function ShareButtons({ url, title }: { url: string; title: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -43,3 +72,4 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
     </div>
   )
 }
+*/

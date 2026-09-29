@@ -1,6 +1,113 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { Icon } from '@/components/ui-v2'
+import { PublicLayout } from '@/components/ui-v2/public'
+
+const SUBJECTS = ['Question sur ISALY', 'Je suis bailleur', 'Agence partenaire', 'Presse', 'Autre']
+
+export default function ContactPage() {
+  const [form, setForm] = useState({ name: '', email: '', subject: SUBJECTS[0], message: '' })
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSending(true)
+    setError('')
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) throw new Error('Erreur')
+      setSent(true)
+    } catch {
+      setError('Une erreur est survenue. Réessaie dans quelques instants.')
+    }
+    setSending(false)
+  }
+
+  if (sent) return (
+    <PublicLayout>
+      <div className="err" style={{ minHeight: '60vh' }}>
+        <div className="in">
+          <span className="okring"><Icon name="check" /></span>
+          <h1>Message envoyé</h1>
+          <p>Merci&#8239;! On te répond par e-mail dès que possible.</p>
+          <Link className="btn btn-glass" href="/">Retour à l’accueil</Link>
+        </div>
+      </div>
+    </PublicLayout>
+  )
+
+  return (
+    <PublicLayout>
+      <div className="wrap">
+        <div style={{ padding: '36px 0 0' }}>
+          <h1 className="h1">Contacte-nous</h1>
+          <p className="lede">Une question sur ISALY, un logement à proposer, un partenariat&#8239;? Écris-nous.</p>
+        </div>
+        <div className="v-grid wide-l mt">
+          <form className="panel form" onSubmit={handleSubmit}>
+            <div className="f2">
+              <div className="field">
+                <label htmlFor="cn">Prénom</label>
+                <input id="cn" className="input" autoComplete="given-name" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div className="field">
+                <label htmlFor="ce">E-mail</label>
+                <input id="ce" className="input" type="email" autoComplete="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="cs">Sujet</label>
+              <select id="cs" className="select" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}>
+                {SUBJECTS.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="cm">Message</label>
+              <textarea id="cm" className="textarea" required style={{ minHeight: 160 }} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
+            </div>
+            {error && (
+              <div className="alert" role="alert"><Icon name="alert" size={18} /><span>{error}</span></div>
+            )}
+            <button className="btn btn-main" type="submit" disabled={sending}>
+              <Icon name="send" size={18} />{sending ? 'Envoi en cours…' : 'Envoyer'}
+            </button>
+          </form>
+          <div className="stackv" style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+            <section className="panel">
+              <div className="phead"><h2>Avant d’écrire</h2></div>
+              <div className="rows">
+                <a className="row" href="/#faq" style={{ textDecoration: 'none' }}>
+                  <span className="ico brand"><Icon name="book" size={18} /></span>
+                  <span className="grow"><span className="t">Questions fréquentes</span><span className="s">Les réponses aux questions les plus courantes</span></span>
+                </a>
+                <div className="row">
+                  <span className="ico"><Icon name="clock" size={18} /></span>
+                  <span className="grow"><span className="t">Réponse par e-mail</span><span className="s">À l’adresse que tu indiques</span></span>
+                </div>
+              </div>
+            </section>
+            <section className="panel">
+              <div className="phead"><h2>Agences immobilières</h2></div>
+              <p className="soft">Tu veux devenir agence partenaire d’ISALY dans ta ville&#8239;? Choisis le sujet « Agence partenaire ».</p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </PublicLayout>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+import { useState } from 'react'
+import Link from 'next/link'
 import Emoji from '@/components/ui/Emoji'
 import RiseText from '@/components/motion/RiseText'
 
@@ -137,3 +244,4 @@ export default function ContactPage() {
     </div>
   )
 }
+*/

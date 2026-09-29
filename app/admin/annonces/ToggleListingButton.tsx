@@ -33,6 +33,48 @@ export default function ToggleListingButton({ listingId, isActive }: Props) {
   }
 
   return (
+    <button className="btn btn-ghost btn-sm" type="button" onClick={toggle} disabled={loading}>
+      {loading ? 'Enregistrement…' : current ? 'Masquer' : 'Réactiver'}
+    </button>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+interface Props {
+  listingId: string
+  isActive: boolean
+}
+
+export default function ToggleListingButton({ listingId, isActive }: Props) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [current, setCurrent] = useState(isActive)
+
+  async function toggle() {
+    if (!confirm(current ? 'Désactiver cette annonce ?' : 'Réactiver cette annonce ?')) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/toggle-listing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId, active: !current }),
+      })
+      if (!res.ok) throw new Error()
+      setCurrent(!current)
+      router.refresh()
+    } catch {
+      alert('Erreur lors de la mise à jour.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
     <button
       onClick={toggle}
       disabled={loading}
@@ -55,3 +97,4 @@ export default function ToggleListingButton({ listingId, isActive }: Props) {
     </button>
   )
 }
+*/

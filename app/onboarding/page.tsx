@@ -2,6 +2,637 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { QUIZ_TOTAL_STEPS, type MatchingData } from '@/lib/matching'
+import { ROLE_CHOICES } from '@/lib/roles'
+import { Icon, Logo, NNBSP, eur, type IconName } from '@/components/ui-v2'
+import { SiteRoot } from '@/components/ui-v2/public'
+import { CompatTest, CompatResult } from '@/components/ui-v2/test/CompatTest'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface OnboardingData {
+  role: string
+  first_name: string; last_name: string; age: string
+  city: string; profession: string; status: string
+  budget_min: number; budget_max: number
+  move_in: string; duration: string; zones: string[]
+  quiz_answers: Record<string, number>
+  // ── Branche loueur (role = 'loueur') ──
+  // Ces trois réponses remplacent entièrement l'étape « Ta recherche » et le
+  // test de compatibilité, qui n'ont aucun sens pour quelqu'un qui loue un bien.
+  owner_timing: string
+  owner_cities: string[]
+  owner_property_type: string
+}
+
+const DEFAULT: OnboardingData = {
+  role: '',
+  first_name: '', last_name: '', age: '', city: '', profession: '', status: '',
+  budget_min: 400, budget_max: 1000,
+  move_in: '', duration: '', zones: [],
+  quiz_answers: {},
+  owner_timing: '', owner_cities: [], owner_property_type: '',
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const STATUS_OPTS = ['Étudiant', 'Salarié CDI', 'Salarié CDD', 'Freelance', 'Auto-entrepreneur', 'Autre']
+
+// Étapes enregistrées (profiles.onboarding_step) : inchangées. Un locataire en
+// a 3 (qui es-tu, recherche, test), un loueur 2 (qui es-tu, projet).
+// stepCountFor() borne la reprise d'un brouillon selon le rôle.
+const STEP_COUNT_LOCATAIRE = 3
+const STEP_COUNT_LOUEUR = 2
+
+const OWNER_TIMING_OPTS = [
+  'J’ai un bien à publier maintenant',
+  'Bientôt, d’ici quelques semaines',
+  'Je regarde comment ça marche',
+]
+const OWNER_TYPE_OPTS = [
+  'Appartement en colocation',
+  'Maison en colocation',
+  'Studio / T1',
+  'Plusieurs biens',
+]
+
+/* Écrans du site v2 (maquette : 7 pour un locataire, 5 pour un bailleur).
+   Chaque écran de saisie correspond à une étape enregistrée ; les écrans
+   après le test (résultat, dossier, prêt) suivent l'enregistrement final. */
+type Screen = 'role' | 'toi' | 'recherche' | 'test' | 'resultat' | 'dossier' | 'pret' | 'logement' | 'dossierb'
+const SCREENS: Record<'locataire' | 'loueur', Screen[]> = {
+  locataire: ['role', 'toi', 'recherche', 'test', 'resultat', 'dossier', 'pret'],
+  loueur: ['role', 'toi', 'logement', 'dossierb', 'pret'],
+}
+/** Étape enregistrée d'un écran de saisie. */
+const STEP_OF: Partial<Record<Screen, number>> = { role: 1, toi: 1, recherche: 2, logement: 2, test: 3 }
+
+/** Libellés des rôles repris de la maquette (valeurs de ROLE_CHOICES inchangées). */
+const ROLE_UI: Record<string, { t: string; s: string; ic: IconName }> = {
+  locataire: { t: 'Je cherche une colocation', s: 'Trouve des colocs compatibles avec toi.', ic: 'compass' },
+  loueur: { t: 'Je loue un logement en colocation', s: 'Publie ton annonce et choisis tes locataires.', ic: 'building' },
+}
+
+// ─── Shared UI components ─────────────────────────────────────────────────────
+
+function Chips({ opts, value, onSelect, label }: {
+  opts: string[]; value: string | string[]; onSelect: (v: string) => void; label: string
+}) {
+  const on = (v: string) => (Array.isArray(value) ? value.includes(v) : value === v)
+  return (
+    <div className="chipsel" role="group" aria-label={label}>
+      {opts.map(opt => (
+        <button key={opt} type="button" className="fchip" aria-pressed={on(opt)} onClick={() => onSelect(opt)}>{opt}</button>
+      ))}
+    </div>
+  )
+}
+
+/** Saisie libre ajoutée en puces (zones, villes), avec suppression. */
+function TagInput({ id, label, placeholder, values, onToggle }: {
+  id: string; label: string; placeholder: string; values: string[]; onToggle: (v: string) => void
+}) {
+  const [input, setInput] = useState('')
+  function add() {
+    if (input.trim()) {
+      onToggle(input.trim())
+      setInput('')
+    }
+  }
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <div className="acts" style={{ flexWrap: 'nowrap' }}>
+        <input
+          id={id}
+          className="input"
+          value={input}
+          placeholder={placeholder}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+        />
+        <button className="btn btn-glass" type="button" onClick={add} aria-label="Ajouter"><Icon name="plus" size={18} /></button>
+      </div>
+      {values.length > 0 && (
+        <div className="chipsel">
+          {values.map(v => (
+            <button key={v} type="button" className="fchip" aria-pressed="true" onClick={() => onToggle(v)} aria-label={`Retirer ${v}`}>
+              {v}<Icon name="x" size={14} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+/** Nombre d'étapes du parcours pour un rôle donné. */
+function stepCountFor(role: string | undefined | null): number {
+  return role === 'loueur' ? STEP_COUNT_LOUEUR : STEP_COUNT_LOCATAIRE
+}
+
+/**
+ * Destination de fin d'onboarding.
+ *
+ * Un loueur part droit sur la création d'annonce (/app/annonce, le formulaire
+ * mutualisé derrière « Publier une annonce ») : le dashboard swipe ne lui sert
+ * à rien tant qu'il n'a rien publié.
+ */
+function homeFor(role: string | undefined | null): string {
+  return role === 'loueur' ? '/app/annonce' : '/app/swipe'
+}
+
+/** Premier écran correspondant à une étape enregistrée (reprise d'un brouillon). */
+function screenForStep(step: number, role: string | undefined | null): Screen {
+  if (step >= 3 && role !== 'loueur') return 'test'
+  if (step >= 2) return role === 'loueur' ? 'logement' : 'recherche'
+  return role ? 'toi' : 'role'
+}
+
+export default function OnboardingPage() {
+  const router = useRouter()
+  const [screen, setScreen] = useState<Screen>('role')
+  const [d, setD] = useState<OnboardingData>(DEFAULT)
+  const [saving, setSaving] = useState(false)
+  const [resumeBanner, setResumeBanner] = useState(false)
+  const [result, setResult] = useState<MatchingData | null>(null)
+  const [draftState, setDraftState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isLoueur = d.role === 'loueur'
+  const screens = SCREENS[isLoueur ? 'loueur' : 'locataire']
+  const si = Math.max(0, screens.indexOf(screen))
+  // Étape enregistrée courante (les écrans après le test gardent la dernière).
+  const step = STEP_OF[screen] ?? stepCountFor(d.role)
+
+  // Load: check DB draft first (if logged in), then localStorage
+  useEffect(() => {
+    async function loadDraft() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, onboarding_draft, onboarding_step, onboarding_completed')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.onboarding_completed) {
+          router.push(homeFor(profile.role as string | undefined))
+          return
+        }
+
+        if (profile?.onboarding_draft && profile.onboarding_step > 0) {
+          const draft = profile.onboarding_draft as Record<string, unknown>
+          const localRaw = (() => { try { return localStorage.getItem('isaly_onboarding_data') } catch { return null } })()
+          const localStep = (() => { try { const p = JSON.parse(localRaw ?? '{}'); return p.onboarding_step ?? 0 } catch { return 0 } })()
+          if (profile.onboarding_step >= localStep) {
+            setD({ ...DEFAULT, ...(draft as Partial<OnboardingData>) })
+            // Le brouillon d'un loueur ne compte que 2 étapes.
+            const s = Math.min(profile.onboarding_step, stepCountFor(draft.role as string | undefined))
+            setScreen(screenForStep(s, draft.role as string | undefined))
+            setResumeBanner(true)
+            setTimeout(() => setResumeBanner(false), 4000)
+            return
+          }
+        }
+      }
+
+      // Fallback: localStorage
+      let raw: string | null = null
+      try { raw = localStorage.getItem('isaly_onboarding_data') } catch {}
+      if (!raw) return
+      let saved: Record<string, unknown> = {}
+      try { saved = JSON.parse(raw) } catch { return }
+      if (saved.onboarding_completed) {
+        if (user) {
+          const supabase = createClient()
+          await supabase.from('profiles').upsert({
+            id: user.id, email: user.email,
+            first_name: (saved.first_name as string) || null,
+            last_name: (saved.last_name as string) || null,
+            role: (saved.role as string) || null,
+            city: (saved.city as string) || null,
+            budget_max: typeof saved.budget_max === 'number' ? saved.budget_max : null,
+            onboarding_completed: true,
+            matching_data: saved.matching_data ?? null,
+          })
+          try { localStorage.removeItem('isaly_onboarding_data') } catch {}
+          router.push(homeFor(saved.role as string | undefined))
+        }
+        return
+      }
+      if (saved.onboarding_step && typeof saved.onboarding_step === 'number' && saved.onboarding_step > 1) {
+        setD({ ...DEFAULT, ...(saved as Partial<OnboardingData>) })
+        const s = Math.min(saved.onboarding_step as number, stepCountFor(saved.role as string | undefined))
+        setScreen(screenForStep(s, saved.role as string | undefined))
+      }
+    }
+    loadDraft()
+  }, [router])
+
+  // Debounced save to DB + localStorage after each step update
+  function saveDraftToServer(data: OnboardingData, currentStep: number) {
+    if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current)
+    setDraftState('saving')
+    draftSaveTimer.current = setTimeout(async () => {
+      try { localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...data, onboarding_step: currentStep })) } catch {}
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setDraftState('saved'); return }
+      await supabase.from('profiles').update({
+        onboarding_draft: { ...data, onboarding_step: currentStep } as Record<string, unknown>,
+        onboarding_step: currentStep,
+      }).eq('id', user.id)
+      setDraftState('saved')
+    }, 800)
+  }
+
+  function upd<K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) {
+    setD(prev => {
+      const next = { ...prev, [key]: value }
+      saveDraftToServer(next, step)
+      return next
+    })
+  }
+
+  function togglePill(key: 'zones' | 'owner_cities', val: string, max?: number) {
+    setD(prev => {
+      const arr = prev[key]
+      const has = arr.includes(val)
+      if (has) return { ...prev, [key]: arr.filter(v => v !== val) }
+      if (max !== undefined && arr.length >= max) return prev
+      return { ...prev, [key]: [...arr, val] }
+    })
+  }
+
+  /** Passage à l'étape enregistrée suivante (même écriture que l'ancien next()). */
+  async function next() {
+    const total = stepCountFor(d.role)
+    if (step >= total) return
+    const nextStep = step + 1
+    try { localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, onboarding_step: nextStep })) } catch {}
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      setDraftState('saving')
+      supabase.from('profiles').update({
+        onboarding_draft: { ...d, onboarding_step: nextStep } as Record<string, unknown>,
+        onboarding_step: nextStep,
+      }).eq('id', user.id).then(() => setDraftState('saved'))
+    }
+    setScreen(screenForStep(nextStep, d.role))
+  }
+
+  async function finish(matching_data: MatchingData) {
+    setSaving(true)
+    const payload = {
+      first_name:  d.first_name  || null,
+      last_name:   d.last_name   || null,
+      role:        d.role        || null,
+      city:        d.city        || null,
+      budget_max:  d.budget_max,
+      onboarding_completed: true,
+      // Trace la réponse à la question de rôle : sans elle, la garde de
+      // /app/* reposerait la question à ce compte (cf. RoleGate).
+      role_confirmed_at: new Date().toISOString(),
+      matching_data,
+    }
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      // Already logged in — save directly and clear draft
+      await supabase.from('profiles').upsert({
+        id: user.id, email: user.email, ...payload,
+        onboarding_draft: null, onboarding_step: 0,
+      })
+      try { localStorage.removeItem('isaly_onboarding_data') } catch {}
+      // Site v2 : le profil est enregistré ; on montre le résultat avant de partir.
+      setResult(matching_data)
+      setSaving(false)
+      setDraftState('saved')
+      setScreen('resultat')
+    } else {
+      // Not yet logged in — save to localStorage and go to register
+      try {
+        localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, ...payload, matching_data }))
+      } catch {}
+      router.push('/auth/register')
+    }
+  }
+
+  /**
+   * Fin de parcours loueur.
+   *
+   * Pas de matching_data : le vecteur de compatibilité est un objet de
+   * colocataire, il n'a pas d'équivalent côté loueur et reste donc NULL.
+   * Les réponses des 3 questions partent dans profiles.owner_intent (JSONB,
+   * migration 38) via une écriture séparée et best-effort : tant que la
+   * migration n'est pas jouée, l'onboarding se termine quand même.
+   */
+  async function finishLoueur() {
+    if (saving) return
+    setSaving(true)
+
+    const ownerIntent = {
+      timing: d.owner_timing || null,
+      property_type: d.owner_property_type || null,
+      cities: d.owner_cities,
+      answered_at: new Date().toISOString(),
+    }
+    const payload = {
+      first_name:  d.first_name  || null,
+      last_name:   d.last_name   || null,
+      role:        d.role        || null,
+      city:        d.city        || null,
+      onboarding_completed: true,
+      role_confirmed_at: new Date().toISOString(),
+    }
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      await supabase.from('profiles').upsert({
+        id: user.id, email: user.email, ...payload,
+        onboarding_draft: null, onboarding_step: 0,
+      })
+      // Colonne absente (migration 38 pas encore jouée) : on ignore l'échec.
+      try {
+        await supabase.from('profiles').update({ owner_intent: ownerIntent }).eq('id', user.id)
+      } catch { /* noop */ }
+      try { localStorage.removeItem('isaly_onboarding_data') } catch {}
+      setSaving(false)
+      setDraftState('saved')
+      setScreen('dossierb')
+    } else {
+      try {
+        localStorage.setItem('isaly_onboarding_data', JSON.stringify({ ...d, ...payload, owner_intent: ownerIntent }))
+      } catch {}
+      router.push('/auth/register')
+    }
+  }
+
+  // Le rôle conditionne toute la suite du parcours : on ne laisse pas passer
+  // la première question sans réponse.
+  const canProceed = screen !== 'role' || d.role === 'locataire' || d.role === 'loueur'
+  // Projet du loueur : au moins la question « Où en es-tu ? » doit être
+  // renseignée, les deux autres restent facultatives.
+  const canFinishLoueur = d.owner_timing !== '' && !saving
+  const n = screens.length
+  const eyebrow = `Étape ${si + 1} sur ${n}`
+
+  // ── Contenu de l'écran ──
+  let body: React.ReactNode = null
+  let action: { label: string; onClick: () => void; disabled?: boolean; icon?: boolean } | null = { label: 'Continuer', onClick: () => undefined, icon: true }
+  let skip: React.ReactNode = null
+  let canBack = false
+  let onBack = () => undefined as void
+
+  if (screen === 'role') {
+    body = (
+      <>
+        <span className="eyebrow">Bienvenue sur ISALY</span>
+        <h1>Qu’est-ce qui t’amène&#8239;?</h1>
+        <p className="lead">Tu pourras changer de mode à tout moment depuis ton espace.</p>
+        {/* Première question de l'onboarding : elle fixe profiles.role, donc la
+            navigation et le dashboard que verra ce compte. Elle est obligatoire —
+            « Continuer » reste désactivé tant qu'aucun choix n'est fait. */}
+        <div className="choices">
+          {ROLE_CHOICES.map(r => {
+            const ui = ROLE_UI[r.value] ?? { t: r.title, s: r.description, ic: 'user' as IconName }
+            return (
+              <button key={r.value} className="choice" type="button" aria-pressed={d.role === r.value} onClick={() => upd('role', r.value)}>
+                <span className="ico brand"><Icon name={ui.ic} size={24} /></span>
+                <span className="grow"><b>{ui.t}</b><span className="s">{ui.s}</span></span>
+              </button>
+            )
+          })}
+        </div>
+      </>
+    )
+    action = { label: 'Continuer', onClick: () => { saveDraftToServer(d, 1); setScreen('toi') }, disabled: !canProceed, icon: true }
+  } else if (screen === 'toi') {
+    body = (
+      <>
+        <span className="eyebrow">{eyebrow}</span>
+        <h1>Parle-nous de toi</h1>
+        <p className="lead">{isLoueur ? 'Les candidats verront ton prénom et ta photo.' : 'Les colocs verront ton prénom, ton âge et ta photo.'}</p>
+        <div className="form">
+          <div className="f2">
+            <div className="field"><label htmlFor="op">Prénom</label><input id="op" className="input" autoComplete="given-name" value={d.first_name} onChange={e => upd('first_name', e.target.value)} /></div>
+            <div className="field"><label htmlFor="on">Nom</label><input id="on" className="input" autoComplete="family-name" value={d.last_name} onChange={e => upd('last_name', e.target.value)} /></div>
+          </div>
+          <div className="f2">
+            <div className="field"><label htmlFor="oa">Âge</label><input id="oa" className="input" type="number" inputMode="numeric" value={d.age} onChange={e => upd('age', e.target.value)} /></div>
+            <div className="field"><label htmlFor="oc">Ville</label><input id="oc" className="input" autoComplete="address-level2" value={d.city} onChange={e => upd('city', e.target.value)} /></div>
+          </div>
+          <div className="field"><label htmlFor="opr">Profession</label><input id="opr" className="input" autoComplete="organization-title" value={d.profession} onChange={e => upd('profession', e.target.value)} /></div>
+          <div className="field">
+            <span className="flabel">Ta situation</span>
+            <Chips label="Ta situation" opts={STATUS_OPTS} value={d.status} onSelect={v => upd('status', v)} />
+          </div>
+        </div>
+      </>
+    )
+    canBack = true
+    onBack = () => setScreen('role')
+    action = { label: 'Continuer', onClick: () => { next() }, icon: true }
+  } else if (screen === 'recherche') {
+    body = (
+      <>
+        <span className="eyebrow">{eyebrow}</span>
+        <h1>Ta recherche</h1>
+        <p className="lead">On ne te montre que les colocations qui correspondent.</p>
+        <div className="form">
+          <div className="field">
+            <div className="rangev"><label htmlFor="obmin">Budget minimum</label><b className="num">{eur(d.budget_min)}</b></div>
+            <input
+              id="obmin" className="range" type="range" min={300} max={2000} step={50} value={d.budget_min}
+              onChange={e => upd('budget_min', Math.min(Number(e.target.value), d.budget_max - 50))}
+            />
+          </div>
+          <div className="field">
+            <div className="rangev"><label htmlFor="obmax">Budget maximum, par mois</label><b className="num">{eur(d.budget_max)}</b></div>
+            <input
+              id="obmax" className="range" type="range" min={300} max={2000} step={50} value={d.budget_max}
+              onChange={e => upd('budget_max', Math.max(Number(e.target.value), d.budget_min + 50))}
+            />
+          </div>
+          <div className="field">
+            <span className="flabel">Arrivée souhaitée</span>
+            <Chips label="Arrivée souhaitée" opts={['Dès maintenant', 'Dans 1 mois', 'Dans 2-3 mois', 'Date précise']} value={d.move_in} onSelect={v => upd('move_in', v)} />
+          </div>
+          <div className="field">
+            <span className="flabel">Durée recherchée</span>
+            <Chips label="Durée recherchée" opts={['Court terme -6 mois', 'Moyen terme 6-12 mois', 'Long terme +1 an']} value={d.duration} onSelect={v => upd('duration', v)} />
+          </div>
+          <TagInput id="oz" label="Zones souhaitées" placeholder="Par exemple : Lyon 2e, Part-Dieu" values={d.zones} onToggle={v => togglePill('zones', v)} />
+        </div>
+      </>
+    )
+    canBack = true
+    onBack = () => setScreen('toi')
+    action = { label: 'Continuer', onClick: () => { next() }, icon: true }
+  } else if (screen === 'test') {
+    body = (
+      <>
+        <span className="eyebrow">Test de compatibilité</span>
+        <h1>Comment tu vis au quotidien&#8239;?</h1>
+        <p className="lead">{`${QUIZ_TOTAL_STEPS} questions, environ 3 minutes. Il n’y a pas de bonne réponse.`}</p>
+        {saving ? (
+          <div className="note" role="status"><Icon name="clock" size={18} /><span>Création de ton profil…</span></div>
+        ) : (
+          <CompatTest
+            initialAnswers={Object.keys(d.quiz_answers).length > 0 ? d.quiz_answers : undefined}
+            onProgress={answers => upd('quiz_answers', answers)}
+            onComplete={finish}
+            budgetMin={d.budget_min}
+          />
+        )}
+      </>
+    )
+    canBack = !saving
+    onBack = () => setScreen('recherche')
+    // Passage automatique d'une question à l'autre : pas de bouton ici.
+    action = null
+  } else if (screen === 'resultat' && result) {
+    body = (
+      <>
+        <span className="eyebrow">Ton profil est prêt</span>
+        <h1>Voilà comment tu vis en coloc</h1>
+        <p className="lead">On compare maintenant tes réponses à celles de chaque colocataire, pour chaque annonce.</p>
+        <CompatResult data={result} />
+      </>
+    )
+    action = { label: 'Continuer', onClick: () => setScreen('dossier'), icon: true }
+  } else if (screen === 'logement') {
+    body = (
+      <>
+        <span className="eyebrow">{eyebrow}</span>
+        <h1>Ton logement</h1>
+        <p className="lead">Juste l’essentiel : tu compléteras l’annonce ensuite.</p>
+        {saving ? (
+          <div className="note" role="status"><Icon name="clock" size={18} /><span>Création de ton espace loueur…</span></div>
+        ) : (
+          <div className="form">
+            <div className="field">
+              <span className="flabel">Où en es-tu&#8239;?</span>
+              <Chips label="Où en es-tu" opts={OWNER_TIMING_OPTS} value={d.owner_timing} onSelect={v => upd('owner_timing', v)} />
+            </div>
+            <div className="field">
+              <span className="flabel">Type de bien</span>
+              <Chips label="Type de bien" opts={OWNER_TYPE_OPTS} value={d.owner_property_type} onSelect={v => upd('owner_property_type', v)} />
+            </div>
+            <TagInput id="ov" label={`Dans quelle(s) ville(s)${NNBSP}?`} placeholder="Par exemple : Lyon, Villeurbanne" values={d.owner_cities} onToggle={v => togglePill('owner_cities', v)} />
+            <div className="note">
+              <Icon name="info" size={18} />
+              <span>Ensuite, on t’emmène sur la création de ta première annonce. Tu pourras l’enregistrer en brouillon si tu n’as pas encore toutes les infos.</span>
+            </div>
+          </div>
+        )}
+      </>
+    )
+    canBack = !saving
+    onBack = () => setScreen('toi')
+    action = { label: 'Continuer', onClick: () => { finishLoueur() }, disabled: !canFinishLoueur, icon: true }
+  } else if (screen === 'dossier' || screen === 'dossierb') {
+    const docs: [IconName, string, string][] = screen === 'dossier'
+      ? [['shield', 'Pièce d’identité', 'Pour obtenir le badge Identité vérifiée'], ['euro', 'Justificatif de revenus ou de bourse', 'Bulletins de salaire, attestation de bourse'], ['users', 'Garant', 'Personne physique ou garantie Visale']]
+      : [['shield', 'Pièce d’identité', 'Pour obtenir le badge Identité vérifiée'], ['contract', 'Justificatif de propriété', 'Taxe foncière ou acte de propriété']]
+    // Le dépôt des pièces se fait dans l'espace existant (Mon dossier, Mon profil).
+    const docHref = screen === 'dossier' ? '/app/dossier' : '/app/profil'
+    body = (
+      <>
+        <span className="eyebrow">{`${eyebrow}, facultative`}</span>
+        <h1>{screen === 'dossier' ? 'Prépare ton dossier' : 'Rassure tes futurs locataires'}</h1>
+        <p className="lead">{screen === 'dossier' ? 'Un dossier complet rassure les colocs et les bailleurs. Tu peux aussi le faire plus tard.' : 'Un profil vérifié reçoit plus de candidatures. Tu peux aussi le faire plus tard.'}</p>
+        <div className="upl">
+          {docs.map(([ic, t, s]) => (
+            <div className="row" key={t}>
+              <span className="ico brand"><Icon name={ic} size={18} /></span>
+              <span className="grow"><span className="t">{t}</span><span className="s">{s}</span></span>
+              <Link className="btn btn-glass btn-sm" href={docHref}><Icon name="upload" size={16} />Ajouter</Link>
+            </div>
+          ))}
+        </div>
+        <div className="note"><Icon name="lock" size={18} /><span>Tes documents sont stockés de façon sécurisée et ne sont montrés qu’aux personnes à qui tu envoies une demande.</span></div>
+      </>
+    )
+    skip = <button className="btn btn-ghost" type="button" onClick={() => setScreen('pret')}>Plus tard</button>
+    action = { label: 'Continuer', onClick: () => setScreen('pret'), icon: true }
+  } else if (screen === 'pret') {
+    body = (
+      <div style={{ display: 'grid', justifyItems: 'center', textAlign: 'center', gap: 16, paddingTop: 20 }}>
+        <span className="okring"><Icon name="check" /></span>
+        <h1>{d.first_name ? `C’est prêt, ${d.first_name}` : 'C’est prêt'}</h1>
+        <p className="lead" style={{ margin: 0, maxWidth: '44ch' }}>
+          {isLoueur
+            ? 'Publie ta première annonce : les candidats verront leur compatibilité avec tes colocataires.'
+            : 'Découvre les colocations où tu t’entendrais le mieux, avec ton score pour chaque colocataire.'}
+        </p>
+      </div>
+    )
+    action = { label: isLoueur ? 'Publier mon annonce' : 'Découvrir mes colocs', onClick: () => router.push(homeFor(d.role)), icon: true }
+  }
+
+  return (
+    <SiteRoot>
+      <div className="ob">
+        <div className="ob-top">
+          <Link className="plogo" href="/" aria-label="ISALY"><Logo /><span className="sr">isaly</span></Link>
+          <div className="ob-steps" role="progressbar" aria-valuemin={1} aria-valuemax={n} aria-valuenow={si + 1} aria-label={`Étape ${si + 1} sur ${n}`}>
+            {screens.map((_, k) => <i key={k} className={k < si ? 'on' : k === si ? 'now' : ''} />)}
+          </div>
+          <span className="saved" aria-live="polite">
+            {draftState === 'saving'
+              ? <><Icon name="clock" size={16} /><span>Enregistrement…</span></>
+              : draftState === 'saved' ? <><Icon name="check" size={16} /><span>Enregistré</span></> : null}
+          </span>
+        </div>
+        <main className="ob-main" id="contenu" tabIndex={-1}>
+          <div className="ob-card screen enter" key={screen}>
+            {resumeBanner && (
+              <div className="note" role="status"><Icon name="check" size={18} /><span>On reprend où tu t’étais arrêté.</span></div>
+            )}
+            {body}
+          </div>
+        </main>
+        {(action || canBack || skip) && (
+          <div className="ob-foot">
+            <div className="in">
+              {canBack
+                ? <button className="btn btn-ghost" type="button" onClick={onBack}><Icon name="back" size={18} />Retour</button>
+                : <span />}
+              <span className="acts">
+                {skip}
+                {action && (
+                  <button className="btn btn-main" type="button" onClick={action.onClick} disabled={action.disabled}>
+                    {action.label}
+                    {action.icon && <Icon name="arrow" size={18} />}
+                  </button>
+                )}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </SiteRoot>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check } from 'lucide-react'
@@ -90,7 +721,7 @@ const OWNER_TYPE_OPTS = [
  * Le texte des boutons pleins est sombre et non blanc : sur #10B981, du blanc
  * plafonne autour de 2,5:1 alors que #08170F dépasse 7:1. Le contraste décide,
  * pas l'habitude.
- */
+ * /
 const BG = '#0A0A0A'
 const SURFACE = 'rgba(255,255,255,0.04)'
 const SURFACE_SOFT = 'rgba(255,255,255,0.06)'
@@ -105,7 +736,7 @@ const ACCENT_SOFT = 'rgba(16,185,129,0.10)'
 const ACCENT_BORDER = 'rgba(16,185,129,0.45)'
 const ACCENT_INK = '#08170F'
 
-/** Barre de progression gamifiée : cercles ✓ + segments animés (spring). */
+/** Barre de progression gamifiée : cercles ✓ + segments animés (spring). * /
 function ProgressSteps({ step, total }: { step: number; total: number }) {
   const TOTAL = total
   const reduced = useMotionReduced()
@@ -150,7 +781,7 @@ function ProgressSteps({ step, total }: { step: number; total: number }) {
   )
 }
 
-/** Micro-célébration de fin d'étape : check mint + message, scale-in puis fade. */
+/** Micro-célébration de fin d'étape : check mint + message, scale-in puis fade. * /
 function StepReward({ message }: { message: string }) {
   return (
     <motion.div
@@ -248,7 +879,7 @@ function Step1({ d, upd }: { d: OnboardingData; upd: Upd }) {
     <div>
       {/* Première question de l'onboarding : elle fixe profiles.role, donc la
           navigation et le dashboard que verra ce compte. Elle est obligatoire —
-          « Continuer » reste désactivé tant qu'aucun choix n'est fait. */}
+          « Continuer » reste désactivé tant qu'aucun choix n'est fait. * /}
       <FieldLabel>Tu es plutôt…</FieldLabel>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
         {ROLE_CHOICES.map(r => {
@@ -396,7 +1027,7 @@ function Step2({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill
  * loueur en profondeur mais de le mener au plus vite à sa première annonce.
  * Aucune question orientée locataire ici (budget de recherche, date
  * d'emménagement, compatibilité colocataire) : elles ne le concernent pas.
- */
+ * /
 function Step2Loueur({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togglePill: TogglePill }) {
   const [cityInput, setCityInput] = useState('')
 
@@ -468,7 +1099,7 @@ function Step2Loueur({ d, upd, togglePill }: { d: OnboardingData; upd: Upd; togg
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-/** Nombre d'étapes du parcours pour un rôle donné. */
+/** Nombre d'étapes du parcours pour un rôle donné. * /
 function stepCountFor(role: string | undefined | null): number {
   return role === 'loueur' ? STEP_LABELS_LOUEUR.length : STEP_LABELS_LOCATAIRE.length
 }
@@ -479,7 +1110,7 @@ function stepCountFor(role: string | undefined | null): number {
  * Un loueur part droit sur la création d'annonce (/app/annonce, le formulaire
  * mutualisé derrière « Publier une annonce ») : le dashboard swipe ne lui sert
  * à rien tant qu'il n'a rien publié.
- */
+ * /
 function homeFor(role: string | undefined | null): string {
   return role === 'loueur' ? '/app/annonce' : '/app/swipe'
 }
@@ -657,7 +1288,7 @@ export default function OnboardingPage() {
    * Les réponses des 3 questions partent dans profiles.owner_intent (JSONB,
    * migration 38) via une écriture séparée et best-effort : tant que la
    * migration n'est pas jouée, l'onboarding se termine quand même.
-   */
+   * /
   async function finishLoueur() {
     if (saving || reward) return
     setSaving(true)
@@ -689,7 +1320,7 @@ export default function OnboardingPage() {
       // Colonne absente (migration 38 pas encore jouée) : on ignore l'échec.
       try {
         await supabase.from('profiles').update({ owner_intent: ownerIntent }).eq('id', user.id)
-      } catch { /* noop */ }
+      } catch { /* noop * / }
       try { localStorage.removeItem('isaly_onboarding_data') } catch {}
       setTimeout(() => router.push('/app/annonce'), 1400)
     } else {
@@ -724,19 +1355,19 @@ export default function OnboardingPage() {
           boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
         }}
       >
-        {/* Récompense de fin d'étape */}
+        {/* Récompense de fin d'étape * /}
         <AnimatePresence>
           {reward && <StepReward message={reward} />}
         </AnimatePresence>
 
-        {/* Resume banner */}
+        {/* Resume banner * /}
         {resumeBanner && (
           <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: ACCENT, textAlign: 'center' }}>
             On reprend où tu t&apos;étais arrêté ✓
           </div>
         )}
 
-        {/* Logo */}
+        {/* Logo * /}
         <div className="flex justify-center mb-4">
           <Image
             src="/LOGO_ISALY.png" alt="ISALY" height={30} width={95}
@@ -744,7 +1375,7 @@ export default function OnboardingPage() {
           />
         </div>
 
-        {/* Progress bar gamifiée */}
+        {/* Progress bar gamifiée * /}
         <ProgressSteps step={step} total={total} />
 
         <div className="text-[10.5px] font-extrabold uppercase mb-1.5" style={{ letterSpacing: '2px', color: ACCENT }}>
@@ -752,15 +1383,15 @@ export default function OnboardingPage() {
         </div>
         {/* `isaly-serif` et non un fontFamily inline : globals.css force Outfit
             sur tous les h1-h6 avec !important, la déclaration inline qui vivait
-            ici (DM Serif Display) n'a donc jamais été appliquée. */}
+            ici (DM Serif Display) n'a donc jamais été appliquée. * /}
         <h2 className="isaly-serif text-[26px] mb-4" style={{ color: TEXT, fontWeight: 500 }}>
           <RiseText key={step} mode="load" text={stepLabels[step - 1]} />
         </h2>
 
-        {/* Scrollable step content */}
+        {/* Scrollable step content * /}
         <div className="overflow-y-auto" style={{ maxHeight: '440px', paddingRight: '2px' }}>
           {/* Changement d'étape : le contenu monte en place (pas de sortie
-              animée, pour ne jamais retarder l'étape suivante). */}
+              animée, pour ne jamais retarder l'étape suivante). * /}
           <motion.div
             key={step}
             initial={motionReduced ? false : { y: 22, opacity: 0 }}
@@ -768,7 +1399,7 @@ export default function OnboardingPage() {
             transition={{ duration: DUR.element, ease: EASE_OUT }}
           >
           {step === 1 && <Step1 d={d} upd={upd} />}
-          {/* Étape 2 : deux branches distinctes selon la réponse à la question de rôle. */}
+          {/* Étape 2 : deux branches distinctes selon la réponse à la question de rôle. * /}
           {step === 2 && !isLoueur && <Step2 d={d} upd={upd} togglePill={togglePill} />}
           {step === 2 && isLoueur && (
             saving ? (
@@ -797,7 +1428,7 @@ export default function OnboardingPage() {
           </motion.div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation * /}
         {step < total && (
           <div className="flex gap-2.5 mt-5">
             {step > 1 && (
@@ -826,7 +1457,7 @@ export default function OnboardingPage() {
           </div>
         )}
         {/* Dernière étape loueur : le parcours se conclut sur la création
-            d'annonce, pas sur le dashboard swipe. */}
+            d'annonce, pas sur le dashboard swipe. * /}
         {step === total && isLoueur && (
           <div className="flex gap-2.5 mt-5">
             <button
@@ -868,3 +1499,4 @@ export default function OnboardingPage() {
     </div>
   )
 }
+*/

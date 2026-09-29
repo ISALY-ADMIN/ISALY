@@ -2,6 +2,60 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Icon, Pill } from '@/components/ui-v2'
+
+interface Props {
+  userId: string
+  alreadyVerified: boolean
+}
+
+export default function VerifyActions({ userId, alreadyVerified }: Props) {
+  const router = useRouter()
+  const [loading, setLoading] = useState<'approve' | 'reject' | null>(null)
+  const [done, setDone] = useState<'approved' | 'rejected' | null>(
+    alreadyVerified ? 'approved' : null
+  )
+
+  async function act(approve: boolean) {
+    const label = approve ? 'approve' : 'reject'
+    if (!confirm(approve ? 'Valider cette identité et notifier l\'utilisateur ?' : 'Rejeter cette vérification ?')) return
+    setLoading(label)
+    try {
+      const res = await fetch('/api/admin/verify-identity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, approve }),
+      })
+      if (!res.ok) throw new Error()
+      setDone(approve ? 'approved' : 'rejected')
+      router.refresh()
+    } catch {
+      alert('Erreur lors de la mise à jour.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  if (done === 'approved') return <Pill tone="ok" icon="check">Validée</Pill>
+  if (done === 'rejected') return <Pill tone="bad" icon="x">Rejetée</Pill>
+
+  return (
+    <span className="acts">
+      <button className="btn btn-main" type="button" onClick={() => act(true)} disabled={!!loading}>
+        <Icon name="check" size={18} />{loading === 'approve' ? 'Validation…' : 'Valider l’identité'}
+      </button>
+      <button className="btn btn-danger" type="button" onClick={() => act(false)} disabled={!!loading}>
+        {loading === 'reject' ? 'Refus…' : 'Refuser'}
+      </button>
+    </span>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   userId: string
@@ -69,3 +123,4 @@ export default function VerifyActions({ userId, alreadyVerified }: Props) {
     </div>
   )
 }
+*/

@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { sendPushNotification } from '@/lib/webpush'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import type { PushSubscription } from 'web-push'
+import { esc, mBtn, mH, mP, mailWrap } from '@/lib/email/layout'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -130,6 +131,18 @@ export async function GET(req: Request) {
 }
 
 function buildSilentMatchEmail(otherName: string) {
+  // Site v2 : mise en page commune des e-mails (lib/email/layout.ts).
+  return mailWrap(
+    'Personne n’a encore dit bonjour',
+    mH(`Brise la glace avec ${esc(otherName)} !`)
+      + mP('Vous avez matché il y a 2 jours, mais personne n’a encore dit bonjour. Soyez le premier : c’est souvent le plus dur, mais le plus décisif.')
+      + mBtn('Envoyer un message', `${APP_URL}/app/messages`),
+    { footer: `Tu reçois cet e-mail car tu as un match sur ISALY. <a href="${APP_URL}/app/parametres" style="color:#5A38F0">Gérer mes notifications</a><br>ISALY, la plateforme dédiée à la colocation.` },
+  )
+}
+
+/* [HIDDEN] ancien gabarit :
+function buildSilentMatchEmail(otherName: string) {
   return `
     <div style="background:#f7f8fa;padding:40px 20px;font-family:'Helvetica Neue',Arial,sans-serif">
       <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
@@ -159,4 +172,4 @@ function buildSilentMatchEmail(otherName: string) {
       </div>
     </div>
   `
-}
+}*/

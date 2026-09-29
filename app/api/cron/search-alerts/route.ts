@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
+import { esc, mBtn, mH, mList, mP, mailWrap } from '@/lib/email/layout'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -87,7 +88,21 @@ export async function GET(req: Request) {
         await resend.emails.send({
           from: FROM_EMAIL,
           to: email,
-          subject: `${n} nouvelle${n > 1 ? 's' : ''} annonce${n > 1 ? 's' : ''} correspond${n > 1 ? 'ent' : ''} à votre alerte 🔔`,
+          subject: `${n} nouvelle${n > 1 ? 's' : ''} annonce${n > 1 ? 's' : ''} correspond${n > 1 ? 'ent' : ''} à votre alerte`,
+          // Site v2 : mise en page commune des e-mails (lib/email/layout.ts).
+          html: mailWrap(
+            `${n} ${n > 1 ? 'nouvelles annonces' : 'nouvelle annonce'} pour « ${esc(alertLabel)} »`,
+            mH(`Votre alerte « ${esc(alertLabel)} »`)
+              + mP(`<strong>${n} ${n > 1 ? 'nouvelles annonces' : 'nouvelle annonce'}</strong> ${n > 1 ? 'correspondent' : 'correspond'} à vos critères.`)
+              + mList(listings.map(l => ({
+                title: esc(l.title ?? `Colocation à ${l.city}`),
+                sub: esc(l.city ?? ''),
+                right: l.rent ? `${l.rent} €` : undefined,
+                href: `${APP_URL}/app/annonce/${l.id}`,
+              })))
+              + mBtn('Voir toutes les annonces', `${APP_URL}/app/recherche`),
+          ),
+          /* [HIDDEN] ancien gabarit :
           html: `
             <div style="font-family: 'Outfit', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0A0A0A; padding: 40px; border-radius: 16px;">
               <h2 style="color: #10B981; font-size: 22px; margin: 0 0 8px;">🔔 Votre alerte « ${alertLabel} »</h2>
@@ -115,6 +130,7 @@ export async function GET(req: Request) {
               </p>
             </div>
           `,
+          */
         }).catch(() => {})
       }
     }

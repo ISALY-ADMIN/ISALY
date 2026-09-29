@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { computeProfileCompletion } from '@/lib/profileCompletion'
 import { formatAvailability } from '@/lib/utils'
+import { esc, mBox, mBtn, mH, mList, mP, mRows, mailWrap } from '@/lib/email/layout'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -96,7 +97,21 @@ export async function GET(req: Request) {
       await resend.emails.send({
         from: FROM_EMAIL,
         to: email,
-        subject: `Ta semaine ISALY : ${candidatures ?? 0} candidature${(candidatures ?? 0) > 1 ? 's' : ''}, ${views ?? 0} vue${(views ?? 0) > 1 ? 's' : ''} 📊`,
+        subject: `Ta semaine ISALY : ${candidatures ?? 0} candidature${(candidatures ?? 0) > 1 ? 's' : ''}, ${views ?? 0} vue${(views ?? 0) > 1 ? 's' : ''}`,
+        // Site v2 : mise en page commune des e-mails (lib/email/layout.ts).
+        html: mailWrap(
+          `${candidatures ?? 0} ${(candidatures ?? 0) > 1 ? 'candidatures' : 'candidature'} et ${views ?? 0} ${(views ?? 0) > 1 ? 'vues' : 'vue'} cette semaine`,
+          mH(`Bonjour ${esc(user.first_name ?? 'toi')}`)
+            + mP('Voici l’activité de tes annonces cette semaine.')
+            + mRows([
+              ['Candidatures reçues', String(candidatures ?? 0)],
+              ['Vues sur tes annonces', String(views ?? 0)],
+            ])
+            + (needsBoost
+              ? mBox('Moins de 5 vues cette semaine : une mise en avant multiplie la visibilité de ton annonce.') + mBtn('Mettre mon annonce en avant', `${APP_URL}/app/boost`)
+              : mBtn('Voir mes candidatures', `${APP_URL}/app/candidatures`)),
+        ),
+        /* [HIDDEN] ancien gabarit :
         html: shell(`
           <h2 style="color: #10B981; font-size: 22px; margin: 0 0 8px;">Bonjour ${user.first_name ?? 'toi'} 👋</h2>
           <p style="color: rgba(255,255,255,0.6); font-size: 15px; margin: 0 0 24px;">Voici l'activité de tes annonces cette semaine.</p>
@@ -111,6 +126,7 @@ export async function GET(req: Request) {
             ${cta(`${APP_URL}/app/boost`, 'Booster mon annonce →')}
           ` : cta(`${APP_URL}/app/candidatures`, 'Voir mes candidatures →')}
         `),
+        */
       }).catch(() => {})
       sent++
       continue
@@ -143,7 +159,29 @@ export async function GET(req: Request) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: `Ta semaine ISALY : ${matchCount ?? 0} match${(matchCount ?? 0) > 1 ? 's' : ''} et ${newListings?.length ?? 0} annonce${(newListings?.length ?? 0) > 1 ? 's' : ''} pour toi 🏠`,
+      subject: `Ta semaine ISALY : ${matchCount ?? 0} match${(matchCount ?? 0) > 1 ? 's' : ''} et ${newListings?.length ?? 0} annonce${(newListings?.length ?? 0) > 1 ? 's' : ''} pour toi`,
+      // Site v2 : mise en page commune des e-mails (lib/email/layout.ts).
+      html: mailWrap(
+        `${matchCount ?? 0} ${(matchCount ?? 0) > 1 ? 'matchs' : 'match'} et ${newListings?.length ?? 0} ${(newListings?.length ?? 0) > 1 ? 'annonces' : 'annonce'} pour toi`,
+        mH(`Bonjour ${esc(user.first_name ?? 'toi')}`)
+          + mP('Ton résumé de la semaine sur ISALY.')
+          + mRows([
+            ['Matchs cette semaine', String(matchCount ?? 0)],
+            ['Profil complété', `${completion} %`],
+          ])
+          + (newListings?.length
+            ? mP(`<strong>Recommandées pour toi${user.city ? ` à ${esc(user.city)}` : ''}</strong>`)
+              + mList(newListings.map(l => ({
+                title: esc(l.title ?? `Colocation à ${l.city}`),
+                sub: [esc(l.city ?? ''), formatAvailability(l.available_from) ?? ''].filter(Boolean).join(', '),
+                right: l.rent ? `${l.rent} €` : undefined,
+                href: `${APP_URL}/app/annonce/${l.id}`,
+              })))
+            : '')
+          + (completion < 100 ? mBox(`Ton profil est complété à ${completion} % : un profil complet apparaît en priorité dans le swipe.`) : '')
+          + mBtn('Reprendre le swipe', `${APP_URL}/app/swipe`),
+      ),
+      /* [HIDDEN] ancien gabarit :
       html: shell(`
         <h2 style="color: #10B981; font-size: 22px; margin: 0 0 8px;">Bonjour ${user.first_name ?? 'toi'} 👋</h2>
         <p style="color: rgba(255,255,255,0.6); font-size: 15px; margin: 0 0 24px;">Ton résumé de la semaine sur ISALY.</p>
@@ -173,6 +211,7 @@ export async function GET(req: Request) {
         ` : ''}
         ${cta(`${APP_URL}/app/swipe`, 'Reprendre le swipe →')}
       `),
+      */
     }).catch(() => {})
     sent++
   }

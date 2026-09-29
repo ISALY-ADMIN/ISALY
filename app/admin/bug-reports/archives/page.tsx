@@ -1,4 +1,60 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { getAdminUser } from '@/lib/admin/getAdminUser'
+import { BUG_REPORT_COLUMNS } from '../columns'
+import type { AdminBugReport } from '../shared'
+// [HIDDEN] ancienne liste (thème sombre), plus rendue : import ArchivedList from './ArchivedList'
+import { BugTable } from '../v2'
+import { EmptyState } from '@/components/ui-v2'
+
+export const metadata = { title: 'Tickets archivés — ISALY' }
+export const dynamic = 'force-dynamic'
+
+/** Uniquement les tickets écartés à la main depuis la vue principale. */
+async function getArchivedReports(): Promise<AdminBugReport[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('bug_reports')
+    .select(BUG_REPORT_COLUMNS)
+    .eq('status', 'rejete')
+    .order('created_at', { ascending: false })
+    .limit(500)
+  return (data ?? []) as unknown as AdminBugReport[]
+}
+
+export default async function AdminBugReportsArchives() {
+  await getAdminUser()
+
+  let reports: AdminBugReport[] = []
+  let tableMissing = false
+  try {
+    reports = await getArchivedReports()
+  } catch {
+    // La table n'existe pas encore : exécuter sql-migrations/36_bug_reports.sql
+    tableMissing = true
+  }
+
+  return (
+    <>
+      <p className="soft" style={{ marginBottom: 16 }}>
+        Signalements écartés manuellement. Un rejet erroné se restaure en un clic : le ticket repart alors en « nouveau » dans la vue principale.
+      </p>
+      {reports.length === 0 ? (
+        <EmptyState
+          icon="inbox"
+          title={tableMissing ? 'Table absente' : 'Aucun ticket archivé pour le moment'}
+          text={tableMissing ? 'Exécute sql-migrations/36_bug_reports.sql dans Supabase.' : undefined}
+          actions={<Link className="btn btn-glass" href="/admin/bug-reports">Retours actifs</Link>}
+        />
+      ) : (
+        <BugTable reports={reports} archived />
+      )}
+    </>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminUser } from '@/lib/admin/getAdminUser'
@@ -10,7 +66,7 @@ import Emoji from '@/components/ui/Emoji'
 export const metadata = { title: 'Tickets archivés — ISALY' }
 export const dynamic = 'force-dynamic'
 
-/** Uniquement les tickets écartés à la main depuis la vue principale. */
+/** Uniquement les tickets écartés à la main depuis la vue principale. * /
 async function getArchivedReports(): Promise<AdminBugReport[]> {
   const supabase = createClient()
   const { data } = await supabase
@@ -71,3 +127,4 @@ export default async function AdminBugReportsArchives() {
     </div>
   )
 }
+*/

@@ -1,17 +1,21 @@
 // ── Cache statique (PWA) ───────────────────────────────────────
-const CACHE_NAME = 'isaly-static-v1'
+// v2 : ajout de la page hors ligne (site v2).
+const CACHE_NAME = 'isaly-static-v2'
+const OFFLINE_URL = '/offline.html'
 const PRECACHE = [
   '/app/dashboard-home',
   '/icon-192.png',
   '/icon-512.png',
   '/favicon.png',
   '/LOGO_ISALY.png',
+  OFFLINE_URL,
 ]
 
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(PRECACHE))
+      // La page hors ligne d'abord, seule : addAll échoue en bloc si une URL échoue.
+      .then(cache => cache.add(OFFLINE_URL).catch(() => {}).then(() => cache.addAll(PRECACHE)))
       .catch(() => {})
       .then(() => self.skipWaiting())
   )
@@ -67,7 +71,16 @@ self.addEventListener('fetch', function(event) {
           }
           return res
         })
-        .catch(() => caches.match(req).then(cached => cached || Response.error()))
+        .catch(() => caches.match(req).then(cached => cached || caches.match(OFFLINE_URL)).then(r => r || Response.error()))
+    )
+    return
+  }
+
+  // Autres pages du site : réseau d'abord ; sans connexion, page hors ligne
+  // (public/offline.html, préchargée à l'installation).
+  if (url.origin === self.location.origin && req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req).catch(() => caches.match(OFFLINE_URL).then(r => r || Response.error()))
     )
   }
 })

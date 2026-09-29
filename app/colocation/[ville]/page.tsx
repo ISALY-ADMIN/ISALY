@@ -2,6 +2,281 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAnonClient } from '@supabase/supabase-js'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { getArticlesByCity } from '@/content/blog/articles'
+import { CITIES, slugifyCity, cityNameFromSlug } from '@/lib/cities'
+import { QUIZ_QUESTIONS } from '@/lib/matching'
+import { EmptyState, Icon, eur, m2, NNBSP } from '@/components/ui-v2'
+import { PublicLayout, type PublicCardListing } from '@/components/ui-v2/public'
+import CityListings from './CityListings'
+
+export const revalidate = 3600
+
+const MAIN_CITIES = ['paris', 'lyon', 'marseille', 'bordeaux', 'toulouse', 'nantes', 'lille', 'strasbourg']
+
+export async function generateStaticParams() {
+  const slugs = new Set(Object.keys(CITIES))
+  // Villes réellement présentes dans les annonces actives (generateStaticParams
+  // tourne au build sans contexte de requête → client anon direct)
+  try {
+    const supabase = createAnonClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    )
+    const { data } = await supabase.from('listings').select('city').eq('is_active', true).limit(1000)
+    for (const l of data ?? []) {
+      if (l.city) slugs.add(slugifyCity(l.city))
+    }
+  } catch { /* build sans DB : villes statiques uniquement */ }
+  return Array.from(slugs).map(ville => ({ ville }))
+}
+
+interface Props {
+  params: { ville: string }
+}
+
+
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const cityName = cityNameFromSlug(params.ville)
+
+  let count = 0
+  let ogPhoto: string | null = null
+  try {
+    const supabase = createClient()
+    const { data, count: c } = await supabase
+      .from('listings')
+      .select('photos', { count: 'exact' })
+      .eq('is_active', true)
+      .ilike('city', `%${cityName.split('-')[0]}%`)
+      .limit(5)
+    count = c ?? 0
+    ogPhoto = (data ?? []).map(l => (l.photos as string[] | null)?.[0]).find(Boolean) ?? null
+  } catch {}
+
+  return {
+    title: `Colocation à ${cityName}`,
+    description: `Trouvez votre colocation à ${cityName} avec ISALY. ${count > 0 ? `${count} annonce${count > 1 ? 's' : ''} disponible${count > 1 ? 's' : ''}, ` : ''}matching intelligent, bail en ligne.`,
+    alternates: { canonical: `https://isaly.fr/colocation/${params.ville}` },
+    openGraph: {
+      title: `Colocation à ${cityName} — ISALY`,
+      description: `Matching intelligent pour trouver la coloc parfaite à ${cityName}.`,
+      url: `https://isaly.fr/colocation/${params.ville}`,
+      siteName: 'ISALY',
+      images: [{ url: ogPhoto ?? '/og-image.png', width: 1200, height: 630 }],
+      locale: 'fr_FR',
+      type: 'website',
+    },
+  }
+}
+
+const BOOST_RANK: Record<string, number> = { priority: 0, featured: 1, standard: 2 }
+
+export default async function ColocationVillePage({ params }: Props) {
+  const cityName = cityNameFromSlug(params.ville)
+
+  const supabase = createClient()
+  const { data: listings } = await supabase
+    .from('listings')
+    .select('id, title, city, neighborhood, rent, charges, surface, rooms_available, occupants_current, capacity_total, photos, boost_tier, boost_type, created_at')
+    .eq('is_active', true)
+    .ilike('city', `%${cityName.split('-')[0]}%`)
+    .order('created_at', { ascending: false })
+    .limit(60)
+
+  const all = listings ?? []
+
+  // Les mieux mises en avant d'abord (toutes : la liste pagine côté client)
+  const results = [...all]
+    .sort((a, b) => {
+      const ra = BOOST_RANK[(a.boost_tier ?? a.boost_type ?? 'standard') as string] ?? 2
+      const rb = BOOST_RANK[(b.boost_tier ?? b.boost_type ?? 'standard') as string] ?? 2
+      return ra - rb || String(b.created_at).localeCompare(String(a.created_at))
+    })
+
+  // Chiffres calculés sur les annonces réelles ; un chiffre sans donnée n'est pas affiché.
+  const totals = all.map(l => Number(l.rent ?? 0) + Number(l.charges ?? 0)).filter(r => r > 0)
+  const surfaces = all.map(l => l.surface as number | null).filter((s): s is number => s != null && s > 0)
+  const avgTotal = totals.length ? Math.round(totals.reduce((a, b) => a + b, 0) / totals.length) : null
+  const avgSurface = surfaces.length ? Math.round(surfaces.reduce((a, b) => a + b, 0) / surfaces.length) : null
+  const quartiers = new Set(all.map(l => (l.neighborhood as string | null)?.trim()).filter(Boolean)).size
+
+  const cityGuides = getArticlesByCity(cityName)
+
+  // Ville sans aucune annonce active → toute la page bascule en état
+  // « bientôt disponible » plutôt que d'afficher une page vide identique
+  // à celle d'une ville déjà ouverte.
+  const isEmptyCity = all.length === 0
+  const nq = QUIZ_QUESTIONS.length
+  const registerHref = `/auth/register?ville=${params.ville}`
+
+  // Textes SEO existants de la page (conservés : seule la mise en page change).
+  const ADVANTAGES = [
+    { title: 'Matching compatible', desc: `Notre algorithme analyse 40+ critères de mode de vie pour vous proposer uniquement des colocataires compatibles à ${cityName}.` },
+    { title: 'Bail en ligne', desc: 'Rédaction conforme loi 89, signature électronique, quittances automatiques — zéro paperasse, tout est dans l’app.' },
+    { title: 'Dossiers vérifiés', desc: 'Identité et revenus certifiés en 3 niveaux. Locataires comme loueurs savent à qui ils parlent.' },
+  ]
+
+  const FAQ: [string, string][] = [
+    [
+      `Combien coûte une colocation à ${cityName}${NNBSP}?`,
+      `Sur ISALY, une chambre en colocation à ${cityName} coûte en moyenne ${avgTotal ? `${eur(avgTotal)} par mois, charges comprises` : 'le prix affiché sur chaque annonce'}. Le montant exact dépend du quartier, de la surface et des équipements.`,
+    ],
+    [
+      `Comment fonctionne le matching${NNBSP}?`,
+      `Tu réponds à ${nq} questions sur 5 dimensions de la vie en colocation. ISALY compare tes réponses à celles de chaque colocataire déjà en place et affiche un score pour chacun.`,
+    ],
+    [
+      `Est-ce gratuit pour les locataires${NNBSP}?`,
+      'Oui. L’inscription, le test et les demandes sont gratuits. Swiper Plus, en option, supprime la limite quotidienne de swipes et met tes demandes en priorité.',
+    ],
+    [
+      `Je suis bailleur, comment publier${NNBSP}?`,
+      'Crée ton compte, passe en mode bailleur et publie ton annonce en 5 étapes. Tu choisis ensuite de gérer le logement avec ISALY ou de le confier à une agence partenaire.',
+    ],
+  ]
+
+  const cards: PublicCardListing[] = results.map(l => ({
+    id: l.id as string,
+    title: l.title as string | null,
+    city: l.city as string | null,
+    neighborhood: l.neighborhood as string | null,
+    rent: l.rent as number | null,
+    charges: l.charges as number | null,
+    surface: l.surface as number | null,
+    photos: l.photos as string[] | null,
+  }))
+
+  // « < » échappé : aucun texte ne peut fermer la balise JSON-LD.
+  const faqLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map(([q, r]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: r } })),
+  }).replace(/</g, LT_ESCAPED)
+
+  return (
+    <PublicLayout>
+      <div className="wrap">
+        <div className="hero-c">
+          <div>
+            <nav className="crumbs" aria-label="Fil d’Ariane" style={{ marginTop: 0 }}>
+              <Link href="/">Accueil</Link>
+              <Icon name="chevron" />
+              <span>{`Colocation à ${cityName}`}</span>
+            </nav>
+            <h1 className="h1">{`Colocation à ${cityName}`}</h1>
+            <p className="lede">
+              {isEmptyCity
+                ? `Les premières colocations à ${cityName} arrivent bientôt sur ISALY. Crée ton profil maintenant : tu seras prévenu dès qu’une coloc compatible est publiée.`
+                : `Des chambres en colocation à ${cityName}, avec ta compatibilité calculée pour chaque colocataire déjà en place.`}
+            </p>
+          </div>
+          {!isEmptyCity && (
+            <div className="hstats">
+              <div><b className="num">{all.length}</b><span>{all.length > 1 ? 'annonces actives' : 'annonce active'}</span></div>
+              {avgTotal ? <div><b className="num">{eur(avgTotal)}</b><span>loyer moyen, charges comprises</span></div> : null}
+              {quartiers > 1
+                ? <div><b className="num">{quartiers}</b><span>quartiers</span></div>
+                : avgSurface ? <div><b className="num">{m2(avgSurface)}</b><span>surface moyenne</span></div> : null}
+            </div>
+          )}
+        </div>
+
+        {isEmptyCity ? (
+          <EmptyState
+            icon="bell"
+            style={{ marginTop: 28 }}
+            title={`Pas encore d’annonce à ${cityName}`}
+            text="Crée ton profil et fais le test : on te prévient dès qu’une colocation compatible est publiée."
+            actions={
+              <>
+                <Link className="btn btn-main" href={registerHref}>Être prévenu</Link>
+                <Link className="btn btn-glass" href="/auth/register">Publier la première annonce</Link>
+              </>
+            }
+          />
+        ) : (
+          <CityListings listings={cards} />
+        )}
+
+        <section className="cta-band sec">
+          <div>
+            <h2>{`Trouve les colocs faites pour toi à ${cityName}`}</h2>
+            <p>{`${nq} questions, environ 3 minutes : on calcule ta compatibilité avec chaque colocataire.`}</p>
+          </div>
+          <Link className="btn btn-main" href={registerHref}>Faire le test</Link>
+        </section>
+
+        <section className="sec">
+          <h2>{`Pourquoi choisir ISALY à ${cityName}${NNBSP}?`}</h2>
+          <div className="qtext">
+            {ADVANTAGES.map(a => (
+              <article key={a.title}>
+                <h3>{a.title}</h3>
+                <p>{a.desc}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="sec">
+          <div className="cta-card">
+            <span className="ico brand" style={{ width: 52, height: 52, borderRadius: 18 }}><Icon name="book" size={24} /></span>
+            <div className="grow">
+              {cityGuides.length > 0 ? (
+                <>
+                  <b>{`Lire notre guide de la colocation à ${cityName}`}</b>
+                  <span>{cityGuides[0].title}</span>
+                </>
+              ) : (
+                <>
+                  <b>Nos guides de la colocation</b>
+                  <span>Droits, conseils et bonnes pratiques sur ISALY Immo</span>
+                </>
+              )}
+            </div>
+            <Link className="btn btn-glass" href={cityGuides.length > 0 ? `/blog/${cityGuides[0].slug}` : '/blog'}>
+              Lire l’article<Icon name="arrow" size={18} />
+            </Link>
+          </div>
+        </section>
+
+        <section className="sec">
+          <h2>Questions fréquentes</h2>
+          <div className="faq">
+            {FAQ.map(([q, r], i) => (
+              <details key={q} open={i === 0}>
+                <summary>{q}<Icon name="chevron" /></summary>
+                <p>{r}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="sec">
+          <h2>Colocation dans d’autres villes</h2>
+          <div className="cities">
+            {MAIN_CITIES.filter(slug => slug !== params.ville).map(slug => (
+              <Link key={slug} href={`/colocation/${slug}`}>{CITIES[slug]}<Icon name="arrow" size={16} /></Link>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {/* Données structurées de la FAQ */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqLd }} />
+    </PublicLayout>
+  )
+}
+
+/** Séquence JSON « < » (barre oblique inverse construite, pas d'échappement à relire). */
+const LT_ESCAPED = String.fromCharCode(92) + 'u003c'
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+import { createClient } from '@/lib/supabase/server'
+import { createClient as createAnonClient } from '@supabase/supabase-js'
+import type { Metadata } from 'next'
+import Link from 'next/link'
 import Image from 'next/image'
 import { Heart, FileCheck, ShieldCheck } from 'lucide-react'
 import Emoji from '@/components/ui/Emoji'
@@ -27,7 +302,7 @@ export async function generateStaticParams() {
     for (const l of data ?? []) {
       if (l.city) slugs.add(slugifyCity(l.city))
     }
-  } catch { /* build sans DB : villes statiques uniquement */ }
+  } catch { /* build sans DB : villes statiques uniquement * / }
   return Array.from(slugs).map(ville => ({ ville }))
 }
 
@@ -119,7 +394,7 @@ export default async function ColocationVillePage({ params }: Props) {
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', fontFamily: "'Outfit', sans-serif", color: '#fff' }}>
 
-      {/* Navbar simple */}
+      {/* Navbar simple * /}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" aria-label="ISALY — accueil">
           <Image src="/LOGO_ISALY.png" alt="ISALY" height={24} width={76} style={{ width: 'auto', height: '24px', objectFit: 'contain' }} />
@@ -136,7 +411,7 @@ export default async function ColocationVillePage({ params }: Props) {
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '48px 24px 80px' }}>
 
-        {/* ── Header SEO ── */}
+        {/* ── Header SEO ── * /}
         <div style={{ marginBottom: '36px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#10B981', marginBottom: '16px' }}>
             {isEmptyCity ? `BIENTÔT DISPONIBLE · ${cityName.toUpperCase()}` : `COLOCATION · ${cityName.toUpperCase()}`}
@@ -150,7 +425,7 @@ export default async function ColocationVillePage({ params }: Props) {
               : `ISALY n'a pas encore d'annonce active à ${cityName}. Inscris-toi pour être prévenu dès la première publication.`}
           </p>
 
-          {/* Stats locales */}
+          {/* Stats locales * /}
           {all.length > 0 && (
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {[
@@ -167,10 +442,10 @@ export default async function ColocationVillePage({ params }: Props) {
           )}
         </div>
 
-        {/* ── Grille d'annonces ── */}
+        {/* ── Grille d'annonces ── * /}
         {isEmptyCity ? (
           /* Aucune annonce active dans cette ville : état « bientôt disponible »
-             avec CTA de notification, plutôt qu'une page de résultats vide. */
+             avec CTA de notification, plutôt qu'une page de résultats vide. * /
           <div style={{ textAlign: 'center', padding: '72px 24px', background: 'rgba(16,185,129,0.05)', borderRadius: '20px', border: '1px solid rgba(16,185,129,0.18)' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}><Emoji native="🚀" size="48px" /></div>
             <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>
@@ -236,7 +511,7 @@ export default async function ColocationVillePage({ params }: Props) {
           </>
         )}
 
-        {/* ── Pourquoi ISALY ── */}
+        {/* ── Pourquoi ISALY ── * /}
         <div style={{ marginTop: '48px', marginBottom: '48px' }}>
           <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 34px)', fontWeight: 700, color: '#fff', textAlign: 'center', margin: '0 0 40px', letterSpacing: '-0.5px' }}>
             <RiseText text={`Pourquoi choisir ISALY à ${cityName} ?`} />
@@ -261,7 +536,7 @@ export default async function ColocationVillePage({ params }: Props) {
           </div>
         </div>
 
-        {/* ── Guide blog ── */}
+        {/* ── Guide blog ── * /}
         {cityGuides.length > 0 ? (
           <Link href={`/blog/${cityGuides[0].slug}`} style={{
             display: 'flex', alignItems: 'center', gap: '14px', textDecoration: 'none',
@@ -290,7 +565,7 @@ export default async function ColocationVillePage({ params }: Props) {
           </Link>
         )}
 
-        {/* ── CTA final ── */}
+        {/* ── CTA final ── * /}
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '20px' }}>
           <h2 style={{ fontSize: '24px', color: '#fff', marginBottom: '12px' }}>
             <RiseText text={isEmptyCity
@@ -307,7 +582,7 @@ export default async function ColocationVillePage({ params }: Props) {
           </Link>
         </div>
 
-        {/* ── Footer SEO ── */}
+        {/* ── Footer SEO ── * /}
         <footer style={{ marginTop: '64px', paddingTop: '32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: '14px' }}>
             Colocation dans les grandes villes
@@ -343,3 +618,4 @@ export default async function ColocationVillePage({ params }: Props) {
     </div>
   )
 }
+*/

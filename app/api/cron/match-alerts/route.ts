@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resend, FROM_EMAIL, APP_URL } from '@/lib/resend'
 import { profilesCompatibility } from '@/lib/matching'
 import type { Profile } from '@/types/database'
+import { esc, mBtn, mH, mList, mP, mailWrap } from '@/lib/email/layout'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -72,7 +73,7 @@ export async function GET(req: Request) {
       await resend.emails.send({
         from: FROM_EMAIL,
         to: email,
-        subject: `🔥 ${compatible.length} nouveau${compatible.length > 1 ? 'x' : ''} profil${compatible.length > 1 ? 's' : ''} très compatible${compatible.length > 1 ? 's' : ''} cette semaine`,
+        subject: `${compatible.length} nouveau${compatible.length > 1 ? 'x' : ''} profil${compatible.length > 1 ? 's' : ''} très compatible${compatible.length > 1 ? 's' : ''} cette semaine`,
         html: buildMatchAlertEmail(user.first_name ?? 'toi', compatible),
       })
 
@@ -90,6 +91,23 @@ export async function GET(req: Request) {
   return NextResponse.json({ sent })
 }
 
+function buildMatchAlertEmail(firstName: string, matches: Array<{ profile: Profile; score: number }>) {
+  // Site v2 : mise en page commune des e-mails (lib/email/layout.ts).
+  const n = matches.length
+  return mailWrap(
+    `Jusqu’à ${Math.max(0, ...matches.map(m => m.score))} % de compatibilité cette semaine`,
+    mH(`${n} ${n > 1 ? 'profils très compatibles' : 'profil très compatible'} cette semaine`)
+      + mP(`Bonjour ${esc(firstName)}, voici les nouveaux profils qui te correspondent le mieux cette semaine.`)
+      + mList(matches.map(({ profile: p, score }) => ({
+        title: esc(p.first_name ?? 'Utilisateur'),
+        sub: `${esc(p.city ?? 'France')}, ${p.budget_max ?? 0} € par mois`,
+        right: `${score} %`,
+      })))
+      + mBtn('Voir tous mes matchs', `${APP_URL}/app/swipe`),
+  )
+}
+
+/* [HIDDEN] ancien gabarit :
 function buildMatchAlertEmail(firstName: string, matches: Array<{ profile: Profile; score: number }>) {
   return `
     <div style="background:#f7f8fa;padding:40px 20px;font-family:'Helvetica Neue',Arial,sans-serif">
@@ -134,4 +152,4 @@ function buildMatchAlertEmail(firstName: string, matches: Array<{ profile: Profi
       </div>
     </div>
   `
-}
+}*/

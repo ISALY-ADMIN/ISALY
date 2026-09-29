@@ -50,8 +50,11 @@ export async function POST(request: Request) {
     metadata: meta,
     payment_intent_data: { metadata: meta },
     line_items: [{ price, quantity: 1 }],
-    success_url: `${baseUrl}/app/mes-annonces?mise_en_avant=ok`,
-    cancel_url: `${baseUrl}/app/mes-annonces?mise_en_avant=annulee`,
+    // Site v2 : pages de retour pilotées par le session_id. [HIDDEN] anciennes URL :
+    // success_url: `${baseUrl}/app/mes-annonces?mise_en_avant=ok`,
+    // cancel_url: `${baseUrl}/app/mes-annonces?mise_en_avant=annulee`,
+    success_url: `${baseUrl}/paiement/retour?type=boost&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${baseUrl}/paiement/annule?type=boost`,
   })
   return NextResponse.json({ url: session.url })
 }

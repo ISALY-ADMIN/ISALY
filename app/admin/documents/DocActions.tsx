@@ -2,6 +2,54 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Icon } from '@/components/ui-v2'
+
+export default function DocActions({ documentId, signedUrl }: {
+  documentId: string
+  signedUrl: string | null
+}) {
+  const router = useRouter()
+  const [busy, setBusy] = useState<'approve' | 'reject' | null>(null)
+
+  async function decide(approve: boolean) {
+    setBusy(approve ? 'approve' : 'reject')
+    try {
+      const res = await fetch('/api/admin/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId, approve }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: 'Erreur' }))
+        alert(error ?? 'Erreur')
+        return
+      }
+      router.refresh()
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <span className="acts">
+      {signedUrl && (
+        <a className="btn btn-glass btn-sm" href={signedUrl} target="_blank" rel="noopener noreferrer"><Icon name="eye" size={16} />Voir</a>
+      )}
+      <button className="btn btn-glass btn-sm" type="button" onClick={() => decide(true)} disabled={busy !== null}>
+        <Icon name="check" size={16} />{busy === 'approve' ? 'Validation…' : 'Valider'}
+      </button>
+      <button className="btn btn-danger btn-sm" type="button" onClick={() => decide(false)} disabled={busy !== null}>
+        {busy === 'reject' ? 'Refus…' : 'Rejeter'}
+      </button>
+    </span>
+  )
+}
+
+/* [HIDDEN] Ancienne version (avant le site v2), conservée pour référence :
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Eye, Check, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
@@ -66,3 +114,4 @@ export default function DocActions({ documentId, signedUrl }: {
     </div>
   )
 }
+*/

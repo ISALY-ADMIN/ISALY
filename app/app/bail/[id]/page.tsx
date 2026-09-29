@@ -16,6 +16,9 @@ import { depositToVault } from '@/lib/vault'
 import { track } from '@/lib/analytics'
 import type { BailDetail } from '@/app/api/bail/[id]/route'
 import type { Lease } from '@/types/database'
+import { createPortal } from 'react-dom'
+import { SignFlow } from '@/components/ui-v2/sign/SignFlow'
+import '@/styles/ui-v2-site.css'
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return '—'
@@ -120,6 +123,7 @@ export default function BailDetailPage() {
   const [sendingQuittance, setSendingQuittance] = useState(false)
   const [avenant, setAvenant] = useState({ objet: '', modifications: '' })
   const [toast, setToast] = useState('')
+  const [flowPdfUrl, setFlowPdfUrl] = useState<string | null>(null)
 
   function notify(msg: string) {
     setToast(msg)
@@ -192,6 +196,15 @@ export default function BailDetailPage() {
 
   useEffect(() => { load() }, [load])
 
+  // Parcours de signature ouvert : PDF du bail produit par le générateur existant.
+  useEffect(() => {
+    if (!signOpen || !detail) return
+    if (detail.documentSignedUrl) { setFlowPdfUrl(detail.documentSignedUrl); return }
+    const url = URL.createObjectURL(buildBailPdf(detail).output('blob'))
+    setFlowPdfUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [signOpen, detail])
+
   /** Après la 2e signature : génère le PDF signé et le dépose dans le bucket privé "leases". */
   async function uploadSignedPdf(d: BailDetail) {
     try {
@@ -236,6 +249,26 @@ export default function BailDetailPage() {
       setError('Une erreur est survenue.')
     }
     setSubmitting(false)
+  }
+
+  /** Site v2 : signature depuis le parcours plein écran (SignFlow). Même requête
+   *  que handleSign ; le consentement eIDAS est la case cochée du parcours. */
+  async function signFromFlow(signature: string): Promise<string | null> {
+    if (!detail) return 'Une erreur est survenue.'
+    try {
+      const res = await fetch(`/api/bail/${id}/sign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature, consent: true }),
+      })
+      const json = await res.json()
+      if (!res.ok) return json.error ?? 'Erreur lors de la signature.'
+      track.leaseSigned()
+      if (json.status === 'active') await uploadSignedPdf(detail)
+      return null
+    } catch {
+      return 'Une erreur est survenue.'
+    }
   }
 
   function downloadPdf() {
@@ -392,6 +425,33 @@ export default function BailDetailPage() {
           </div>
 
           {/* Module de signature */}
+          {/* Site v2 : parcours de signature plein écran (maquette vSignature),
+              rendu dans #ui-v2-portal pour sortir du cadre de l'écran. */}
+          {waitingForMe && signOpen && typeof document !== 'undefined' && document.getElementById('ui-v2-portal') && createPortal(
+            <div className="ui-site" style={{ position: 'fixed', inset: 0, zIndex: 90, overflowY: 'auto', background: 'var(--bg)' }}>
+              <SignFlow
+                title={`Bail de colocation, ${lease.address ?? ''}${lease.city ? `, ${lease.city}` : ''}`}
+                signers={parties.map(p => ({
+                  id: p.key,
+                  name: (p.key === 'owner' ? owner?.name : tenant?.name) ?? (p.key === 'owner' ? 'Bailleur' : 'Locataire'),
+                  role: (p.key === 'owner' ? 'Bailleur' : 'Locataire') + ((p.key === 'owner') === (myRole === 'owner') ? ', toi' : ''),
+                  signedLabel: p.sig ? `Signé le ${formatDate(p.sig.signed_at)}` : null,
+                }))}
+                document={
+                  <article className="paper" aria-label="Bail de colocation" style={{ padding: 0, overflow: 'hidden' }}>
+                    <iframe src={flowPdfUrl ?? undefined} title="Bail (PDF produit par le générateur de bail)" style={{ width: '100%', height: '78vh', border: 0, display: 'block' }} />
+                  </article>
+                }
+                onSign={signFromFlow}
+                onDownload={downloadPdf}
+                onExit={() => { setSignOpen(false); load() }}
+                exitLabel="Quitter la signature"
+                doneActions={<a className="btn btn-glass" href="/app/maison">Ouvrir Ma maison</a>}
+              />
+            </div>,
+            document.getElementById('ui-v2-portal')!,
+          )}
+          {/* [HIDDEN] Ancien module de signature, remplacé par le parcours ci-dessus :
           {waitingForMe && signOpen && (
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
               style={{ ...sectionCard, marginBottom: '20px' }}>
@@ -415,6 +475,7 @@ export default function BailDetailPage() {
               </div>
             </motion.div>
           )}
+          fin du module [HIDDEN] */}
 
           {/* Actions */}
           <div className="flex items-center gap-3 mb-6 flex-wrap">
